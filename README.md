@@ -1,5 +1,5 @@
 # kitaqgb
----
+
 KITAQGB is an open-source C toolchain for developing homebrew software targeting the Game Boy and Game Boy Color hardware.
 
 KITAQGB is an independent project and is not affiliated with, endorsed by, sponsored by, or approved by Nintendo.
