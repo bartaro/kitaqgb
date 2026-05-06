@@ -1,5 +1,14 @@
 # KITAQGB
 
+## Project Status: Public Preview
+
+KITAQGB and KOKURA are currently available as public preview development tools.
+
+They are usable for experimentation, sample projects, AI-assisted game development, compiler research, emulator-based debugging, and workflow validation. However, the projects are still under active development, and APIs, CLI options, output formats, diagnostics, and behavior may change between versions.
+
+Preview builds may contain bugs, incomplete features, or breaking changes. Generated code, emulator behavior, timing diagnostics, and reports should be verified carefully before use in production or public releases.
+
+
 **Kernel-Informed Toolchain for AI-Quality Game Boy Development**
 
 KITAQGB is an open-source C toolchain for developing homebrew software targeting the Game Boy and Game Boy Color hardware. It is designed for AI-assisted, diagnostics-friendly development: write small C programs, compile them into `.gb` / `.gbc` ROM images, and use emulator-side feedback to improve the game quickly.
