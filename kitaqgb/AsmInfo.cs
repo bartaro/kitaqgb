@@ -58,6 +58,10 @@ public static class AsmInfo
         Def(0x76, "HALT", IMP);
         Def(0x10, "STOP", IMM8);
         Def(0xC9, "RET", IMP);
+        Def(0xC0, "RET_NZ", IMP);
+        Def(0xC8, "RET_Z", IMP);
+        Def(0xD0, "RET_NC", IMP);
+        Def(0xD8, "RET_C", IMP);
         Def(0xD9, "RETI", IMP);
         Def(0xC3, "JP", ABS);
         Def(0xE9, "JP_HL", IMP);
@@ -115,6 +119,7 @@ public static class AsmInfo
 
         Def(0x77, "LD_HL_A", IMP);
         Def(0x7E, "LD_A_HL", IMP);
+        Def(0x46, "LD_B_HL", IMP); Def(0x4E, "LD_C_HL", IMP); Def(0x56, "LD_D_HL", IMP); Def(0x5E, "LD_E_HL", IMP); Def(0x66, "LD_H_HL", IMP); Def(0x6E, "LD_L_HL", IMP);
         Def(0x70, "LD_HL_B", IMP); Def(0x71, "LD_HL_C", IMP); Def(0x72, "LD_HL_D", IMP); Def(0x73, "LD_HL_E", IMP); Def(0x74, "LD_HL_H", IMP); Def(0x75, "LD_HL_L", IMP);
 
         Def(0x36, "LD_HL_REF_IMM", IMM8);

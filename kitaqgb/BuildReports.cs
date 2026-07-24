@@ -35,6 +35,15 @@ sealed class CallEdgeInfo
     public string LastSource;
 }
 
+sealed class AggregateCopyInfo
+{
+    public string Function;
+    public string Type;
+    public int SizeBytes;
+    public string Strategy;
+    public string Source;
+}
+
 sealed class RstSelectionInfo
 {
     public int Vector;
@@ -47,6 +56,7 @@ sealed class CodegenAnalysisReport
 {
     public readonly List<FunctionAbiInfo> Functions = new List<FunctionAbiInfo>();
     public readonly List<CallEdgeInfo> Calls = new List<CallEdgeInfo>();
+    public readonly List<AggregateCopyInfo> AggregateCopies = new List<AggregateCopyInfo>();
     public readonly List<RstSelectionInfo> RstSelections = new List<RstSelectionInfo>();
     public readonly List<string> AbiIssues = new List<string>();
     public int CgbRuntimeCheckCount;

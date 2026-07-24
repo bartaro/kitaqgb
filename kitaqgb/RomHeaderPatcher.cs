@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 
 public sealed class RomHeaderOptions
 {
+    public bool? HeaderLogoEnabled = null; // 0x0104..0x0133
     public string Title = null; // 0x0134..0x0143 (16 bytes)
     public byte? CgbFlag = null; // 0x0143
     public byte? CartType = null; // 0x0147
@@ -15,11 +16,12 @@ public sealed class RomHeaderOptions
     public byte? DestinationCode = null; // 0x014A
     public byte? Version = null; // 0x014C
 
-    public bool HasAny => Title != null || CgbFlag.HasValue || CartType.HasValue || RomSizeCode.HasValue || RamSizeCode.HasValue || SgbFlag.HasValue || DestinationCode.HasValue || Version.HasValue;
+    public bool HasAny => HeaderLogoEnabled.HasValue || Title != null || CgbFlag.HasValue || CartType.HasValue || RomSizeCode.HasValue || RamSizeCode.HasValue || SgbFlag.HasValue || DestinationCode.HasValue || Version.HasValue;
 
     public void MergeFrom(RomHeaderOptions other, bool overwrite)
     {
         if (other == null) return;
+        if (other.HeaderLogoEnabled.HasValue && (overwrite || !this.HeaderLogoEnabled.HasValue)) this.HeaderLogoEnabled = other.HeaderLogoEnabled;
         if (other.Title != null && (overwrite || this.Title == null)) this.Title = other.Title;
         if (other.CgbFlag.HasValue && (overwrite || !this.CgbFlag.HasValue)) this.CgbFlag = other.CgbFlag;
         if (other.SgbFlag.HasValue && (overwrite || !this.SgbFlag.HasValue)) this.SgbFlag = other.SgbFlag;
@@ -36,6 +38,8 @@ public sealed class RomHeaderOptions
         string k = NormalizeKey(key);
         switch (k)
         {
+            case "header_logo":
+                return HeaderLogoEnabled.HasValue;
             case "title":
                 return Title != null;
             case "cgb":
@@ -67,6 +71,7 @@ public sealed class RomHeaderOptions
             Title = v;
             return true;
         }
+        if (k == "header_logo") return TrySetHeaderLogo(v, out err);
         if (k == "cgb") return TrySetCgb(v, out err);
         if (k == "cart") return TrySetCart(v, out err);
         if (k == "romsize") return TrySetRomSize(v, out err);
@@ -96,6 +101,7 @@ public sealed class RomHeaderOptions
         if (k.StartsWith("rom_")) k = k.Substring(4);
         if (k == "romtitle" || k == "title") return "title";
         if (k == "rom_title" || k == "romtitle" || k == "game_title") return "title";
+        if (k == "header_logo" || k == "headerlogo" || k == "logo" || k == "validation_logo") return "header_logo";
         if (k == "cgb") return "cgb";
         if (k == "cart" || k == "cartridge") return "cart";
         if (k == "romsize" || k == "rom_size") return "romsize";
@@ -202,6 +208,24 @@ public sealed class RomHeaderOptions
             return true;
         }
         err = "error: --cgb must be dmg|cgb|cgb_only";
+        return false;
+    }
+
+    public bool TrySetHeaderLogo(string s, out string err)
+    {
+        err = null;
+        s = (s ?? "").Trim().ToLowerInvariant();
+        if (s == "on" || s == "1" || s == "true" || s == "yes" || s == "default")
+        {
+            HeaderLogoEnabled = true;
+            return true;
+        }
+        if (s == "off" || s == "0" || s == "false" || s == "no" || s == "none" || s == "omit")
+        {
+            HeaderLogoEnabled = false;
+            return true;
+        }
+        err = "error: --header-logo must be on|off";
         return false;
     }
 
@@ -336,7 +360,9 @@ public sealed class RomHeaderOptions
 public static class RomHeaderPatcher
 {
     // Header offsets
+    const int OFF_LOGO = 0x0104;
     const int OFF_TITLE = 0x0134;
+    const int LEN_LOGO = 48;
     const int LEN_TITLE = 16;
     const int OFF_CGB = 0x0143;
     const int OFF_SGB = 0x0146;
@@ -347,6 +373,15 @@ public static class RomHeaderPatcher
     const int OFF_VERSION = 0x014C;
     const int OFF_HDRCHK = 0x014D;
     const int OFF_GLOBCHK = 0x014E;
+
+    // GB-compatible boot header validation bytes. They are emitted by default
+    // for hardware-compatible ROMs; use --no-header-logo or
+    // #pragma header_logo off for development outputs that should omit them.
+    internal static readonly byte[] RequiredHeaderLogoBytes = new byte[] {
+        0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
+        0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
+        0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
+    };
 
     static int? RomSizeBytesFromCode(byte code)
     {
@@ -429,6 +464,10 @@ public static class RomHeaderPatcher
         }
 
         // --- Patch header fields ---
+        if (opt.HeaderLogoEnabled.HasValue)
+        {
+            WriteHeaderLogo(rom, opt.HeaderLogoEnabled.Value);
+        }
         if (opt.Title != null)
         {
             WriteTitle(rom, opt.Title);
@@ -448,6 +487,18 @@ public static class RomHeaderPatcher
         rom[OFF_GLOBCHK + 1] = (byte)(g & 0xFF);
 
         File.WriteAllBytes(romPath, rom);
+    }
+
+    internal static void WriteHeaderLogo(byte[] rom, bool enabled)
+    {
+        if (rom == null || rom.Length < OFF_LOGO + LEN_LOGO) return;
+        if (enabled)
+        {
+            Array.Copy(RequiredHeaderLogoBytes, 0, rom, OFF_LOGO, RequiredHeaderLogoBytes.Length);
+            return;
+        }
+
+        for (int i = 0; i < LEN_LOGO; i++) rom[OFF_LOGO + i] = 0xFF;
     }
 
     static void WriteTitle(byte[] rom, string title)

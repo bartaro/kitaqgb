@@ -381,20 +381,6 @@ class Optimizer
             }
 
 
-            if (mnemonic == "LD_A_IMM" && operand.Offset == 0 && !operand.Base.HasValue)
-            {
-                optimized.Add(Expr.MakeAsm("XOR_A"));
-                continue;
-            }
-
-            if (mnemonic == "ADD_A_IMM" && operand.Offset == 1) { optimized.Add(Expr.MakeAsm("INC_A")); continue; }
-            if (mnemonic == "SUB_IMM" && operand.Offset == 1) { optimized.Add(Expr.MakeAsm("DEC_A")); continue; }
-            if ((mnemonic == "ADD_A_IMM" || mnemonic == "SUB_IMM") && operand.Mode == AddressMode.Immediate &&
-                operand.Offset == 0 && !operand.Base.HasValue)
-            {
-                continue;
-            }
-
             if (mnemonic == "LD_A_A" || mnemonic == "LD_B_B" || mnemonic == "LD_C_C" ||
                 mnemonic == "LD_D_D" || mnemonic == "LD_E_E" || mnemonic == "LD_H_H" || mnemonic == "LD_L_L")
             {

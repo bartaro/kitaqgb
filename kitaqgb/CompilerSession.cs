@@ -8,6 +8,8 @@ internal sealed class CompilerSession
     public bool EnableIncrementalCache = true;
     public bool EmitDiagJson;
     public string DiagJsonPath = "kitaqgb.diag.json";
+    public bool EmitAiMetadata;
+    public string AiMetadataPath = "";
     public bool EmitDependenciesList;
     public string DependenciesListPath = "";
     public Program.DiagnosticMode DiagnosticsMode = Program.DiagnosticMode.Permissive;
@@ -53,6 +55,7 @@ internal sealed class CompilerSession
     public Program.StackBankMode StackBank = Program.StackBankMode.WramX1;
     public int? StackTop;
     public int StackReserve;
+    public bool StackReserveSpecified;
     public int EffectiveStackTop = 0xDFFF;
     public int EffectiveStackAutoLimit = 0xDFFF;
     public Program.AbiMode Abi = Program.AbiMode.Legacy;

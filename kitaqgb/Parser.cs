@@ -1195,107 +1195,9 @@ Expr ParseDeclaration()
                             List<Expr> values = new List<Expr>();
                             if (type.IsArray)
                             {
-                                // Support: const u8 s[] = "ABC"; (string literal initializer for byte arrays)
-                                // We interpret it as an ASCII byte array with a terminating NUL.
-                                // If the array dimension is omitted ( [] ), infer it from the string length.
-                                string strInit;
-                                if (TryParseString(out strInit))
-                                {
-                                    // Only allow string init for u8 arrays (C "char" subset).
-                                    CType elem = type.Subtype;
-                                    if (!(elem.IsSimple && elem.SimpleType == CSimpleType.UInt8))
-                                        ParserError(ErrorCode.ExpectedType, "string initializer is only supported for u8 arrays");
-
-                                    // Convert to ASCII bytes + NUL.
-                                    int inferredCount = strInit.Length + 1;
-                                    for (int i = 0; i < strInit.Length; i++)
-                                    {
-                                        int c = strInit[i];
-                                        if (c > 127) ParserError(ErrorCode.ParseError, "strings can only contain ASCII characters");
-                                        values.Add(Make(Tag.Integer, c));
-                                    }
-                                    values.Add(Make(Tag.Integer, 0));
-
-                                    // If dimension is omitted ([]), infer it.
-                                    if (type.Tag == CTypeTag.ArrayWithDimensionExpression && type.DimensionExpression != null && type.DimensionExpression.Match(Tag.Empty))
-                                    {
-                                        bool wasConst = type.IsConst;
-                                        type = CType.MakeArray(elem, inferredCount);
-                                        type.IsConst = wasConst;
-                                    }
-                                    else if (type.Tag == CTypeTag.ArrayWithDimensionExpression)
-                                    {
-                                        // If a constant dimension is provided, validate it.
-                                        if (type.DimensionExpression != null && type.DimensionExpression.Match(Tag.Integer, out int declared))
-                                        {
-                                            if (declared < inferredCount)
-                                                ParserError(ErrorCode.ExpectedType, "string initializer too long for array (need {0}, declared {1})", inferredCount, declared);
-                                            // Convert to fixed-dimension array type for downstream size checks.
-                                            bool wasConst = type.IsConst;
-                                            type = CType.MakeArray(elem, declared);
-                                            type.IsConst = wasConst;
-                                        }
-                                        // Non-constant dimension expressions are not supported here.
-                                        else if (type.DimensionExpression != null && !type.DimensionExpression.Match(Tag.Empty))
-                                        {
-                                            ParserError(ErrorCode.ParseError, "array dimension must be a constant expression when using string initializer");
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                // Parse a comma separated list; a final comma is allowed, but not required.
-                                // NOTE: In normal C mode, newlines are whitespace and won't be tokenized.
-                                // However, be defensive and tolerate NEWLINE tokens here too (e.g. if
-                                // tokenization state is affected by __asm blocks in the same file).
-                                Expect(TokenType.LBRACE);
-                                while (TryParse(TokenType.NEWLINE)) { }
-
-                                if (!TryParse(TokenType.RBRACE))
-                                {
-                                    while (true)
-                                    {
-                                        while (TryParse(TokenType.NEWLINE)) { }
-                                        values.Add(ParseExpr());
-                                        while (TryParse(TokenType.NEWLINE)) { }
-
-                                        if (TryParse(TokenType.COMMA))
-                                        {
-                                            while (TryParse(TokenType.NEWLINE)) { }
-                                            // Allow trailing comma: { 1, 2, 3, }
-                                            if (TryParse(TokenType.RBRACE)) break;
-                                            continue;
-                                        }
-
-                                        while (TryParse(TokenType.NEWLINE)) { }
-                                        Expect(TokenType.RBRACE);
-                                        break;
-                                    }
-                                }
-
-                                // Numeric array initializer: infer omitted length and validate fixed literal length.
-                                if (type.Tag == CTypeTag.ArrayWithDimensionExpression && type.DimensionExpression != null && type.DimensionExpression.Match(Tag.Empty))
-                                {
-                                    if (values.Count <= 0)
-                                        ParserError(ErrorCode.ParseError, "cannot infer array size from empty initializer");
-                                    bool wasConst = type.IsConst;
-                                    type = CType.MakeArray(type.Subtype, values.Count);
-                                    type.IsConst = wasConst;
-                                }
-                                else if (type.Tag == CTypeTag.ArrayWithDimensionExpression && type.DimensionExpression != null && type.DimensionExpression.Match(Tag.Integer, out int declaredCount))
-                                {
-                                    if (declaredCount < values.Count)
-                                        ParserError(ErrorCode.ExpectedType, "too many initializers for array (got {0}, declared {1})", values.Count, declaredCount);
-
-                                    bool wasConst = type.IsConst;
-                                    type = CType.MakeArray(type.Subtype, declaredCount);
-                                    type.IsConst = wasConst;
-                                }
-                                else if (type.Tag == CTypeTag.Array && type.Dimension < values.Count)
-                                {
-                                    ParserError(ErrorCode.ExpectedType, "too many initializers for array (got {0}, declared {1})", values.Count, type.Dimension);
-                                }
-                                }
+                                // Readonly data keeps initializer groups as a tree so CodeGen can
+                                // apply final aggregate layout, padding, and endian rules.
+                                ParseReadonlyArrayInitializerInto(ref type, values, true);
                             }
                             else
                             {
@@ -1916,6 +1818,206 @@ Expr ParseDeclaration()
         return value;
     }
 
+    void SkipInitializerNewlines()
+    {
+        while (TryParse(TokenType.NEWLINE)) { }
+    }
+
+    Expr ParseReadonlyInitializerValue(ref CType type)
+    {
+        if (type != null && type.IsArray)
+        {
+            List<Expr> values = new List<Expr>();
+            ParseReadonlyArrayInitializerInto(ref type, values, false);
+            return MakeSequence(values);
+        }
+
+        if (type != null && type.IsStructOrUnion)
+            return ParseReadonlyStructOrUnionInitializerValue(type);
+
+        return ParseScalarInitializerValue();
+    }
+
+    void ParseReadonlyArrayInitializerInto(ref CType arrayType, List<Expr> values, bool requireBraces)
+    {
+        CType elemType = arrayType.Subtype ?? CType.UInt8;
+        int maxIndex = -1;
+
+        bool isUnsized;
+        int declaredLength = GetDeclaredArrayLength(arrayType, out isUnsized);
+
+        string s;
+        if (TryParseString(out s))
+        {
+            if (!(elemType.IsSimple && elemType.SimpleType == CSimpleType.UInt8))
+                ParserError(ErrorCode.ExpectedType, "string initializer is only supported for u8 arrays");
+
+            for (int i = 0; i < s.Length; i++)
+            {
+                int c = s[i];
+                if (c > 127) ParserError(ErrorCode.ParseError, "strings can only contain ASCII characters");
+                values.Add(Make(Tag.Integer, c));
+                maxIndex = i;
+            }
+
+            values.Add(Make(Tag.Integer, 0));
+            maxIndex = s.Length;
+        }
+        else
+        {
+            if (!TryParse(TokenType.LBRACE))
+            {
+                if (requireBraces)
+                    ParserError(ErrorCode.ParseError, "array initializer requires braces");
+
+                CType itemType = elemType;
+                values.Add(ParseReadonlyInitializerValue(ref itemType));
+                maxIndex = 0;
+            }
+            else
+            {
+                SkipInitializerNewlines();
+                if (!TryParse(TokenType.RBRACE))
+                {
+                    int nextIndex = 0;
+                    while (true)
+                    {
+                        SkipInitializerNewlines();
+                        CType itemType = elemType;
+                        values.Add(ParseReadonlyInitializerValue(ref itemType));
+                        maxIndex = Math.Max(maxIndex, nextIndex);
+                        nextIndex++;
+                        SkipInitializerNewlines();
+
+                        if (TryParse(TokenType.COMMA))
+                        {
+                            SkipInitializerNewlines();
+                            if (TryParse(TokenType.RBRACE)) break;
+                            continue;
+                        }
+
+                        SkipInitializerNewlines();
+                        Expect(TokenType.RBRACE);
+                        break;
+                    }
+                }
+            }
+        }
+
+        int inferredLength = Math.Max(0, maxIndex + 1);
+        if (isUnsized)
+        {
+            if (inferredLength <= 0)
+                ParserError(ErrorCode.ParseError, "cannot infer array size from empty initializer");
+            arrayType = BuildArrayTypeWithDimension(arrayType, inferredLength);
+            declaredLength = inferredLength;
+        }
+        else if (declaredLength >= 0 && inferredLength > declaredLength)
+        {
+            ParserError(ErrorCode.ExpectedType, "too many initializers for array (got {0}, declared {1})", inferredLength, declaredLength);
+        }
+    }
+
+    Expr ParseReadonlyStructOrUnionInitializerValue(CType aggType)
+    {
+        if (!TryGetAggregateDecl(aggType, out AggregateDeclInfo info) || info.Fields == null || info.Fields.Length == 0)
+            ParserError(ErrorCode.IncompleteType, "initializer requires a complete struct/union type: {0}", aggType.Show());
+
+        Expr[] fieldValues = new Expr[info.Fields.Length];
+        for (int i = 0; i < fieldValues.Length; i++) fieldValues[i] = Make(Tag.Empty);
+
+        int nextField = 0;
+        int unionCount = 0;
+
+        bool hasBrace = TryParse(TokenType.LBRACE);
+        if (hasBrace)
+        {
+            SkipInitializerNewlines();
+            if (!TryParse(TokenType.RBRACE))
+            {
+                while (true)
+                {
+                    SkipInitializerNewlines();
+                    int fieldIndex;
+                    FieldInfo field;
+
+                    if (TryParse(TokenType.PERIOD))
+                    {
+                        string fieldName = ExpectAnyName();
+                        if (!TryFindField(info.Fields, fieldName, out field, out fieldIndex))
+                            ParserError(ErrorCode.ParseError, "unknown field in designated initializer: {0}", fieldName);
+                        Expect(TokenType.EQUAL);
+                    }
+                    else
+                    {
+                        if (info.IsUnion)
+                        {
+                            if (unionCount > 0) ParserError(ErrorCode.ParseError, "too many initializers for union");
+                            fieldIndex = 0;
+                        }
+                        else
+                        {
+                            fieldIndex = nextField;
+                            if (fieldIndex >= info.Fields.Length)
+                                ParserError(ErrorCode.ParseError, "too many initializers for struct");
+                        }
+                        field = info.Fields[fieldIndex];
+                    }
+
+                    CType initType = field.Type;
+                    fieldValues[fieldIndex] = ParseReadonlyInitializerValue(ref initType);
+
+                    if (info.IsUnion)
+                    {
+                        unionCount++;
+                        if (unionCount > 1) ParserError(ErrorCode.ParseError, "too many initializers for union");
+                    }
+                    else
+                    {
+                        nextField = Math.Max(nextField, fieldIndex + 1);
+                    }
+
+                    SkipInitializerNewlines();
+                    if (TryParse(TokenType.COMMA))
+                    {
+                        SkipInitializerNewlines();
+                        if (TryParse(TokenType.RBRACE)) break;
+                        continue;
+                    }
+
+                    SkipInitializerNewlines();
+                    Expect(TokenType.RBRACE);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            int fieldIndex;
+            FieldInfo field;
+
+            if (TryParse(TokenType.PERIOD))
+            {
+                string fieldName = ExpectAnyName();
+                if (!TryFindField(info.Fields, fieldName, out field, out fieldIndex))
+                    ParserError(ErrorCode.ParseError, "unknown field in designated initializer: {0}", fieldName);
+                Expect(TokenType.EQUAL);
+            }
+            else
+            {
+                fieldIndex = 0;
+                field = info.Fields[0];
+            }
+
+            CType initType = field.Type;
+            fieldValues[fieldIndex] = ParseReadonlyInitializerValue(ref initType);
+            if (info.IsUnion) unionCount = 1;
+            else nextField = Math.Max(nextField, fieldIndex + 1);
+        }
+
+        return MakeSequence(fieldValues);
+    }
+
     void ParseLocalArrayInitializerInto(ref CType arrayType, Expr target, List<Expr> outStmts)
     {
         CType elemType = arrayType.Subtype ?? CType.UInt8;
@@ -2073,6 +2175,13 @@ Expr ParseDeclaration()
         }
         else
         {
+            if (PeekToken().Tag == TokenType.NAME && PeekToken(1).Tag == TokenType.LPAREN)
+            {
+                Expr value = ParseExpr();
+                outStmts.Add(Make(Tag.Assign, target, value));
+                return;
+            }
+
             // Brace elision: initialize first field, or designated path.
             Expr dst;
             CType dstType;

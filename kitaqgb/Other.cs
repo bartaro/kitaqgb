@@ -49,6 +49,8 @@ class CFunctionInfo
     public FieldInfo[] Parameters;
     public Symbol[] ParameterSymbols;
     public CType ReturnType;
+    public Symbol ReturnSymbol;
+    public Symbol ReturnPointerSymbol;
     public bool IsFastCall;
     public bool IsStackCall;
     public bool IsPrototype;

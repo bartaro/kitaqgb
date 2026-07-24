@@ -5,7 +5,7 @@ using System.Text;
 
 static class Disassembler
 {
-    // Game Boy ROM banks are 16KB.
+    // GB-compatible ROM banks are 16KB.
     const int BankSize = 0x4000;
     static readonly string[] CbRegs = new string[] { "B", "C", "D", "E", "H", "L", "[HL]", "A" };
 
@@ -47,7 +47,7 @@ static class Disassembler
         // UTF-8 without BOM, so it's diff-friendly.
         using (var sw = new StreamWriter(outPath, false, new UTF8Encoding(false)))
         {
-            sw.WriteLine("; Game Boy ROM Disassembly (full) ");
+            sw.WriteLine("; GB-compatible ROM Disassembly (full) ");
             sw.WriteLine("; File: " + Path.GetFileName(programPath));
             sw.WriteLine("; ROM size: " + rom.Length + " bytes (" + (rom.Length / 1024) + " KB)");
             sw.WriteLine();

@@ -2070,10 +2070,11 @@ class Tokenizer
     bool TryReadPragmaRomHeader(out string key, out string value)
     {
         // Called immediately after reading '#'. Parses:
-        // #pragma rom_title "TETRIS"
+        // #pragma rom_title "MYGAME"
         // #pragma cgb cgb_only
         // #pragma cart mbc5
         // #pragma romsize 256k
+        // #pragma header_logo off
         // etc.
         key = null;
         value = null;
@@ -2158,10 +2159,12 @@ class Tokenizer
             value = vsb.ToString();
         }
 
-        // Only accept rom_* pragmas + cart/cgb/romsize/ramsize/sgb/dest/version.
+        // Only accept rom_* pragmas + cart/cgb/romsize/ramsize/sgb/dest/version/header_logo.
         // Others return false so the existing warning path triggers.
         string k = key.Trim();
         if (k.StartsWith("rom_", StringComparison.OrdinalIgnoreCase) ||
+            k.Equals("header_logo", StringComparison.OrdinalIgnoreCase) ||
+            k.Equals("headerlogo", StringComparison.OrdinalIgnoreCase) ||
             k.Equals("cart", StringComparison.OrdinalIgnoreCase) ||
             k.Equals("cgb", StringComparison.OrdinalIgnoreCase) ||
             k.Equals("romsize", StringComparison.OrdinalIgnoreCase) ||

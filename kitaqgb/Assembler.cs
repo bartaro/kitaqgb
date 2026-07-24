@@ -151,12 +151,6 @@ class Assembler
         if (!IsBankBoundarySkip(skipTarget)) return false;
         return pc >= skipTarget;
     }
-    static readonly byte[] NintendoLogo = new byte[] {
-        0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0C, 0x00, 0x0D,
-        0x00, 0x08, 0x11, 0x1F, 0x88, 0x89, 0x00, 0x0E, 0xDC, 0xCC, 0x6E, 0xE6, 0xDD, 0xDD, 0xD9, 0x99,
-        0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
-    };
-
     public static string Assemble(IReadOnlyList<Expr> assembly, string outputFilename)
     {
         Assembler assembler = new Assembler();
@@ -178,6 +172,7 @@ class Assembler
         // This is intentionally conservative: we keep $skip_to/$align in-place (they remain in the default section)
         // so bank layout barriers aren't reordered.
         var sectionedAssembly = ReorderSections(relaxedAssembly);
+        sectionedAssembly = InsertAutoBankBoundarySkips(sectionedAssembly);
         if (Program.EnableDebugOutput)
             Program.WritePassOutputToFile("assembly_sectioned", Program.ShowAssemblyPublic(sectionedAssembly));
 
@@ -310,7 +305,7 @@ class Assembler
         rom[0x103] = 0x01;
 
         // Header
-        Array.Copy(NintendoLogo, 0, rom, 0x104, NintendoLogo.Length);
+        RomHeaderPatcher.WriteHeaderLogo(rom, Program.ShouldEmitHeaderLogo());
         byte[] titleBytes = Encoding.ASCII.GetBytes("KITAQGB");
         for (int i = 0; i < 16; i++) rom[0x134 + i] = (i < titleBytes.Length) ? titleBytes[i] : (byte)0;
         rom[0x143] = 0x00;
@@ -370,7 +365,7 @@ class Assembler
         rom[0x15F] = 0xFE; // -2
 
         int pc = CodeStart;
-        // Bank size is 16KB on Game Boy. We emit a simple per-bank size report.
+        // Bank size is 16KB on the GB-compatible target. We emit a simple per-bank size report.
         int[] bankMaxPc = new int[(romSize + BankSize - 1) / BankSize];
         var functionSizes = new List<FunctionSizeInfo>();
         var symbolMetadata = new List<SymbolMetadataInfo>();
@@ -485,7 +480,6 @@ class Assembler
                 if (pc + rdBytes.Length <= rom.Length) Array.Copy(rdBytes, 0, rom, pc, rdBytes.Length);
                 else Program.Error("Not enough ROM space for data: " + rdName);
                 pc += rdBytes.Length;
-                if (!string.IsNullOrEmpty(currentFunctionName)) currentFunctionBytes += rdBytes.Length;
                 UpdateBankMax(pc);
                 continue;
             }
@@ -989,6 +983,158 @@ class Assembler
         }
 
         return maxPc;
+    }
+
+    static IReadOnlyList<Expr> InsertAutoBankBoundarySkips(IReadOnlyList<Expr> assembly)
+    {
+        if (assembly == null || assembly.Count == 0) return assembly;
+
+        var functionSizes = EstimateFunctionBodySizes(assembly);
+        var output = new List<Expr>(assembly.Count + 16);
+        int pc = CodeStart;
+
+        void PadToNextBankIfNeeded(int size, Expr origin)
+        {
+            if (size <= 0) return;
+            if (size > BankSize)
+            {
+                Program.Error("assembler: object too large for one ROM bank ({0} bytes)", size);
+                return;
+            }
+            int off = pc & (BankSize - 1);
+            if (off == 0 || off + size <= BankSize) return;
+            int next = RoundUp(pc, BankSize);
+            output.Add(Expr.Make(Tag.SkipTo, next).WithSource(origin.Source));
+            pc = next;
+        }
+
+        foreach (Expr e in assembly)
+        {
+            string rdName; byte[] rdBytes;
+            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            {
+                PadToNextBankIfNeeded(rdBytes == null ? 0 : rdBytes.Length, e);
+                output.Add(e);
+                pc += rdBytes == null ? 0 : rdBytes.Length;
+                continue;
+            }
+
+            string label;
+            if (e.Match(Tag.Function, out label))
+            {
+                int size;
+                if (label != null && functionSizes.TryGetValue(label, out size))
+                    PadToNextBankIfNeeded(size, e);
+                output.Add(e);
+                continue;
+            }
+
+            int skipTarget;
+            if (e.Match(Tag.SkipTo, out skipTarget))
+            {
+                output.Add(e);
+                if (skipTarget == 0)
+                {
+                    if (pc < CodeStart) pc = CodeStart;
+                }
+                else if (skipTarget < pc && ShouldIgnoreBackwardBankBoundarySkip(pc, skipTarget))
+                {
+                    // Keep the marker for trace/debug parity, but do not move PC back.
+                }
+                else
+                {
+                    pc = skipTarget;
+                }
+                continue;
+            }
+
+            if (e.Match(Tag.Align, out int alignBytes))
+            {
+                output.Add(e);
+                if (alignBytes > 0)
+                    pc = (pc + (alignBytes - 1)) & ~(alignBytes - 1);
+                continue;
+            }
+
+            if (e.MatchTag(Tag.Word))
+            {
+                output.Add(e);
+                pc += 2;
+                continue;
+            }
+
+            string mnemonic;
+            AsmOperand operand;
+            if (e.Match(Tag.Asm, out mnemonic, out operand))
+            {
+                output.Add(e);
+                pc += GetAsmSizeForLayout(mnemonic, operand);
+                continue;
+            }
+
+            output.Add(e);
+        }
+
+        return output;
+    }
+
+    static Dictionary<string, int> EstimateFunctionBodySizes(IReadOnlyList<Expr> assembly)
+    {
+        var sizes = new Dictionary<string, int>(StringComparer.Ordinal);
+        string current = null;
+        int bytes = 0;
+
+        void Finish()
+        {
+            if (string.IsNullOrEmpty(current)) return;
+            sizes[current] = bytes;
+            current = null;
+            bytes = 0;
+        }
+
+        foreach (Expr e in assembly)
+        {
+            string label;
+            if (e.Match(Tag.Function, out label))
+            {
+                Finish();
+                current = label;
+                bytes = 0;
+                continue;
+            }
+
+            if (e.Match(Tag.SkipTo, out int _))
+            {
+                Finish();
+                continue;
+            }
+
+            if (string.IsNullOrEmpty(current)) continue;
+
+            string rdName; byte[] rdBytes;
+            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            {
+                bytes += rdBytes == null ? 0 : rdBytes.Length;
+                continue;
+            }
+
+            if (e.MatchTag(Tag.Word))
+            {
+                bytes += 2;
+                continue;
+            }
+
+            string mnemonic;
+            AsmOperand operand;
+            if (e.Match(Tag.Asm, out mnemonic, out operand))
+            {
+                bytes += GetAsmSizeForLayout(mnemonic, operand);
+                continue;
+            }
+        }
+
+        Finish();
+        return sizes;
     }
 
     // Jump relaxation

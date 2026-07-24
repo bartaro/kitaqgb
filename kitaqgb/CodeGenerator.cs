@@ -51,6 +51,7 @@ class CodeGenerator
     }
 
     readonly Dictionary<string, CallEdgeInfo> CallReportMap = new Dictionary<string, CallEdgeInfo>(StringComparer.Ordinal);
+    readonly List<AggregateCopyInfo> AggregateCopyReport = new List<AggregateCopyInfo>();
     readonly List<RstSelectionInfo> RstSelections = new List<RstSelectionInfo>();
     readonly List<string> AbiIssues = new List<string>();
     int CgbRuntimeCheckCount = 0;
@@ -61,11 +62,14 @@ class CodeGenerator
 
     Stack<OutputTransaction> OutputStack = new Stack<OutputTransaction>();
     Stack<AsmOperand> InlineReturnLabels = new Stack<AsmOperand>();
+    Stack<int> InlineStructReturnDestAddrs = new Stack<int>();
+    Stack<int> StructReturnDestinationOverrideAddrs = new Stack<int>();
 
     // Tracks return-width of the most recently compiled call expression.
     // Needed for intrinsics returning u16 in HL (e.g. __readpadex), where
     // some compilation paths can mis-infer the semantic return type.
     bool LastCallReturnsHL = false;
+    int LastStructReturnAddress = -1;
     
     // v9 __settile call-core injection flags
     bool UsedSetTileCore = false;
@@ -97,7 +101,7 @@ class CodeGenerator
     AllocationRegion HramRegion = new AllocationRegion("HRAM", 0xFF80, 0xFFFE);
     AllocationRegion Wram0Region = new AllocationRegion("WRAM0", 0xC000, 0xCFFF);
     AllocationRegion Wram1Region = new AllocationRegion("WRAM1", 0xD000, 0xDFFF);
-    AllocationRegion OamRegion = new AllocationRegion("OAM", 0xFE00, 0xFEA0);
+    AllocationRegion OamRegion = new AllocationRegion("OAM", 0xFE00, 0xFE9F);
     readonly AllocationRegion[] WramXBankRegions = new AllocationRegion[8];
 
     // ====== Function-frame allocation safety (A4 ABI stability) ======
@@ -165,6 +169,8 @@ class CodeGenerator
     // farcall support
     AsmOperand RomBankVar;
     AsmOperand RomBankSavedVar;
+    AsmOperand StructReturnPtrLoVar;
+    AsmOperand StructReturnPtrHiVar;
     bool UseBankSwitchBank0Helper;
     bool UseFarMemcpyBank0Helper;
     readonly Dictionary<string, BankThunkInfo> Bank0ThunkMap = new Dictionary<string, BankThunkInfo>();
@@ -173,6 +179,7 @@ class CodeGenerator
     const int BankThunkDepthEncodedBase = 0x80;
     const int BankThunkDepthEncodedLimit = BankThunkDepthEncodedBase + BankThunkStackDepth;
     int RomBankSavedAddr = -1;
+    int StructReturnPtrAddr = -1;
     int BankThunkSpAddr = -1;
     int BankThunkBankBaseAddr = -1;
     int BankThunkRetLoBaseAddr = -1;
@@ -207,7 +214,8 @@ class CodeGenerator
     const int ScrollSplitFlagUseWin = 0x02;
     const int ScrollSplitFlagWinShow = 0x04;
     const int ScrollSplitFlagWinHide = 0x08;
-    const int ScrollSplitFlagMask = 0x0F;
+    const int ScrollSplitFlagBgColor0 = 0x10;
+    const int ScrollSplitFlagMask = 0x1F;
     const int ScrollSplitMaxEntries = 8;
     const int ScrollSplitEntrySize = 6;
 
@@ -554,6 +562,14 @@ class CodeGenerator
             .ThenBy(x => x.Kind, StringComparer.Ordinal))
         {
             report.Calls.Add(call);
+        }
+
+        foreach (var copy in AggregateCopyReport
+            .OrderBy(x => x.Function, StringComparer.Ordinal)
+            .ThenBy(x => x.Source, StringComparer.Ordinal)
+            .ThenBy(x => x.Type, StringComparer.Ordinal))
+        {
+            report.AggregateCopies.Add(copy);
         }
 
         foreach (var rst in RstSelections.OrderBy(x => x.Vector))
@@ -1042,7 +1058,7 @@ class CodeGenerator
 
     AsmOperand AllocateScrollByte(string name)
     {
-        int address = Allocate(Wram0Region, 1);
+        int address = Allocate(Wram1Region, 1);
         Emit(Tag.Variable, name, address, 1);
         return MemOp(address, name);
     }
@@ -1073,7 +1089,7 @@ class CodeGenerator
         ScrollSplitTmpFlagsVar = AllocateScrollByte("__kq_scroll_split_tmp_flags");
 
         int tableBytes = ScrollSplitMaxEntries * ScrollSplitEntrySize;
-        ScrollSplitTableAddr = Allocate(Wram0Region, tableBytes);
+        ScrollSplitTableAddr = Allocate(Wram1Region, tableBytes);
         Emit(Tag.Variable, "__kq_scroll_split_table", ScrollSplitTableAddr, tableBytes);
     }
 
@@ -1185,6 +1201,7 @@ class CodeGenerator
         string applySkipBg = "__kq_scroll_apply_entry_skip_bg";
         string applySkipWin = "__kq_scroll_apply_entry_skip_win";
         string applySkipHide = "__kq_scroll_apply_entry_skip_hide";
+        string applySkipBgColor0 = "__kq_scroll_apply_entry_skip_bg_color0";
         string applyDone = "__kq_scroll_apply_entry_done";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_apply_entry"));
         injected.Add(Expr.MakeAsm("INC_HL")); // scx
@@ -1228,10 +1245,20 @@ class CodeGenerator
         injected.Add(Expr.Make(Tag.Label, applySkipHide));
         injected.Add(Expr.MakeAsm("LD_A_H"));
         injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(ScrollSplitFlagWinShow, AddressMode.Immediate)));
-        injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(applyDone, AddressMode.Absolute)));
+        injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(applySkipBgColor0, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x40, AddressMode.HighMem))); // LCDC
         injected.Add(Expr.MakeAsm("OR_IMM", new AsmOperand(0x20, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x40, AddressMode.HighMem)));
+        injected.Add(Expr.Make(Tag.Label, applySkipBgColor0));
+        injected.Add(Expr.MakeAsm("LD_A_H"));
+        injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(ScrollSplitFlagBgColor0, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(applyDone, AddressMode.Absolute)));
+        injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(0x80, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x68, AddressMode.HighMem))); // BCPS: palette 0, color 0, auto increment
+        injected.Add(Expr.MakeAsm("LD_A_B"));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x69, AddressMode.HighMem))); // BCPD low
+        injected.Add(Expr.MakeAsm("LD_A_C"));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x69, AddressMode.HighMem))); // BCPD high
         injected.Add(Expr.Make(Tag.Label, applyDone));
         injected.Add(Expr.MakeAsm("RET"));
 
@@ -1268,6 +1295,10 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("PUSH_BC"));
         injected.Add(Expr.MakeAsm("PUSH_DE"));
         injected.Add(Expr.MakeAsm("PUSH_HL"));
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x70, AddressMode.HighMem))); // SVBK
+        injected.Add(Expr.MakeAsm("PUSH_AF"));
+        injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x70, AddressMode.HighMem)));
         injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LD_MEM_A", new AsmOperand(0xC29C, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollBgXCurVar));
@@ -1308,6 +1339,8 @@ class CodeGenerator
         injected.Add(Expr.Make(Tag.Label, vbDisable));
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_schedule_next", AddressMode.Absolute)));
         injected.Add(Expr.Make(Tag.Label, vbDone));
+        injected.Add(Expr.MakeAsm("POP_AF"));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x70, AddressMode.HighMem))); // restore SVBK
         injected.Add(Expr.MakeAsm("POP_HL"));
         injected.Add(Expr.MakeAsm("POP_DE"));
         injected.Add(Expr.MakeAsm("POP_BC"));
@@ -1321,6 +1354,10 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("PUSH_BC"));
         injected.Add(Expr.MakeAsm("PUSH_DE"));
         injected.Add(Expr.MakeAsm("PUSH_HL"));
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x70, AddressMode.HighMem))); // SVBK
+        injected.Add(Expr.MakeAsm("PUSH_AF"));
+        injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x70, AddressMode.HighMem)));
         injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollSplitEnabledVar));
         injected.Add(Expr.MakeAsm("OR_A"));
         injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(statDisable, AddressMode.Absolute)));
@@ -1341,7 +1378,7 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LD_DE_IMM", new AsmOperand(ScrollSplitTableAddr, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("ADD_HL_DE"));
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_apply_entry", AddressMode.Absolute)));
-        injected.Add(Expr.MakeAsm("LD_A_B"));
+        injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollSplitIndexVar));
         injected.Add(Expr.MakeAsm("INC_A"));
         injected.Add(Expr.MakeAsm("LD_MEM_A", ScrollSplitIndexVar));
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_schedule_next", AddressMode.Absolute)));
@@ -1351,6 +1388,8 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0xBF, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x41, AddressMode.HighMem)));
         injected.Add(Expr.Make(Tag.Label, statDone));
+        injected.Add(Expr.MakeAsm("POP_AF"));
+        injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x70, AddressMode.HighMem))); // restore SVBK
         injected.Add(Expr.MakeAsm("POP_HL"));
         injected.Add(Expr.MakeAsm("POP_DE"));
         injected.Add(Expr.MakeAsm("POP_BC"));
@@ -3728,6 +3767,13 @@ class CodeGenerator
     // Compute lvalue address into HL for Name / *ptr / arr[idx] / field (including nested fields).
     bool TryCompileLValueAddressIntoHL(Expr lvalue, bool forStore)
     {
+        if (!forStore)
+        {
+            CType _sretType;
+            if (TryCompileStructReturnCallAddressIntoHL(lvalue, out _sretType))
+                return true;
+        }
+
         if (lvalue.Match(Tag.Name, out string name))
         {
             Symbol sym = FindSymbol(lvalue, name);
@@ -3811,6 +3857,476 @@ class CodeGenerator
         }
 
         return false;
+    }
+
+    bool IsSameCompleteAggregateType(CType leftType, CType rightType)
+    {
+        if (leftType == null || rightType == null) return false;
+        CType l = leftType.WithoutConst();
+        CType r = rightType.WithoutConst();
+        if (!l.IsStructOrUnion || !r.IsStructOrUnion) return false;
+        if (l.Tag != r.Tag || l.Name != r.Name) return false;
+        AggregateInfo ai;
+        return AggregateTypes.TryGetValue(l.Name, out ai) && ai.TotalSize >= 0;
+    }
+
+    bool IsSpecialImplicitCopyAddress(int address, int size, out string region)
+    {
+        region = null;
+        int start = address & 0xFFFF;
+        int end = (start + Math.Max(1, size) - 1) & 0xFFFF;
+
+        Func<int, int, int, bool> overlaps = (lo, hi, point) => point >= lo && point <= hi;
+        bool rangeWraps = end < start;
+        Func<int, int, bool> rangeOverlaps = (lo, hi) =>
+            rangeWraps || overlaps(lo, hi, start) || overlaps(lo, hi, end) || (start <= lo && end >= hi);
+
+        if (rangeOverlaps(0x0000, 0x7FFF)) { region = "ROM"; return true; }
+        if (rangeOverlaps(0x8000, 0x9FFF)) { region = "VRAM"; return true; }
+        if (rangeOverlaps(0xFE00, 0xFE9F)) { region = "OAM"; return true; }
+        if (rangeOverlaps(0xFF00, 0xFF7F)) { region = "IO"; return true; }
+        return false;
+    }
+
+    bool TryGetConstantAddress(Expr expr, out int address)
+    {
+        address = 0;
+        Expr e = StripCasts(expr);
+        if (e.Match(Tag.Integer, out address)) return true;
+        if (e.Match(Tag.AddressOf, out Expr sub) && sub.Match(Tag.Name, out string name) && TryFindSymbol(name, out Symbol sym))
+        {
+            if (sym.Tag == SymbolTag.Global || sym.Tag == SymbolTag.Local || sym.Tag == SymbolTag.ReadonlyData)
+            {
+                address = sym.Value;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool IsImplicitAggregateCopyStorageAllowed(Expr lvalue, bool destination, int size, out string reason)
+    {
+        reason = null;
+        Expr e = StripCasts(lvalue);
+
+        if (!destination && TryGetStructReturnCallType(e, out CType _sretType, out CFunctionInfo sretInfo, out string sretName))
+        {
+            if (sretInfo != null)
+            {
+                Symbol retSym = EnsureStructReturnSlot(e, sretInfo, sretName, sretInfo.ReturnType);
+                string retRegion = null;
+                if (retSym == null || IsSpecialImplicitCopyAddress(retSym.Value, size, out retRegion))
+                {
+                    reason = "implicit struct/union copy from struct return storage in " + (retRegion ?? "unknown memory") + " is not supported";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        if (e.Match(Tag.Name, out string name))
+        {
+            if (!TryFindSymbol(name, out Symbol sym))
+            {
+                reason = "unknown aggregate object: " + name;
+                return false;
+            }
+
+            if (sym.Tag == SymbolTag.ReadonlyData)
+            {
+                reason = "implicit struct/union copy " + (destination ? "to" : "from") + " readonly ROM data is not supported; use an explicit copy routine";
+                return false;
+            }
+            if (sym.Tag == SymbolTag.Constant)
+            {
+                reason = "implicit struct/union copy " + (destination ? "to" : "from") + " a constant is not supported";
+                return false;
+            }
+            if (sym.Tag == SymbolTag.Global && sym.WramBank > 1)
+            {
+                reason = "implicit struct/union copy " + (destination ? "to" : "from") + " WRAMX bank " + sym.WramBank + " is not supported; switch SVBK and copy explicitly";
+                return false;
+            }
+            if (sym.Tag == SymbolTag.Global || sym.Tag == SymbolTag.Local)
+            {
+                string region;
+                if (IsSpecialImplicitCopyAddress(sym.Value, size, out region))
+                {
+                    reason = "implicit struct/union copy " + (destination ? "to" : "from") + " " + region + " is not supported; use the explicit hardware/far copy API";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        if (e.Match(Tag.Field, out Expr baseExpr, out string _fieldName))
+            return IsImplicitAggregateCopyStorageAllowed(baseExpr, destination, size, out reason);
+
+        if (e.Match(Tag.Index, out Expr arrExpr, out Expr _idxExpr))
+            return IsImplicitAggregateCopyStorageAllowed(arrExpr, destination, size, out reason);
+
+        if (e.Match(Tag.Load, out Expr ptrExpr))
+        {
+            if (TryGetConstantAddress(ptrExpr, out int addr))
+            {
+                string region;
+                if (IsSpecialImplicitCopyAddress(addr, size, out region))
+                {
+                    reason = "implicit struct/union copy " + (destination ? "to" : "from") + " " + region + " is not supported; use the explicit hardware/far copy API";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        reason = "struct/union copy requires an addressable " + (destination ? "destination" : "source");
+        return false;
+    }
+
+    string AggregateCopyStrategy(int size)
+    {
+        if (size <= 2) return "scalar";
+        if (size <= 16) return "unrolled";
+        if (size <= 255) return "__memcpy_small";
+        return "__memcpy";
+    }
+
+    const int StructValueArgumentWarningThreshold = 16;
+
+    void RecordAggregateCopy(Expr origin, CType type, int size, string strategy)
+    {
+        AggregateCopyReport.Add(new AggregateCopyInfo
+        {
+            Function = string.IsNullOrEmpty(CurrentFunctionName) ? "<global>" : CurrentFunctionName,
+            Type = type == null ? "<unknown>" : type.WithoutConst().Show(),
+            SizeBytes = size,
+            Strategy = strategy,
+            Source = origin == null ? "" : origin.Source.ToString()
+        });
+    }
+
+    void EmitAggregateCopy(Expr origin, Expr dst, Expr src, CType aggregateType, int size)
+    {
+        string strategy = AggregateCopyStrategy(size);
+        RecordAggregateCopy(origin, aggregateType, size, strategy);
+        EmitComment("kitaqgb.struct_copy type={0} size={1} strategy={2}",
+            aggregateType == null ? "<unknown>" : aggregateType.WithoutConst().Show(),
+            size,
+            strategy);
+
+        if (size <= 0) return;
+
+        if (!TryCompileAggregateSourceAddressIntoHL(src, aggregateType))
+        {
+            Error(src, ErrorCode.ParseError, "struct/union copy source is not addressable");
+            return;
+        }
+        EmitAsm("PUSH_HL");
+        if (!TryCompileLValueAddressIntoHL(dst, true))
+        {
+            EmitAsm("POP_DE");
+            Error(dst, ErrorCode.ParseError, "struct/union copy destination is not addressable");
+            return;
+        }
+        EmitAsm("POP_DE");
+        EmitCopyBytesFromDEToHL(size);
+    }
+
+    void EmitCopyBytesFromDEToHL(int size)
+    {
+        if (size <= 0) return;
+
+        if (size > 16 && size <= 255)
+        {
+            int blockSize = size <= 64 ? 8 : 16;
+            int blocks = size / blockSize;
+            int rem = size % blockSize;
+            if (blocks > 0)
+            {
+                EmitAsm("LD_B_IMM", new AsmOperand(blocks, AddressMode.Immediate));
+                AsmOperand loop = MakeUniqueLabel("aggcpy_loop");
+                EmitLabel(loop);
+                for (int i = 0; i < blockSize; i++)
+                {
+                    EmitAsm("LD_A_DE");
+                    EmitAsm("LDI_HL_A");
+                    EmitAsm("INC_DE");
+                }
+                EmitAsm("DEC_B");
+                EmitAsm("JP_NZ", loop);
+            }
+            for (int i = 0; i < rem; i++)
+            {
+                EmitAsm("LD_A_DE");
+                EmitAsm("LDI_HL_A");
+                if (i != rem - 1) EmitAsm("INC_DE");
+            }
+            return;
+        }
+
+        if (size > 255)
+        {
+            EmitAsm("LD_BC_IMM", new AsmOperand(size & 0xFFFF, AddressMode.Immediate16));
+            AsmOperand loop = MakeUniqueLabel("aggcpy16_loop");
+            EmitLabel(loop);
+            EmitAsm("LD_A_DE");
+            EmitAsm("LDI_HL_A");
+            EmitAsm("INC_DE");
+            EmitAsm("DEC_BC");
+            EmitAsm("LD_A_B");
+            EmitAsm("OR_C");
+            EmitAsm("JP_NZ", loop);
+            return;
+        }
+
+        for (int i = 0; i < size; i++)
+        {
+            EmitAsm("LD_A_DE");
+            EmitAsm("LDI_HL_A");
+            if (i != size - 1) EmitAsm("INC_DE");
+        }
+    }
+
+    Maybe<FilePosition> BestDiagnosticPosition(Expr primary, Expr fallback)
+    {
+        FilePosition pos = primary == null ? FilePosition.Unknown : primary.Source;
+        if (string.IsNullOrEmpty(pos.Filename) || pos.Filename == "<unknown>")
+            pos = fallback == null ? FilePosition.Unknown : fallback.Source;
+        if (string.IsNullOrEmpty(pos.Filename) || pos.Filename == "<unknown>")
+            return Maybe.Nothing;
+        return Maybe.Just(pos);
+    }
+
+    void WarnStructValueArgumentIfNeeded(Expr origin, Expr argExpr, string funcName, int argIndex, CType aggregateType, int size)
+    {
+        if (size <= StructValueArgumentWarningThreshold) return;
+        Program.Warning(BestDiagnosticPosition(origin, argExpr), ErrorCode.LargeStructCopy,
+            "struct value argument copy of {0} bytes when calling {1} argument {2}; prefer pointer passing for large aggregates",
+            size,
+            string.IsNullOrEmpty(funcName) ? "<call>" : funcName,
+            argIndex);
+    }
+
+    bool ValidateAggregateArgument(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType)
+    {
+        CType argType = TypeOf(argExpr);
+        bool paramAgg = paramType != null && paramType.WithoutConst().IsStructOrUnion;
+        bool argAgg = argType != null && argType.WithoutConst().IsStructOrUnion;
+        if (!paramAgg && !argAgg) return true;
+
+        if (!IsSameCompleteAggregateType(paramType, argType))
+        {
+            Error(callExpr, ErrorCode.ParseError,
+                "incompatible struct/union value argument {0} to {1}: expected {2}, got {3}",
+                argIndex,
+                string.IsNullOrEmpty(funcName) ? "<call>" : funcName,
+                paramType == null ? "<unknown>" : paramType.Show(),
+                argType == null ? "<unknown>" : argType.Show());
+            return false;
+        }
+        return true;
+    }
+
+    void EmitAggregateArgumentCopyToFixedAddress(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int dstAddr, string dstName)
+    {
+        int size = SizeOf(callExpr, paramType);
+        WarnStructValueArgumentIfNeeded(callExpr, argExpr, funcName, argIndex, paramType, size);
+
+        string reason;
+        if (!IsImplicitAggregateCopyStorageAllowed(argExpr, false, size, out reason))
+        {
+            Error(argExpr, ErrorCode.ParseError, reason);
+            return;
+        }
+
+        string dstRegion;
+        if (IsSpecialImplicitCopyAddress(dstAddr, size, out dstRegion))
+        {
+            Error(callExpr, ErrorCode.ParseError,
+                "implicit struct/union value argument copy to {0} is not supported", dstRegion);
+            return;
+        }
+
+        string strategy = AggregateCopyStrategy(size);
+        RecordAggregateCopy(callExpr, paramType, size, strategy);
+        EmitComment("kitaqgb.struct_value_arg callee={0} arg={1} type={2} size={3} strategy={4}",
+            string.IsNullOrEmpty(funcName) ? "<call>" : funcName,
+            argIndex,
+            paramType == null ? "<unknown>" : paramType.WithoutConst().Show(),
+            size,
+            strategy);
+
+        if (!TryCompileAggregateSourceAddressIntoHL(argExpr, paramType))
+        {
+            Error(argExpr, ErrorCode.ParseError, "struct/union value argument source is not addressable");
+            return;
+        }
+
+        EmitAsm("PUSH_HL");
+        EmitAsm("LD_HL_IMM", new AsmOperand(dstAddr, AddressMode.Immediate16));
+        EmitAsm("POP_DE");
+        EmitCopyBytesFromDEToHL(size);
+    }
+
+    void EmitAggregateArgumentCopyToStackOffset(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int stackOffset)
+    {
+        int size = SizeOf(callExpr, paramType);
+        WarnStructValueArgumentIfNeeded(callExpr, argExpr, funcName, argIndex, paramType, size);
+
+        string reason;
+        if (!IsImplicitAggregateCopyStorageAllowed(argExpr, false, size, out reason))
+        {
+            Error(argExpr, ErrorCode.ParseError, reason);
+            return;
+        }
+
+        string strategy = AggregateCopyStrategy(size);
+        RecordAggregateCopy(callExpr, paramType, size, strategy);
+        EmitComment("kitaqgb.struct_value_arg callee={0} arg={1} type={2} size={3} strategy={4} stack_off={5}",
+            string.IsNullOrEmpty(funcName) ? "<call>" : funcName,
+            argIndex,
+            paramType == null ? "<unknown>" : paramType.WithoutConst().Show(),
+            size,
+            strategy,
+            stackOffset);
+
+        if (!TryCompileAggregateSourceAddressIntoHL(argExpr, paramType))
+        {
+            Error(argExpr, ErrorCode.ParseError, "struct/union value argument source is not addressable");
+            return;
+        }
+
+        EmitAsm("LD_D_H");
+        EmitAsm("LD_E_L");
+        EmitAsm("LD_HL_SP_IMM", new AsmOperand(stackOffset, AddressMode.Relative));
+        EmitCopyBytesFromDEToHL(size);
+    }
+
+    void EmitStoreArgumentToFixedAddress(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int dstAddr, string dstName)
+    {
+        CType argType = TypeOf(argExpr);
+        bool involvesAggregate =
+            (paramType != null && paramType.WithoutConst().IsStructOrUnion) ||
+            (argType != null && argType.WithoutConst().IsStructOrUnion);
+        if (involvesAggregate)
+        {
+            if (ValidateAggregateArgument(callExpr, funcName, argIndex, argExpr, paramType))
+                EmitAggregateArgumentCopyToFixedAddress(callExpr, funcName, argIndex, argExpr, paramType, dstAddr, dstName);
+            return;
+        }
+
+        int size = SizeOf(argExpr, paramType);
+        if (size == 1)
+        {
+            CompileIntoA(argExpr);
+            EmitStoreA(MemOp(dstAddr, dstName));
+        }
+        else if (size == 2)
+        {
+            CompileIntoHL(argExpr);
+            EmitAsm("LD_A_L"); EmitStoreA(MemOp(dstAddr, dstName));
+            EmitAsm("LD_A_H"); EmitStoreA(MemOp(dstAddr + 1, dstName != null ? dstName + "+1" : null));
+        }
+        else
+        {
+            NYI(callExpr, "Argument size not supported");
+        }
+    }
+
+    void EmitAggregateReturnValue(Expr returnExpr)
+    {
+        CFunctionInfo info = null;
+        int inlineDestAddr = -1;
+        if (InlineReturnLabels.Count > 0)
+        {
+            if (InlineStructReturnDestAddrs.Count == 0)
+            {
+                Error(returnExpr, ErrorCode.ParseError, "missing inline struct/union return destination");
+                return;
+            }
+            inlineDestAddr = InlineStructReturnDestAddrs.Peek();
+        }
+        else if (string.IsNullOrEmpty(CurrentFunctionName) || !Functions.TryGetValue(CurrentFunctionName, out info))
+        {
+            Error(returnExpr, ErrorCode.ParseError, "struct/union return outside a known function");
+            return;
+        }
+
+        CType valueType = TypeOf(returnExpr);
+        if (!IsSameCompleteAggregateType(ReturnType, valueType))
+        {
+            Error(returnExpr, ErrorCode.ParseError,
+                "incompatible struct/union return: expected {0}, got {1}",
+                ReturnType == null ? "<unknown>" : ReturnType.Show(),
+                valueType == null ? "<unknown>" : valueType.Show());
+            return;
+        }
+
+        int size = SizeOf(returnExpr, ReturnType);
+        string reason;
+        if (!IsImplicitAggregateCopyStorageAllowed(returnExpr, false, size, out reason))
+        {
+            Error(returnExpr, ErrorCode.ParseError, reason);
+            return;
+        }
+
+        if (inlineDestAddr < 0)
+            EnsureStructReturnSlot(returnExpr, info, CurrentFunctionName, ReturnType);
+
+        string strategy = AggregateCopyStrategy(size);
+        RecordAggregateCopy(returnExpr, ReturnType, size, strategy);
+        EmitComment("kitaqgb.struct_return callee={0} type={1} size={2} strategy={3}",
+            InlineReturnLabels.Count > 0 ? "<inline>" : CurrentFunctionName,
+            ReturnType == null ? "<unknown>" : ReturnType.WithoutConst().Show(),
+            size,
+            strategy);
+
+        if (!TryCompileAggregateSourceAddressIntoHL(returnExpr, ReturnType))
+        {
+            Error(returnExpr, ErrorCode.ParseError, "struct/union return source is not addressable");
+            return;
+        }
+        EmitAsm("PUSH_HL");
+        if (inlineDestAddr >= 0)
+            EmitAsm("LD_HL_IMM", new AsmOperand(inlineDestAddr, AddressMode.Immediate16));
+        else
+            EmitLoadSavedStructReturnDestIntoHL(info);
+        EmitAsm("POP_DE");
+        EmitCopyBytesFromDEToHL(size);
+    }
+
+    bool TryEmitAggregateAssignment(Expr assignExpr, Expr left, Expr right)
+    {
+        CType leftType = TypeOf(left);
+        CType rightType = TypeOf(right);
+        bool leftAgg = leftType != null && leftType.WithoutConst().IsStructOrUnion;
+        bool rightAgg = rightType != null && rightType.WithoutConst().IsStructOrUnion;
+        if (!leftAgg && !rightAgg) return false;
+
+        if (!IsSameCompleteAggregateType(leftType, rightType))
+        {
+            Error(assignExpr, ErrorCode.ParseError,
+                "incompatible struct/union assignment: {0} = {1}",
+                leftType == null ? "<unknown>" : leftType.Show(),
+                rightType == null ? "<unknown>" : rightType.Show());
+            return true;
+        }
+
+        string reason;
+        int size = SizeOf(left, leftType);
+        if (!IsImplicitAggregateCopyStorageAllowed(left, true, size, out reason))
+        {
+            Error(left, ErrorCode.ParseError, reason);
+            return true;
+        }
+        if (!IsImplicitAggregateCopyStorageAllowed(right, false, size, out reason))
+        {
+            Error(right, ErrorCode.ParseError, reason);
+            return true;
+        }
+
+        EmitAggregateCopy(assignExpr, left, right, leftType, size);
+        return true;
     }
 
     // Debug-only bounds check for a[i] where `a` is a fixed-size array (known Dimension).
@@ -3962,6 +4478,11 @@ class CodeGenerator
     void CompileDiscard(Expr expr)
     {
         if (expr == null) return;
+        if (IsStructReturnType(TypeOf(expr)))
+        {
+            CompileCall(expr);
+            return;
+        }
         int sz = SizeOf(expr);
         if (sz <= 0) return;
         if (sz == 1) CompileIntoA(expr);
@@ -4079,8 +4600,11 @@ class CodeGenerator
         // Reserve HRAM variables for farcall bank tracking
         int addrRomBank = Allocate(HramRegion, 1);
         int addrRomBankSaved = Allocate(HramRegion, 1);
+        StructReturnPtrAddr = Allocate(HramRegion, 2);
         RomBankVar = MemOp(addrRomBank, "__rom_bank");
         RomBankSavedVar = MemOp(addrRomBankSaved, "__rom_bank_saved");
+        StructReturnPtrLoVar = MemOp(StructReturnPtrAddr, "__kq_sret_ptr");
+        StructReturnPtrHiVar = MemOp(StructReturnPtrAddr + 1, "__kq_sret_ptr+1");
         RomBankSavedAddr = addrRomBankSaved;
         BankThunkSpAddr = Allocate(HramRegion, 1);
         BankThunkBankBaseAddr = Allocate(HramRegion, 8);
@@ -4095,6 +4619,7 @@ class CodeGenerator
         // Expose as symbols for optional user access / debugging
         Emit(Tag.Variable, "__rom_bank", addrRomBank, 1);
         Emit(Tag.Variable, "__rom_bank_saved", addrRomBankSaved, 1);
+        Emit(Tag.Variable, "__kq_sret_ptr", StructReturnPtrAddr, 2);
         Emit(Tag.Variable, "__kq_thunk_sp", BankThunkSpAddr, 1);
         Emit(Tag.Variable, "__kq_thunk_bank_stack", BankThunkBankBaseAddr, 8);
         Emit(Tag.Variable, "__kq_thunk_retlo_stack", BankThunkRetLoBaseAddr, 8);
@@ -4104,6 +4629,7 @@ class CodeGenerator
         Emit(Tag.Variable, "__kq_rng_hi", addrRngHi, 1);
         DeclareSymbol(program, new Symbol(SymbolTag.Global, addrRomBank, CType.UInt8, "__rom_bank"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, addrRomBankSaved, CType.UInt8, "__rom_bank_saved"));
+        DeclareSymbol(program, new Symbol(SymbolTag.Global, StructReturnPtrAddr, CType.MakePointer(CType.UInt8), "__kq_sret_ptr"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, BankThunkSpAddr, CType.UInt8, "__kq_thunk_sp"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, BankThunkBankBaseAddr, CType.MakeArray(CType.UInt8, 8), "__kq_thunk_bank_stack"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, BankThunkRetLoBaseAddr, CType.MakeArray(CType.UInt8, 8), "__kq_thunk_retlo_stack"));
@@ -4274,9 +4800,9 @@ class CodeGenerator
                     paramSymbols[i] = new Symbol(SymbolTag.Local, addr, paramsFields[i].Type, paramsFields[i].Name);
                 }
 
-                bool isFastCall = (paramsFields.Length == 1);
+                bool isFastCall = CanUseFastCall(decl, paramsFields, desiredStack: false);
 
-                Functions.Add(funcName, new CFunctionInfo
+                CFunctionInfo inlInfo = new CFunctionInfo
                 {
                     Parameters = paramsFields,
                     ParameterSymbols = paramSymbols,
@@ -4286,8 +4812,12 @@ class CodeGenerator
                     HasFixedBank = it.isFixedBank,
                     PlacementOrder = it.fixedOrder ?? int.MaxValue,
                     HasFixedOrder = it.fixedOrder.HasValue,
-                    IsPrototype = false
-                });
+                    IsPrototype = false,
+                    IsInline = true,
+                    Body = body
+                };
+                EnsureStructReturnSlot(decl, inlInfo, funcName, retType);
+                Functions.Add(funcName, inlInfo);
             }
 
 
@@ -4308,7 +4838,7 @@ int mustCheckFlag;
                 (mustCheckFlag = 0) == 0 && decl.Match(Tag.FunctionDecl, out retType, out funcName, out paramsFields))
             {
                 bool desiredStack = Program.AbiStack || it.isStackCall;
-                bool isFastCall = (!desiredStack && paramsFields.Length == 1);
+                bool isFastCall = CanUseFastCall(decl, paramsFields, desiredStack);
 
                 // Function prototype (no body)
                 if (!Functions.ContainsKey(funcName))
@@ -4325,7 +4855,7 @@ int mustCheckFlag;
                     }
                 }
 
-                Functions.Add(funcName, new CFunctionInfo
+                CFunctionInfo protoInfo = new CFunctionInfo
                 {
                     Parameters = paramsFields,
                     ParameterSymbols = paramSymbols,
@@ -4338,7 +4868,9 @@ int mustCheckFlag;
                         HasFixedOrder = it.fixedOrder.HasValue,
                         IsPrototype = true,
                         MustCheck = (mustCheckFlag != 0)
-                    });
+                    };
+                    EnsureStructReturnSlot(decl, protoInfo, funcName, retType);
+                    Functions.Add(funcName, protoInfo);
                 }
                 else
                 {
@@ -4360,6 +4892,7 @@ int mustCheckFlag;
                         fi.IsFastCall = isFastCall;
                         fi.IsStackCall = desiredStack;
                     }
+                    EnsureStructReturnSlot(decl, fi, funcName, retType);
                 }
                 continue;
             }
@@ -4369,7 +4902,7 @@ int mustCheckFlag;
                 (mustCheckDef = 0) == 0 && decl.Match(Tag.Function, out retType, out funcName, out paramsFields, out body))
             {
                 bool desiredStack = Program.AbiStack || it.isStackCall;
-                bool isFastCall = (!desiredStack && paramsFields.Length == 1);
+                bool isFastCall = CanUseFastCall(decl, paramsFields, desiredStack);
 
                 if (Functions.ContainsKey(funcName))
                 {
@@ -4410,6 +4943,7 @@ int mustCheckFlag;
                     fi.IsPrototype = false;
                     fi.Body = body;
                     fi.MustCheck = fi.MustCheck || (mustCheckDef != 0);
+                    EnsureStructReturnSlot(decl, fi, funcName, retType);
                 }
                 else
                 {
@@ -4425,7 +4959,7 @@ int mustCheckFlag;
                     }
                 }
 
-                Functions.Add(funcName, new CFunctionInfo
+                CFunctionInfo defInfo = new CFunctionInfo
                 {
                     Parameters = paramsFields,
                     ParameterSymbols = paramSymbols,
@@ -4439,7 +4973,9 @@ int mustCheckFlag;
                         IsPrototype = false,
                         Body = body,
                         MustCheck = (mustCheckDef != 0)
-                    });
+                    };
+                    EnsureStructReturnSlot(decl, defInfo, funcName, retType);
+                    Functions.Add(funcName, defInfo);
                 }
                 continue;
             }
@@ -4545,7 +5081,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                 // Readonly data: emit inline at the current PC (bank region)
                 if (TryMatchReadonlyDataDecl(decl, out CType rdType, out string rdName, out Expr[] rdValueExprs))
                 {
-                    DeclareReadonlyData(decl, rdType, rdName, EvaluateReadonlyDataInitializers(decl, rdValueExprs), it.align, it.section);
+                    DeclareReadonlyData(decl, rdType, rdName, rdValueExprs, it.align, it.section);
                     continue;
                 }
 
@@ -4577,7 +5113,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                             int addr = AllocatePreferred(size, HotRegions());
                             paramSymbols[i] = new Symbol(SymbolTag.Local, addr, inlFields[i].Type, inlFields[i].Name);
                         }
-                        bool isFastCall = (inlFields.Length == 1);
+                        bool isFastCall = CanUseFastCall(decl, inlFields, desiredStack: false);
                         info = new CFunctionInfo
                         {
                             Parameters = inlFields,
@@ -4588,8 +5124,10 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                             HasFixedBank = it.isFixedBank,
                             MustCheck = (inlMustCheck != 0)
                         };
+                        EnsureStructReturnSlot(decl, info, inlName, inlRet);
                         Functions.Add(inlName, info);
                     }
+                    EnsureStructReturnSlot(decl, info, inlName, inlRet);
                     info.IsInline = true;
                     info.Body = inlBody;
                     info.MustCheck = info.MustCheck || (inlMustCheck != 0);
@@ -4639,7 +5177,8 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                         {
                             offsets[i] = curOff;
                             int sz = SizeOf(decl, fields[i].Type);
-                            if (sz != 1 && sz != 2)
+                            bool aggregateParam = fields[i].Type != null && fields[i].Type.WithoutConst().IsStructOrUnion;
+                            if (sz != 1 && sz != 2 && !aggregateParam)
                                 Error(decl, "Stack ABI supports only 1 or 2 byte parameters");
                             curOff += sz;
                         }
@@ -4697,6 +5236,8 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                         }
                     }
 
+                    EmitSaveIncomingStructReturnPointer(info);
+
                     // Stack ABI: if needed, save SP base at function entry for stack-resident parameters.
                     // Entry layout: SP+0..1 = return address, SP+2 = arg0 ...
                     if (info.IsStackCall && CurrentStackBaseAddr >= 0)
@@ -4717,7 +5258,14 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                             if (CurrentStackBaseAddr >= 0)
                             {
                                 EmitStackParamAddrIntoHL(item2.offset, $"stk arg:{ps.Name}");
-                                if (psz == 1)
+                                if (psz > 2)
+                                {
+                                    EmitAsm("PUSH_HL");
+                                    EmitAsm("LD_HL_IMM", new AsmOperand(ps.Value, AddressMode.Immediate16));
+                                    EmitAsm("POP_DE");
+                                    EmitCopyBytesFromDEToHL(psz);
+                                }
+                                else if (psz == 1)
                                 {
                                     EmitAsm("LD_A_HL");
                                     EmitStoreA(MemOp(ps.Value, $"stk arg:{ps.Name}"));
@@ -4736,7 +5284,15 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                                 if (argOff < -128 || argOff > 127)
                                     Error(decl, "Too many stack arguments (SP offset out of range for LD HL,SP+e8)");
 
-                                if (psz == 1)
+                                if (psz > 2)
+                                {
+                                    EmitAsm("LD_HL_SP_IMM", new AsmOperand(argOff, AddressMode.Relative));
+                                    EmitAsm("PUSH_HL");
+                                    EmitAsm("LD_HL_IMM", new AsmOperand(ps.Value, AddressMode.Immediate16));
+                                    EmitAsm("POP_DE");
+                                    EmitCopyBytesFromDEToHL(psz);
+                                }
+                                else if (psz == 1)
                                 {
                                     EmitAsm("LD_HL_SP_IMM", new AsmOperand(argOff, AddressMode.Relative));
                                     EmitAsm("LD_A_HL");
@@ -4791,7 +5347,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
     int NaturalAlignOf(Expr origin, CType type)
     {
-        // Game Boy target: natural alignments are currently 1-byte for u8 and 2-byte for u16/pointer/enum.
+        // GB-compatible target: natural alignments are currently 1-byte for u8 and 2-byte for u16/pointer/enum.
         // Arrays inherit element alignment. Aggregates use their defined alignment when known.
         if (type == null) return 1;
         if (type.ForcedAlign > 0) return type.ForcedAlign;
@@ -4864,6 +5420,260 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             return;
         }
         AggregateTypes.Add(name, info);
+    }
+
+    bool CanUseFastCall(Expr origin, FieldInfo[] fields, bool desiredStack)
+    {
+        if (desiredStack || fields == null || fields.Length != 1) return false;
+
+        CType t = fields[0].Type;
+        if (t == null) return false;
+        if (t.WithoutConst().IsStructOrUnion) return false;
+
+        int size = SizeOf(origin, t);
+        return size == 1 || size == 2;
+    }
+
+    bool IsStructReturnType(CType type)
+    {
+        return type != null && type.WithoutConst().IsStructOrUnion;
+    }
+
+    bool ReturnsInHL(Expr origin, CType type)
+    {
+        return type != null && !IsStructReturnType(type) && SizeOf(origin, type) == 2;
+    }
+
+    string StructReturnSlotName(string funcName)
+    {
+        string safe = string.IsNullOrEmpty(funcName) ? "anon" : funcName;
+        return "__kq_sret_" + safe;
+    }
+
+    string StructReturnPointerSlotName(string funcName)
+    {
+        string safe = string.IsNullOrEmpty(funcName) ? "anon" : funcName;
+        return "__kq_sret_dst_" + safe;
+    }
+
+    int StructReturnTempCounter = 0;
+
+    int AllocateStructReturnTemp(Expr origin, CType retType, string hint)
+    {
+        int size = SizeOf(origin, retType);
+        int alignment = Math.Max(1, (retType != null && retType.ForcedAlign > 0) ? retType.ForcedAlign : NaturalAlignOf(origin, retType));
+        int addr = AllocatePreferred(size, alignment, ColdRegions());
+        MemoryRegion actualRegion = InferRegionFromCpuAddress(addr);
+        string name = "__kq_sret_tmp_" + (++StructReturnTempCounter).ToString();
+        if (!string.IsNullOrEmpty(hint)) name += "_" + hint;
+        Emit(Tag.Variable, name, addr, size, actualRegion);
+        return addr;
+    }
+
+    void EmitStoreHLToGlobalStructReturnPointer()
+    {
+        EmitAsm("LD_A_L");
+        EmitStoreA(StructReturnPtrLoVar);
+        EmitAsm("LD_A_H");
+        EmitStoreA(StructReturnPtrHiVar);
+    }
+
+    void EmitSetGlobalStructReturnPointer(int address, string comment = null)
+    {
+        EmitAsm("LD_HL_IMM", new AsmOperand(address, AddressMode.Immediate16));
+        EmitStoreHLToGlobalStructReturnPointer();
+        if (comment != null) EmitComment(comment);
+    }
+
+    void EmitLoadSavedStructReturnDestIntoHL(CFunctionInfo info)
+    {
+        if (info == null || info.ReturnPointerSymbol == null)
+        {
+            Program.Error(FilePosition.Unknown, ErrorCode.ParseError, "missing struct return destination");
+            EmitAsm("LD_HL_IMM", new AsmOperand(0, AddressMode.Immediate16));
+            return;
+        }
+
+        int addr = info.ReturnPointerSymbol.Value;
+        EmitLoadA(MemOp(addr, info.ReturnPointerSymbol.Name));
+        EmitAsm("LD_L_A");
+        EmitLoadA(MemOp(addr + 1, info.ReturnPointerSymbol.Name + "+1"));
+        EmitAsm("LD_H_A");
+    }
+
+    void EmitSaveIncomingStructReturnPointer(CFunctionInfo info)
+    {
+        if (info == null || !IsStructReturnType(info.ReturnType)) return;
+        if (info.ReturnPointerSymbol == null) return;
+
+        int addr = info.ReturnPointerSymbol.Value;
+        EmitLoadA(StructReturnPtrLoVar);
+        EmitStoreA(MemOp(addr, info.ReturnPointerSymbol.Name));
+        EmitLoadA(StructReturnPtrHiVar);
+        EmitStoreA(MemOp(addr + 1, info.ReturnPointerSymbol.Name + "+1"));
+    }
+
+    Symbol EnsureStructReturnSlot(Expr origin, CFunctionInfo info, string funcName, CType retType)
+    {
+        if (!IsStructReturnType(retType)) return null;
+        if (info != null && info.ReturnSymbol != null) return info.ReturnSymbol;
+
+        int size = SizeOf(origin, retType);
+        int alignment = Math.Max(1, (retType != null && retType.ForcedAlign > 0) ? retType.ForcedAlign : NaturalAlignOf(origin, retType));
+        int addr = AllocatePreferred(size, alignment, ColdRegions());
+        MemoryRegion actualRegion = InferRegionFromCpuAddress(addr);
+        string slotName = StructReturnSlotName(funcName);
+        Emit(Tag.Variable, slotName, addr, size, actualRegion);
+
+        if (size > StructValueArgumentWarningThreshold)
+        {
+            Program.Warning(BestDiagnosticPosition(origin, null), ErrorCode.LargeStructCopy,
+                "struct return value of {0} bytes from {1}; prefer an output pointer for large aggregates",
+                size,
+                string.IsNullOrEmpty(funcName) ? "<function>" : funcName);
+        }
+
+        Symbol sym = new Symbol(SymbolTag.Global, addr, retType, slotName, actualRegion.WramBank);
+        if (info != null)
+        {
+            info.ReturnSymbol = sym;
+
+            int ptrAddr = AllocatePreferred(2, 1, HotRegions());
+            MemoryRegion ptrRegion = InferRegionFromCpuAddress(ptrAddr);
+            string ptrName = StructReturnPointerSlotName(funcName);
+            Emit(Tag.Variable, ptrName, ptrAddr, 2, ptrRegion);
+            info.ReturnPointerSymbol = new Symbol(SymbolTag.Global, ptrAddr, CType.MakePointer(retType), ptrName, ptrRegion.WramBank);
+        }
+        return sym;
+    }
+
+    int PrepareStructReturnDestination(Expr origin, CType retType, CFunctionInfo info, string funcName)
+    {
+        if (!IsStructReturnType(retType))
+        {
+            LastStructReturnAddress = -1;
+            return -1;
+        }
+
+        int address;
+        if (StructReturnDestinationOverrideAddrs.Count > 0)
+        {
+            address = StructReturnDestinationOverrideAddrs.Peek();
+        }
+        else if (info != null)
+        {
+            Symbol retSym = EnsureStructReturnSlot(origin, info, funcName, retType);
+            address = retSym.Value;
+        }
+        else
+        {
+            address = AllocateStructReturnTemp(origin, retType, "fp");
+        }
+
+        EmitSetGlobalStructReturnPointer(address, "kitaqgb.struct_return_dest");
+        LastStructReturnAddress = address;
+        return address;
+    }
+
+    bool TryGetStructReturnCallInfo(Expr expr, out CFunctionInfo info, out string funcName)
+    {
+        info = null;
+        funcName = null;
+        Expr callTarget;
+        Expr[] args;
+        if (!expr.MatchAny(Tag.Call, out callTarget, out args)) return false;
+        if (callTarget == null || !callTarget.Match(Tag.Name, out funcName)) return false;
+        if (!Functions.TryGetValue(funcName, out info)) return false;
+        return IsStructReturnType(info.ReturnType);
+    }
+
+    bool TryGetStructReturnCallType(Expr expr, out CType retType, out CFunctionInfo info, out string funcName)
+    {
+        retType = null;
+        info = null;
+        funcName = null;
+
+        Expr callTarget;
+        Expr[] args;
+        if (!expr.MatchAny(Tag.Call, out callTarget, out args)) return false;
+
+        if (callTarget != null && callTarget.Match(Tag.Name, out funcName) && Functions.TryGetValue(funcName, out info))
+        {
+            retType = info.ReturnType;
+            return IsStructReturnType(retType);
+        }
+        if (callTarget != null && callTarget.Match(Tag.Name, out string pointerName) &&
+            TryFindSymbol(pointerName, out Symbol fpSym) &&
+            fpSym.Type != null &&
+            fpSym.Type.IsPointer &&
+            fpSym.Type.Subtype != null &&
+            fpSym.Type.Subtype.IsFunction)
+        {
+            retType = fpSym.Type.Subtype.Subtype;
+            return IsStructReturnType(retType);
+        }
+
+        CType callTargetType = TypeOf(callTarget);
+        if (callTargetType != null &&
+            callTargetType.IsPointer &&
+            callTargetType.Subtype != null &&
+            callTargetType.Subtype.IsFunction)
+        {
+            retType = callTargetType.Subtype.Subtype;
+            return IsStructReturnType(retType);
+        }
+        if (callTargetType != null && callTargetType.IsFunction)
+        {
+            retType = callTargetType.Subtype;
+            return IsStructReturnType(retType);
+        }
+
+        retType = TypeOf(expr);
+        return IsStructReturnType(retType);
+    }
+
+    bool TryCompileStructReturnCallAddressIntoHL(Expr expr, out CType retType)
+    {
+        retType = null;
+        CFunctionInfo info;
+        string funcName;
+        if (!TryGetStructReturnCallType(expr, out retType, out info, out funcName)) return false;
+        CompileCall(expr);
+
+        int address = LastStructReturnAddress;
+        if (address < 0 && info != null)
+        {
+            Symbol retSym = EnsureStructReturnSlot(expr, info, funcName, info.ReturnType);
+            address = retSym.Value;
+        }
+
+        if (address < 0)
+        {
+            Error(expr, ErrorCode.ParseError, "missing struct/union return storage for call expression");
+            address = 0;
+        }
+
+        EmitAsm("LD_HL_IMM", new AsmOperand(address, AddressMode.Immediate16));
+        return true;
+    }
+
+    bool TryCompileAggregateSourceAddressIntoHL(Expr expr, CType expectedType)
+    {
+        CType retType;
+        if (TryCompileStructReturnCallAddressIntoHL(expr, out retType))
+        {
+            if (!IsSameCompleteAggregateType(expectedType, retType))
+            {
+                Error(expr, ErrorCode.ParseError,
+                    "incompatible struct/union temporary source: expected {0}, got {1}",
+                    expectedType == null ? "<unknown>" : expectedType.Show(),
+                    retType == null ? "<unknown>" : retType.Show());
+                return false;
+            }
+            return true;
+        }
+
+        return TryCompileLValueAddressIntoHL(expr, false);
     }
 
     void CompileStatement(Expr expr)
@@ -5132,7 +5942,11 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         }
         if (expr.Match(Tag.Return, out subexpr))
         {
-            if (SizeOf(expr, ReturnType) == 2) CompileIntoHL(subexpr);
+            if (IsStructReturnType(ReturnType))
+            {
+                EmitAggregateReturnValue(subexpr);
+            }
+            else if (SizeOf(expr, ReturnType) == 2) CompileIntoHL(subexpr);
             else CompileIntoA(subexpr);
             if (InlineReturnLabels.Count > 0)
             {
@@ -5168,6 +5982,9 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
             CompileCall(expr);
 
+            if (IsStructReturnType(TypeOf(expr)))
+                return;
+
             // Prefer CompileCall's intrinsic return-width tracking.
             if (LastCallReturnsHL)
             {
@@ -5180,6 +5997,9 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
         if (expr.Match(Tag.Assign, out left, out right))
         {
+            if (TryEmitAggregateAssignment(expr, left, right))
+                return;
+
             if (left.Match(Tag.Field, out Expr structExpr2, out string fieldName2))
             {
                 if (structExpr2.Match(Tag.Index, out Expr arrExpr2, out Expr idxExpr2))
@@ -5536,6 +6356,12 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         }
 
         if (expr.MatchTag(Tag.Label)) { Emit(expr); return; }
+
+        if (expr.Match(Tag.Jump, out name))
+        {
+            EmitAsm("JP", new AsmOperand(name, AddressMode.Absolute));
+            return;
+        }
 
         if (expr.Match(Tag.Continue))
         {
@@ -6029,6 +6855,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
 
         // Reset per-call return tracking.
         LastCallReturnsHL = false;
+        LastStructReturnAddress = -1;
 
         string funcName = null;
         if (expr.MatchAny(Tag.Call, out Expr funcExpr, out Expr[] args) && funcExpr.Match(Tag.Name, out funcName))
@@ -6071,8 +6898,9 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 if (Functions.TryGetValue(targetName, out targetInfo))
                 {
                     targetBank = targetInfo.RomBank;
+                    PrepareStructReturnDestination(expr, targetInfo.ReturnType, targetInfo, targetName);
                     if (targetInfo.ReturnType != null)
-                        LastCallReturnsHL = (SizeOf(expr, targetInfo.ReturnType) == 2);
+                        LastCallReturnsHL = ReturnsInHL(expr, targetInfo.ReturnType);
                 }
 
                 if (TryResolveBankExprToConstU8(args[0], out int bankLiteral))
@@ -10427,6 +11255,7 @@ if (funcName == "__sdot2_q1_7")
                 if (TryFindSymbol(funcName, out Symbol fpSym) && fpSym.Type != null && fpSym.Type.IsPointer && fpSym.Type.Subtype != null && fpSym.Type.Subtype.IsFunction)
                 {
                     CType fnType = fpSym.Type.Subtype;
+                    CType rt = fnType.Subtype ?? CType.UInt8;
 
                     if (Program.AbiStack)
                     {
@@ -10453,6 +11282,9 @@ if (funcName == "__sdot2_q1_7")
                         EmitAsm("PUSH_AF");
                         hasArgA = true;
                     }
+
+                    if (IsStructReturnType(rt))
+                        PrepareStructReturnDestination(expr, rt, null, null);
 
                     // Load function pointer into HL
                     CompileIntoHL(funcExpr);
@@ -10481,11 +11313,10 @@ if (funcName == "__sdot2_q1_7")
                     EmitLabel(ret);
 
                     // Return-width tracking
-                    CType rt = fnType.Subtype;
                     int[] fpActualArgSizes = args.Select(a => SizeOf(a)).ToArray();
                     int[] fpExpectedArgSizes = (fnType.ParamTypes ?? Array.Empty<CType>()).Select(t => SizeOf(expr, t)).ToArray();
                     RecordCallEdge(expr, "<indirect:" + funcName + ">", -1, "indirect", viaThunk: false, viaFarcall: false, actualArgSizes: fpActualArgSizes, expectedArgSizes: fpExpectedArgSizes);
-                    LastCallReturnsHL = (rt != null && SizeOf(expr, rt) == 2);
+                    LastCallReturnsHL = ReturnsInHL(expr, rt);
                     return;
                 }
 
@@ -10523,6 +11354,13 @@ if (funcName == "__sdot2_q1_7")
 
                 AsmOperand returnLabel = MakeUniqueLabel("inline_end");
                 InlineReturnLabels.Push(returnLabel);
+                bool inlineStructReturn = IsStructReturnType(info.ReturnType);
+                Symbol inlineRetSym = null;
+                if (inlineStructReturn)
+                {
+                    inlineRetSym = EnsureStructReturnSlot(expr, info, funcName, info.ReturnType);
+                    InlineStructReturnDestAddrs.Push(inlineRetSym.Value);
+                }
 
                 for (int i = 0; i < args.Length; i++)
                 {
@@ -10538,27 +11376,22 @@ if (funcName == "__sdot2_q1_7")
                         Error(expr, "Symbol redefined in inline expansion: " + sym.Name);
                     CurrentScope.Symbols.Add(sym.Name, sym);
 
-                    if (size == 1)
-                    {
-                        CompileIntoA(args[i]);
-                        EmitStoreA(MemOp(addr, $"inl arg:{sym.Name}"));
-                    }
-                    else if (size == 2)
-                    {
-                        CompileIntoHL(args[i]);
-
-                        EmitAsm("LD_A_L");
-                        EmitStoreA(MemOp(addr, $"inl arg:{sym.Name}"));
-
-                        EmitAsm("LD_A_H");
-                        EmitStoreA(MemOp(addr + 1, $"inl arg:{sym.Name}+1"));
-                    }
+                    EmitStoreArgumentToFixedAddress(expr, funcName, i, args[i], param.Type, addr, $"inl arg:{sym.Name}");
                 }
 
+                CType savedReturnType = ReturnType;
+                ReturnType = info.ReturnType;
                 CompileStatement(info.Body);
+                ReturnType = savedReturnType;
 
                 EmitLabel(returnLabel);
                 InlineReturnLabels.Pop();
+                if (inlineStructReturn)
+                {
+                    InlineStructReturnDestAddrs.Pop();
+                    LastStructReturnAddress = inlineRetSym.Value;
+                    LastCallReturnsHL = false;
+                }
 
                 EndScope();
                 return;
@@ -10567,7 +11400,7 @@ if (funcName == "__sdot2_q1_7")
             // Stack ABI call (args on stack, caller-cleanup)
             if (info.IsStackCall)
             {
-                bool stackCallReturnsHL = (info.ReturnType != null && SizeOf(expr, info.ReturnType) == 2);
+                bool stackCallReturnsHL = ReturnsInHL(expr, info.ReturnType);
 
                 // Compute total arg bytes and offsets (arg0 is first param)
                 int totalBytes = 0;
@@ -10576,8 +11409,15 @@ if (funcName == "__sdot2_q1_7")
                 for (int i = 0; i < args.Length; i++)
                 {
                     int sz = SizeOf(args[i], info.Parameters[i].Type);
-                    if (sz != 1 && sz != 2)
+                    bool aggregateParam = info.Parameters[i].Type != null && info.Parameters[i].Type.WithoutConst().IsStructOrUnion;
+                    if (aggregateParam)
+                    {
+                        ValidateAggregateArgument(expr, funcName, i, args[i], info.Parameters[i].Type);
+                    }
+                    else if (sz != 1 && sz != 2)
+                    {
                         NYI(expr, "Stack ABI supports only 1 or 2 byte arguments");
+                    }
                     argOffs[i] = totalBytes;
                     argSz[i] = sz;
                     totalBytes += sz;
@@ -10598,7 +11438,11 @@ if (funcName == "__sdot2_q1_7")
                     if (off < -128 || off > 127)
                         Error(expr, "Too many stack arguments (SP offset out of range)");
 
-                    if (sz == 1)
+                    if (info.Parameters[i].Type != null && info.Parameters[i].Type.WithoutConst().IsStructOrUnion)
+                    {
+                        EmitAggregateArgumentCopyToStackOffset(expr, funcName, i, args[i], info.Parameters[i].Type, off);
+                    }
+                    else if (sz == 1)
                     {
                         CompileIntoA(args[i]);
                         EmitAsm("LD_HL_SP_IMM", new AsmOperand(off, AddressMode.Relative));
@@ -10620,6 +11464,8 @@ if (funcName == "__sdot2_q1_7")
                         EmitAsm("LD_HL_A");
                     }
                 }
+
+                PrepareStructReturnDestination(expr, info.ReturnType, info, funcName);
 
                 // Cross-bank calls must never switch MBC from banked code.
                 int __calleeBank = info.RomBank;
@@ -10657,6 +11503,8 @@ if (funcName == "__sdot2_q1_7")
                 return;
             }
 
+            PrepareStructReturnDestination(expr, info.ReturnType, info, funcName);
+
             bool fastcallArgInA = false;
             if (info.IsFastCall)
             {
@@ -10687,30 +11535,14 @@ if (funcName == "__sdot2_q1_7")
                     Expr argExpr = args[i];
                     Symbol paramSym = info.ParameterSymbols[i];
                     int addr = paramSym.Value;
-                    int size = SizeOf(argExpr, paramSym.Type);
-
-                    if (size == 1)
-                    {
-                        CompileIntoA(argExpr);
-                        EmitStoreA(MemOp(addr, $"arg:{paramSym.Name}"));
-                    }
-                    else if (size == 2)
-                    {
-                        CompileIntoHL(argExpr);
-                        EmitAsm("LD_A_L"); EmitStoreA(MemOp(addr, $"arg:{paramSym.Name}"));
-                        EmitAsm("LD_A_H"); EmitStoreA(MemOp(addr + 1, $"arg:{paramSym.Name}+1"));
-                    }
-                    else
-                    {
-                        NYI(expr, "Argument size not supported");
-                    }
+                    EmitStoreArgumentToFixedAddress(expr, funcName, i, argExpr, paramSym.Type, addr, $"arg:{paramSym.Name}");
                 }
             }
 
             // Cross-bank calls must go through a bank0 thunk.
             int calleeBank = info.RomBank;
             int callerBank = CurrentFunctionBank;
-            bool directCallReturnsHL = (info.ReturnType != null && SizeOf(expr, info.ReturnType) == 2);
+            bool directCallReturnsHL = ReturnsInHL(expr, info.ReturnType);
             bool directOK = IsDirectCallBankSafe(calleeBank, callerBank);
 
             if (!directOK)
@@ -10784,6 +11616,9 @@ if (funcName == "__sdot2_q1_7")
                 Error(expr, "function pointer calls currently support only 0 or 1 argument");
             }
 
+            if (IsStructReturnType(retType))
+                PrepareStructReturnDestination(expr, retType, null, null);
+
             // Load function address into HL
             CompileIntoHL(funcExpr);
 
@@ -10812,11 +11647,10 @@ if (funcName == "__sdot2_q1_7")
             EmitLabel(ret);
 
             // Track return width
-            int rsz = (retType == null || retType == CType.Void) ? 0 : SizeOf(expr, retType);
             int[] fpActualArgSizes = args.Select(a => SizeOf(a)).ToArray();
             int[] fpExpectedArgSizes = paramTypes.Select(t => SizeOf(expr, t)).ToArray();
             RecordCallEdge(expr, "<indirect:" + funcName + ">", -1, "indirect", viaThunk: false, viaFarcall: false, actualArgSizes: fpActualArgSizes, expectedArgSizes: fpExpectedArgSizes);
-            LastCallReturnsHL = (rsz == 2);
+            LastCallReturnsHL = ReturnsInHL(expr, retType);
             return;
         }
         // --- Indirect call (function pointer expression) ---
@@ -10828,9 +11662,24 @@ if (funcName == "__sdot2_q1_7")
         if (expr.Match(Tag.Call, out Expr calleeExpr, out Expr[] callArgs))
         {
             CType ct = TypeOf(calleeExpr);
+            Expr calleeAddressExpr = calleeExpr;
+            CType fnType = null;
             if (ct != null && ct.IsPointer && ct.Subtype != null && ct.Subtype.IsFunction)
             {
-                CType fnType = ct.Subtype;
+                fnType = ct.Subtype;
+            }
+            else if (ct != null && ct.IsFunction && calleeExpr.Match(Tag.Load, out Expr loadedFunctionPointer))
+            {
+                CType ptrType = TypeOf(loadedFunctionPointer);
+                if (ptrType != null && ptrType.IsPointer && ptrType.Subtype != null && ptrType.Subtype.IsFunction)
+                {
+                    fnType = ptrType.Subtype;
+                    calleeAddressExpr = loadedFunctionPointer;
+                }
+            }
+
+            if (fnType != null)
+            {
                 CType retType = fnType.Subtype ?? CType.UInt8;
                 CType[] paramTypes = fnType.ParamTypes ?? Array.Empty<CType>();
 
@@ -10853,8 +11702,11 @@ if (funcName == "__sdot2_q1_7")
                     Error(expr, "function pointer calls currently support only 0 or 1 argument");
                 }
 
+                if (IsStructReturnType(retType))
+                    PrepareStructReturnDestination(expr, retType, null, null);
+
                 // Load function address into HL (callee expression must evaluate to a 16-bit pointer)
-                CompileIntoHL(calleeExpr);
+                CompileIntoHL(calleeAddressExpr);
 
                 // -Zcheck: indirect calls into the banked ROM window are unsafe when switchable banks exist.
                 if (Program.CheckBankCalls && !InUnsafe && BankSwitchingUsed)
@@ -10879,11 +11731,10 @@ if (funcName == "__sdot2_q1_7")
                 EmitAsm("JP_HL");
                 EmitLabel(ret);
 
-                int rsz = (retType == null || retType == CType.Void) ? 0 : SizeOf(expr, retType);
                 int[] fpActualArgSizes = callArgs.Select(a => SizeOf(a)).ToArray();
                 int[] fpExpectedArgSizes = paramTypes.Select(t => SizeOf(expr, t)).ToArray();
                 RecordCallEdge(expr, "<indirect:expr>", -1, "indirect", viaThunk: false, viaFarcall: false, actualArgSizes: fpActualArgSizes, expectedArgSizes: fpExpectedArgSizes);
-                LastCallReturnsHL = (rsz == 2);
+                LastCallReturnsHL = ReturnsInHL(expr, retType);
                 return;
             }
         }
@@ -10905,6 +11756,15 @@ if (funcName == "__sdot2_q1_7")
     {
         int lhsSize = SizeOf(lhs);
         int rhsSize = SizeOf(rhs);
+        CType lhsType = TypeOf(lhs);
+        CType rhsType = TypeOf(rhs);
+        if ((lhsType != null && lhsType.WithoutConst().IsStructOrUnion) ||
+            (rhsType != null && rhsType.WithoutConst().IsStructOrUnion))
+        {
+            Error(lhs, ErrorCode.ParseError, "struct/union assignment cannot be used as a scalar expression");
+            EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate));
+            return;
+        }
 
         // 1) Simple lvalue: local/global variable / addressable symbol operand
         if (TryGetOperand(lhs, out AsmOperand lhsOp))
@@ -11756,7 +12616,17 @@ if (funcName == "__sdot2_q1_7")
 
         if (expr.Match(Tag.Name, out string name))
         {
-            Symbol sym = FindSymbol(expr, name);
+            if (!TryFindSymbol(name, out Symbol sym) && Functions.ContainsKey(name))
+            {
+                EmitAsm("LD_HL_IMM", new AsmOperand(name, AddressMode.Immediate16));
+                return;
+            }
+
+            if (sym == null)
+            {
+                Error(expr, "Undefined symbol: " + name);
+                return;
+            }
             
             if (sym != null && sym.Type.IsArray)
             {
@@ -11790,6 +12660,12 @@ if (funcName == "__sdot2_q1_7")
             // &name
             if (sub.Match(Tag.Name, out string n))
             {
+                if (Functions.ContainsKey(n))
+                {
+                    EmitAsm("LD_HL_IMM", new AsmOperand(n, AddressMode.Immediate16));
+                    return;
+                }
+
                 Symbol sym = FindSymbol(sub, n);
                     if (sym.Tag == SymbolTag.StackParam)
                     {
@@ -11860,7 +12736,9 @@ if (funcName == "__sdot2_q1_7")
                 if (structE.Match(Tag.Name, out string sName))
                 {
                     Symbol sSym = FindSymbol(structE, sName);
-                    if (sSym.Tag == SymbolTag.ReadonlyData)
+                    if (sSym.Tag == SymbolTag.StackParam)
+                        EmitStackParamAddrIntoHL(sSym.Value, $"&stack param {sSym.Name}");
+                    else if (sSym.Tag == SymbolTag.ReadonlyData)
                         EmitAsm("LD_HL_IMM", new AsmOperand(sSym.Name, AddressMode.Immediate16));
                     else
                         EmitAsm("LD_HL_IMM", new AsmOperand(sSym.Value, AddressMode.Immediate16));
@@ -11888,6 +12766,12 @@ if (funcName == "__sdot2_q1_7")
         {
             FieldInfo f = GetFieldInfo(structExprF, fieldNameF);
             int fSize = (f != null) ? SizeOf(expr, f.Type) : 1;
+
+            if (f != null && f.Type != null && f.Type.IsArray)
+            {
+                if (TryCompileLValueAddressIntoHL(expr, false))
+                    return;
+            }
 
             // 1) arr[i].field
             if (structExprF.Match(Tag.Index, out Expr arrF, out Expr idxF))
@@ -12628,13 +13512,18 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
 
             // Prefer semantic return type (TypeOf) for calls (handles intrinsics like __readpadex).
             CType rt = TypeOf(expr);
-            if (rt != null && SizeOf(expr, rt) == 2)
+            if (IsStructReturnType(rt))
+            {
+                Error(expr, ErrorCode.ParseError, "struct/union value cannot be used as a scalar expression");
+                return;
+            }
+            if (ReturnsInHL(expr, rt))
             {
                 // Result is already in HL.
                 return;
             }
 
-            if (SizeOf(expr) == 2) return;
+            if (ReturnsInHL(expr, TypeOf(expr))) return;
 
             // 8-bit return in A -> extend according to return signedness
             EmitExtendAIntoHL(ShouldSignExtendExprToHL(expr));
@@ -13196,6 +14085,10 @@ void EmitShiftRightLogicalHL(int count)
         {
             address = Allocate(HramRegion, size, alignment);
         }
+        else if (region.Tag == MemoryRegionTag.Oam)
+        {
+            address = Allocate(OamRegion, size, alignment);
+        }
         else if (region.Tag == MemoryRegionTag.Wram0)
         {
             address = Allocate(Wram0Region, size, alignment);
@@ -13264,16 +14157,15 @@ void EmitShiftRightLogicalHL(int count)
         valueExprs = null;
         return false;
     }
-    int[] EvaluateReadonlyDataInitializers(Expr origin, Expr[] valueExprs)
-    {
-        if (valueExprs == null || valueExprs.Length == 0) return Array.Empty<int>();
-
-        int[] values = new int[valueExprs.Length];
-        for (int i = 0; i < valueExprs.Length; i++)
-            values[i] = CalculateConstantExpression(valueExprs[i]);
-        return values;
-    }
     void DeclareReadonlyData(Expr origin, CType type, string name, int[] values, int pragmaAlign = 0, string section = null)
+    {
+        Expr[] exprValues = new Expr[values == null ? 0 : values.Length];
+        for (int i = 0; i < exprValues.Length; i++)
+            exprValues[i] = Expr.Make(Tag.Integer, values[i]).WithSource(origin.Source);
+        DeclareReadonlyData(origin, type, name, exprValues, pragmaAlign, section);
+    }
+
+    void DeclareReadonlyData(Expr origin, CType type, string name, Expr[] valueExprs, int pragmaAlign = 0, string section = null)
     {
         if (!string.IsNullOrEmpty(section)) Emit(Tag.Section, section);
 
@@ -13282,64 +14174,151 @@ void EmitShiftRightLogicalHL(int count)
 	        ReadonlyDataPlannedAlign[name] = romAlign;
 	        if (romAlign > 1) Emit(Tag.Align, romAlign);
 
-        // NOTE:
-        // Parser stores initializer list items as *elements* (int), not raw bytes.
-        // Previous implementation truncated everything to a byte, which broke __prg_rom u16[] tables.
-
-        // Determine element type/size
-        CType elemType = type.IsArray ? type.Subtype : type;
-        int elemSize = SizeOf(origin, elemType);
-        if (elemSize <= 0) elemSize = 1;
-
-        // Ensure readonly array data size matches the declared dimension.
-        // If the initializer provides fewer elements, pad with zeros.
-        // If it provides more, error (this should normally be caught earlier, but keep it safe).
-        if (type.IsArray && type.Dimension > 0)
-        {
-            int declaredCount = type.Dimension;
-            if (values.Length > declaredCount)
-                Error(origin, $"Too many initializers for {name}: {values.Length} > {declaredCount}");
-            if (values.Length < declaredCount)
-            {
-                int[] padded = new int[declaredCount];
-                System.Array.Copy(values, padded, values.Length);
-                values = padded;
-            }
-        }
-
-        // Encode as little-endian bytes
-        if (elemSize == 1)
-        {
-            byte[] bytes1 = new byte[values.Length];
-            for (int i = 0; i < values.Length; i++) bytes1[i] = (byte)values[i];
-	        // May have been declared in the early pass (CompileReadonlyData). Avoid duplicates.
-            if (!TryFindSymbol(name, out Symbol _existing))
-            {
-                DeclareSymbol(origin, new Symbol(SymbolTag.ReadonlyData, 0, type, name));
-            }
-            Emit(Tag.ReadonlyData, name, bytes1);
-            return;
-        }
-
-        if (elemSize > 4)
-            Error(origin, $"readonly data initializer supports element sizes up to 4 bytes (got {elemSize})");
-
-        byte[] bytes = new byte[values.Length * elemSize];
-        for (int i = 0; i < values.Length; i++)
-        {
-            uint v = (uint)values[i];
-            int o = i * elemSize;
-            for (int b = 0; b < elemSize; b++)
-            {
-                bytes[o + b] = (byte)((v >> (8 * b)) & 0xFF);
-            }
-        }
+        byte[] bytes = EncodeReadonlyDataInitializers(origin, type, valueExprs ?? Array.Empty<Expr>());
 
         if (!TryFindSymbol(name, out Symbol _existing2))
         {
             DeclareSymbol(origin, new Symbol(SymbolTag.ReadonlyData, 0, type, name));
         }
         Emit(Tag.ReadonlyData, name, bytes);
+    }
+
+    byte[] EncodeReadonlyDataInitializers(Expr origin, CType type, Expr[] valueExprs)
+    {
+        if (type != null && type.IsArray)
+            return EncodeReadonlyArrayInitializer(origin, type, valueExprs);
+
+        int size = Math.Max(1, SizeOf(origin, type));
+        if (valueExprs == null || valueExprs.Length == 0)
+            return new byte[size];
+        if (valueExprs.Length > 1)
+            Error(origin, ErrorCode.ParseError, "too many initializers for readonly data");
+
+        return EncodeReadonlyInitializer(origin, type, valueExprs[0]);
+    }
+
+    byte[] EncodeReadonlyInitializer(Expr origin, CType type, Expr init)
+    {
+        if (type == null) type = CType.UInt8;
+
+        if (IsEmptyReadonlyInitializer(init))
+            return new byte[Math.Max(1, SizeOf(origin, type))];
+
+        if (type.IsArray)
+        {
+            Expr[] items;
+            if (init != null && init.MatchAny(Tag.Sequence, out items))
+                return EncodeReadonlyArrayInitializer(origin, type, items ?? Array.Empty<Expr>());
+            return EncodeReadonlyArrayInitializer(origin, type, new Expr[] { init });
+        }
+
+        if (type.IsStructOrUnion)
+            return EncodeReadonlyAggregateInitializer(origin, type, init);
+
+        Expr[] scalarItems;
+        if (init != null && init.MatchAny(Tag.Sequence, out scalarItems))
+        {
+            if (scalarItems == null || scalarItems.Length == 0)
+                return new byte[Math.Max(1, SizeOf(origin, type))];
+            if (scalarItems.Length > 1)
+                Error(origin, ErrorCode.ParseError, "too many initializers for scalar readonly data");
+            init = scalarItems[0];
+        }
+
+        int size = Math.Max(1, SizeOf(origin, type));
+        if (size > 4)
+            Error(origin, ErrorCode.ParseError, "readonly data scalar initializer supports sizes up to 4 bytes (got {0})", size);
+
+        int value = CalculateConstantExpression(init);
+        byte[] bytes = new byte[size];
+        uint u = (uint)value;
+        for (int i = 0; i < size; i++)
+            bytes[i] = (byte)((u >> (8 * i)) & 0xFF);
+        return bytes;
+    }
+
+    byte[] EncodeReadonlyArrayInitializer(Expr origin, CType arrayType, Expr[] items)
+    {
+        CType elemType = arrayType.Subtype ?? CType.UInt8;
+        int elemSize = Math.Max(1, SizeOf(origin, elemType));
+        int declaredCount = GetReadonlyArrayDimension(origin, arrayType);
+        if (declaredCount < 0) declaredCount = 0;
+
+        items = items ?? Array.Empty<Expr>();
+        if (items.Length > declaredCount)
+            Error(origin, ErrorCode.ParseError, "too many initializers for readonly array (got {0}, declared {1})", items.Length, declaredCount);
+
+        byte[] bytes = new byte[declaredCount * elemSize];
+        int n = Math.Min(items.Length, declaredCount);
+        for (int i = 0; i < n; i++)
+        {
+            if (IsEmptyReadonlyInitializer(items[i])) continue;
+            byte[] elemBytes = EncodeReadonlyInitializer(origin, elemType, items[i]);
+            if (elemBytes.Length != elemSize)
+                Error(origin, ErrorCode.ParseError, "readonly array initializer size mismatch for element {0}", i);
+            System.Array.Copy(elemBytes, 0, bytes, i * elemSize, elemSize);
+        }
+        return bytes;
+    }
+
+    byte[] EncodeReadonlyAggregateInitializer(Expr origin, CType type, Expr init)
+    {
+        int totalSize = Math.Max(1, SizeOf(origin, type));
+        byte[] bytes = new byte[totalSize];
+
+        Expr[] items;
+        if (init == null || !init.MatchAny(Tag.Sequence, out items))
+        {
+            int value = CalculateConstantExpression(init);
+            if (value != 0)
+                Error(origin, ErrorCode.ParseError, "aggregate readonly initializer requires braces");
+            return bytes;
+        }
+
+        AggregateInfo info = GetAggregateInfo(origin, type.Name);
+        items = items ?? Array.Empty<Expr>();
+        if (items.Length > info.Fields.Length)
+            Error(origin, ErrorCode.ParseError, "too many initializers for {0}", type.Show());
+
+        if (info.Layout == AggregateLayout.Union)
+        {
+            for (int i = 0; i < items.Length && i < info.Fields.Length; i++)
+            {
+                if (IsEmptyReadonlyInitializer(items[i])) continue;
+                FieldInfo field = info.Fields[i];
+                byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i]);
+                int copy = Math.Min(fieldBytes.Length, totalSize);
+                System.Array.Copy(fieldBytes, 0, bytes, field.Offset, copy);
+                break;
+            }
+            return bytes;
+        }
+
+        for (int i = 0; i < items.Length && i < info.Fields.Length; i++)
+        {
+            if (IsEmptyReadonlyInitializer(items[i])) continue;
+            FieldInfo field = info.Fields[i];
+            byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i]);
+            int fieldSize = Math.Max(1, SizeOf(origin, field.Type));
+            if (fieldBytes.Length != fieldSize)
+                Error(origin, ErrorCode.ParseError, "readonly struct initializer size mismatch for field {0}", field.Name);
+            System.Array.Copy(fieldBytes, 0, bytes, field.Offset, fieldSize);
+        }
+        return bytes;
+    }
+
+    int GetReadonlyArrayDimension(Expr origin, CType arrayType)
+    {
+        if (arrayType == null || !arrayType.IsArray) return 1;
+        if (arrayType.Tag == CTypeTag.Array) return arrayType.Dimension;
+        if (arrayType.Tag == CTypeTag.ArrayWithDimensionExpression)
+            return CalculateConstantExpression(arrayType.DimensionExpression);
+        return 1;
+    }
+
+    bool IsEmptyReadonlyInitializer(Expr expr)
+    {
+        return expr == null || expr.Match(Tag.Empty);
     }
 	    int ComputeReadonlyDataAlign(Expr origin, CType type, int pragmaAlign)
 	    {
@@ -14175,6 +15154,7 @@ void EmitShiftRightLogicalHL(int count)
     {
         if (type.IsSimple && (type.SimpleType == CSimpleType.UInt16 || type.SimpleType == CSimpleType.Int16)) return 2;
         if (type.IsPointer) return 2;
+        if (type.IsFunction) return 2;
         if (type.IsEnum) return 2;
         
         if (type.IsArray)
@@ -14222,6 +15202,8 @@ void EmitShiftRightLogicalHL(int count)
                     return CType.MakePointer(sym.Type.Subtype);
                 return sym.Type;
             }
+            if (Functions.TryGetValue(name, out CFunctionInfo fnInfo))
+                return CType.MakeFunction(fnInfo.ReturnType, (fnInfo.Parameters ?? Array.Empty<FieldInfo>()).Select(p => p.Type).ToArray());
             return CType.UInt8;
         }
         if (expr.Match(Tag.Integer, out int val))
@@ -14277,9 +15259,25 @@ void EmitShiftRightLogicalHL(int count)
                 if (fnT.Subtype != null) return fnT.Subtype;
                 return CType.UInt8;
             }
+            if (ctCall != null && ctCall.IsFunction)
+            {
+                if (ctCall.Subtype != null) return ctCall.Subtype;
+                return CType.UInt8;
+            }
 
             if (callTarget.Match(Tag.Name, out string funcName))
             {
+                if (TryFindSymbol(funcName, out Symbol fpSym) &&
+                    fpSym.Type != null &&
+                    fpSym.Type.IsPointer &&
+                    fpSym.Type.Subtype != null &&
+                    fpSym.Type.Subtype.IsFunction)
+                {
+                    CType fnT = fpSym.Type.Subtype;
+                    if (fnT.Subtype != null) return fnT.Subtype;
+                    return CType.UInt8;
+                }
+
                 // Built-in intrinsics
                 if (funcName == "__memcpy" || funcName == "__memset") return CType.Void;
                 if (funcName == "__bankswitch") return CType.Void;

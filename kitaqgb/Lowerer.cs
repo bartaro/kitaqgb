@@ -106,6 +106,7 @@ class Lowerer
         // variables (globals): name -> type
         public readonly Dictionary<string, CType> Globals = new Dictionary<string, CType>();
         public readonly Dictionary<string, int[]> VarRanges = new Dictionary<string, int[]>();
+        public readonly HashSet<string> ReadonlyDataNames = new HashSet<string>();
 
         // constants: name -> (type, value expr)
         public readonly Dictionary<string, CType> ConstTypes = new Dictionary<string, CType>();
@@ -177,6 +178,17 @@ class Lowerer
                         }
                     }
                     if (vrangeExpr != null && !VarRanges.ContainsKey(vname)) VarRanges.Add(vname, EvaluateRange(vrangeExpr));
+                    continue;
+                }
+
+                // readonly ROM data: (Tag.ReadonlyData, type, name, values)
+                Expr[] roExprValues;
+                int[] roIntValues;
+                if (d.Match(Tag.ReadonlyData, out vt, out vname, out roExprValues) ||
+                    d.Match(Tag.ReadonlyData, out vt, out vname, out roIntValues))
+                {
+                    if (!Globals.ContainsKey(vname)) Globals.Add(vname, vt);
+                    ReadonlyDataNames.Add(vname);
                     continue;
                 }
 
@@ -443,7 +455,7 @@ class Lowerer
             return v;
         }
 
-        int SizeOfType(CType type, Expr origin)
+        public int SizeOfType(CType type, Expr origin)
         {
             if (type == null) return 1;
             type = type.WithoutConst();
@@ -621,8 +633,15 @@ class Lowerer
             return StructLocals.ContainsKey(name);
         }
 
+        public bool TryGetStructLocalInfo(string name, out StructLocalInfo info)
+        {
+            return StructLocals.TryGetValue(name, out info);
+        }
+
         public CType FindTypeOfName(string name)
         {
+            StructLocalInfo info;
+            if (StructLocals.TryGetValue(name, out info)) return info.StructType;
             CType t;
             if (Locals.TryGetValue(name, out t)) return t;
             if (Params.TryGetValue(name, out t)) return t;
@@ -1386,28 +1405,6 @@ class Lowerer
         Expr vrExpr;
         if (stmt.Match(Tag.Variable, out vt, out vname, out vrExpr) || stmt.Match(Tag.Variable, out vt, out vname))
         {
-            // If this is a plain local struct (by-value) variable, desugar it into per-field locals.
-            // This makes member access usable without relying on address-of.
-	            if ((vt.Tag == CTypeTag.Struct || vt.Tag == CTypeTag.Union) && !vt.IsArray && !vt.IsPointer)
-            {
-                Dictionary<string, CType> fields;
-                if (ctx.Global.StructFieldTypes.TryGetValue(vt.Name, out fields) && fields.Count > 0)
-                {
-                    StructLocalInfo info = new StructLocalInfo(vt);
-                    foreach (KeyValuePair<string, CType> kv in fields)
-                    {
-                        string fieldName = kv.Key;
-                        CType fieldType = kv.Value;
-                        string fieldVar = vname + "__" + fieldName;
-                        info.FieldToVar[fieldName] = fieldVar;
-                        ctx.RegisterLocal(fieldType, fieldVar, null, stmt.Source);
-                        result.Add(Expr.Make(Tag.Variable, fieldType, fieldVar).WithSource(stmt.Source));
-                    }
-                    ctx.StructLocals[vname] = info;
-                    return result;
-                }
-            }
-
             int[] vr = (vrExpr != null) ? ctx.Global.EvaluateRange(vrExpr) : null;
 
             ctx.RegisterLocal(vt, vname, vr, stmt.Source);
@@ -2029,7 +2026,21 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             CType[] paramTypes = null;
             string __fname = null;
             if (newFunc.Match(Tag.Name, out __fname))
+            {
                 paramTypes = ctx.FindFuncParams(__fname);
+                if (paramTypes == null)
+                {
+                    CType fnTypeFromName;
+                    if (TryGetCallableFunctionType(ctx.FindTypeOfName(__fname), out fnTypeFromName))
+                        paramTypes = fnTypeFromName.ParamTypes;
+                }
+            }
+            else
+            {
+                CType fnTypeFromExpr;
+                if (TryGetCallableFunctionType(InferType(ctx, newFunc), out fnTypeFromExpr))
+                    paramTypes = fnTypeFromExpr.ParamTypes;
+            }
 
             Expr[] newArgs = new Expr[callArgs.Length];
             for (int i = 0; i < callArgs.Length; i++)
@@ -2055,7 +2066,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                         if (IsU8Like(pt)) spillAs = CType.UInt8;
                     }
                     if (spillAs == null) spillAs = InferType(ctx, a);
-                    if (SizeOfType(spillAs) <= 2)
+                    if (!IsAggregateType(spillAs) && SizeOfType(spillAs) <= 2)
                         a = SpillToTemp(ctx, a, spillAs, prefix);
                 }
                 newArgs[i] = a;
@@ -2312,6 +2323,42 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                     rt.Show(), lt.Show());
             }
 
+            bool leftAggregate = IsAggregateType(lt);
+            bool rightAggregate = IsAggregateType(rt);
+            if (leftAggregate || rightAggregate)
+            {
+                if (!IsSameCompleteAggregateType(ctx.Global, lt, rt))
+                {
+                    Program.Error(expr.Source, ErrorCode.ParseError,
+                        "incompatible struct/union assignment: {0} = {1}",
+                        lt == null ? "<unknown>" : lt.Show(),
+                        rt == null ? "<unknown>" : rt.Show());
+                    return Expr.Make(Tag.Empty).WithSource(expr.Source);
+                }
+
+                WarnLargeAggregateCopyIfNeeded(ctx, expr, lt);
+
+                if (ContainsReadonlyData(ctx, newL))
+                {
+                    Program.Error(expr.Source, ErrorCode.ConstModify,
+                        "cannot modify readonly ROM aggregate");
+                    return Expr.Make(Tag.Empty).WithSource(expr.Source);
+                }
+
+                if (ContainsSplitStructLocal(ctx, newL) ||
+                    ContainsSplitStructLocal(ctx, newR) ||
+                    ContainsReadonlyData(ctx, newR))
+                {
+                    List<Expr> copyStatements = MakeAggregateFieldCopyStatements(ctx, newL, newR, lt, expr.Source);
+                    for (int i = 0; i < copyStatements.Count; i++)
+                    {
+                        List<Expr> loweredCopy = LowerStatement(ctx, copyStatements[i]);
+                        for (int j = 0; j < loweredCopy.Count; j++) prefix.Add(loweredCopy[j]);
+                    }
+                    return Expr.Make(Tag.Empty).WithSource(expr.Source);
+                }
+            }
+
 // Lint: __range(min,max) variable assigned an out-of-range constant.
             string __rname;
             if (newL.Match(Tag.Name, out __rname))
@@ -2344,6 +2391,12 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 
             // Lint: __enum_strict - compound assignments imply integer ops.
             CType rt = InferType(ctx, newR);
+            if (IsAggregateType(lt) || IsAggregateType(rt))
+            {
+                Program.Error(expr.Source, ErrorCode.ParseError,
+                    "compound assignment is not supported for struct/union types");
+                return Expr.Make(Tag.Empty).WithSource(expr.Source);
+            }
             Expr widened = Expr.Make(opName, newL, newR).WithSource(expr.Source);
             WarnImplicitNarrowingIfNeeded(ctx, newR, InferType(ctx, widened), lt, expr.Source, "compound assignment");
             if (IsStrictEnum(lt))
@@ -2595,8 +2648,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             // 16-bit compare path is intentionally restrictive.
 	            if (allowExtract && IsComparisonTag(binTag))
             {
-                if (!IsAtom(newL)) newL = SpillToTemp(ctx, newL, InferType(ctx, newL), prefix);
-                if (!IsAtom(newR)) newR = SpillToTemp(ctx, newR, InferType(ctx, newR), prefix);
+                newL = SpillComparisonOperand(ctx, newL, prefix);
+                newR = SpillComparisonOperand(ctx, newR, prefix);
             }
 
 	            
@@ -2696,6 +2749,133 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
     {
         if (e == null) return false;
         return e.MatchTag(Tag.Name) || e.MatchTag(Tag.Load) || e.MatchTag(Tag.Index) || e.MatchTag(Tag.Field);
+    }
+
+    const int LargeStructCopyWarningThreshold = 64;
+
+    static bool IsAggregateType(CType t)
+    {
+        if (t == null) return false;
+        return t.WithoutConst().IsStructOrUnion;
+    }
+
+    static bool IsSameCompleteAggregateType(GlobalEnv genv, CType leftType, CType rightType)
+    {
+        if (!IsAggregateType(leftType) || !IsAggregateType(rightType)) return false;
+        CType l = leftType.WithoutConst();
+        CType r = rightType.WithoutConst();
+        return l.Tag == r.Tag &&
+               l.Name == r.Name &&
+               genv.StructFieldTypes.ContainsKey(l.Name);
+    }
+
+    static bool ContainsSplitStructLocal(FunctionCtx ctx, Expr expr)
+    {
+        if (expr == null) return false;
+        expr = StripCastsForLowerer(expr);
+
+        if (expr.Match(Tag.Name, out string name))
+            return ctx.IsStructLocal(name);
+
+        if (expr.Match(Tag.Field, out Expr baseExpr, out string _field))
+            return ContainsSplitStructLocal(ctx, baseExpr);
+
+        if (expr.Match(Tag.Index, out Expr arrExpr, out Expr idxExpr))
+            return ContainsSplitStructLocal(ctx, arrExpr) || ContainsSplitStructLocal(ctx, idxExpr);
+
+        if (expr.Match(Tag.Load, out Expr ptrExpr) || expr.Match(Tag.AddressOf, out ptrExpr))
+            return ContainsSplitStructLocal(ctx, ptrExpr);
+
+        return false;
+    }
+
+    static bool ContainsReadonlyData(FunctionCtx ctx, Expr expr)
+    {
+        if (expr == null || ctx == null || ctx.Global == null) return false;
+        expr = StripCastsForLowerer(expr);
+
+        if (expr.Match(Tag.Name, out string name))
+            return ctx.Global.ReadonlyDataNames.Contains(name);
+
+        if (expr.Match(Tag.Field, out Expr baseExpr, out string _field))
+            return ContainsReadonlyData(ctx, baseExpr);
+
+        if (expr.Match(Tag.Index, out Expr arrExpr, out Expr idxExpr))
+            return ContainsReadonlyData(ctx, arrExpr) || ContainsReadonlyData(ctx, idxExpr);
+
+        if (expr.Match(Tag.Load, out Expr ptrExpr) || expr.Match(Tag.AddressOf, out ptrExpr))
+            return ContainsReadonlyData(ctx, ptrExpr);
+
+        return false;
+    }
+
+    static Expr StripCastsForLowerer(Expr expr)
+    {
+        while (expr != null && expr.Match(Tag.Cast, out CType _t, out Expr sub))
+            expr = sub;
+        return expr;
+    }
+
+    static Expr FieldExpr(Expr baseExpr, string fieldName, FilePosition source)
+    {
+        return Expr.Make(Tag.Field, baseExpr, fieldName).WithSource(source);
+    }
+
+    static Expr AddressOfExpr(Expr lvalue, FilePosition source)
+    {
+        return Expr.Make(Tag.AddressOf, lvalue).WithSource(source);
+    }
+
+    static Expr MakeAggregateMemcpyExpr(Expr dst, Expr src, int size, FilePosition source)
+    {
+        if (size <= 0) return Expr.Make(Tag.Empty).WithSource(source);
+        string helper = (size > 16 && size <= 255) ? "__memcpy_small" : "__memcpy";
+        return Expr.Make(
+            Tag.Call,
+            Expr.Make(Tag.Name, helper).WithSource(source),
+            AddressOfExpr(dst, source),
+            AddressOfExpr(src, source),
+            Expr.Make(Tag.Integer, size).WithSource(source)).WithSource(source);
+    }
+
+    static List<Expr> MakeAggregateFieldCopyStatements(FunctionCtx ctx, Expr dst, Expr src, CType aggregateType, FilePosition source)
+    {
+        List<Expr> statements = new List<Expr>();
+        if (!IsAggregateType(aggregateType)) return statements;
+
+        CType t = aggregateType.WithoutConst();
+        Dictionary<string, CType> fields;
+        if (!ctx.Global.StructFieldTypes.TryGetValue(t.Name, out fields)) return statements;
+
+        foreach (KeyValuePair<string, CType> kv in fields)
+        {
+            Expr fieldDst = FieldExpr(dst, kv.Key, source);
+            Expr fieldSrc = FieldExpr(src, kv.Key, source);
+            CType fieldType = kv.Value;
+
+            if (fieldType != null && fieldType.IsArray)
+            {
+                statements.Add(MakeAggregateMemcpyExpr(fieldDst, fieldSrc, ctx.Global.SizeOfType(fieldType, fieldDst), source));
+            }
+            else
+            {
+                statements.Add(Expr.Make(Tag.Assign, fieldDst, fieldSrc).WithSource(source));
+            }
+        }
+
+        return statements;
+    }
+
+    static void WarnLargeAggregateCopyIfNeeded(FunctionCtx ctx, Expr origin, CType aggregateType)
+    {
+        if (!IsAggregateType(aggregateType)) return;
+        int size = ctx.Global.SizeOfType(aggregateType, origin);
+        if (size < LargeStructCopyWarningThreshold) return;
+
+        Program.Warning(origin.Source, ErrorCode.LargeStructCopy,
+            "struct copy of {0} bytes in function {1}",
+            size,
+            string.IsNullOrEmpty(ctx.FunctionName) ? "<global>" : ctx.FunctionName);
     }
 
     static Expr LowerLValue(FunctionCtx ctx, Expr lval, bool allowExtract, List<Expr> prefix)
@@ -3180,6 +3360,20 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return e.Match(Tag.Integer, out n) || e.Match(Tag.Name, out s);
     }
 
+    static Expr SpillComparisonOperand(FunctionCtx ctx, Expr operand, List<Expr> prefix)
+    {
+        if (IsAtom(operand)) return operand;
+
+        // Keep true compile-time constants as constants. Casted literals, sizeof,
+        // offsetof, and similar folded values should not force a temporary.
+        if (ctx != null && ctx.Global != null && ctx.Global.TryEvalConstInt(operand, out _))
+            return operand;
+
+        CType t = InferType(ctx, operand);
+        if (IsAggregateType(t) || SizeOfType(t) > 2) return operand;
+        return SpillToTemp(ctx, operand, t, prefix);
+    }
+
     static bool IsPow2(int v)
     {
         return v > 0 && (v & (v - 1)) == 0;
@@ -3251,6 +3445,24 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return 2;
     }
 
+    static bool TryGetCallableFunctionType(CType callableType, out CType functionType)
+    {
+        functionType = null;
+        if (callableType == null) return false;
+        callableType = callableType.WithoutConst();
+        if (callableType.IsPointer && callableType.Subtype != null && callableType.Subtype.IsFunction)
+        {
+            functionType = callableType.Subtype;
+            return true;
+        }
+        if (callableType.IsFunction)
+        {
+            functionType = callableType;
+            return true;
+        }
+        return false;
+    }
+
     static CType InferType(FunctionCtx ctx, Expr expr)
     {
         int n;
@@ -3307,7 +3519,16 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         if (expr.MatchAny(Tag.Call, out func, out args))
         {
             if (func.Match(Tag.Name, out name))
+            {
+                CType fnTypeFromName;
+                if (TryGetCallableFunctionType(ctx.FindTypeOfName(name), out fnTypeFromName))
+                    return fnTypeFromName.Subtype ?? CType.UInt8;
                 return ctx.FindFuncReturn(name);
+            }
+
+            CType fnTypeFromExpr;
+            if (TryGetCallableFunctionType(InferType(ctx, func), out fnTypeFromExpr))
+                return fnTypeFromExpr.Subtype ?? CType.UInt8;
             return CType.UInt8;
         }
 

@@ -21,6 +21,8 @@ static partial class Program
     public static bool EnableIncrementalCache { get { return CurrentSession.EnableIncrementalCache; } private set { CurrentSession.EnableIncrementalCache = value; } }
     public static bool EmitDiagJson { get { return CurrentSession.EmitDiagJson; } private set { CurrentSession.EmitDiagJson = value; } }
     public static string DiagJsonPath { get { return CurrentSession.DiagJsonPath; } private set { CurrentSession.DiagJsonPath = value; } }
+    public static bool EmitAiMetadata { get { return CurrentSession.EmitAiMetadata; } private set { CurrentSession.EmitAiMetadata = value; } }
+    public static string AiMetadataPath { get { return CurrentSession.AiMetadataPath; } private set { CurrentSession.AiMetadataPath = value; } }
     public static bool EmitDependenciesList { get { return CurrentSession.EmitDependenciesList; } private set { CurrentSession.EmitDependenciesList = value; } }
     public static string DependenciesListPath { get { return CurrentSession.DependenciesListPath; } private set { CurrentSession.DependenciesListPath = value; } }
     public enum DiagnosticMode { Permissive, Strict }
@@ -106,6 +108,7 @@ static partial class Program
     public static StackBankMode StackBank { get { return CurrentSession.StackBank; } private set { CurrentSession.StackBank = value; } }
     public static int? StackTop { get { return CurrentSession.StackTop; } private set { CurrentSession.StackTop = value; } }
     public static int StackReserve { get { return CurrentSession.StackReserve; } private set { CurrentSession.StackReserve = value; } }
+    public static bool StackReserveSpecified { get { return CurrentSession.StackReserveSpecified; } private set { CurrentSession.StackReserveSpecified = value; } }
     public static int EffectiveStackTop { get { return CurrentSession.EffectiveStackTop; } private set { CurrentSession.EffectiveStackTop = value; } }
     public static int EffectiveStackAutoLimit { get { return CurrentSession.EffectiveStackAutoLimit; } private set { CurrentSession.EffectiveStackAutoLimit = value; } }
 
@@ -155,6 +158,12 @@ static partial class Program
         effective.MergeFrom(RomHeaderPragma, overwrite: true);
         effective.MergeFrom(RomHeader, overwrite: true);
         return effective;
+    }
+
+    public static bool ShouldEmitHeaderLogo()
+    {
+        var effective = BuildRequestedRomHeader();
+        return !effective.HeaderLogoEnabled.HasValue || effective.HeaderLogoEnabled.Value;
     }
 
     public static bool TryGetKnownCgbRuntimeValue(out int value)
@@ -272,6 +281,8 @@ static partial class Program
         sb.Append("}");
     }
 
+    const int DefaultStackReserveBytes = 512;
+
     static void FinalizeAndValidateStackPolicy()
     {
         if (!StackTop.HasValue)
@@ -300,6 +311,11 @@ static partial class Program
                 GetStackBankCliText(StackBank),
                 string.Format("{0:X4}", EffectiveStackTop & 0xFFFF));
             EffectiveStackTop = Math.Max(windowBottom, Math.Min(EffectiveStackTop, windowTop));
+        }
+
+        if (!StackReserveSpecified)
+        {
+            StackReserve = DefaultStackReserveBytes;
         }
 
         if (StackReserve < 0)
@@ -479,7 +495,10 @@ static partial class Program
                     if (!TryParseInt(raw, out int parsedReserve) || parsedReserve < 0)
                         Error(ErrorCode.InvalidStackReserve, "--stack-reserve: expected a non-negative integer (got {0})", raw);
                     else
+                    {
                         StackReserve = parsedReserve;
+                        StackReserveSpecified = true;
+                    }
                 }
             }
             else if (arg.StartsWith("--stack-reserve="))
@@ -488,7 +507,10 @@ static partial class Program
                 if (!TryParseInt(raw, out int parsedReserve) || parsedReserve < 0)
                     Error(ErrorCode.InvalidStackReserve, "--stack-reserve: expected a non-negative integer (got {0})", raw);
                 else
+                {
                     StackReserve = parsedReserve;
+                    StackReserveSpecified = true;
+                }
             }
             else if (arg == "--strict")
             {
@@ -503,6 +525,18 @@ static partial class Program
                 EmitDiagJson = true;
                 DiagJsonPath = ValueAfterEquals(arg);
                 if (string.IsNullOrWhiteSpace(DiagJsonPath)) DiagJsonPath = "kitaqgb.diag.json";
+            }
+            else if (arg == "--emit-ai-metadata")
+            {
+                EmitAiMetadata = true;
+                if (args.Count > 0) AiMetadataPath = args.Dequeue();
+                else Error("error: --emit-ai-metadata requires a file path");
+            }
+            else if (arg.StartsWith("--emit-ai-metadata="))
+            {
+                EmitAiMetadata = true;
+                AiMetadataPath = ValueAfterEquals(arg);
+                if (string.IsNullOrWhiteSpace(AiMetadataPath)) Error("error: --emit-ai-metadata requires a file path");
             }
             else if (arg == "--emit-path-manifest")
             {
@@ -873,6 +907,18 @@ else if (arg == "-Zcheck")
             {
                 RomHeader.Title = ValueAfterEquals(arg);
             }
+            else if (arg == "--no-header-logo")
+            {
+                RomHeader.HeaderLogoEnabled = false;
+            }
+            else if (arg == "--header-logo")
+            {
+                RomHeader.HeaderLogoEnabled = true;
+            }
+            else if (arg.StartsWith("--header-logo="))
+            {
+                if (!RomHeader.TrySetHeaderLogo(ValueAfterEquals(arg), out string err)) Error(err);
+            }
             else if (arg.StartsWith("--cgb="))
             {
                 if (!RomHeader.TrySetCgb(ValueAfterEquals(arg), out string err)) Error(err);
@@ -928,7 +974,7 @@ else if (arg == "-Zcheck")
 
         if (help)
         {
-            Console.Error.WriteLine("usage: kitaqgb first.c second.c ... [-o out.gb] [-O0|-O1] [-I dir|--include-dir=dir] [--profile=dev|release|test] [--strict|--permissive] [--rom-header=header.json] [--rom-title=TITLE] [--cgb=dmg|cgb|cgb_only] [--cart=romonly|mbc1|mbc3|mbc5|...] [--romsize=32k|64k|128k|256k|512k|1m|2m|4m|8m] [--ramsize=none|2k|8k|32k|64k|128k] [--sgb=on|off] [--dest=jp|nonjp] [--version=N] [--trace[=tokens,ast,ir,asm] [--trace-out=<dir>]] [--debug-output | --debug-out[=<dir>]] [--no-disasm|--fast-build] [--disasm-changed[=<git_base>] [--disasm-changed-out=<file>]] [--cache|--no-cache] [--diag-json[=<file>]] [--emit-path-manifest=<file>] [--machine-readable] [--no-banner] [--stack-bank=fixed|wramx1] [--stack-top=ADDR] [--stack-reserve=N] [--deps-out[=<file>]] [vlist|--vlist[=<file>]] [--max-errors=N] [--abi=legacy|stack] [--bank-sim[=<file>]] [--farcall-suggest[=<file>]] [--cross-bank-report[=<file>]] [--abi-verify[=<file>]] [--abi-diff-report[=<file>]] [--rst-report[=<file>]] [--opt-diff[=<file>]] [--func-size-report[=<file>]] [--hotspot-report[=<file>]] [--repro-check[=<file>]] [--repro-pack[=<dir>]] [--cgb-consistency[=<file>]] [--verify-cgb-symbols[=<file>]] [--minimize[=<file.c>] [--minimize-out=<out.c>] [--minimize-work=<dir>] [--minimize-quick] [--minimize-trace=final|all] [--minimize-on-fail]] [--rst-enable|--rst-on] [--rst-disable|--no-rst] [--rst-use-38] [--rst-speed-safe] [--rst-safe|--rst-unsafe] [--rst-max-calls=N] [--rst-exclude=a,b] [--rst-max-vectors=N] [--watch]");
+            Console.Error.WriteLine("usage: kitaqgb first.c second.c ... [-o out.gb] [-O0|-O1] [-I dir|--include-dir=dir] [--profile=dev|release|test] [--strict|--permissive] [--rom-header=header.json] [--rom-title=TITLE] [--header-logo=on|off|--no-header-logo] [--cgb=dmg|cgb|cgb_only] [--cart=romonly|mbc1|mbc3|mbc5|...] [--romsize=32k|64k|128k|256k|512k|1m|2m|4m|8m] [--ramsize=none|2k|8k|32k|64k|128k] [--sgb=on|off] [--dest=jp|nonjp] [--version=N] [--trace[=tokens,ast,ir,asm] [--trace-out=<dir>]] [--debug-output | --debug-out[=<dir>]] [--no-disasm|--fast-build] [--disasm-changed[=<git_base>] [--disasm-changed-out=<file>]] [--cache|--no-cache] [--diag-json[=<file>]] [--emit-ai-metadata=<file>] [--emit-path-manifest=<file>] [--machine-readable] [--no-banner] [--stack-bank=fixed|wramx1] [--stack-top=ADDR] [--stack-reserve=N] [--deps-out[=<file>]] [vlist|--vlist[=<file>]] [--max-errors=N] [--abi=legacy|stack] [--bank-sim[=<file>]] [--farcall-suggest[=<file>]] [--cross-bank-report[=<file>]] [--abi-verify[=<file>]] [--abi-diff-report[=<file>]] [--rst-report[=<file>]] [--opt-diff[=<file>]] [--func-size-report[=<file>]] [--hotspot-report[=<file>]] [--repro-check[=<file>]] [--repro-pack[=<dir>]] [--cgb-consistency[=<file>]] [--verify-cgb-symbols[=<file>]] [--minimize[=<file.c>] [--minimize-out=<out.c>] [--minimize-work=<dir>] [--minimize-quick] [--minimize-trace=final|all] [--minimize-on-fail]] [--rst-enable|--rst-on] [--rst-disable|--no-rst] [--rst-use-38] [--rst-speed-safe] [--rst-safe|--rst-unsafe] [--rst-max-calls=N] [--rst-exclude=a,b] [--rst-max-vectors=N] [--watch]");
             Console.Error.WriteLine("subcommands: kitaqgb test | attrviz | src2asm | symfind | romdiff | kqhelp | template | fixhint | irsum | conventions | snippet | devserver | recipe");
             Console.Error.WriteLine("  --stack-bank: select WRAM window used for initial CPU stack");
             Console.Error.WriteLine("  --stack-top: initial SP value inside selected stack window");
@@ -1285,6 +1331,9 @@ else if (arg == "-Zcheck")
                 // - never override already-set pragma fields (so explicit #pragma rom_title can override)
                 if (tpl.Title != null && !RomHeader.IsFieldSetByKey("title") && RomHeaderPragma.Title == null)
                     RomHeaderPragma.Title = tpl.Title;
+
+                if (tpl.HeaderLogoEnabled.HasValue && !RomHeader.IsFieldSetByKey("header_logo") && !RomHeaderPragma.HeaderLogoEnabled.HasValue)
+                    RomHeaderPragma.HeaderLogoEnabled = tpl.HeaderLogoEnabled;
 
                 if (tpl.CgbFlag.HasValue && !RomHeader.IsFieldSetByKey("cgb") && !RomHeaderPragma.CgbFlag.HasValue)
                     RomHeaderPragma.CgbFlag = tpl.CgbFlag;
@@ -1750,6 +1799,8 @@ else if (arg == "-Zcheck")
                 return "If narrowing is intentional, add an explicit cast.";
             case ErrorCode.PointerArithmeticDanger:
                 return "Review pointer-offset type/range and add explicit casts if intentional.";
+            case ErrorCode.LargeStructCopy:
+                return "Consider passing a pointer, copying only changed fields, or moving this copy out of a hot loop.";
             case ErrorCode.ExternUndefined:
                 return "Add a matching definition for this extern declaration.";
             case ErrorCode.ExternTypeMismatch:
@@ -2122,7 +2173,7 @@ else if (arg == "-Zcheck")
             catch { }
 
             var sb = new StringBuilder();
-            sb.AppendLine("kitaqgb_cache_v2");
+            sb.AppendLine("kitaqgb_cache_v3");
             sb.AppendLine(exeStamp);
             sb.AppendLine("opt=" + OptLevel);
             sb.AppendLine("abi=" + Abi);
@@ -2131,11 +2182,16 @@ else if (arg == "-Zcheck")
             sb.AppendLine("rst_use_38=" + RstUse38);
             sb.AppendLine("rst_unsafe=" + RstUnsafe);
             sb.AppendLine("rst_speed_safe=" + RstSpeedSafe);
+            sb.AppendLine("header_logo=" + (RomHeader.HeaderLogoEnabled.HasValue ? (RomHeader.HeaderLogoEnabled.Value ? "on" : "off") : ""));
             sb.AppendLine("rom_title=" + (RomHeader.Title ?? ""));
             sb.AppendLine("cgb=" + (RomHeader.CgbFlag.HasValue ? RomHeader.CgbFlag.Value.ToString() : ""));
+            sb.AppendLine("sgb=" + (RomHeader.SgbFlag.HasValue ? RomHeader.SgbFlag.Value.ToString() : ""));
             sb.AppendLine("cart=" + (RomHeader.CartType.HasValue ? RomHeader.CartType.Value.ToString() : ""));
             sb.AppendLine("romsize=" + (RomHeader.RomSizeCode.HasValue ? RomHeader.RomSizeCode.Value.ToString() : ""));
+            sb.AppendLine("romsize_bytes=" + (RomHeader.RomSizeBytes.HasValue ? RomHeader.RomSizeBytes.Value.ToString() : ""));
             sb.AppendLine("ramsize=" + (RomHeader.RamSizeCode.HasValue ? RomHeader.RamSizeCode.Value.ToString() : ""));
+            sb.AppendLine("dest=" + (RomHeader.DestinationCode.HasValue ? RomHeader.DestinationCode.Value.ToString() : ""));
+            sb.AppendLine("version=" + (RomHeader.Version.HasValue ? RomHeader.Version.Value.ToString() : ""));
             sb.AppendLine("stack_bank=" + GetStackBankCliText(StackBank));
             sb.AppendLine("stack_top=" + EffectiveStackTop);
             sb.AppendLine("stack_reserve=" + StackReserve);
@@ -2197,6 +2253,10 @@ else if (arg == "-Zcheck")
         TryWriteRichDebugMetadata(outputFilename, sourceFilenames, codegen, asm);
         TryWriteAugmentedSourceMap(outputFilename, sourceFilenames, asm);
         TryWriteBuildReportJson(outputFilename, sourceFilenames, codegen, opt, asm, effectiveRomHeader);
+        if (EmitAiMetadata)
+        {
+            TryWriteAiMetadata(outputFilename, sourceFilenames, codegen, asm);
+        }
 
         if (EmitBankSimReport)
         {
@@ -2341,6 +2401,28 @@ else if (arg == "-Zcheck")
         catch (Exception ex)
         {
             Warning("Failed to write build report JSON: " + ex.Message);
+        }
+    }
+
+    static void TryWriteAiMetadata(
+        string outputFilename,
+        List<string> sourceFilenames,
+        CodegenAnalysisReport codegen,
+        AssemblerAnalysisReport asm)
+    {
+        try
+        {
+            string path = ResolveReportPath(AiMetadataPath, outputFilename, ".kitaqgb_ai_metadata.json");
+            path = IoUtil.WriteAllTextUtf8Robust(
+                path,
+                BuildAiMetadataJson(outputFilename, sourceFilenames, codegen, asm),
+                allowAlternatePath: true);
+            RememberArtifactPath("ai_metadata", path);
+            WriteInfoLine("[report] AI metadata: " + path);
+        }
+        catch (Exception ex)
+        {
+            Warning("Failed to write AI metadata JSON: " + ex.Message);
         }
     }
 
@@ -2666,6 +2748,23 @@ else if (arg == "-Zcheck")
         }
         sb.Append("],");
 
+        sb.Append("\"aggregate_copies\":[");
+        first = true;
+        foreach (var copy in codegen.AggregateCopies ?? new List<AggregateCopyInfo>())
+        {
+            if (!first) sb.Append(",");
+            first = false;
+            sb.Append("{");
+            sb.Append("\"function\":\"").Append(JsonEscape(copy.Function ?? "")).Append("\",");
+            sb.Append("\"type\":\"").Append(JsonEscape(copy.Type ?? "")).Append("\",");
+            sb.Append("\"size_bytes\":").Append(Math.Max(0, copy.SizeBytes)).Append(",");
+            sb.Append("\"strategy\":\"").Append(JsonEscape(copy.Strategy ?? "")).Append("\"");
+            if (!string.IsNullOrEmpty(copy.Source))
+                sb.Append(",\"source\":\"").Append(JsonEscape(copy.Source)).Append("\"");
+            sb.Append("}");
+        }
+        sb.Append("],");
+
         sb.Append("\"abi_issues\":[");
         AppendJsonStringArray(sb, codegen.AbiIssues ?? new List<string>());
         sb.Append("],");
@@ -2721,6 +2820,7 @@ else if (arg == "-Zcheck")
         sb.Append("\"abi_mode\":\"").Append(JsonEscape(Abi.ToString().ToLowerInvariant())).Append("\",");
         sb.Append("\"function_count\":").Append(asm == null || asm.FunctionSizes == null ? 0 : asm.FunctionSizes.Count).Append(",");
         sb.Append("\"call_edge_count\":").Append(codegen == null || codegen.Calls == null ? 0 : codegen.Calls.Count).Append(",");
+        sb.Append("\"aggregate_copy_count\":").Append(codegen == null || codegen.AggregateCopies == null ? 0 : codegen.AggregateCopies.Count).Append(",");
         sb.Append("\"optimizer_pass_count\":").Append(opt == null || opt.Passes == null ? 0 : opt.Passes.Count).Append(",");
         sb.Append("\"abi_issue_count\":").Append(codegen == null || codegen.AbiIssues == null ? 0 : codegen.AbiIssues.Count).Append(",");
         sb.Append("\"cross_bank_call_count\":").Append(crossBankRows.Count).Append(",");
@@ -2771,12 +2871,78 @@ else if (arg == "-Zcheck")
             sb.Append("}");
         }
         sb.Append("],");
+        sb.Append("\"aggregate_copies\":[");
+        first = true;
+        foreach (var copy in codegen == null ? new List<AggregateCopyInfo>() : (codegen.AggregateCopies ?? new List<AggregateCopyInfo>()))
+        {
+            if (!first) sb.Append(",");
+            first = false;
+            sb.Append("{");
+            sb.Append("\"function\":\"").Append(JsonEscape(copy.Function ?? "")).Append("\",");
+            sb.Append("\"type\":\"").Append(JsonEscape(copy.Type ?? "")).Append("\",");
+            sb.Append("\"size_bytes\":").Append(Math.Max(0, copy.SizeBytes)).Append(",");
+            sb.Append("\"strategy\":\"").Append(JsonEscape(copy.Strategy ?? "")).Append("\"");
+            if (!string.IsNullOrEmpty(copy.Source))
+                sb.Append(",\"source\":\"").Append(JsonEscape(copy.Source)).Append("\"");
+            sb.Append("}");
+        }
+        sb.Append("],");
         sb.Append("\"notes\":[");
         AppendJsonStringArray(sb, new[]
         {
             "dbg2.json is emitted alongside the ROM so KOKURA can load richer source-aware metadata directly.",
             "source_map.txt is emitted alongside the ROM for lightweight line-level lookup without requiring the full JSON payload.",
             "static_estimates are currently structural estimates driven by codegen/call topology and function size, not cycle-perfect timing."
+        });
+        sb.Append("]");
+        sb.Append("}");
+        return sb.ToString();
+    }
+
+    static string BuildAiMetadataJson(
+        string outputFilename,
+        List<string> sourceFilenames,
+        CodegenAnalysisReport codegen,
+        AssemblerAnalysisReport asm)
+    {
+        string romHash = BuildReportUtil.ComputeSha256HexOfFile(outputFilename);
+        var sb = new StringBuilder();
+        sb.Append("{");
+        sb.Append("\"schema\":\"kitaqgb-ai-build-metadata\",");
+        sb.Append("\"schema_version\":1,");
+        sb.Append("\"producer\":\"KITAQGB\",");
+        sb.Append("\"platform\":\"gb\",");
+        sb.Append("\"build_id\":\"").Append(JsonEscape(romHash)).Append("\",");
+        sb.Append("\"rom\":{");
+        sb.Append("\"path\":\"").Append(JsonEscape(outputFilename ?? "")).Append("\",");
+        sb.Append("\"hash\":\"").Append(JsonEscape(romHash)).Append("\",");
+        sb.Append("\"sha256\":\"").Append(JsonEscape(romHash)).Append("\",");
+        sb.Append("\"target\":\"gb\",");
+        sb.Append("\"size_bytes\":").Append(asm == null ? 0 : asm.RomSizeBytes);
+        sb.Append("},");
+        sb.Append("\"source_files\":[");
+        AppendJsonStringArray(sb, (sourceFilenames ?? new List<string>()).Distinct(StringComparer.Ordinal));
+        sb.Append("],");
+        AppendStackPolicyJson(sb);
+        sb.Append(",");
+        sb.Append("\"compiler\":{");
+        sb.Append("\"abi\":\"").Append(JsonEscape(Abi.ToString().ToLowerInvariant())).Append("\",");
+        sb.Append("\"opt_level\":").Append(OptLevel).Append(",");
+        sb.Append("\"function_count\":").Append(asm == null || asm.FunctionSizes == null ? 0 : asm.FunctionSizes.Count).Append(",");
+        sb.Append("\"call_edge_count\":").Append(codegen == null || codegen.Calls == null ? 0 : codegen.Calls.Count).Append(",");
+        sb.Append("\"aggregate_copy_count\":").Append(codegen == null || codegen.AggregateCopies == null ? 0 : codegen.AggregateCopies.Count).Append(",");
+        sb.Append("\"abi_issue_count\":").Append(codegen == null || codegen.AbiIssues == null ? 0 : codegen.AbiIssues.Count);
+        sb.Append("},");
+        sb.Append("\"artifacts\":{");
+        sb.Append("\"dbg2_json\":\"").Append(JsonEscape(Path.ChangeExtension(outputFilename, ".dbg2.json"))).Append("\",");
+        sb.Append("\"build_report_json\":\"").Append(JsonEscape(Path.ChangeExtension(outputFilename, ".build_report.json"))).Append("\",");
+        sb.Append("\"source_map\":\"").Append(JsonEscape(Path.ChangeExtension(outputFilename, ".source_map.txt"))).Append("\"");
+        sb.Append("},");
+        sb.Append("\"notes\":[");
+        AppendJsonStringArray(sb, new[]
+        {
+            "Metadata is a compact SARAKURA/KOKURA handoff view; detailed symbols remain in dbg2.json.",
+            "ROM hash is the build_id so emitter output can be joined to this compiler artifact."
         });
         sb.Append("]");
         sb.Append("}");
@@ -4458,6 +4624,7 @@ enum ErrorCode
     // Lint: potentially dangerous pointer arithmetic
     PointerArithmeticDanger = 2419,
     ManualSvbkRequired = 2420,
+    LargeStructCopy = 2421,
 
     // Extern (25xx)
     ExternUndefined = 2501,
