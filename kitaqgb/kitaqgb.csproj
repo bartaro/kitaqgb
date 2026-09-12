@@ -75,11 +75,11 @@
     <None Include="app.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Target Name="AfterBuild">
+  <Target Name="AfterBuild" Condition=" '$(Configuration)' == 'Release' ">
     <Copy SourceFiles="$(TargetPath)"
-          DestinationFiles="$(MSBuildProjectDirectory)\$(TargetFileName)" />
-    <Copy SourceFiles="$(TargetDir)$(TargetName).pdb"
-          DestinationFiles="$(MSBuildProjectDirectory)\$(TargetName).pdb"
-          Condition="Exists('$(TargetDir)$(TargetName).pdb')" />
+          DestinationFiles="$(MSBuildProjectDirectory)\..\$(TargetFileName)" />
+    <Copy SourceFiles="$(TargetPath).config"
+          DestinationFiles="$(MSBuildProjectDirectory)\..\$(TargetFileName).config"
+          Condition="Exists('$(TargetPath).config')" />
   </Target>
 </Project>

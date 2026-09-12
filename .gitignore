@@ -21,3 +21,9 @@
 *.wav
 .kitaqgb_cache/
 .kitaqfc_cache/
+
+# Compiler source builds stay local; the root Release executable is distributed.
+**/bin/
+**/obj/
+!/kitaqgb.exe
+/integration_test/reports/

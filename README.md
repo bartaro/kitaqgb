@@ -58,40 +58,42 @@ The generated ROMs should be tested with an emulator and, where practical, on re
 
 ## Repository layout
 
-A recommended repository layout is:
-
 ```text
-KITAQGB/
-├─ README.md
-├─ LICENSE
-├─ THIRD_PARTY_NOTICES.md
-├─ README_RELEASE_NOTES.md
-├─ .gitignore
-├─ kitaqgb/              # C# compiler/toolchain source
+kitaqgb/                  # Repository root
+├─ kitaqgb/               # Compiler build sources
 │  ├─ *.cs
+│  ├─ app.config
 │  └─ kitaqgb.csproj
-└─ lib/                  # C helper libraries for homebrew projects
-   ├─ audio.c / audio.h
-   ├─ cgb_palette.c / cgb_palette.h
-   ├─ cgb_tile.h
-   ├─ scroll.c / scroll.h
-   ├─ camera.c / camera.h
-   ├─ link.c / link.h
-   ├─ rpg.h
-   └─ ...
-```
-
-If KOKURA CLI is distributed in the same GitHub repository, a monorepo layout such as the following is also suitable:
-
-```text
-KITAQGB/
-├─ README.md
+├─ kitaqgb.exe            # Prebuilt Release compiler
+├─ kitaqgb.exe.config     # .NET Framework runtime configuration
+├─ lib/                # C support libraries
+├─ examples/           # Tutorial programs and original font
+├─ scripts/build.ps1   # Rebuild the Release executable
 ├─ LICENSE
-├─ THIRD_PARTY_NOTICES.md
-├─ kitaqgb/              # KITAQGB compiler/toolchain
-├─ lib/                  # KITAQGB C libraries
-└─ kokura/               # Optional KOKURA CLI emulator/debugger companion
+└─ LICENSE.ja
 ```
+
+The prebuilt compiler requires Windows with .NET Framework 4.8. Download the
+repository ZIP to keep the executable, runtime configuration, libraries and
+license notices together. Rebuilding additionally requires the .NET Framework
+4.8 Developer Pack and Visual Studio Build Tools. From the repository root:
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+.\examples\build.ps1
+```
+
+A Release build copies the executable and its configuration to the repository
+root. Debug builds stay inside `kitaqgb/bin/Debug` and do not overwrite the
+distributed Release compiler. Build caches and PDB files are not distributed.
+See [binary build record](BINARY_BUILD.json) for the build inputs and SHA-256.
+
+日本語: ビルド用のC#ソースとプロジェクトは `kitaqgb/` にまとめています。
+ビルド済みRelease版は直下の `kitaqgb.exe` です。実行には .NET Framework 4.8 が必要です。
+リポジトリのZIPを取得すると、設定ファイル・ライブラリ・権利表記も一緒に入手できます。
+再ビルドはリポジトリ直下で `.\scripts\build.ps1` を実行してください。
+
 
 ## Requirements
 
@@ -292,14 +294,14 @@ KITAQGBはZachtronicsのNORCALを出発点とするフォークです。原作�
 Windows, .NET Framework 4.8 Developer Pack and Visual Studio Build Tools (MSBuild). Run from a Developer PowerShell prompt.
 
 ```powershell
-MSBuild.exe .\kitaqgb.csproj /t:Build /p:Configuration=Release
+MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 .\kitaqgb.exe --help
 .\examples\build.ps1
 ```
 
 ## Manuals and licenses
 
-- [Japanese HTML manuals](https://bartaro.github.io/kitaq-docs/)
+- [Japanese HTML manuals](https://bartaro.github.io/kitaq-docs/) / [English manuals](https://bartaro.github.io/kitaq-docs/en/)
 - [Offline manual source](https://github.com/bartaro/kitaq-docs)
 - [License](LICENSE) / [日本語参考訳](LICENSE.ja)
 

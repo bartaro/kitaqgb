@@ -1,0 +1,281 @@
+{
+  "built_on": "2026-09-13",
+  "configuration": "Release",
+  "target_framework": ".NET Framework 4.8",
+  "platform": "AnyCPU",
+  "build_command": ".\\scripts\\build.ps1",
+  "build_exit_code": 0,
+  "warnings": 0,
+  "source_changes": "C# source files relocated without content changes; project Release copy target updated.",
+  "source_inputs": [
+    {
+      "path": "kitaqgb/AsmInfo.cs",
+      "sha256": "4219040d5b9bf70c9ca58cc86c030f236418918d8765b4395b81a840aacc66ee"
+    },
+    {
+      "path": "kitaqgb/Assembler.cs",
+      "sha256": "9a493d6b3f4d051bb9aa1d701a32e986d625107bc0900fd407025b8f3044b324"
+    },
+    {
+      "path": "kitaqgb/DebugExporter.cs",
+      "sha256": "244daebea09d5e14a1d36ef8953b5810837c0a891db05483c099fbf6bd091a47"
+    },
+    {
+      "path": "kitaqgb/Lowerer.cs",
+      "sha256": "dc041c49d25c6c71935d70273f15f2a731922c5269fe09e9886ade0b6e749c10"
+    },
+    {
+      "path": "kitaqgb/Optimizer.cs",
+      "sha256": "f37987fd99e21351ae22bccb4e54652032ad5f47e1fedae89a01aa25268490a9"
+    },
+    {
+      "path": "kitaqgb/Other.cs",
+      "sha256": "dd692476ea381f85bc0ab93dcc611edf7b3a499495cb49fb67c1b7b0c8ded4da"
+    },
+    {
+      "path": "kitaqgb/CType.cs",
+      "sha256": "9e4338890e4c18e2b51fca613d571cb2f8c7570a547fe41f124f45520f5eeda6"
+    },
+    {
+      "path": "kitaqgb/Disassembler.cs",
+      "sha256": "5442cadc6c0a12f12e9e3a6a6f09b7c7d7f8f06a54fd1d9873817b8ed715c942"
+    },
+    {
+      "path": "kitaqgb/Expr.cs",
+      "sha256": "cd2db83d2b4de875d673aa554be27575aa8eb7d9e190596ab72f0b6358af4c07"
+    },
+    {
+      "path": "kitaqgb/IoUtil.cs",
+      "sha256": "55bfdaff6a8484ae53e81f43e7f311e274768da06e6b9ea0e7ecbbc8aadbefcf"
+    },
+    {
+      "path": "kitaqgb/Maybe.cs",
+      "sha256": "ee7a4d09e3ae4db484ebac0f828a63bf595015cf90b05d2261309fec85de8a7c"
+    },
+    {
+      "path": "kitaqgb/Parser.cs",
+      "sha256": "3fe557a746839e8403e9b7038a520b9daf930b6a8d731823c4ad8ef1c9a1a1f9"
+    },
+    {
+      "path": "kitaqgb/Program.cs",
+      "sha256": "dbe1253b1ffe36c557f737c346b9465b08e6be7b410c99a61800109ee570a620"
+    },
+    {
+      "path": "kitaqgb/Program.Api.cs",
+      "sha256": "8a50eefc58f089a93f87d02853d6678a8d6e204ef1341c97f032ab4e90ed8415"
+    },
+    {
+      "path": "kitaqgb/Program.DebugTools.cs",
+      "sha256": "f8465d576a7c30c0e5c7060302cdce4703c0ac0ba2a46c796c2072e75ec9a685"
+    },
+    {
+      "path": "kitaqgb/Program.VibeTools.cs",
+      "sha256": "dfe04d66d8339603c7a391d0939121a307d830e418d5f9a12f138a10c6d4501d"
+    },
+    {
+      "path": "kitaqgb/BuildReports.cs",
+      "sha256": "3557bb0126f89612d69d78dbf263efa32e597ba278c95ffc229279579a8e71c6"
+    },
+    {
+      "path": "kitaqgb/CompilerApi.cs",
+      "sha256": "f35502ec270edd17451d9043b113fc203a9c399ade3f306dbdb12e1ba65e6280"
+    },
+    {
+      "path": "kitaqgb/CompilerSession.cs",
+      "sha256": "4613065752883c7e94e99b76165c5b1779bcbc2b0ffa07f889840379cc795cfb"
+    },
+    {
+      "path": "kitaqgb/RomHeaderPatcher.cs",
+      "sha256": "907122f48d6027a31ddc828b52de52bf1a0f1ba26bf0a643ac99490e493c812d"
+    },
+    {
+      "path": "kitaqgb/Tokenizer.cs",
+      "sha256": "72c2de7ecb1679d64abd8427b0e7b2c8492acde05958a79aaa2e4f1dd86260c8"
+    },
+    {
+      "path": "kitaqgb/CodeGenerator.cs",
+      "sha256": "1738da38f3218df77d1147f87874aeb1c7b721fc0a8baad87fbd8be20c835e5a"
+    },
+    {
+      "path": "kitaqgb/Minimizer.cs",
+      "sha256": "0776a0cd3f22fad738d18d0c1006f83935eaaa161a1a6f0cc80a4d3dec20f01c"
+    },
+    {
+      "path": "kitaqgb/kitaqgb.csproj",
+      "sha256": "c53fcd32394996861f334919b3a56ab9d1bfd6ec311b06ce2756fbc584b671b0"
+    },
+    {
+      "path": "kitaqgb/app.config",
+      "sha256": "d61bde901e7189cc97d45a1d4c4aa39d4c4de2b68419773ec774338506d659ad"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "kitaqgb.exe",
+      "bytes": 637952,
+      "sha256": "02efa40d12c7f4006049808f0f53aa1472fabe40f5adccbaeae2c290ad6aaa79"
+    },
+    {
+      "path": "kitaqgb.exe.config",
+      "bytes": 161,
+      "sha256": "d61bde901e7189cc97d45a1d4c4aa39d4c4de2b68419773ec774338506d659ad"
+    }
+  ],
+  "manual_sample_compilations": [
+    {
+      "id": "gb_font",
+      "compile": "passed",
+      "rom_sha256": "707c699d70940e8c821909604011d8ed76e25a6982421caf1f680b028f9eb33b"
+    },
+    {
+      "id": "gb_hello",
+      "compile": "passed",
+      "rom_sha256": "4698385540f315b38d323388ac7934f11a1c29eef108f8af8105e8a585035f6d"
+    },
+    {
+      "id": "gb_arithmetic",
+      "compile": "passed",
+      "rom_sha256": "ee84a49f5e194db2d1939c043609446f21738f10fd0ab00954fbbee09507733f"
+    },
+    {
+      "id": "gb_control",
+      "compile": "passed",
+      "rom_sha256": "8a24bc7798433e2e1d6240c5e3a8bea57b9c2141e11413dfc8c1a112af10bccf"
+    },
+    {
+      "id": "gb_aggregate",
+      "compile": "passed",
+      "rom_sha256": "69b7149a3a9fa78d1441bcf540d724173acd31e868167448f63969f8b6dacfc4"
+    },
+    {
+      "id": "gb_bits_memory",
+      "compile": "passed",
+      "rom_sha256": "4426fae2350a4d54153fe2cba0d2ae0a3ad2022651ec57881d35696b3393b219"
+    },
+    {
+      "id": "gb_input",
+      "compile": "passed",
+      "rom_sha256": "fea8bbd1390f9f342a6faa6c40611d58564b7e08f9a1bbb611fe65a1f8b33497"
+    },
+    {
+      "id": "gb_fixed",
+      "compile": "passed",
+      "rom_sha256": "95bd799e6a9e9b2c8f02313c5bb8ee30df64b6746e2c7d9e223c10b44d74b070"
+    },
+    {
+      "id": "gb_entity",
+      "compile": "passed",
+      "rom_sha256": "28ccc04baef1ea9d6f8108ee50a47c9e0fc9199afd8ac787c198e8a1aa7bfa58"
+    },
+    {
+      "id": "gb_debug",
+      "compile": "passed",
+      "rom_sha256": "e40e65b5974ca1c40ef8614684c449c1e0c8ce0d4c0651ed4e88a24948af2cdd"
+    },
+    {
+      "id": "gb_chain",
+      "compile": "passed",
+      "rom_sha256": "091e3b35c40641dc4f8b7c05983aba15b6e3d407dfe5fe66da0be4196d940a75"
+    },
+    {
+      "id": "gb_system",
+      "compile": "passed",
+      "rom_sha256": "5f4b17aa0b8cf4c6c019c544cd5ce69b9e2604ad3432e5431135a36a8e7a6371"
+    },
+    {
+      "id": "gb_scene",
+      "compile": "passed",
+      "rom_sha256": "03ed49500a1d58cdea3ac0e150350bc3c87fc7fbbd8c0fd70fef6694e5fb26e6"
+    },
+    {
+      "id": "gb_camera",
+      "compile": "passed",
+      "rom_sha256": "3f4a154cfb3831a5572d67e37dfd95374beee6a85c8aeea3b599293fefaa3a77"
+    },
+    {
+      "id": "gb_rle",
+      "compile": "passed",
+      "rom_sha256": "54ff8c67a66d61397f47f025550fdf1b96352a267e54fe6e6ca3abc306d91efd"
+    },
+    {
+      "id": "gb_board",
+      "compile": "passed",
+      "rom_sha256": "984da1818a5763cebebf4132b031f0d747716f133d8770b6d43739fe7a086861"
+    },
+    {
+      "id": "gb_physics",
+      "compile": "passed",
+      "rom_sha256": "3ac030c123c31626ca0b1b72fbecc815f0c072df1eff0e598927b72a6ee14502"
+    },
+    {
+      "id": "gb_link",
+      "compile": "passed",
+      "rom_sha256": "dada81d9839eee03bcd3cd2001d6bcd56a9051765c10d5308f6518cae427003b"
+    },
+    {
+      "id": "gb_bank",
+      "compile": "passed",
+      "rom_sha256": "9ea247e75b111dc913f516021a05df9511c65c66c630db3560a6856010b1a9dd"
+    },
+    {
+      "id": "gb_asset",
+      "compile": "passed",
+      "rom_sha256": "c53f51e5e983a660cd06bc1e0992148625eaf42124185b4b2ed1cac790fbc642"
+    },
+    {
+      "id": "gb_danmaku",
+      "compile": "passed",
+      "rom_sha256": "ebb85a733fc59d50ef9739f30fe3153aedbe417d615f209fe6f349de62c44b47"
+    },
+    {
+      "id": "gb_cgb_palette",
+      "compile": "passed",
+      "rom_sha256": "8fc50a98502ee61a714e0d38c11a53f06b91b6b337d19d4bc671c544f5ddb826"
+    },
+    {
+      "id": "gb_scroll",
+      "compile": "passed",
+      "rom_sha256": "b6c32b686be424c65fd46cf54ba32fc3ef180b8bff885f3d5d5c8da31604fdff"
+    },
+    {
+      "id": "gb_vram_queue",
+      "compile": "passed",
+      "rom_sha256": "cb0bff3ffbbc95334b641af4a481e5e327dd2c34c6b9f8ac1d6475832e300536"
+    },
+    {
+      "id": "gb_sprite",
+      "compile": "passed",
+      "rom_sha256": "a38a47b81255d503db5d516525dcc845a47b7403d4e63676e1e1edf8d26d0a48"
+    },
+    {
+      "id": "gb_rng",
+      "compile": "passed",
+      "rom_sha256": "d3f9bfc0818d726b53dffc1d1e8b60d977c6ae9e999a4c9d388bd49605f6697a"
+    },
+    {
+      "id": "gb_flags",
+      "compile": "passed",
+      "rom_sha256": "b9ee56294d2b7c951efe9c3d7cd5219c2c034bcd8aef5e521e878bf71ea0985c"
+    },
+    {
+      "id": "gb_circle",
+      "compile": "passed",
+      "rom_sha256": "21072ff433cb673fabe9197ad9a6804559e9493c86e4bc7576f79f16bae00f76"
+    },
+    {
+      "id": "gb_sound",
+      "compile": "passed",
+      "rom_sha256": "4e7f8df220109782a1d3d6c69750131d56e8dab636ec6f07963785cbdf97bc30"
+    }
+  ],
+  "standalone_samples": [
+    "hello",
+    "entity"
+  ],
+  "help_check": {
+    "usage_displayed": true,
+    "exit_code": 1,
+    "note": "Existing behavior: --help prints usage and returns 1, including in the preceding publication build."
+  },
+  "runtime_scope": "Compiler startup and ROM compilation checked; emulator and physical-hardware behavior not retested for this layout change."
+}
