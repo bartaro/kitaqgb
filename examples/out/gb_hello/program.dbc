@@ -1,0 +1,56 @@
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; call
+NOP
+; variable
+; for
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; post_increment
+NOP
+; post_increment
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; call
+NOP
+; call
+NOP
+; call
+NOP
+; call
+NOP
+; for
+; call
+NOP

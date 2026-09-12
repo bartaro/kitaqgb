@@ -21,27 +21,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-------------------------------------------------------------------------
-Additional scope and trademark notice (not part of the MIT License terms)
-------------------------------------------------------------------------
-
-The MIT License above applies to KITAQGB's original code and the
-MIT-licensed code inherited from NORCAL, with their respective copyright
-notices preserved.
-
-KITAQGB includes the 48-byte Nintendo logo data in compatible Game Boy
-cartridge headers solely for compatibility with the console's boot-time
-validation. Its inclusion does not constitute a claim of ownership of
-Nintendo's logo or trademarks, nor does KITAQGB grant an independent
-license to any rights Nintendo may hold in that logo or those trademarks.
-
-KITAQGB is an independent project and is not affiliated with, endorsed by,
-sponsored by, or approved by Nintendo. Game Boy and Game Boy Color are
-trademarks of Nintendo.
-
-This notice clarifies the scope of the project's license and does not
-add restrictions to the code covered by the MIT License above.
-
 
 ------------------------------------------------------------------------
 Additional font notices (not part of the MIT License terms)

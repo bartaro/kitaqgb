@@ -1,0 +1,344 @@
+[
+  {
+    "id": "gb_font",
+    "platform": "gb",
+    "title": "指定ascii.cの英数字・記号一覧",
+    "file": "gb_font.c",
+    "libs": [],
+    "expected": "Uppercase, lowercase, numbers and all 30 supplied punctuation glyphs",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_hello",
+    "platform": "gb",
+    "title": "最初の画面表示",
+    "file": "gb_hello.c",
+    "libs": [],
+    "expected": "HELLO WORLD and 042",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_arithmetic",
+    "platform": "gb",
+    "title": "変数・算術・型変換",
+    "file": "gb_arithmetic.c",
+    "libs": [],
+    "expected": "030",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_control",
+    "platform": "gb",
+    "title": "条件分岐と繰り返し",
+    "file": "gb_control.c",
+    "libs": [],
+    "expected": "042",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_aggregate",
+    "platform": "gb",
+    "title": "関数・配列・構造体・ポインタ",
+    "file": "gb_aggregate.c",
+    "libs": [],
+    "expected": "042",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_bits_memory",
+    "platform": "gb",
+    "title": "ビット操作・メモリ転送",
+    "file": "gb_bits_memory.c",
+    "libs": [],
+    "expected": "010",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_input",
+    "platform": "gb",
+    "title": "ボタン入力と押した瞬間",
+    "file": "gb_input.c",
+    "libs": [
+      "input.c"
+    ],
+    "expected": "000 initially; A increments once per press",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_fixed",
+    "platform": "gb",
+    "title": "固定小数点Q8.8",
+    "file": "gb_fixed.c",
+    "libs": [
+      "fixed.c"
+    ],
+    "expected": "012",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_entity",
+    "platform": "gb",
+    "title": "固定長オブジェクトプール",
+    "file": "gb_entity.c",
+    "libs": [
+      "entity.c"
+    ],
+    "expected": "001",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_debug",
+    "platform": "gb",
+    "title": "値の記録とアサート",
+    "file": "gb_debug.c",
+    "libs": [
+      "debug.c"
+    ],
+    "expected": "001; trace log contains HP=42",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_chain",
+    "platform": "gb",
+    "title": "座標履歴のリングバッファ",
+    "file": "gb_chain.c",
+    "libs": [
+      "chain.c"
+    ],
+    "expected": "042; history contains (20,30)",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_system",
+    "platform": "gb",
+    "title": "フレームカウンター",
+    "file": "gb_system.c",
+    "libs": [
+      "system.c"
+    ],
+    "expected": "002",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_scene",
+    "platform": "gb",
+    "title": "シーン番号の切替",
+    "file": "gb_scene.c",
+    "libs": [
+      "scene.c"
+    ],
+    "expected": "001; no callbacks registered",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_camera",
+    "platform": "gb",
+    "title": "世界座標から画面座標へ",
+    "file": "gb_camera.c",
+    "libs": [
+      "scroll.c",
+      "camera.c"
+    ],
+    "expected": "042: world x=52 minus camera x=10",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_rle",
+    "platform": "gb",
+    "title": "連長圧縮データの展開",
+    "file": "gb_rle.c",
+    "libs": [
+      "rle.c"
+    ],
+    "expected": "042; three bytes each equal to 42",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_board",
+    "platform": "gb",
+    "title": "盤面の読み書き",
+    "file": "gb_board.c",
+    "libs": [
+      "slg_board.c"
+    ],
+    "expected": "042",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_physics",
+    "platform": "gb",
+    "title": "矩形の運動を1ステップ",
+    "file": "gb_physics.c",
+    "libs": [
+      "fixed.c",
+      "physics2d.c"
+    ],
+    "expected": "042: integer pixel coordinates",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_link",
+    "platform": "gb",
+    "title": "通信が届かない場合の扱い",
+    "file": "gb_link.c",
+    "libs": [
+      "link_hwregs_gb.c",
+      "link.c"
+    ],
+    "expected": "255 for disconnected link; 000 if timeout; peer value when connected",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_bank",
+    "platform": "gb",
+    "title": "バンク番号付きデータ",
+    "file": "gb_bank.c",
+    "libs": [
+      "bank.c"
+    ],
+    "expected": "042; bank 0 fixed-ROM data copy",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_asset",
+    "platform": "gb",
+    "title": "素材IDからRAMへ読み込む",
+    "file": "gb_asset.c",
+    "libs": [
+      "asset.c"
+    ],
+    "expected": "042",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_danmaku",
+    "platform": "gb",
+    "title": "弾プールの生成と個数",
+    "file": "gb_danmaku.c",
+    "libs": [
+      "danmaku.c"
+    ],
+    "expected": "001; numeric pool example, no bullet BG compositor",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_cgb_palette",
+    "platform": "gb",
+    "title": "CGBの色指定",
+    "file": "gb_cgb_palette.c",
+    "libs": [
+      "cgb_palette.c"
+    ],
+    "expected": "042 in purple on white; CGB mode",
+    "options": [
+      "--cgb=cgb"
+    ],
+    "kind": "original"
+  },
+  {
+    "id": "gb_scroll",
+    "platform": "gb",
+    "title": "背景スクロール",
+    "file": "gb_scroll.c",
+    "libs": [
+      "scroll.c"
+    ],
+    "expected": "title moves left as SCX increases",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_vram_queue",
+    "platform": "gb",
+    "title": "VRAM更新キュー",
+    "file": "gb_vram_queue.c",
+    "libs": [
+      "vram.c"
+    ],
+    "expected": "4 at (3,8)",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_sprite",
+    "platform": "gb",
+    "title": "スプライトとOAM DMA",
+    "file": "gb_sprite.c",
+    "libs": [
+      "sprite.c"
+    ],
+    "expected": "letter A at sprite position",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_rng",
+    "platform": "gb",
+    "title": "乱数とseed",
+    "file": "gb_rng.c",
+    "libs": [
+      "rng.c"
+    ],
+    "expected": "value 000 through 009; same seed repeats",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_flags",
+    "platform": "gb",
+    "title": "フラグとクエスト状態",
+    "file": "gb_flags.c",
+    "libs": [
+      "flags.c"
+    ],
+    "expected": "001",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_circle",
+    "platform": "gb",
+    "title": "円の物理計算",
+    "file": "gb_circle.c",
+    "libs": [
+      "physics2d_circle.c"
+    ],
+    "expected": "042 after one step; this example uses integer pixels",
+    "options": [],
+    "kind": "original"
+  },
+  {
+    "id": "gb_sound",
+    "platform": "gb",
+    "title": "GBの効果音",
+    "file": "gb_sound.c",
+    "libs": [
+      "audio_hwregs_gb.c",
+      "audio.c"
+    ],
+    "expected": "042 and a short pulse tone",
+    "options": [],
+    "kind": "original"
+  }
+]

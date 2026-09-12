@@ -281,3 +281,26 @@ Before submitting changes, please keep the following rules in mind:
 ## Status
 
 This repository is prepared as an initial public release of KITAQGB. Interfaces, helper libraries, diagnostics, and companion-tool integration may evolve as the project matures.
+
+## 名称の由来
+
+KITAQGBはZachtronicsのNORCALを出発点とするフォークです。原作者Keith Holman氏の著作権表示を保持しています。
+名前は **Kernel-Informed Toolchain for AI-Quality Game Boy Development** と、北九州（KITAQ）＋Game Boy（GB）を重ねたダブルミーニングです。
+
+## Build and first use
+
+Windows, .NET Framework 4.8 Developer Pack and Visual Studio Build Tools (MSBuild). Run from a Developer PowerShell prompt.
+
+```powershell
+MSBuild.exe .\kitaqgb.csproj /t:Build /p:Configuration=Release
+.\kitaqgb.exe --help
+.\examples\build.ps1
+```
+
+## Manuals and licenses
+
+- [Japanese HTML manuals](https://bartaro.github.io/kitaq-docs/)
+- [Offline manual source](https://github.com/bartaro/kitaq-docs)
+- [License](LICENSE) / [日本語参考訳](LICENSE.ja)
+
+The project license does not replace third-party font, dependency, logo or trademark terms. Preserve the accompanying notices when redistributing.

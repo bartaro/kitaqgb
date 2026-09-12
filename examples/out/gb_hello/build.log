@@ -1,0 +1,5 @@
+[KITAQGB] RST disabled (default/--rst-disable)
+13966 bytes padding inserted at 0972
+Assembly complete. Size: 17138 bytes used (ROM=32768 bytes).
+[report] debug metadata: C:\kitaqgb_project\publish\github_20260912\kitaqgb\examples\out\gb_hello\program.dbg2.json
+[report] build report: C:\kitaqgb_project\publish\github_20260912\kitaqgb\examples\out\gb_hello\program.build_report.json

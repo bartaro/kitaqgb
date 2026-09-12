@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KITAQGB 物理ライブラリ解説 (2D/3D)</title>
+  <style>
+    :root {
+      --bg: #f3f6f9;
+      --paper: #ffffff;
+      --ink: #11202d;
+      --muted: #4a6074;
+      --line: #c6d4df;
+      --accent: #1d6f8c;
+      --accent-soft: #d7edf6;
+      --ok: #2b7a2b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 8%, #e6f4fb 0%, transparent 28%),
+        radial-gradient(circle at 82% 2%, #d8f0ea 0%, transparent 22%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px 32px;
+    }
+
+    .hero {
+      background: linear-gradient(140deg, #ffffff, #edf8fd 60%, #e7f3f1);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(17, 32, 45, 0.08);
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 12px; }
+    h1 { font-family: "Alegreya Sans SC", "Trebuchet MS", sans-serif; letter-spacing: 0.04em; }
+    h2 { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }
+    p { margin: 0 0 12px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #7aaec2;
+      background: var(--accent-soft);
+      color: #13485d;
+      margin-right: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    pre {
+      margin: 0;
+      background: #0e1e29;
+      color: #d9edf7;
+      border-radius: 10px;
+      padding: 14px;
+      overflow: auto;
+      border: 1px solid #203647;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    code { font-family: "Consolas", "Courier New", monospace; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 0;
+      font-size: 14px;
+      background: var(--paper);
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #e8f2f8;
+      font-weight: 600;
+    }
+
+    .diagram {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .note {
+      padding: 10px 12px;
+      border-left: 4px solid var(--accent);
+      background: #edf8fd;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .mermaid {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <span class="badge">KITAQGB</span>
+      <span class="badge">2D + 3D AABB</span>
+      <span class="badge">Deterministic Integer Solver</span>
+      <h1>物理ライブラリ解説</h1>
+      <p>
+        このページは <code>lib/physics2d.*</code> と <code>lib/physics3d.*</code> の実装内容をもとに、
+        API・使い方・内部処理・チューニング項目を日本語でまとめたドキュメントです。
+      </p>
+      <p class="ok">検証済みコマンド: コンパイル警告 0 / エラー 0</p>
+    </section>
+
+    <h2>1. 最短導入</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>ビルド例</h3>
+<pre><code>kitaqgb main.c lib/physics2d.c lib/physics3d.c -I lib -o game.gb --profile=dev</code></pre>
+      </article>
+      <article class="card">
+        <h3>ヘッダ読み込み</h3>
+<pre><code>#include "physics2d.h"
+#include "physics3d.h"</code></pre>
+      </article>
+      <article class="card">
+        <h3>重要ルール</h3>
+        <p><code>inv_mass_q8 == 0</code> は静的ボディ（実質無限質量）です。</p>
+        <p><code>inv_mass_q8 &gt; 0</code> は動的ボディです。</p>
+      </article>
+    </div>
+
+    <h2>2. API 概要</h2>
+    <article class="card">
+      <h3>2D API</h3>
+      <table>
+        <thead>
+          <tr><th>シンボル</th><th>役割</th><th>補足</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>KQBody2D</code></td><td>ボディ状態</td><td>位置・速度・半径（半サイズ）・逆質量・active フラグ。</td></tr>
+          <tr><td><code>KQWorld2D</code></td><td>ワールド設定</td><td>ボディ配列・重力・反復回数・速度上限。</td></tr>
+          <tr><td><code>kq2d_world_init</code></td><td>初期化</td><td><code>gravity_y=32</code>, <code>solver_iterations=4</code>, <code>max_speed=512</code> を設定。</td></tr>
+          <tr><td><code>kq2d_overlap_aabb</code></td><td>重なり判定</td><td>2 つの AABB が重なれば <code>1</code>。</td></tr>
+          <tr><td><code>kq2d_step</code></td><td>1 ステップ更新</td><td>積分 → ペア解決（反復）。</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card">
+      <h3>3D API</h3>
+      <table>
+        <thead>
+          <tr><th>シンボル</th><th>役割</th><th>補足</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>KQBody3D</code></td><td>ボディ状態</td><td>3 軸の位置・速度・半サイズ・逆質量。</td></tr>
+          <tr><td><code>KQWorld3D</code></td><td>ワールド設定</td><td>3 軸重力と反復解決設定。</td></tr>
+          <tr><td><code>kq3d_world_init</code></td><td>初期化</td><td><code>gravity_y=24</code>, <code>solver_iterations=4</code>, <code>max_speed=512</code> を設定。</td></tr>
+          <tr><td><code>kq3d_overlap_aabb</code></td><td>重なり判定</td><td>3 軸 AABB 判定。</td></tr>
+          <tr><td><code>kq3d_step</code></td><td>1 ステップ更新</td><td>積分 → ペア解決（x/y/z）。</td></tr>
+          <tr><td><code>kq3d_dot_q8_8</code></td><td>内積ラッパ</td><td>内部で <code>__sdot3_q8_8</code> を呼びます。</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <h2>3. フレーム処理フロー (Mermaid)</h2>
+    <p>以下は <code>kq2d_step</code> / <code>kq3d_step</code> 共通の処理順です。</p>
+    <pre class="mermaid">flowchart TD
+      A[Step(world)] --> B{world and bodies valid?}
+      B -- No --> Z[Return]
+      B -- Yes --> C[Loop bodies i]
+      C --> D{active and inv_mass_q8 > 0?}
+      D -- No --> C
+      D -- Yes --> E[Apply gravity]
+      E --> F[Clamp velocity by max_speed]
+      F --> G[Integrate position]
+      G --> C
+      C --> H[iterations = max(1, solver_iterations)]
+      H --> I[Repeat iterations]
+      I --> J[Loop pair i,j]
+      J --> K{Both active?}
+      K -- No --> J
+      K -- Yes --> L[Overlap check]
+      L --> M{Overlapping?}
+      M -- No --> J
+      M -- Yes --> N[Compute penetration and split correction by inverse mass]
+      N --> O[Resolve axis velocity simply]
+      O --> J
+      J --> I
+      I --> Z</pre>
+    <div class="note" id="mermaid-status">
+      Mermaid 状態: スクリプト読み込み待機中です。
+    </div>
+
+    <h2>4. 数式 (MathML)</h2>
+    <article class="card">
+      <h3>2D AABB 重なり条件</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mo>|</mo><mi>d</mi><mi>x</mi><mo>|</mo>
+          <mo>&lt;</mo>
+          <mrow><mi>h</mi><mi>a</mi><mi>x</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>x</mi></mrow>
+          <mo>&#xA0;and&#xA0;</mo>
+          <mo>|</mo><mi>d</mi><mi>y</mi><mo>|</mo>
+          <mo>&lt;</mo>
+          <mrow><mi>h</mi><mi>a</mi><mi>y</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>y</mi></mrow>
+        </mrow>
+      </math>
+      <h3>めり込み量と補正配分</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>p</mi><mi>x</mi>
+          <mo>=</mo>
+          <mo>(</mo><mi>h</mi><mi>a</mi><mi>x</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>x</mi><mo>)</mo>
+          <mo>-</mo>
+          <mo>|</mo><mi>d</mi><mi>x</mi><mo>|</mo>
+        </mrow>
+      </math>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>a</mi>
+          <mo>=</mo>
+          <mfrac>
+            <mrow><mi>p</mi><mi>e</mi><mi>n</mi><mo>&#x22C5;</mo><mi>i</mi><mi>n</mi><mi>v</mi><mi>a</mi></mrow>
+            <mrow><mi>i</mi><mi>n</mi><mi>v</mi><mi>a</mi><mo>+</mo><mi>i</mi><mi>n</mi><mi>v</mi><mi>b</mi></mrow>
+          </mfrac>
+          <mo>,</mo>
+          <mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>b</mi>
+          <mo>=</mo>
+          <mi>p</mi><mi>e</mi><mi>n</mi><mo>-</mo><mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>a</mi>
+        </mrow>
+      </math>
+      <h3>速度積分</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>v</mi><mo>'</mo>
+          <mo>=</mo>
+          <mi>c</mi><mi>l</mi><mi>a</mi><mi>m</mi><mi>p</mi>
+          <mo>(</mo><mi>v</mi><mo>+</mo><mi>g</mi><mo>,</mo><mo>-</mo><mi>v</mi><mi>m</mi><mi>a</mi><mi>x</mi><mo>,</mo><mi>v</mi><mi>m</mi><mi>a</mi><mi>x</mi><mo>)</mo>
+          <mo>,</mo>
+          <mi>x</mi><mo>'</mo><mo>=</mo><mi>x</mi><mo>+</mo><mi>v</mi><mo>'</mo>
+        </mrow>
+      </math>
+    </article>
+
+    <h2>5. 図解 (SVG)</h2>
+    <div class="grid">
+      <article class="diagram">
+        <h3>2D AABB の重なりと最小軸補正</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="2D AABB diagram">
+          <defs>
+            <marker id="arrow-ja" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1d6f8c"/>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <rect x="120" y="80" width="180" height="110" fill="#d9edf7" stroke="#2a6f89" stroke-width="2"/>
+          <rect x="250" y="65" width="180" height="110" fill="#d4f2e8" stroke="#2e7f67" stroke-width="2"/>
+          <circle cx="210" cy="135" r="4" fill="#2a6f89"/>
+          <circle cx="340" cy="120" r="4" fill="#2e7f67"/>
+          <line x1="210" y1="135" x2="340" y2="120" stroke="#1d6f8c" stroke-width="2" marker-end="url(#arrow-ja)"/>
+          <line x1="300" y1="210" x2="250" y2="210" stroke="#9a3e32" stroke-width="3" marker-end="url(#arrow-ja)"/>
+          <text x="16" y="24" font-size="14" fill="#19374a">A(青) と B(緑) が重なっている状態</text>
+          <text x="16" y="44" font-size="14" fill="#19374a">solver はめり込みの小さい軸を選択</text>
+          <text x="254" y="204" font-size="13" fill="#9a3e32">最小補正軸</text>
+        </svg>
+      </article>
+      <article class="diagram">
+        <h3>3D 軸選択のイメージ</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="3D penetration axis selection">
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <g fill="none" stroke-width="2">
+            <path d="M90 170 L180 130 L290 170 L200 210 Z" stroke="#355d78"/>
+            <path d="M130 100 L220 60 L330 100 L240 140 Z" stroke="#355d78"/>
+            <line x1="90" y1="170" x2="130" y2="100" stroke="#355d78"/>
+            <line x1="180" y1="130" x2="220" y2="60" stroke="#355d78"/>
+            <line x1="290" y1="170" x2="330" y2="100" stroke="#355d78"/>
+            <line x1="200" y1="210" x2="240" y2="140" stroke="#355d78"/>
+          </g>
+          <g fill="none" stroke="#2a9d76" stroke-width="2" opacity="0.9">
+            <path d="M170 180 L260 140 L370 180 L280 220 Z"/>
+            <path d="M210 110 L300 70 L410 110 L320 150 Z"/>
+            <line x1="170" y1="180" x2="210" y2="110"/>
+            <line x1="260" y1="140" x2="300" y2="70"/>
+            <line x1="370" y1="180" x2="410" y2="110"/>
+            <line x1="280" y1="220" x2="320" y2="150"/>
+          </g>
+          <text x="20" y="28" font-size="14" fill="#19374a">px / py / pz を比較し、最小値の軸で解決します。</text>
+          <rect x="30" y="196" width="140" height="14" fill="#7aaec2"/>
+          <rect x="30" y="216" width="80" height="14" fill="#2e7f67"/>
+          <rect x="30" y="236" width="110" height="14" fill="#9a3e32"/>
+          <text x="176" y="207" font-size="12" fill="#2c4a60">px</text>
+          <text x="116" y="227" font-size="12" fill="#2c4a60">py (選択)</text>
+          <text x="146" y="247" font-size="12" fill="#2c4a60">pz</text>
+        </svg>
+      </article>
+    </div>
+
+    <h2>6. 使用例</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>2D サンプル</h3>
+<pre><code>#include "physics2d.h"
+
+static KQBody2D g_bodies2d[8];
+static KQWorld2D g_world2d;
+
+void game_init_2d() {
+    kq2d_world_init(&g_world2d, g_bodies2d, 8);
+    g_world2d.gravity_y = 24;
+    g_world2d.solver_iterations = 3;
+    g_world2d.max_speed = 320;
+
+    g_bodies2d[0].x = 40;
+    g_bodies2d[0].y = 24;
+    g_bodies2d[0].half_x = 4;
+    g_bodies2d[0].half_y = 4;
+    g_bodies2d[0].inv_mass_q8 = 256; /* 1.0 */
+    g_bodies2d[0].active = 1;
+}
+
+void game_tick_2d() {
+    kq2d_step(&g_world2d);
+}</code></pre>
+      </article>
+
+      <article class="card">
+        <h3>3D サンプル</h3>
+<pre><code>#include "physics3d.h"
+
+static KQBody3D g_bodies3d[6];
+static KQWorld3D g_world3d;
+
+void game_init_3d() {
+    kq3d_world_init(&g_world3d, g_bodies3d, 6);
+    g_world3d.gravity_y = 18;
+    g_world3d.solver_iterations = 2;
+    g_world3d.max_speed = 280;
+}
+
+void game_tick_3d() {
+    kq3d_step(&g_world3d);
+}</code></pre>
+      </article>
+    </div>
+
+    <h2>7. チューニング指針</h2>
+    <article class="card">
+      <p><strong>CPU コスト:</strong> おおむね <code>body_count^2 * solver_iterations</code> に比例します。</p>
+      <p><strong>GB 向けの目安:</strong> active body は 8〜24 体程度から始めるのが安全です。</p>
+      <p><strong>安定化ポイント:</strong></p>
+      <ul>
+        <li>壁や地形は <code>inv_mass_q8 = 0</code> を使う。</li>
+        <li><code>max_speed</code> を適切に制限して過大な移動を防ぐ。</li>
+        <li>食い込みが残るなら <code>solver_iterations</code> を増やす。</li>
+      </ul>
+    </article>
+
+    <h2>8. 現時点の制約</h2>
+    <article class="card">
+      <ul>
+        <li>AABB のみ（円・カプセル・多角形 SAT は未対応）。</li>
+        <li>角運動なし（トルク・スピン・慣性テンソルなし）。</li>
+        <li>衝突応答は軽量重視の簡易版（軸方向の平均化・ゼロ化）。</li>
+        <li><code>KQBody2D.restitution_q8</code> は現状予約フィールドです（solver 未使用）。</li>
+      </ul>
+    </article>
+
+    <h2>9. CGB タイル API とパレット補助</h2>
+    <p>
+      これらの補助ライブラリは、物理結果に応じて色付き HUD、衝突マーカー、状態変化のパレット切り替えを出したい時に使います。
+    </p>
+    <p>
+      <code>cgb_tile.h</code> 側のタイル API は compiler intrinsic です。正規のエントリ名は <code>__settile...</code> 系です。パレット API は従来どおり <code>cgb_palette.c</code> の通常ライブラリ関数です。
+    </p>
+
+    <div class="grid">
+      <article class="card">
+        <h3>追加ファイルとビルド</h3>
+<pre><code>#include "cgb_tile.h"
+#include "cgb_palette.h"
+
+kitaqgb main.c lib/physics2d.c lib/physics2d_circle.c \
+  lib/physics3d.c lib/cgb_tile.c lib/cgb_palette.c \
+  -I lib -o game.gb --profile=dev</code></pre>
+      </article>
+
+      <article class="card">
+        <h3>タイル属性バイト</h3>
+        <table>
+          <thead>
+            <tr><th>ビット</th><th>意味</th><th>用途</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>0..2</code></td><td>BG パレット番号</td><td><code>0..7</code> の色番号を選択します。</td></tr>
+            <tr><td><code>3</code></td><td>VRAM バンク</td><td>タイルデータのバンク 0 / 1 を選びます。</td></tr>
+            <tr><td><code>5</code></td><td>X 反転</td><td>左右反転です。</td></tr>
+            <tr><td><code>6</code></td><td>Y 反転</td><td>上下反転です。</td></tr>
+            <tr><td><code>7</code></td><td>優先度</td><td>必要に応じてスプライトより後ろへ回します。</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </div>
+
+    <article class="card">
+      <h3>設定フロー (Mermaid)</h3>
+      <pre class="mermaid">flowchart LR
+        A[タイル番号を決める] --> B[属性バイトを決める]
+        B --> C[__settilecgb または bulk helper で書く]
+        C --> D[RGB555 色を作る]
+        D --> E[BG または OBJ パレットへ書く]
+        E --> F[CGB 上で色付きタイルが表示される]</pre>
+    </article>
+
+    <div class="grid">
+      <article class="diagram">
+        <h3>Bank 0 / Bank 1 / Palette RAM の関係 (SVG)</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CGB tile and palette layout">
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <rect x="24" y="36" width="140" height="176" rx="12" fill="#d9edf7" stroke="#2a6f89" stroke-width="2"/>
+          <rect x="190" y="36" width="140" height="176" rx="12" fill="#d4f2e8" stroke="#2e7f67" stroke-width="2"/>
+          <rect x="356" y="36" width="140" height="176" rx="12" fill="#f7e6c9" stroke="#9c6a1b" stroke-width="2"/>
+          <text x="48" y="64" font-size="16" fill="#17394b">VBK = 0</text>
+          <text x="44" y="92" font-size="13" fill="#17394b">タイル番号</text>
+          <text x="44" y="116" font-size="13" fill="#17394b">0x9800 マップ</text>
+          <text x="44" y="140" font-size="13" fill="#17394b">__settile*</text>
+          <text x="214" y="64" font-size="16" fill="#1d5b49">VBK = 1</text>
+          <text x="210" y="92" font-size="13" fill="#1d5b49">属性バイト</text>
+          <text x="210" y="116" font-size="13" fill="#1d5b49">palette / 反転 / bank</text>
+          <text x="210" y="140" font-size="13" fill="#1d5b49">__settileattr*</text>
+          <text x="380" y="64" font-size="16" fill="#6a4412">Palette RAM</text>
+          <text x="376" y="92" font-size="13" fill="#6a4412">BCPS/BCPD</text>
+          <text x="376" y="116" font-size="13" fill="#6a4412">OCPS/OCPD</text>
+          <text x="376" y="140" font-size="13" fill="#6a4412">RGB555 エントリ</text>
+          <path d="M164 122 L190 122" stroke="#1d6f8c" stroke-width="3" marker-end="url(#arrow-ja)"/>
+          <path d="M330 122 L356 122" stroke="#1d6f8c" stroke-width="3" marker-end="url(#arrow-ja)"/>
+          <text x="128" y="236" font-size="13" fill="#27485c">タイル番号</text>
+          <text x="236" y="236" font-size="13" fill="#2c5b4a">属性がパレットを選ぶ</text>
+          <text x="376" y="236" font-size="13" fill="#6a4412">パレットが色を決める</text>
+        </svg>
+      </article>
+
+      <article class="card">
+        <h3>パレット位置の式 (MathML)</h3>
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+          <mrow>
+            <mi>s</mi><mi>l</mi><mi>o</mi><mi>t</mi>
+            <mo>=</mo>
+            <mrow><mn>4</mn><mo>&#x22C5;</mo><mi>p</mi><mo>+</mo><mi>c</mi></mrow>
+          </mrow>
+        </math>
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+          <mrow>
+            <mi>b</mi><mi>y</mi><mi>t</mi><mi>e</mi><mi>I</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>x</mi>
+            <mo>=</mo>
+            <mrow><mn>2</mn><mo>&#x22C5;</mo><mi>s</mi><mi>l</mi><mi>o</mi><mi>t</mi></mrow>
+          </mrow>
+        </math>
+        <p>
+          ここで <code>p</code> はパレット番号 <code>0..7</code>、<code>c</code> は色番号 <code>0..3</code> です。
+          補助ライブラリ側で BCPS / OCPS 用の正しいオフセットへ変換します。
+        </p>
+        <p>
+          タイル属性バイトは <code>KQ_CGB_ATTR(palette, bank, xflip, yflip, priority)</code> を使うと、ビット詰めを手書きせずに組み立てられます。
+          よく使う形向けに <code>KQ_CGB_ATTR_PAL(n)</code>、<code>KQ_CGB_ATTR_XFLIP_IF(flag)</code>、
+          <code>KQ_CGB_ATTR_PRIORITY_IF(flag)</code> のような短縮マクロも使えます。
+        </p>
+
+        <h3>主要 API</h3>
+        <table>
+          <thead>
+            <tr><th>API</th><th>役割</th><th>DMG 時の挙動</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>KQ_CGB_ATTR</code>, <code>KQ_CGB_ATTR_PAL</code></td><td>palette / bank / 反転 / priority のビットを attr 1 バイトへ詰めたり合成したりします。</td><td>コンパイル時ヘルパーです。</td></tr>
+            <tr><td><code>__settileattr</code></td><td>CGB 属性バイトだけを書きます。</td><td>何もしません。</td></tr>
+            <tr><td><code>__settilecgb</code></td><td>タイル番号を書き、その後 CGB なら属性も書きます。</td><td>タイル番号だけ有効です。</td></tr>
+            <tr><td><code>__settilecgb_bulk_fast</code></td><td>タイル番号と属性を高速一括書き込みします。</td><td>タイル番号だけ有効です。</td></tr>
+            <tr><td><code>cgb_bg_rgb</code></td><td>RGB555 成分から BG パレット 1 色を書き換えます。</td><td>何もしません。</td></tr>
+            <tr><td><code>cgb_bg_color</code></td><td>packed <code>u16</code> から BG パレット 1 色を書き換えます。</td><td>何もしません。</td></tr>
+            <tr><td><code>cgb_bg_palette</code></td><td>BG パレット 1 本分 4 色を読み込みます。</td><td>何もしません。</td></tr>
+            <tr><td><code>cgb_obj_palette</code></td><td>OBJ パレット 1 本分 4 色を読み込みます。</td><td>何もしません。</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </div>
+
+    <article class="card">
+      <h3>使用例</h3>
+<pre><code>#include "cgb_tile.h"
+#include "cgb_palette.h"
+
+static u16 hud_palette[4];
+
+static const u8 hud_tiles[4] = { 0x30, 0x31, 0x32, 0x33 };
+static const u8 hud_attrs[4] = {
+    KQ_CGB_ATTR_PAL(2),
+    KQ_CGB_ATTR_PAL(2),
+    KQ_CGB_ATTR_PAL(2) | KQ_CGB_ATTR_XFLIP_IF(1),
+    KQ_CGB_ATTR(2, 0, 0, 1, 0)
+};
+
+void init_hud() {
+    hud_palette[0] = cgb_rgb15(31, 31, 31);
+    hud_palette[1] = cgb_rgb15(31, 24, 8);
+    hud_palette[2] = cgb_rgb15(14, 7, 2);
+    hud_palette[3] = cgb_rgb15(1, 1, 1);
+
+    cgb_bg_palette(2, hud_palette);
+    __settilecgb_bulk_fast(0x9800 + (32 * 2) + 4, hud_tiles, hud_attrs, 4);
+}</code></pre>
+      <div class="note">
+        属性専用 API とパレット API は DMG では何もしません。タイル番号と属性をまとめて書く API は、DMG でもタイル番号側だけは有効です。
+      </div>
+      <div class="note">
+        <code>--cgb=cgb_only</code> でビルドすると、tile intrinsic 側の <code>__cgb_is_cgb()</code> ガードはコンパイラが削除し、builtin 自体も <code>1</code> に定数化します。
+      </div>
+      <div class="note">
+        ROM 常駐の定数パレット表にしたい場合は <code>0x7FFF</code> のような packed 整数リテラルを使ってください。現状の静的初期化子は算術マクロより整数リテラルを好みます。
+      </div>
+      <div class="note">
+        <code>KQ_CGB_ATTR(...)</code> と短縮マクロ群は、グローバル <code>static</code> 初期化子でも使えるようになりました。ROM 常駐の属性テーブルでもそのまま利用できます。
+      </div>
+      <div class="note">
+        タイル intrinsic は <code>__settile...</code> 系の名前のみを使います。
+      </div>
+    </article>
+  </div>
+
+  <script>
+    function kqSetMermaidStatus(msg) {
+      var el = document.getElementById("mermaid-status");
+      if (el) el.textContent = msg;
+    }
+  </script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+    onload="try{mermaid.initialize({startOnLoad:true,theme:'neutral',securityLevel:'loose'});kqSetMermaidStatus('Mermaid 状態: 描画に成功しました。');}catch(e){kqSetMermaidStatus('Mermaid 状態: 初期化に失敗しました (' + (e && e.message ? e.message : 'unknown error') + ')。');}"
+    onerror="kqSetMermaidStatus('Mermaid 状態: スクリプトの読み込みに失敗しました。オフライン環境では図のソース表示のみになります。');">
+  </script>
+</body>
+</html>

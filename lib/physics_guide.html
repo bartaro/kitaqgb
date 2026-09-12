@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KITAQGB Physics Library Guide (2D/3D)</title>
+  <style>
+    :root {
+      --bg: #f3f6f9;
+      --paper: #ffffff;
+      --ink: #11202d;
+      --muted: #4a6074;
+      --line: #c6d4df;
+      --accent: #1d6f8c;
+      --accent-soft: #d7edf6;
+      --ok: #2b7a2b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 8%, #e6f4fb 0%, transparent 28%),
+        radial-gradient(circle at 82% 2%, #d8f0ea 0%, transparent 22%),
+        var(--bg);
+      color: var(--ink);
+      font-family: "IBM Plex Sans", "Segoe UI", Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .page {
+      max-width: 1100px;
+      margin: 32px auto;
+      padding: 0 20px 32px;
+    }
+
+    .hero {
+      background: linear-gradient(140deg, #ffffff, #edf8fd 60%, #e7f3f1);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 10px 24px rgba(17, 32, 45, 0.08);
+    }
+
+    h1, h2, h3 { line-height: 1.2; margin: 0 0 12px; }
+    h1 { font-family: "Alegreya Sans SC", "Trebuchet MS", sans-serif; letter-spacing: 0.04em; }
+    h2 { margin-top: 28px; border-top: 1px solid var(--line); padding-top: 20px; }
+    p { margin: 0 0 12px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid #7aaec2;
+      background: var(--accent-soft);
+      color: #13485d;
+      margin-right: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+
+    pre {
+      margin: 0;
+      background: #0e1e29;
+      color: #d9edf7;
+      border-radius: 10px;
+      padding: 14px;
+      overflow: auto;
+      border: 1px solid #203647;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 13px;
+    }
+
+    code { font-family: "Consolas", "Courier New", monospace; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 0;
+      font-size: 14px;
+      background: var(--paper);
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #e8f2f8;
+      font-weight: 600;
+    }
+
+    .diagram {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .note {
+      padding: 10px 12px;
+      border-left: 4px solid var(--accent);
+      background: #edf8fd;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .ok {
+      color: var(--ok);
+      font-weight: 600;
+    }
+
+    .mermaid {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      overflow: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <span class="badge">KITAQGB</span>
+      <span class="badge">2D + 3D AABB</span>
+      <span class="badge">Deterministic Integer Solver</span>
+      <h1>Physics Library Guide</h1>
+      <p>
+        This page describes the physics libraries implemented in <code>lib/physics2d.*</code> and
+        <code>lib/physics3d.*</code>, including API usage, internal behavior, tuning points, and limits.
+      </p>
+      <p class="ok">Validated build command: no warnings, no errors.</p>
+    </section>
+
+    <h2>1. Quick Start</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>Build</h3>
+<pre><code>kitaqgb main.c lib/physics2d.c lib/physics3d.c -I lib -o game.gb --profile=dev</code></pre>
+      </article>
+      <article class="card">
+        <h3>Headers</h3>
+<pre><code>#include "physics2d.h"
+#include "physics3d.h"</code></pre>
+      </article>
+      <article class="card">
+        <h3>Main Rule</h3>
+        <p><code>inv_mass_q8 == 0</code> means static body (infinite mass).</p>
+        <p>Any positive value means dynamic body.</p>
+      </article>
+    </div>
+
+    <h2>2. API Summary</h2>
+    <article class="card">
+      <h3>2D</h3>
+      <table>
+        <thead>
+          <tr><th>Symbol</th><th>Role</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>KQBody2D</code></td><td>Body state</td><td>Position, velocity, half extents, inverse mass, active flag.</td></tr>
+          <tr><td><code>KQWorld2D</code></td><td>World config</td><td>Body array pointer, gravity, iteration count, speed clamp.</td></tr>
+          <tr><td><code>kq2d_world_init</code></td><td>Init defaults</td><td><code>gravity_y=32</code>, <code>solver_iterations=4</code>, <code>max_speed=512</code>.</td></tr>
+          <tr><td><code>kq2d_overlap_aabb</code></td><td>Overlap test</td><td>Returns <code>1</code> if two AABBs overlap.</td></tr>
+          <tr><td><code>kq2d_step</code></td><td>One simulation step</td><td>Integrate then iterative pair solver.</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <article class="card">
+      <h3>3D</h3>
+      <table>
+        <thead>
+          <tr><th>Symbol</th><th>Role</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>KQBody3D</code></td><td>Body state</td><td>3-axis position/velocity + half extents + inverse mass.</td></tr>
+          <tr><td><code>KQWorld3D</code></td><td>World config</td><td>3-axis gravity and shared solver settings.</td></tr>
+          <tr><td><code>kq3d_world_init</code></td><td>Init defaults</td><td><code>gravity_y=24</code>, <code>solver_iterations=4</code>, <code>max_speed=512</code>.</td></tr>
+          <tr><td><code>kq3d_overlap_aabb</code></td><td>Overlap test</td><td>3-axis AABB overlap check.</td></tr>
+          <tr><td><code>kq3d_step</code></td><td>One simulation step</td><td>Integrate then pair solve over x/y/z.</td></tr>
+          <tr><td><code>kq3d_dot_q8_8</code></td><td>Dot wrapper</td><td>Wraps intrinsic <code>__sdot3_q8_8</code>.</td></tr>
+        </tbody>
+      </table>
+    </article>
+
+    <h2>3. Data Flow (Mermaid)</h2>
+    <p>This is the per-frame flow used by both <code>kq2d_step</code> and <code>kq3d_step</code>.</p>
+    <pre class="mermaid">flowchart TD
+      A[Step(world)] --> B{world and bodies valid?}
+      B -- No --> Z[Return]
+      B -- Yes --> C[Loop bodies i]
+      C --> D{active and inv_mass_q8 > 0?}
+      D -- No --> C
+      D -- Yes --> E[Apply gravity]
+      E --> F[Clamp velocity by max_speed]
+      F --> G[Integrate position]
+      G --> C
+      C --> H[iterations = max(1, solver_iterations)]
+      H --> I[Repeat iterations]
+      I --> J[Loop pair i,j]
+      J --> K{Both active?}
+      K -- No --> J
+      K -- Yes --> L[Overlap check]
+      L --> M{Overlapping?}
+      M -- No --> J
+      M -- Yes --> N[Compute penetration and split correction by inverse mass]
+      N --> O[Resolve axis velocity simply]
+      O --> J
+      J --> I
+      I --> Z</pre>
+    <div class="note" id="mermaid-status">
+      Mermaid status: waiting for script load.
+    </div>
+
+    <h2>4. Core Equations (MathML)</h2>
+    <article class="card">
+      <h3>AABB Overlap Condition (2D)</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mo>|</mo><mi>d</mi><mi>x</mi><mo>|</mo>
+          <mo>&lt;</mo>
+          <mrow><mi>h</mi><mi>a</mi><mi>x</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>x</mi></mrow>
+          <mo>&#xA0;and&#xA0;</mo>
+          <mo>|</mo><mi>d</mi><mi>y</mi><mo>|</mo>
+          <mo>&lt;</mo>
+          <mrow><mi>h</mi><mi>a</mi><mi>y</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>y</mi></mrow>
+        </mrow>
+      </math>
+      <h3>Penetration and Correction Split</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>p</mi><mi>x</mi>
+          <mo>=</mo>
+          <mo>(</mo><mi>h</mi><mi>a</mi><mi>x</mi><mo>+</mo><mi>h</mi><mi>b</mi><mi>x</mi><mo>)</mo>
+          <mo>-</mo>
+          <mo>|</mo><mi>d</mi><mi>x</mi><mo>|</mo>
+        </mrow>
+      </math>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>a</mi>
+          <mo>=</mo>
+          <mfrac>
+            <mrow><mi>p</mi><mi>e</mi><mi>n</mi><mo>&#x22C5;</mo><mi>i</mi><mi>n</mi><mi>v</mi><mi>a</mi></mrow>
+            <mrow><mi>i</mi><mi>n</mi><mi>v</mi><mi>a</mi><mo>+</mo><mi>i</mi><mi>n</mi><mi>v</mi><mi>b</mi></mrow>
+          </mfrac>
+          <mo>,</mo>
+          <mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>b</mi>
+          <mo>=</mo>
+          <mi>p</mi><mi>e</mi><mi>n</mi><mo>-</mo><mi>m</mi><mi>o</mi><mi>v</mi><mi>e</mi><mi>a</mi>
+        </mrow>
+      </math>
+      <h3>Velocity Integration</h3>
+      <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+        <mrow>
+          <mi>v</mi><mo>'</mo>
+          <mo>=</mo>
+          <mi>c</mi><mi>l</mi><mi>a</mi><mi>m</mi><mi>p</mi>
+          <mo>(</mo><mi>v</mi><mo>+</mo><mi>g</mi><mo>,</mo><mo>-</mo><mi>v</mi><mi>m</mi><mi>a</mi><mi>x</mi><mo>,</mo><mi>v</mi><mi>m</mi><mi>a</mi><mi>x</mi><mo>)</mo>
+          <mo>,</mo>
+          <mi>x</mi><mo>'</mo><mo>=</mo><mi>x</mi><mo>+</mo><mi>v</mi><mo>'</mo>
+        </mrow>
+      </math>
+    </article>
+
+    <h2>5. Visuals (SVG)</h2>
+    <div class="grid">
+      <article class="diagram">
+        <h3>2D AABB Overlap and Minimum Axis Resolution</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="2D AABB diagram">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1d6f8c"/>
+            </marker>
+          </defs>
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <rect x="120" y="80" width="180" height="110" fill="#d9edf7" stroke="#2a6f89" stroke-width="2"/>
+          <rect x="250" y="65" width="180" height="110" fill="#d4f2e8" stroke="#2e7f67" stroke-width="2"/>
+          <circle cx="210" cy="135" r="4" fill="#2a6f89"/>
+          <circle cx="340" cy="120" r="4" fill="#2e7f67"/>
+          <line x1="210" y1="135" x2="340" y2="120" stroke="#1d6f8c" stroke-width="2" marker-end="url(#arrow)"/>
+          <line x1="300" y1="210" x2="250" y2="210" stroke="#9a3e32" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="16" y="24" font-size="14" fill="#19374a">A (blue) and B (green) overlap.</text>
+          <text x="16" y="44" font-size="14" fill="#19374a">Solver picks smaller penetration axis.</text>
+          <text x="274" y="204" font-size="13" fill="#9a3e32">minimum correction axis</text>
+          <text x="194" y="152" font-size="13" fill="#2a6f89">center A</text>
+          <text x="350" y="115" font-size="13" fill="#2e7f67">center B</text>
+        </svg>
+      </article>
+      <article class="diagram">
+        <h3>3D Axis Selection Concept</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="3D penetration axis selection">
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <g fill="none" stroke-width="2">
+            <path d="M90 170 L180 130 L290 170 L200 210 Z" stroke="#355d78"/>
+            <path d="M130 100 L220 60 L330 100 L240 140 Z" stroke="#355d78"/>
+            <line x1="90" y1="170" x2="130" y2="100" stroke="#355d78"/>
+            <line x1="180" y1="130" x2="220" y2="60" stroke="#355d78"/>
+            <line x1="290" y1="170" x2="330" y2="100" stroke="#355d78"/>
+            <line x1="200" y1="210" x2="240" y2="140" stroke="#355d78"/>
+          </g>
+          <g fill="none" stroke="#2a9d76" stroke-width="2" opacity="0.9">
+            <path d="M170 180 L260 140 L370 180 L280 220 Z"/>
+            <path d="M210 110 L300 70 L410 110 L320 150 Z"/>
+            <line x1="170" y1="180" x2="210" y2="110"/>
+            <line x1="260" y1="140" x2="300" y2="70"/>
+            <line x1="370" y1="180" x2="410" y2="110"/>
+            <line x1="280" y1="220" x2="320" y2="150"/>
+          </g>
+          <text x="24" y="28" font-size="14" fill="#19374a">For 3D, compute px, py, pz and choose the smallest.</text>
+          <rect x="30" y="196" width="140" height="14" fill="#7aaec2"/>
+          <rect x="30" y="216" width="80" height="14" fill="#2e7f67"/>
+          <rect x="30" y="236" width="110" height="14" fill="#9a3e32"/>
+          <text x="176" y="207" font-size="12" fill="#2c4a60">px</text>
+          <text x="116" y="227" font-size="12" fill="#2c4a60">py (chosen)</text>
+          <text x="146" y="247" font-size="12" fill="#2c4a60">pz</text>
+        </svg>
+      </article>
+    </div>
+
+    <h2>6. Usage Patterns</h2>
+    <div class="grid">
+      <article class="card">
+        <h3>2D Example</h3>
+<pre><code>#include "physics2d.h"
+
+static KQBody2D g_bodies2d[8];
+static KQWorld2D g_world2d;
+
+void game_init_2d() {
+    kq2d_world_init(&g_world2d, g_bodies2d, 8);
+    g_world2d.gravity_y = 24;
+    g_world2d.solver_iterations = 3;
+    g_world2d.max_speed = 320;
+
+    g_bodies2d[0].x = 40;
+    g_bodies2d[0].y = 24;
+    g_bodies2d[0].half_x = 4;
+    g_bodies2d[0].half_y = 4;
+    g_bodies2d[0].inv_mass_q8 = 256; /* 1.0 */
+    g_bodies2d[0].active = 1;
+}
+
+void game_tick_2d() {
+    kq2d_step(&g_world2d);
+}</code></pre>
+      </article>
+
+      <article class="card">
+        <h3>3D Example</h3>
+<pre><code>#include "physics3d.h"
+
+static KQBody3D g_bodies3d[6];
+static KQWorld3D g_world3d;
+
+void game_init_3d() {
+    kq3d_world_init(&g_world3d, g_bodies3d, 6);
+    g_world3d.gravity_y = 18;
+    g_world3d.solver_iterations = 2;
+    g_world3d.max_speed = 280;
+}
+
+void game_tick_3d() {
+    kq3d_step(&g_world3d);
+}</code></pre>
+      </article>
+    </div>
+
+    <h2>7. Practical Tuning</h2>
+    <article class="card">
+      <p><strong>CPU cost:</strong> roughly proportional to <code>body_count^2 * solver_iterations</code>.</p>
+      <p><strong>Default-safe range for GB-class targets:</strong> 8 to 24 active bodies per world.</p>
+      <p><strong>Stability tips:</strong></p>
+      <ul>
+        <li>Use <code>inv_mass_q8=0</code> for level geometry and walls.</li>
+        <li>Keep <code>max_speed</code> bounded to avoid tunneling and overflow risk.</li>
+        <li>Raise <code>solver_iterations</code> only when overlap correction looks too soft.</li>
+      </ul>
+    </article>
+
+    <h2>8. Current Limits</h2>
+    <article class="card">
+      <ul>
+        <li>AABB only (no circles, no capsules, no SAT poly solver).</li>
+        <li>No angular dynamics (no torque/spin/inertia tensor).</li>
+        <li>Contact response is intentionally simple (velocity averaging/zeroing by axis).</li>
+        <li><code>KQBody2D.restitution_q8</code> exists but is currently reserved and not consumed by the solver.</li>
+      </ul>
+    </article>
+
+    <h2>9. CGB Tile and Palette Helpers</h2>
+    <p>
+      These companion libraries are useful when the physics layer needs visible CGB feedback such as colored HUD tiles,
+      collision markers, or palette swaps tied to gameplay state.
+    </p>
+    <p>
+      The tile-side APIs declared in <code>cgb_tile.h</code> are compiler intrinsics. Their canonical entry points use the <code>__settile...</code> naming scheme. The palette-side APIs remain normal library functions in <code>cgb_palette.c</code>.
+    </p>
+
+    <div class="grid">
+      <article class="card">
+        <h3>Files and Build</h3>
+<pre><code>#include "cgb_tile.h"
+#include "cgb_palette.h"
+
+kitaqgb main.c lib/physics2d.c lib/physics2d_circle.c \
+  lib/physics3d.c lib/cgb_tile.c lib/cgb_palette.c \
+  -I lib -o game.gb --profile=dev</code></pre>
+      </article>
+
+      <article class="card">
+        <h3>Tile Attribute Bits</h3>
+        <table>
+          <thead>
+            <tr><th>Bit</th><th>Meaning</th><th>Common Use</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>0..2</code></td><td>BG palette number</td><td><code>0..7</code> palette select on CGB.</td></tr>
+            <tr><td><code>3</code></td><td>VRAM bank</td><td>Select tile data bank 0 or 1.</td></tr>
+            <tr><td><code>5</code></td><td>X flip</td><td>Mirror the tile horizontally.</td></tr>
+            <tr><td><code>6</code></td><td>Y flip</td><td>Mirror the tile vertically.</td></tr>
+            <tr><td><code>7</code></td><td>Priority</td><td>Push tile behind sprites when needed.</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </div>
+
+    <article class="card">
+      <h3>Setup Flow (Mermaid)</h3>
+      <pre class="mermaid">flowchart LR
+        A[Choose tile ids] --> B[Choose attr bytes]
+        B --> C[Write map with __settilecgb or bulk helper]
+        C --> D[Pack RGB555 colors]
+        D --> E[Load BG or OBJ palette]
+        E --> F[Visible colored CGB tile]</pre>
+    </article>
+
+    <div class="grid">
+      <article class="diagram">
+        <h3>Bank 0 / Bank 1 / Palette RAM (SVG)</h3>
+        <svg viewBox="0 0 520 260" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CGB tile and palette layout">
+          <rect x="0" y="0" width="520" height="260" fill="#f8fcff"/>
+          <rect x="24" y="36" width="140" height="176" rx="12" fill="#d9edf7" stroke="#2a6f89" stroke-width="2"/>
+          <rect x="190" y="36" width="140" height="176" rx="12" fill="#d4f2e8" stroke="#2e7f67" stroke-width="2"/>
+          <rect x="356" y="36" width="140" height="176" rx="12" fill="#f7e6c9" stroke="#9c6a1b" stroke-width="2"/>
+          <text x="48" y="64" font-size="16" fill="#17394b">VBK = 0</text>
+          <text x="44" y="92" font-size="13" fill="#17394b">Tile numbers</text>
+          <text x="44" y="116" font-size="13" fill="#17394b">0x9800 map</text>
+          <text x="44" y="140" font-size="13" fill="#17394b">__settile*</text>
+          <text x="214" y="64" font-size="16" fill="#1d5b49">VBK = 1</text>
+          <text x="210" y="92" font-size="13" fill="#1d5b49">Attr bytes</text>
+          <text x="210" y="116" font-size="13" fill="#1d5b49">palette / flips / bank</text>
+          <text x="210" y="140" font-size="13" fill="#1d5b49">__settileattr*</text>
+          <text x="380" y="64" font-size="16" fill="#6a4412">Palette RAM</text>
+          <text x="376" y="92" font-size="13" fill="#6a4412">BCPS/BCPD</text>
+          <text x="376" y="116" font-size="13" fill="#6a4412">OCPS/OCPD</text>
+          <text x="376" y="140" font-size="13" fill="#6a4412">RGB555 entries</text>
+          <path d="M164 122 L190 122" stroke="#1d6f8c" stroke-width="3" marker-end="url(#arrow)"/>
+          <path d="M330 122 L356 122" stroke="#1d6f8c" stroke-width="3" marker-end="url(#arrow)"/>
+          <text x="125" y="236" font-size="13" fill="#27485c">tile id</text>
+          <text x="272" y="236" font-size="13" fill="#2c5b4a">attr selects palette</text>
+          <text x="394" y="236" font-size="13" fill="#6a4412">palette defines colors</text>
+        </svg>
+      </article>
+
+      <article class="card">
+        <h3>Palette Address Math (MathML)</h3>
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+          <mrow>
+            <mi>s</mi><mi>l</mi><mi>o</mi><mi>t</mi>
+            <mo>=</mo>
+            <mrow><mn>4</mn><mo>&#x22C5;</mo><mi>p</mi><mo>+</mo><mi>c</mi></mrow>
+          </mrow>
+        </math>
+        <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+          <mrow>
+            <mi>b</mi><mi>y</mi><mi>t</mi><mi>e</mi><mi>I</mi><mi>n</mi><mi>d</mi><mi>e</mi><mi>x</mi>
+            <mo>=</mo>
+            <mrow><mn>2</mn><mo>&#x22C5;</mo><mi>s</mi><mi>l</mi><mi>o</mi><mi>t</mi></mrow>
+          </mrow>
+        </math>
+        <p>
+          Here <code>p</code> is the palette index <code>0..7</code> and <code>c</code> is the color index
+          <code>0..3</code>. The helper library converts that into the correct BCPS/OCPS byte offset.
+        </p>
+        <p>
+          Use <code>KQ_CGB_ATTR(palette, bank, xflip, yflip, priority)</code> to build a tile attribute byte without hand-packing the bit fields.
+          For the common cases, the header also exposes short forms such as <code>KQ_CGB_ATTR_PAL(n)</code>,
+          <code>KQ_CGB_ATTR_XFLIP_IF(flag)</code>, and <code>KQ_CGB_ATTR_PRIORITY_IF(flag)</code>.
+        </p>
+
+        <h3>Key APIs</h3>
+        <table>
+          <thead>
+            <tr><th>API</th><th>Role</th><th>DMG behavior</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>KQ_CGB_ATTR</code>, <code>KQ_CGB_ATTR_PAL</code></td><td>Pack or compose palette/bank/flip/priority bits into one attr byte.</td><td>Compile-time helper.</td></tr>
+            <tr><td><code>__settileattr</code></td><td>Write only the CGB attr byte.</td><td>No-op.</td></tr>
+            <tr><td><code>__settilecgb</code></td><td>Write tile id, then attr if running on CGB.</td><td>Tile id still writes.</td></tr>
+            <tr><td><code>__settilecgb_bulk_fast</code></td><td>Fast bulk tile+attr write.</td><td>Tile bulk still writes.</td></tr>
+            <tr><td><code>cgb_bg_rgb</code></td><td>Set one BG palette entry from RGB555 components.</td><td>No-op.</td></tr>
+            <tr><td><code>cgb_bg_color</code></td><td>Set one BG palette entry from packed <code>u16</code>.</td><td>No-op.</td></tr>
+            <tr><td><code>cgb_bg_palette</code></td><td>Load 4 colors into one BG palette.</td><td>No-op.</td></tr>
+            <tr><td><code>cgb_obj_palette</code></td><td>Load 4 colors into one OBJ palette.</td><td>No-op.</td></tr>
+          </tbody>
+        </table>
+      </article>
+    </div>
+
+    <article class="card">
+      <h3>Example</h3>
+<pre><code>#include "cgb_tile.h"
+#include "cgb_palette.h"
+
+static u16 hud_palette[4];
+
+static const u8 hud_tiles[4] = { 0x30, 0x31, 0x32, 0x33 };
+static const u8 hud_attrs[4] = {
+    KQ_CGB_ATTR_PAL(2),
+    KQ_CGB_ATTR_PAL(2),
+    KQ_CGB_ATTR_PAL(2) | KQ_CGB_ATTR_XFLIP_IF(1),
+    KQ_CGB_ATTR(2, 0, 0, 1, 0)
+};
+
+void init_hud() {
+    hud_palette[0] = cgb_rgb15(31, 31, 31);
+    hud_palette[1] = cgb_rgb15(31, 24, 8);
+    hud_palette[2] = cgb_rgb15(14, 7, 2);
+    hud_palette[3] = cgb_rgb15(1, 1, 1);
+
+    cgb_bg_palette(2, hud_palette);
+    __settilecgb_bulk_fast(0x9800 + (32 * 2) + 4, hud_tiles, hud_attrs, 4);
+}</code></pre>
+      <div class="note">
+        Attr-only APIs and palette APIs no-op on DMG. Combined tile+attr APIs still write the tile-number side so one code path can serve both DMG and CGB.
+      </div>
+      <div class="note">
+        If you build with <code>--cgb=cgb_only</code>, the compiler removes the runtime <code>__cgb_is_cgb()</code> guard from tile intrinsics and constant-folds the builtin to <code>1</code>.
+      </div>
+      <div class="note">
+        If you want ROM-resident constant palette tables, use plain packed literals such as <code>0x7FFF</code>. Static initializers currently prefer integer literals over arithmetic macros.
+      </div>
+      <div class="note">
+        <code>KQ_CGB_ATTR(...)</code> and the short-form attr macros now work in global <code>static</code> initializers, so ROM-resident attr tables can use the helpers directly.
+      </div>
+      <div class="note">
+        Tile intrinsics now use the <code>__settile...</code> names only.
+      </div>
+    </article>
+  </div>
+
+  <script>
+    function kqSetMermaidStatus(msg) {
+      var el = document.getElementById("mermaid-status");
+      if (el) el.textContent = msg;
+    }
+  </script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+    onload="try{mermaid.initialize({startOnLoad:true,theme:'neutral',securityLevel:'loose'});kqSetMermaidStatus('Mermaid status: rendered successfully.');}catch(e){kqSetMermaidStatus('Mermaid status: init failed (' + (e && e.message ? e.message : 'unknown error') + ').');}"
+    onerror="kqSetMermaidStatus('Mermaid status: script load failed. If offline, keep the source block as fallback or open via local HTTP server with internet access.');">
+  </script>
+</body>
+</html>

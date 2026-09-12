@@ -1,0 +1,35 @@
+; KITAQGB symbol map
+; Addr(CPU) Bank  Off   Kind Region Name
+FF82     0  0002   S    HRAM     __rom_bank
+FF83     0  0003   S    HRAM     __rom_bank_saved
+FF84     0  0004   S    HRAM     __kq_sret_ptr
+FF86     0  0006   S    HRAM     __kq_thunk_sp
+FF87     0  0007   S    HRAM     __kq_thunk_bank_stack
+FF8F     0  000F   S    HRAM     __kq_thunk_retlo_stack
+FF97     0  0017   S    HRAM     __kq_thunk_rethi_stack
+FF9F     0  001F   S    HRAM     __kq_critical_depth
+FFA0     0  0020   S    HRAM     __kq_rng_lo
+FFA1     0  0021   S    HRAM     __kq_rng_hi
+FF40     0  0040   S    IO       M_LCDC
+FF47     0  0047   S    IO       M_BGP
+FF48     0  0048   S    IO       M_OBP0
+0160     0  0160   S    ROM      manual_font
+0960     0  0960   S    ROM      $string0
+4000     1  0000   S    ROM      entity_init
+4004     1  0004   S    ROM      entity_clear_all
+412B     1  012B   S    ROM      entity_create
+427F     1  027F   S    ROM      entity_destroy
+42A8     1  02A8   S    ROM      entity_get
+42F8     1  02F8   S    ROM      entity_update_all
+435D     1  035D   S    ROM      entity_draw_all
+4371     1  0371   S    ROM      entity_count_active
+43B1     1  03B1   S    ROM      m_init
+4439     1  0439   S    ROM      m_put
+4489     1  0489   S    ROM      m_wait
+449E     1  049E   S    ROM      m_text
+44F3     1  04F3   S    ROM      m_number
+4660     1  0660   S    ROM      main
+46CF     1  06CF   L    ROM      else_1
+46DB     1  06DB   L    ROM      loop_top_2
+46E0     1  06E0   L    ROM      loop_end_3
+C00B     0  000B   S    WRAM0    __kq_static_0_entity_pool

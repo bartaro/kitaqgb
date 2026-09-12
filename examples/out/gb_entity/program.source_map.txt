@@ -1,0 +1,11 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+01:4000 C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:5 symbol=entity_init
+01:4004 C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:10 symbol=entity_clear_all
+01:412B C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:27 symbol=entity_create
+01:427F C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:48 symbol=entity_destroy
+01:42A8 C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:54 symbol=entity_get
+01:42F8 C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:61 symbol=entity_update_all
+01:435D C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:73 symbol=entity_draw_all
+01:4371 C:\kitaqgb_project\publish\github_20260912\kitaqgb\lib\entity.c:78 symbol=entity_count_active
+01:4660 C:\kitaqgb_project\publish\github_20260912\kitaqgb\examples\gb_entity.c:6 symbol=main
