@@ -31,13 +31,16 @@ The project focuses on:
 
 KITAQGB does **not** include commercial ROMs, Nintendo BIOS files, Nintendo SDK files, proprietary assets, or any official Nintendo development material.
 
-## Name origin
+## Name Origin
 
-The name **KITAQGB** stands for:
+KITAQGB began as a fork of NORCAL, the NES C compiler associated with Zachtronics. It retains the copyright notice of NORCAL's original author, Keith Holman.
 
-> **Kernel-Informed Toolchain for AI-Quality Game Boy Development**
+The name **KITAQGB** has two overlapping meanings:
 
-The name reflects the goal of building a toolchain that understands the target machine deeply enough to support both human programmers and generative AI workflows. In practical terms, KITAQGB is meant to make small Game Boy / Game Boy Color game projects easier to generate, compile, inspect, debug, and iterate.
+- **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expresses the goal of a toolchain that understands the target machine and supports both human programmers and generative AI workflows.
+- **KITAQ + GB** combines a local name for **Kitakyushu**, a city in **Fukuoka Prefecture, Japan**, with **Game Boy**. **KITAQ** represents Kitakyushu's nickname **北九 (キタキュー, Kitakyū)**.
+
+For English speakers, pronounce **KITAQ** as **“kee-tah-KYOO”**, IPA **/ˌkiːtɑːˈkjuː/**, as a guide to the Japanese **キタキュー**. The final **Q** sounds like the English letter **Q**. Read **KITAQGB** as **“kee-tah-KYOO jee bee”**, pronouncing **G** and **B** as separate letters.
 
 ## Target platform
 
@@ -283,11 +286,6 @@ Before submitting changes, please keep the following rules in mind:
 ## Status
 
 This repository is prepared as an initial public release of KITAQGB. Interfaces, helper libraries, diagnostics, and companion-tool integration may evolve as the project matures.
-
-## 名称の由来
-
-KITAQGBはZachtronicsのNORCALを出発点とするフォークです。原作者Keith Holman氏の著作権表示を保持しています。
-名前は **Kernel-Informed Toolchain for AI-Quality Game Boy Development** と、北九州（KITAQ）＋Game Boy（GB）を重ねたダブルミーニングです。
 
 ## Build and first use
 
