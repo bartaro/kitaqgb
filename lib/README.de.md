@@ -4,7 +4,7 @@
 
 **[Deutsches Bibliothekshandbuch öffnen](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
 
-`wire3d_dmg` ist eine Bibliothek für monochrome Drahtgittergrafik auf dem Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. Die bisherigen Dateien `wire3d` und `dmg3d` bleiben kompatible Einstiegspunkte für die jeweiligen Profile. Kompilieren Sie nur einen Einstiegspunkt. Der separate Farbrenderer heißt weiterhin `wire3d_cgb`.
+`wire3d_dmg` ist eine Bibliothek für monochrome Drahtgittergrafik auf dem Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie pro Programm nur einen Einstiegspunkt. `wire3d_cgb` ist der Renderer für die Farbdarstellung.
 
 [Renderer-Anleitung auf Englisch](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
@@ -83,7 +83,7 @@ Dieser Ordner enthält drei Arten von Dateien:
 
 ## Bibliotheken kompilieren
 
-Mehrere Befehle unten nennen historische Entwicklungsdemos wie `wire3d_cube_demo.c`, die nicht im öffentlichen Repository enthalten sind. Diese Befehle sind Vorlagen und benötigen die genannten Quelldateien. Für die mitgelieferten Lernprogramme verwenden Sie `../examples/build.ps1` und das HTML-Handbuch. Der Kurzaufruf `kitaqgb` setzt voraus, dass das Programm über PATH erreichbar ist.
+Die Befehle zeigen, wie Anwendungsquellen und Bibliotheksmodule gemeinsam kompiliert werden. Stellen Sie die im jeweiligen Befehl genannten Anwendungsdateien bereit. Für die mitgelieferten Einsteigerprogramme verwenden Sie `../examples/build.ps1` und das HTML-Handbuch. Der Kurzaufruf `kitaqgb` setzt voraus, dass die ausführbare Datei im PATH liegt.
 
 Kompilieren Sie Ihren Spielcode gemeinsam mit den benötigten Bibliotheksdateien:
 
@@ -122,8 +122,6 @@ Bei Teilübertragungen mit OAM-Schattenpuffer können Sie nach Eintritt in VBlan
 Für CGB-Linien gelten die Farben 1, 2 und 3. Normale 128 × 96-Linien kombinieren Farbbits, sodass Farbe 1 und 2 zusammen Farbe 3 ergeben. Farbe 0 löscht keine Linie. Verwenden Sie einen Bildreset oder die Löschfunktionen. `Wire3DCGB_DrawLine2D` und Modelldarstellung erfassen keine Bereiche für Teilübertragungen: Verwenden Sie dafür `Wire3DCGB_DrawLineClipped2D` oder nehmen Sie mit `Wire3DCGB_InvalidateFrameHistory` die gesamte Zeichenfläche in die nächste Teilübertragung auf.
 
 Der Vollbildmodus mit 160 × 144 reserviert höchstens 127 Kacheln pro Bild. Fehlgeschlagene Reservierung oder ungültige Koordinaten im schnellen Linienpfad setzen das über `Wire3DCGB_GetFullScreenOverflow()` abfragbare Fehlerflag. Weitere Pixel werden bis zum nächsten Bildreset nicht geschrieben. Eckpunkte müssen innerhalb der gewählten Fläche liegen; der rechte Rand der Dreiecksmaske endet bei X=127 beziehungsweise X=159. Beachten Sie insbesondere bei Vollbild und FastMap die dokumentierte WRAM-Bankzuordnung. Der [CGB-Grenztest](../tests/library/wire3d_cgb_mask_bounds.c) ist ein vollständiges Prüfprogramm für beide Größen.
-
-Das historische, nicht mitgelieferte Entwicklungsbeispiel `examples/wire3d_cgb_hiddenline_demo.c` dient der interaktiven Verdeckungsprüfung. `START` schaltet zwischen einem, zwei und drei sichtbaren Objekten um, `B` wählt ein Objekt, das Steuerkreuz bewegt es auf X/Y. `A`+Oben/Unten verschiebt es auf Z, `A`+Links/Rechts dreht Z und `SELECT`+Steuerkreuz dreht X/Y in 22,5-Grad-Schritten. Verdeckung innerhalb und zwischen Objekten bleibt aktiv; kollidierende Körper werden auseinandergeschoben.
 
 Build-Vorlagen für RPG-, Adventure- und Strategiespielfunktionen:
 

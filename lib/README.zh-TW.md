@@ -83,7 +83,7 @@
 
 ## 建置方式
 
-下列部分指令引用未包含於公開儲存庫的舊開發展示程式，例如 `wire3d_cube_demo.c`。這些指令是建置範本，須先備妥對應原始碼。隨附的入門程式請改依 `../examples/build.ps1` 與 HTML 手冊操作。簡短指令 `kitaqgb` 假設執行檔已加入 PATH。
+以下指令示範如何將應用程式原始碼與函式庫模組一起建置。請自行準備指令中指定的應用程式檔案。隨附的入門程式可依 `../examples/build.ps1` 與HTML手冊建置。簡短指令 `kitaqgb` 需要執行檔已加入PATH。
 
 將遊戲原始碼與所需程式庫一起編譯：
 
@@ -124,8 +124,6 @@ CGB 線條請使用顏色 1、2、3。一般 128×96 模式會疊加色彩位元
 160×144 模式每影格最多配置 127 個圖塊。高速畫線路徑遇到配置失敗或越界座標時，會設定 `Wire3DCGB_GetFullScreenOverflow()`，並停止後續像素寫入，直到下一影格重設。請讓頂點保持在所選視埠內。三角形遮罩的右側擴張範圍在 128×96 模式下止於 X=127，全螢幕模式下則止於 X=159。請遵循 API 的 WRAM 記憶體區塊映射要求，尤其是全螢幕與 FastMap 功能。
 
 [CGB 三角形遮罩邊界回歸測試](../tests/library/wire3d_cgb_mask_bounds.c)提供檢查兩種視埠的完整程式。
-
-舊開發展示程式 `examples/wire3d_cgb_hiddenline_demo.c` 可互動檢查隱藏線。`START` 切換顯示一至三個物件，`B` 選取物件，方向鍵移動 X／Y，`A`＋上／下移動 Z，`A`＋左／右旋轉 Z，`SELECT`＋方向鍵則以 22.5 度為單位旋轉 X／Y。隱藏線與物件間遮蔽持續啟用，碰撞物件會互相推開。此開發展示程式不包含於公開儲存庫。
 
 RPG／ADV／SLG 功能建置範例：
 
@@ -212,7 +210,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h` 的公開 API 採用 `cgb_*` 命名。
 - 選單或設定變更音樂、音效啟用狀態時，請呼叫 `Audio_SetMusicEnabled()`／`Audio_SetSfxEnabled()`。
 - `Audio_PlaySFX()` 會記錄目前可見的 ROM 記憶體區塊。已知音效資料所在區塊時，請使用 `Audio_PlaySFXBanked(bank, sfx, priority)`。
-- 音樂串流的 `AUDIO_CMD_NOTE`／`AUDIO_CMD_SET_INST` 保留舊聲道編碼：`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3`。
+- 音樂串流的 `AUDIO_CMD_NOTE`／`AUDIO_CMD_SET_INST` 使用以下聲道編號：`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3`。
 - 自訂 CH3 波形時，將 32 個 4 位元取樣值封裝為 16 位元組，再傳給 `Audio_LoadCustomWave()`。
 - `Audio_FadeToMasterVolume()` 的淡變由 `Audio_Update()` 推進，淡變期間仍須每影格呼叫。
 - `audio_vblank.c` 定義 VBlank IRQ 向量符號 `__kq_vblank_vector`。BGM 事件由五個位元組組成：`delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`；休止、循環與結束分別使用 `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END`。
@@ -226,7 +224,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 封包層只保留一層待收資料，適合由逐影格主迴圈及時推進處理。
 - `Link4_*` 模擬主機選擇對端的協作式 4 人連線；每次只有一個對端在線路上活動，主機須主動輪替。
 - `Link4_TryReadByteFrom()`／`Link4_HasPacketFrom()` 提供各對端獨立的收件匣，讓主機輪詢多位參與者時仍能辨別資料來源。
-- `Link_ReadPacket()` 仍提供舊式「最新封包」視圖；4 人流程請使用 `Link4_ReadPacketFrom()`。
+- `Link_ReadPacket()` 讀取最近收到的一個封包；4 人流程請使用 `Link4_ReadPacketFrom()`。
 - `Link4_*` 不實作 Nintendo DMG-07 的電氣行為或協定。實體配件請使用 `link_dmg07.c`，不要在同一 ROM 與 `link.c` 一起編譯。
 - DMG-07 的 `GetConnectedMask()` 以位元 0～3 表示實體玩家 1～4。傳輸期間保留最後一次連線探測結果；成員資訊只能在探測階段更新。
 - 轉接器未提供時脈時，待處理的 DMG-07 重新啟動流程無法推進。復原流量會被捨棄，不作為正常序列資料提供。若配件重新上電而進入不同階段，不只是暫停時脈，應明確重新初始化驅動與工作階段。

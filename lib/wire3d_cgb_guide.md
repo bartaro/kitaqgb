@@ -68,7 +68,7 @@ Call `Wire3DCGB_InvalidateFrameHistory()` on a scene reset or after bypassing th
 - `Wire3DCGB_ProjectAxis48(value,z)` returns signed `value * 48 / z`, truncated toward zero, using ASM normalization, multiplication and division. Depth is clamped to at least 4. For depth above 255, value and depth are repeatedly halved; normalized magnitude is limited to 160. It returns an offset, not a clipped screen position or a complete camera transform.
 - `Wire3DCGB_EraseSpan2D(y,x0,x1)` clears a clipped horizontal 128x96 span using ASM and marks its dirty tiles. It is also available in the minimal runtime.
 
-All drawing/projection entry points use shared scratch storage: call them from the main loop, not from an ISR or reentrantly. End-frame routines require an enabled LCD and normal main-loop interrupt operation. The 160x144 path still has its existing dynamic tile-pool limit; these changes do not remove that limit.
+All drawing/projection entry points use shared scratch storage: call them from the main loop, not from an ISR or reentrantly. End-frame routines require an enabled LCD and normal main-loop interrupt operation. The 160x144 path can allocate at most 127 dynamic tiles per frame.
 
 Executable checks and limitations for the 2026-09-07 changes are recorded in `../wire3d_shooting/verification/render_integrity_20260907/RESULTS.md`.
 

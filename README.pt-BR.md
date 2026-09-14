@@ -8,6 +8,8 @@
 
 A KITAQGB começou como um fork do NORCAL, o compilador C para NES associado à Zachtronics. O aviso de direitos autorais de Keith Holman, autor original do NORCAL, é mantido.
 
+**O nome NORCAL vem do norte da Califórnia (Northern California).** Inspirado nessa ideia de usar uma referência geográfica, DAISUKE OBA, autor da KITAQGB, escolheu **Kitakyushu**, a cidade onde nasceu e cresceu, como base para o nome KITAQGB.
+
 O nome **KITAQGB** reúne dois sentidos:
 
 - **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expressa a proposta de ferramentas que conhecem a máquina de destino e apoiam tanto programadores quanto fluxos de trabalho com IA generativa.

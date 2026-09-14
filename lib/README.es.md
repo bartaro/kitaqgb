@@ -83,7 +83,7 @@ Este directorio contiene tres clases de archivos:
 
 ## Cómo compilar
 
-Algunos comandos siguientes hacen referencia a antiguas demostraciones de desarrollo que no están en el repositorio público, como `wire3d_cube_demo.c`. Son plantillas de compilación para usar cuando se disponga del código correspondiente. Para los programas introductorios incluidos, utilice `../examples/build.ps1` y el manual HTML. El comando abreviado `kitaqgb` presupone que el ejecutable está en PATH.
+Los comandos muestran cómo compilar los fuentes de una aplicación junto con los módulos de la biblioteca. Prepare los archivos de la aplicación que se nombran en cada comando. Para los programas introductorios incluidos, utilice `../examples/build.ps1` y el manual HTML. El comando abreviado `kitaqgb` presupone que el ejecutable está en PATH.
 
 Compile el código del juego junto con las bibliotecas necesarias:
 
@@ -124,8 +124,6 @@ Utilice los colores 1, 2 y 3 para las líneas CGB. El modo normal de 128×96 com
 El modo de 160×144 puede asignar como máximo 127 tiles por fotograma. Si la ruta rápida de líneas agota la asignación o recibe coordenadas fuera de rango, activa `Wire3DCGB_GetFullScreenOverflow()` y deja de escribir píxeles hasta el reinicio del siguiente fotograma. Mantenga los vértices dentro del área elegida. La ampliación derecha de las máscaras triangulares se detiene en X=127 para 128×96 y en X=159 para pantalla completa. Respete los requisitos de mapeo de bancos WRAM de la API, especialmente en pantalla completa y FastMap.
 
 La [prueba de regresión de límites de máscaras triangulares CGB](../tests/library/wire3d_cgb_mask_bounds.c) ofrece un programa completo que comprueba ambas áreas.
-
-La antigua demostración `examples/wire3d_cgb_hiddenline_demo.c` permite comprobar las líneas ocultas de forma interactiva. `START` alterna entre uno y tres objetos visibles; `B` selecciona un objeto; la cruceta mueve X/Y; `A`+arriba/abajo mueve Z; `A`+izquierda/derecha gira Z; y `SELECT`+cruceta gira X/Y en pasos de 22,5 grados. Las líneas ocultas y la oclusión entre objetos permanecen activas, y los objetos que colisionan se empujan. Esta demostración de desarrollo no se incluye en el repositorio público.
 
 Ejemplo de compilación para funciones RPG/ADV/SLG:
 
@@ -212,7 +210,7 @@ Los últimos ocho índices de nota reutilizan actualmente las frecuencias de la 
 - La API pública de `cgb_palette.h` utiliza nombres `cgb_*`.
 - Cuando un menú o un ajuste active o desactive música o efectos, llame a `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()`.
 - `Audio_PlaySFX()` registra el banco ROM visible en ese momento. Si conoce el banco de los datos del efecto, utilice `Audio_PlaySFXBanked(bank, sfx, priority)`.
-- `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` conservan la numeración histórica de canales del flujo musical: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
+- `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` usan la siguiente numeración de canales del flujo musical: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
 - Para una onda CH3 propia, empaquete 32 muestras de 4 bits en 16 bytes y páselas a `Audio_LoadCustomWave()`.
 - El fundido de `Audio_FadeToMasterVolume()` avanza mediante `Audio_Update()`: siga llamando a esta función en cada fotograma durante el fundido.
 - `audio_vblank.c` define el símbolo de vector IRQ de VBlank `__kq_vblank_vector`. Cada evento BGM tiene cinco bytes: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. El silencio, el bucle y el final se indican con `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` y `AUDIO_VBLANK_END`.
@@ -226,7 +224,7 @@ Los últimos ocho índices de nota reutilizan actualmente las frecuencias de la 
 - La capa de paquetes solo mantiene un nivel de datos pendientes de recepción; el bucle principal debe atenderla con regularidad en cada fotograma.
 - `Link4_*` modela una conexión cooperativa de cuatro jugadores en la que el anfitrión elige al interlocutor. Solo hay uno activo en el enlace a la vez, por lo que el anfitrión debe alternarlos explícitamente.
 - `Link4_TryReadByteFrom()` / `Link4_HasPacketFrom()` ofrecen buzones por interlocutor para conservar el origen de los datos al sondear varios participantes.
-- `Link_ReadPacket()` conserva la vista histórica del «paquete más reciente». En el flujo de cuatro jugadores, utilice `Link4_ReadPacketFrom()`.
+- `Link_ReadPacket()` devuelve el paquete más reciente. En el flujo de cuatro jugadores, utilice `Link4_ReadPacketFrom()`.
 - `Link4_*` no implementa el comportamiento eléctrico ni el protocolo del Nintendo DMG-07. Para el accesorio físico, use `link_dmg07.c` y no lo compile junto con `link.c` en la misma ROM.
 - En DMG-07, `GetConnectedMask()` representa a los jugadores físicos 1–4 con los bits 0–3. Durante la transferencia conserva la última detección de conexión; los participantes solo se actualizan en la fase de detección.
 - Un reinicio DMG-07 pendiente no puede avanzar sin reloj del adaptador. El tráfico de recuperación se descarta y no se entrega como datos de secuencia normales. Si el accesorio se vuelve a encender en una fase distinta, en vez de pausar únicamente su reloj, reinicialice expresamente el controlador y la sesión.

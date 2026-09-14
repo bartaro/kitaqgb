@@ -25,6 +25,8 @@
 
 KITAQGB began as a fork of NORCAL, the NES C compiler associated with Zachtronics. It retains the copyright notice of NORCAL's original author, Keith Holman.
 
+**NORCAL takes its name from Northern California.** Following that geographical naming idea, KITAQGB’s author, DAISUKE OBA, chose **Kitakyushu**, the city where he was born and raised, as the basis for the name KITAQGB.
+
 The name **KITAQGB** has two overlapping meanings:
 
 - **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expresses the goal of a toolchain that understands the target machine and supports both human programmers and generative AI workflows.
@@ -36,7 +38,7 @@ For English speakers, pronounce **KITAQ** as **“kee-tah-KYOO”**, IPA **/ˌki
 
 KITAQGB and KOKURA are currently available as public preview development tools.
 
-They are usable for experimentation, sample projects, AI-assisted game development, compiler research, emulator-based debugging, and workflow validation. However, the projects are still under active development, and APIs, CLI options, output formats, diagnostics, and behavior may change between versions.
+They are usable for experimentation, sample projects, AI-assisted game development, compiler research, emulator-based debugging, and workflow validation. However, the projects are under active development, and APIs, CLI options, output formats, diagnostics, and behavior may change between versions.
 
 Preview builds may contain bugs, incomplete features, or breaking changes. Generated code, emulator behavior, timing diagnostics, and reports should be verified carefully before use in production or public releases.
 
@@ -330,6 +332,8 @@ The project license does not replace third-party font, dependency, logo or trade
 
 KITAQGBはZachtronicsに関連するNES用CコンパイラNORCALを出発点とするフォークです。原作者Keith Holman氏の著作権表示を保持しています。
 
+**NORCALの名前は北カリフォルニア（Northern California）に由来します。** 地域の名前を使うこの命名に着想を得て、KITAQGBの作者DAISUKE OBAは、自身が生まれ育った**北九州市**をもとにKITAQGBと名付けました。
+
 **KITAQGB**という名前には、次の二つの意味を重ねています。
 
 - **Kernel-Informed Toolchain for AI-Quality Game Boy Development**：対象マシンを理解し、人間のプログラマーと生成AIの双方を支援するツールチェーンという目標を表します。
@@ -421,7 +425,7 @@ Releaseビルドでは実行ファイルと設定ファイルをリポジトリ�
 - .NET Framework 4.8をターゲットにするための開発環境
 - MSBuildを含むVisual StudioまたはVisual Studio Build Tools
 
-現在のプロジェクトファイルは `.NET Framework v4.8` を対象とする従来形式のC#プロジェクトです。
+現在のプロジェクトファイルは `.NET Framework v4.8` を対象とするMSBuild形式のC#プロジェクトです。
 
 Windows以外でも、参照アセンブリの構成によってはMono/MSBuildで動作する可能性があります。ただし、主にサポートするビルド手順はWindowsとMSBuildの組み合わせです。
 

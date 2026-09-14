@@ -83,7 +83,7 @@
 
 ## 빌드 방법
 
-아래 명령 일부에는 `wire3d_cube_demo.c`처럼 공개 저장소에 없는 과거 개발용 데모가 나옵니다. 해당 소스를 준비한 뒤 사용하는 빌드 틀입니다. 동봉된 입문 예제는 `../examples/build.ps1`과 HTML 설명서를 사용하세요. 짧은 명령 이름 `kitaqgb`는 실행 파일이 PATH에 등록되어 있다고 가정합니다.
+아래 명령은 애플리케이션 소스와 라이브러리 모듈을 함께 빌드하는 방법을 보여 줍니다. 각 명령에 지정된 애플리케이션 파일은 직접 준비하세요. 동봉된 입문 프로그램은 `../examples/build.ps1`과 HTML 설명서를 이용해 빌드할 수 있습니다. 짧은 명령 이름 `kitaqgb`는 실행 파일이 PATH에 등록되어 있다고 가정합니다.
 
 게임 소스와 사용하는 라이브러리 소스를 함께 지정합니다.
 
@@ -124,8 +124,6 @@ CGB 선의 색은 1·2·3을 사용하세요. 일반 128×96 모드는 색 비�
 160×144 모드는 프레임당 최대 127개 타일을 할당합니다. 빠른 선 그리기 경로에서 할당 실패나 범위 밖 좌표가 발생하면 `Wire3DCGB_GetFullScreenOverflow()`가 설정되며, 다음 프레임 초기화까지 픽셀 쓰기를 중단합니다. 꼭짓점은 선택한 화면 안에 두세요. 삼각형 마스크의 여백은 128×96에서 X=127, 전체 화면에서 X=159까지입니다. 특히 전체 화면과 FastMap을 사용할 때는 API에 설명된 WRAM 뱅크 매핑 조건을 지켜야 합니다.
 
 두 모드의 경계를 확인하는 완성 프로그램은 [CGB 삼각형 마스크 경계 회귀 테스트](../tests/library/wire3d_cgb_mask_bounds.c)에 있습니다.
-
-과거 개발용 `examples/wire3d_cgb_hiddenline_demo.c`는 조작 가능한 숨은 선 테스트입니다. `START`로 표시 수를 1~3개로 바꾸고 `B`로 대상을 선택합니다. 방향키는 X/Y 이동, `A`+위/아래는 Z 이동, `A`+왼쪽/오른쪽은 Z 회전, `SELECT`+방향키는 X/Y축의 22.5도 회전입니다. 숨은 선·물체 간 가림 처리는 항상 켜져 있고, 충돌한 물체는 서로 밀려납니다. 이 개발용 데모는 공개 저장소에 포함되지 않습니다.
 
 RPG·ADV·SLG 기능의 빌드 예입니다.
 
@@ -212,7 +210,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h`의 공개 API 이름은 `cgb_*`입니다.
 - 메뉴나 설정에서 음악·효과음 사용 여부를 바꾸면 `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()`를 호출하세요.
 - `Audio_PlaySFX()`는 호출 시 보이는 ROM 뱅크를 기록합니다. 효과음 데이터 뱅크를 명확히 알고 있다면 `Audio_PlaySFXBanked(bank, sfx, priority)`를 사용하세요.
-- 음악 스트림의 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`는 기존 채널 번호를 유지합니다. `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`입니다.
+- 음악 스트림의 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`는 다음 채널 번호를 사용합니다. `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`입니다.
 - CH3의 사용자 파형은 4비트 샘플 32개를 16바이트에 담아 `Audio_LoadCustomWave()`로 전달하세요.
 - `Audio_FadeToMasterVolume()`의 페이드는 `Audio_Update()`에서 진행됩니다. 페이드 중에도 매 프레임 호출하세요.
 - `audio_vblank.c`는 VBlank IRQ 벡터 심볼 `__kq_vblank_vector`를 정의합니다. BGM 이벤트는 `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`의 5바이트이며, 쉼·반복·끝에는 `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, `AUDIO_VBLANK_END`를 사용합니다.
@@ -226,7 +224,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 패킷 계층은 한 건 깊이의 수신 저장 공간을 사용합니다. 프레임 단위 메인 루프에서 자주 처리하는 방식이 적합합니다.
 - `Link4_*`는 호스트가 대상을 선택하는 협조적 4인 통신입니다. 한 번에 한 상대만 선로를 사용하므로 호스트가 순서대로 바꿔야 합니다.
 - `Link4_TryReadByteFrom()` / `Link4_HasPacketFrom()`은 상대별 수신함을 제공합니다. 여러 상대를 확인해도 데이터가 누구에게서 왔는지 유지됩니다.
-- `Link_ReadPacket()`은 기존의 ‘가장 최근 패킷’을 읽는 API입니다. 4인 통신에는 `Link4_ReadPacketFrom()`을 쓰세요.
+- `Link_ReadPacket()`은 ‘가장 최근 패킷’을 읽는 API입니다. 4인 통신에는 `Link4_ReadPacketFrom()`을 쓰세요.
 - `Link4_*`는 Nintendo DMG-07의 전기적 동작이나 프로토콜을 구현하지 않습니다. 실물에는 `link_dmg07.c`를 쓰고 같은 ROM에 `link.c`와 함께 넣지 마세요.
 - DMG-07의 `GetConnectedMask()`는 물리 플레이어 1~4를 비트 0~3으로 나타냅니다. 전송 중에는 마지막 연결 확인 값을 유지하며, 참가자 목록은 연결 확인 단계에서만 갱신할 수 있습니다.
 - DMG-07 재시작 요청은 어댑터 클록이 없는 동안 진행되지 않습니다. 복구용 통신은 일반 데이터로 노출하지 않고 버립니다. 단순히 클록이 멈춘 것이 아니라 전원을 껐다 켜서 다른 단계가 되었다면 드라이버와 세션을 명시적으로 다시 초기화하세요.

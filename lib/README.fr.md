@@ -1,6 +1,6 @@
 # Bibliothèques KITAQGB
 
-`wire3d_dmg` est une bibliothèque de rendu filaire monochrome pour Game Boy. Compilez `wire3d_dmg_96.c` pour une vue de 128 × 96 ou `wire3d_dmg.c` pour 128 × 120, puis utilisez les fonctions `Wire3DDMG_*`. Les anciens fichiers `wire3d` et `dmg3d` restent des points d’entrée compatibles avec leurs profils respectifs ; n’en compilez qu’un seul. `wire3d_cgb` conserve son nom et reste le moteur couleur distinct. 
+`wire3d_dmg` est une bibliothèque de rendu filaire monochrome pour Game Boy. Compilez `wire3d_dmg_96.c` pour une vue de 128 × 96 ou `wire3d_dmg.c` pour 128 × 120, puis utilisez les fonctions `Wire3DDMG_*`. `wire3d` et `dmg3d` offrent aussi des points d’entrée pour les profils de 96 et 120 lignes, respectivement. Compilez un seul point d’entrée par programme. `wire3d_cgb` est le moteur dédié au rendu couleur.
 
 [Guide du moteur commun (anglais)](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
@@ -83,7 +83,7 @@ Ce dossier contient trois catégories de fichiers :
 
 ## Utilisation à la compilation
 
-Compilez le source du jeu avec les unités de bibliothèque nécessaires. Les commandes ci-dessous reprennent les montages de développement historiques. Plusieurs démonstrations nommées, notamment `wire3d_cube_demo.c`, ne figurent pas dans cette distribution publique ; ces commandes sont des modèles et nécessitent les sources correspondants. Pour commencer avec les programmes réellement fournis, utilisez `../examples/build.ps1` et le manuel HTML. Le nom court `kitaqgb` suppose que l'exécutable est accessible par PATH.
+Les commandes montrent comment compiler les sources d’une application avec les modules de la bibliothèque. Préparez les fichiers de l’application indiqués dans chaque commande. Pour les programmes d’initiation fournis, utilisez `../examples/build.ps1` et le manuel HTML. La commande abrégée `kitaqgb` suppose que l’exécutable se trouve dans le PATH.
 
 ```powershell
 kitaqgb hwregs.c lib/audio.c main.c lib/physics2d.c lib/physics2d_circle.c lib/physics3d.c lib/cgb_palette.c lib/scroll.c lib/camera.c -I lib -o game.gb --profile=dev
@@ -122,8 +122,6 @@ Pour les lignes CGB, utilisez les couleurs 1, 2 et 3. Le mode normal de 128 × 9
 Le mode de 160 × 144 alloue au maximum 127 tuiles par image. Si le tracé rapide ne peut pas allouer une tuile ou rencontre une coordonnée hors écran, `Wire3DCGB_GetFullScreenOverflow()` renvoie une valeur non nulle et les écritures de pixels sont suspendues jusqu'à l'initialisation de l'image suivante. Gardez les sommets dans la zone sélectionnée. La marge droite du masque triangulaire s'arrête à X=127 en mode 128 × 96 et à X=159 en plein écran. Respectez les exigences de sélection des banques WRAM indiquées pour chaque API, en particulier avec le plein écran ou FastMap.
 
 Le [test des limites du masque triangulaire CGB](../tests/library/wire3d_cgb_mask_bounds.c) est un programme complet qui vérifie les deux modes d'affichage.
-
-La démonstration historique `examples/wire3d_cgb_hiddenline_demo.c` sert au contrôle interactif des lignes cachées. `START` fait varier le nombre visible de un à trois, `B` choisit un objet, la croix le déplace sur X/Y, `A`+haut/bas sur Z, `A`+gauche/droite effectue la rotation Z, et `SELECT`+croix les rotations X/Y par pas de 22,5 degrés. Les lignes cachées et l'occultation entre objets restent actives ; les corps en collision se repoussent.
 
 Exemples historiques de compilation RPG / ADV / SLG :
 
@@ -212,7 +210,7 @@ Incluez ensuite les en-têtes nécessaires depuis votre jeu :
 - `Audio_LoadCustomWave()` reçoit 16 octets contenant 32 échantillons de 4 bits pour une forme d'onde CH3 personnalisée.
 - `Audio_FadeToMasterVolume()` progresse dans `Audio_Update()` ; continuez les appels à chaque image pendant un fondu.
 - `audio_vblank.c` définit `__kq_vblank_vector`. Ses événements musicaux font cinq octets : `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. Utilisez `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` et `AUDIO_VBLANK_END`.
-- Les morceaux directement pointés doivent être en banque fixe ; le mode file permet d'alimenter des morceaux en banques. Après l'édition de liens, `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` raccorde le vecteur `0x0040` et actualise les sommes de contrôle. Le script fourni se trouve dans `scripts`, et non dans l'ancien dossier `tools` ; consultez le manuel pour l'intégration du pilote.
+- Les morceaux directement pointés doivent être en banque fixe ; le mode file permet d'alimenter des morceaux en banques. Après l'édition de liens, `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` raccorde le vecteur `0x0040` et actualise les sommes de contrôle. Le script fourni se trouve dans `scripts` ; consultez le manuel pour l'intégration du pilote.
 - Ne combinez pas `audio_vblank.c` avec une autre unité possédant le vecteur VBlank `0x0040` sans répartiteur commun.
 - `Scroll_SplitCommit()` active automatiquement les bits IE `0x01 | 0x02` et utilise les gestionnaires VBlank/STAT du compilateur.
 - Le fractionnement réserve actuellement `0x0040` et `0x0048` ; ne le combinez pas avec un autre gestionnaire personnalisé de ces vecteurs.
@@ -222,7 +220,7 @@ Incluez ensuite les en-têtes nécessaires depuis votre jeu :
 - La couche de paquets conserve volontairement un seul paquet en attente et se pilote de préférence depuis une boucle rythmée par les images.
 - `Link4_*` modélise un adaptateur logique coopératif : un seul correspondant utilise la liaison à la fois et l'hôte doit les sélectionner à tour de rôle.
 - `Link4_TryReadByteFrom()` / `Link4_HasPacketFrom()` exposent des boîtes par correspondant pour conserver l'origine des données.
-- `Link_ReadPacket()` garde l'ancienne vue du « dernier paquet » ; utilisez `Link4_ReadPacketFrom()` pour quatre joueurs.
+- `Link_ReadPacket()` renvoie le paquet le plus récent ; utilisez `Link4_ReadPacketFrom()` pour quatre joueurs.
 - `Link4_*` n'implémente pas le comportement électrique ou le protocole du DMG-07. Utilisez `link_dmg07.c` pour l'accessoire physique et ne le compilez pas avec `link.c` dans la même ROM.
 - Le masque DMG-07 `GetConnectedMask()` utilise les bits 0 à 3 pour les joueurs physiques 1 à 4. Pendant le transfert, il conserve le dernier résultat d'interrogation ; la liste des participants n'est actualisée qu'en phase d'interrogation.
 - Un redémarrage DMG-07 en attente ne progresse pas sans horloge de l'adaptateur. Le trafic de récupération est écarté au lieu d'être exposé comme données du séquenceur. Si l'accessoire a été éteint puis rallumé dans une autre phase, réinitialisez explicitement le pilote ou la session.

@@ -83,7 +83,7 @@
 
 ## ビルド方法
 
-下のコマンドには、`wire3d_cube_demo.c` など公開リポジトリに含まれない開発時のデモを前提とする例もあります。そのまま実行できる完成例ではなく、指定のソースを用意して使うビルドのひな形です。同梱の入門プログラムは `../examples/build.ps1` とHTML説明書を使ってください。短いコマンド名 `kitaqgb` は、実行ファイルのあるフォルダをPATHに登録した場合に使えます。
+以下はアプリケーションのソースとライブラリを組み合わせるビルド例です。各コマンドに指定するアプリケーションのソースは利用側で用意してください。同梱の入門プログラムは `../examples/build.ps1` とHTMLマニュアルでビルドできます。短いコマンド名 `kitaqgb` は実行ファイルがPATHに登録されている場合に使えます。
 
 ゲームのソースと、利用するライブラリのソースをまとめて指定します。
 
@@ -124,8 +124,6 @@ CGBの線には色番号1・2・3を使ってください。通常の128×96描�
 160×144モードで割り当てられるタイルは1フレーム最大127枚です。高速な線描画経路で割り当て失敗や範囲外座標が発生すると `Wire3DCGB_GetFullScreenOverflow()` が設定され、次のフレームリセットまで画素の書き込みを停止します。頂点は選んだ描画面の内側に置いてください。三角形マスクの余白は128×96でX=127、全画面でX=159までです。特に全画面とFastMapでは、API説明にあるWRAMバンクの割り当て条件を守ってください。
 
 両モードの境界を確認する完成プログラムは、[CGB三角形マスクの境界テスト](../tests/library/wire3d_cgb_mask_bounds.c)にあります。
-
-開発時の `examples/wire3d_cgb_hiddenline_demo.c` は操作できる隠線処理テストです。`START` で表示数を1〜3個に切り替え、`B` で操作対象を選びます。十字キーでX/Y移動、`A`＋上下でZ移動、`A`＋左右でZ回転、`SELECT`＋十字キーでX/Y回転を22.5度ずつ行います。隠線・物体間の遮蔽処理は常に有効で、衝突した物体は互いに押し戻されます。この開発用デモは公開リポジトリには含まれません。
 
 RPG・ADV・SLG機能のビルド例です。
 
@@ -212,7 +210,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h` の公開API名は `cgb_*` です。
 - メニューや設定で音の有効・無効を変えたら、`Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` を呼びます。
 - `Audio_PlaySFX()` は呼び出し時に見えているROMバンクを記録します。効果音データのバンクが明確な場合は `Audio_PlaySFXBanked(bank, sfx, priority)` を使います。
-- 楽曲ストリームの `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` は従来のチャンネル番号を使います。`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3` です。
+- 楽曲ストリームの `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` は次のチャンネル番号を使います。`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3` です。
 - CH3用の独自波形には、32個の4ビットサンプルを16バイトへ詰め、`Audio_LoadCustomWave()` に渡します。
 - `Audio_FadeToMasterVolume()` のフェードは `Audio_Update()` で進みます。フェード中も毎フレーム呼んでください。
 - `audio_vblank.c` はVBlank割り込みベクターのシンボル `__kq_vblank_vector` を定義します。BGMはイベントごとに `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param` の5バイトで、休符・反復・終了には `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END` を使います。
@@ -226,7 +224,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - パケット層が保持するのは1件だけです。フレーム単位のメインループからこまめに処理してください。
 - `Link4_*` はホストが相手を選ぶ協調的な4人通信です。同時に通信する子機は1台なので、ホスト側で順番に切り替えます。
 - `Link4_TryReadByteFrom()` / `Link4_HasPacketFrom()` は相手別の受信箱を参照します。複数の子機を順番に調べても、誰からのデータかを保てます。
-- `Link_ReadPacket()` は従来の「最新の1件」を読むAPIです。4人通信では `Link4_ReadPacketFrom()` を使います。
+- `Link_ReadPacket()` は「最新の1件」を読むAPIです。4人通信では `Link4_ReadPacketFrom()` を使います。
 - `Link4_*` はNintendo DMG-07の電気的動作や通信手順を実装するものではありません。実物には `link_dmg07.c` を使い、同じROMに `link.c` と両方を組み込まないでください。
 - DMG-07の `GetConnectedMask()` は物理プレイヤー1〜4をビット0〜3で表します。転送中は最後の接続確認結果を保持します。接続台数を更新できるのは接続確認の段階だけです。
 - 再開要求があっても、アダプターからクロックが来ない間は処理が進みません。復旧用の通信は通常のデータとして公開せずに捨てます。単にクロックが止まったのではなく、電源の入れ直しで別の段階へ移った場合は、ドライバーと通信セッションを明示的に初期化し直してください。

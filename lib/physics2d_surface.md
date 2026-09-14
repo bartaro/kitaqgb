@@ -1,14 +1,15 @@
 # Fixed-Point Surface Contacts
 
-These opt-in additions to `physics2d.h` / `physics2d.c` do not change the existing
-AABB world, legacy gravity clamp, or legacy friction behavior.
+`physics2d.h` / `physics2d.c` provide fixed-point surface-contact functions
+that the caller invokes explicitly. The AABB world also provides gravity
+clamping and body friction.
 
 ## API
 
 - `kq2d_scale_q8(value, coefficient)` multiplies a signed value by a signed Q8
   coefficient in [-256, 256], truncating toward zero. The endpoints represent
   exactly -1 and +1, unlike an s8 coefficient. An eight-step LR35902 multiply
-  kernel applies the sign after truncation, preserving the previous arithmetic.
+  kernel applies the sign after truncation, giving truncation toward zero.
 - `kq2d_body_limit_speed(body, max_speed)` applies one Q8 scale to both velocity
   components. A 65-entry hypot LUT plus bounded fractional division supplies a
   conservative circular speed limit without 32-bit products. Components and
@@ -36,7 +37,7 @@ rounded normal impulse, reducing residual normal drift in resting contacts.
 Small components (magnitude below 64 raw units) use round-to-nearest projection
 with seven intermediate fractional bits. This prevents a shallow support from
 discarding sub-unit tangential gravity on every update. The public scalar
-multiply keeps its original truncation contract.
+multiply truncates toward zero.
 Surface-relative velocity makes an approaching moving flipper transfer energy,
 while a held flipper has no motor kick. No position changes occur in this API.
 
@@ -57,7 +58,7 @@ This compiles `pinball/test_physics2d_surface.c` with the production library and
 runs its LR35902 machine code in KOKURA. The 8872 cases cover signs, cardinal and
 oblique contacts, five material coefficient pairs, speed limits, low-speed rest,
 moving surfaces, separating contacts, powered kicks, null arguments, a WANI
-reflection reference and unchanged legacy gravity behavior. Scalar tests exercise
+reflection reference and gravity-clamping behavior. Scalar tests exercise
 all 513 supported coefficients at 15 signed inputs, including representational
 limits (the unrepresentable -32768 * -1 endpoint wraps in 16-bit arithmetic).
 Crossing tests exercise 104 signed endpoint pairs, and 256 resting-contact

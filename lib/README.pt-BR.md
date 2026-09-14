@@ -83,7 +83,7 @@ Esta pasta contém três tipos de arquivo:
 
 ## Como compilar
 
-Alguns comandos abaixo citam demos históricos de desenvolvimento que não estão neste repositório público, como `wire3d_cube_demo.c`. São modelos de compilação que exigem os fontes indicados. Para os programas de iniciação incluídos, use `../examples/build.ps1` e o manual HTML. O comando curto `kitaqgb` pressupõe que o executável esteja no PATH.
+Os comandos mostram como compilar os fontes da aplicação junto com os módulos da biblioteca. Prepare os arquivos da aplicação indicados em cada comando. Para os programas de iniciação incluídos, use `../examples/build.ps1` e o manual HTML. O comando curto `kitaqgb` pressupõe que o executável esteja no PATH.
 
 Compile o fonte do jogo junto com os fontes das bibliotecas necessárias:
 
@@ -124,8 +124,6 @@ Use as cores 1, 2 e 3 nas linhas do CGB. No modo normal de 128×96, as linhas co
 O modo de 160×144 aloca no máximo 127 tiles por quadro. Uma falha de alocação ou coordenada fora dos limites no caminho rápido de linhas ativa `Wire3DCGB_GetFullScreenOverflow()` e impede novas escritas de pixels até reiniciar o quadro. Mantenha os vértices dentro da área escolhida. A margem da máscara triangular termina em X=127 no modo 128×96 e em X=159 na tela cheia. Siga as condições de mapeamento dos bancos de WRAM descritas na API, sobretudo para tela cheia e FastMap.
 
 O [teste de regressão dos limites da máscara triangular CGB](../tests/library/wire3d_cgb_mask_bounds.c) é um programa completo que verifica os dois modos.
-
-O demo histórico `examples/wire3d_cgb_hiddenline_demo.c` permite testar as linhas ocultas interativamente. `START` alterna a quantidade visível entre um e três objetos; `B` escolhe o objeto; o direcional move em X/Y; `A`+cima/baixo move em Z; `A`+esquerda/direita gira em Z; e `SELECT`+direcional gira em X/Y em passos de 22,5 graus. A remoção de linhas ocultas e a oclusão entre objetos permanecem ativas, e corpos que colidem se afastam. Esse demo de desenvolvimento não faz parte do repositório público.
 
 Exemplos de compilação para RPG, aventura e estratégia:
 
@@ -226,7 +224,7 @@ Os oito últimos índices de nota atualmente reutilizam as frequências da oitav
 - A camada de pacotes guarda apenas um pacote por posição de recepção. Processe-a regularmente em um laço sincronizado por quadro.
 - `Link4_*` modela quatro participantes cooperativos, com seleção pelo anfitrião. Apenas um participante está ativo no fio por vez; o anfitrião precisa alternar entre eles.
 - `Link4_TryReadByteFrom()` e `Link4_HasPacketFrom()` expõem caixas de recepção por participante, permitindo consultar vários sem perder a identificação da origem.
-- `Link_ReadPacket()` continua oferecendo a visão antiga do último pacote. Em fluxos de quatro participantes, use `Link4_ReadPacketFrom()`.
+- `Link_ReadPacket()` retorna o pacote mais recente. Em fluxos de quatro participantes, use `Link4_ReadPacketFrom()`.
 - `Link4_*` não implementa o comportamento elétrico ou o protocolo do Nintendo DMG-07. Para o acessório físico, use `link_dmg07.c` e não o compile com `link.c` na mesma ROM.
 - No DMG-07, `GetConnectedMask()` usa os bits 0–3 para os jogadores físicos 1–4. Durante a transmissão, conserva o resultado do último ping. A composição dos participantes só pode ser atualizada na fase de ping.
 - Um reinício pendente do DMG-07 não avança sem clocks do adaptador. O tráfego de recuperação é descartado, sem ser entregue como dados ao programa. Se o acessório foi desligado e voltou em outra fase, em vez de apenas interromper o clock, reinicialize explicitamente o driver e a sessão.

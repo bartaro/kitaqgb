@@ -8,6 +8,8 @@
 
 KITAQGB最初是NORCAL的一个分支。NORCAL是与Zachtronics相关的NES C编译器，本项目保留了原作者Keith Holman的著作权声明。
 
+**NORCAL的名称源于北加利福尼亚（Northern California）。** 受这种以地域命名的思路启发，KITAQGB的作者DAISUKE OBA选择了自己出生并长大的城市——**北九州市**，作为KITAQGB名称的来源。
+
 **KITAQGB**这个名称包含两层相互重叠的含义：
 
 - **Kernel-Informed Toolchain for AI-Quality Game Boy Development**，表达了工具链应了解目标硬件、同时支持人工编程和生成式AI开发流程的目标。

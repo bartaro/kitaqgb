@@ -1,6 +1,6 @@
 # Wire3D Guide
 
-**wire3d_dmg** は、ゲームボーイ向けのモノクロ描画ライブラリです。この文書の旧API名は互換入口で使用できます。新規開発は [wire3d_dmgガイド](wire3d_dmg_guide_ja.md) を参照してください。
+このガイドでは、モノクロ描画ライブラリの96行設定を `Wire3D_*` 関数で使う方法を説明します。画面サイズを選べる `Wire3DDMG_*` 関数については [wire3d_dmgガイド](wire3d_dmg_guide_ja.md) を参照してください。
 
 `wire3d.h` / `wire3d.c` は、KITAQGB で使う固定小数点ワイヤーフレーム 3D 描画ライブラリです。
 利用側はモデルの頂点とエッジを渡し、`BeginFrame` から `EndFrame` までの間に描画要求を積みます。

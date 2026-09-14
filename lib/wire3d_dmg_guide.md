@@ -1,6 +1,6 @@
 # wire3d_dmg: monochrome 3D for Game Boy
 
-`wire3d_dmg.c` is a monochrome wireframe renderer for Game Boy. It projects 3D points and draws wireframe edges into a monochrome tile surface. `wire3d_cgb` remains a separate color renderer with its existing name.
+`wire3d_dmg.c` is a monochrome wireframe renderer for Game Boy. It projects 3D points and draws wireframe edges into a monochrome tile surface. `wire3d_cgb` provides color rendering.
 
 ## Choose a viewport before building
 
@@ -60,14 +60,14 @@ Reserve WRAM `0xD000..0xDFFF` and retain its bank mapping while rendering. Initi
 
 `EndFrame` waits for VBlank and then checks STAT during upload. A full transfer can continue beyond VBlank and does not promise 60 frames per second. The paired transfer loops use more ROM to reduce loop and STAT-check overhead, without allocating another stage buffer.
 
-## Existing programs
+## Alternative entry points
 
-`wire3d.c/h` select the 96-line profile and preserve `Wire3D_*` names. `dmg3d.c/h` select the 120-line profile and preserve `DMG3D_*` names. These files are compatibility entries into the same core. Keep an old build command as it is, or migrate the source, header, and API names together. Never link an old entry alongside a new entry. New programs should use `wire3d_dmg` and `Wire3DDMG_*`.
+`wire3d.c/h` select the 96-line profile with `Wire3D_*` functions; `dmg3d.c/h` select the 120-line profile with `DMG3D_*` functions. Match the source, header and function prefix in your program. Compile exactly one entry point. The `wire3d_dmg` interface provides both profiles through the `Wire3DDMG_*` prefix.
 
 ## Verification, September 13, 2026
 
-Both presets and both compatibility entries were built and run in KOKURA. Transfer tests checked destination bytes, consumed source bytes, untouched bitplanes, and buffer boundaries; cube and cross displays were inspected. The integration preserves all 118 profile-specific routine bodies after identifier normalization. It adds no measured transfer-cycle cost compared with the separately optimized renderers.
+Both presets and both compatibility entries were built and run in KOKURA. Transfer tests checked destination bytes, consumed source bytes, untouched bitplanes, and buffer boundaries; cube and cross displays were inspected.
 
-At the tested VBlank entry, CPU cycles for the former transfer loops versus the new paired loops were 211,696 → 207,780 for the 120-line main stage, 36,312 → 34,928 for its auxiliary stage, and 168,656 → 164,164 for the 96-line stage. All eight tested entry conditions per routine improved. These are emulator measurements of transfer routines, not a whole-game frame-rate claim or a physical-hardware test.
+At the tested VBlank entry, the measured transfer costs were 207,780 CPU cycles for the 120-line main stage, 34,928 for its auxiliary stage, and 164,164 for the 96-line stage. These are emulator measurements of transfer routines, not a whole-game frame-rate claim or a physical-hardware test.
 
 [日本語](wire3d_dmg_guide_ja.md)

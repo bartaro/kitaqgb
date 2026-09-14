@@ -8,6 +8,8 @@
 
 KITAQGB는 Zachtronics와 관련된 NES용 C 컴파일러 NORCAL의 포크로 시작했습니다. NORCAL의 원저작자 Keith Holman의 저작권 고지를 유지하고 있습니다.
 
+**NORCAL이라는 이름은 북부 캘리포니아(Northern California)에서 따왔습니다.** 지역의 이름을 사용하는 이 발상에서 영감을 받아, KITAQGB의 제작자 DAISUKE OBA는 자신이 태어나 자란 도시인 **기타큐슈**를 바탕으로 KITAQGB라는 이름을 지었습니다.
+
 **KITAQGB**라는 이름에는 두 가지 뜻이 겹쳐 있습니다.
 
 - **Kernel-Informed Toolchain for AI-Quality Game Boy Development**는 대상 하드웨어를 이해하고, 사람이 직접 개발하는 과정과 생성형 AI를 활용하는 과정을 모두 지원하는 도구 모음을 지향한다는 뜻입니다.
@@ -86,7 +88,7 @@ Release 빌드는 실행 파일과 설정을 최상위 폴더로 복사합니다
 
 ## 필요한 개발 환경
 
-주 개발 환경은 Windows, .NET Framework 4.8 대상 참조 파일, MSBuild가 포함된 Visual Studio 또는 Visual Studio Build Tools입니다. 프로젝트 파일은 `.NET Framework v4.8`을 대상으로 하는 기존 형식의 C# 프로젝트입니다.
+주 개발 환경은 Windows, .NET Framework 4.8 대상 참조 파일, MSBuild가 포함된 Visual Studio 또는 Visual Studio Build Tools입니다. 프로젝트 파일은 `.NET Framework v4.8`을 대상으로 하는 MSBuild 형식의 C# 프로젝트입니다.
 
 다른 운영체제에서도 설치된 참조 어셈블리에 따라 Mono/MSBuild로 빌드할 수 있지만, 주로 지원하는 환경은 Windows와 MSBuild입니다.
 

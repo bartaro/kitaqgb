@@ -1,6 +1,6 @@
 # KITAQGB Libraries
 
-`wire3d_dmg` is a monochrome wireframe renderer for Game Boy. Select 128 × 96 with `wire3d_dmg_96.c`, or 128 × 120 with `wire3d_dmg.c`, and use `Wire3DDMG_*`. The old `wire3d` and `dmg3d` files remain compatibility entries for those respective profiles. Compile only one entry. `wire3d_cgb` retains its name and remains the separate color renderer.
+`wire3d_dmg` is a monochrome wireframe renderer for Game Boy. Select 128 × 96 with `wire3d_dmg_96.c`, or 128 × 120 with `wire3d_dmg.c`, and use `Wire3DDMG_*`. `wire3d` and `dmg3d` provide alternative entry points for the 96-line and 120-line profiles, respectively. Compile one entry point per program. `wire3d_cgb` is the dedicated color renderer.
 
 [Shared renderer guide](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
@@ -99,11 +99,7 @@ This folder contains three kinds of files:
 
 ## Build usage
 
-Several commands below refer to historical development demos that are not
-included in this public repository, such as `wire3d_cube_demo.c`. They are
-build templates requiring the named sources. For the bundled beginner
-programs, use `../examples/build.ps1` and the HTML manual. The short
-`kitaqgb` command assumes the executable is available on PATH.
+The commands illustrate how to combine application sources with library modules. Supply the application files named in each command. For the included beginner programs, use `../examples/build.ps1` and the HTML manual. The short command `kitaqgb` assumes the executable is on PATH.
 
 Compile your game source together with the library source files:
 
@@ -144,8 +140,6 @@ For CGB lines, use colors 1, 2 and 3. Normal 128 × 96 lines combine color bits,
 The 160 × 144 mode allocates at most 127 tiles per frame. An allocation failure or an out-of-range coordinate in its fast line path sets `Wire3DCGB_GetFullScreenOverflow()` and suppresses further pixel writes until the next frame reset. Keep vertices within the selected viewport. Triangle-mask padding stops at X=127 in 128 × 96 mode and X=159 in full-screen mode. Follow the API notes for WRAM bank mapping, especially when using full-screen or FastMap functions.
 
 See the [CGB triangle-mask boundary regression](../tests/library/wire3d_cgb_mask_bounds.c) for a complete program that checks both viewport modes.
-
-The historical development example `examples/wire3d_cgb_hiddenline_demo.c` is the interactive hidden-line check. `START` cycles the visible count from one through three, `B` selects an object, the D-pad moves it on X/Y, `A`+Up/Down moves it on Z, `A`+Left/Right rotates Z, and `SELECT`+D-pad rotates X/Y in 22.5-degree steps. Hidden-line and inter-object occlusion stay enabled, and colliding bodies push apart.
 
 RPG / ADV / SLG helper build examples:
 
@@ -245,7 +239,7 @@ The final eight audio note indices currently reuse the preceding octave's freque
 - `cgb_palette.h` uses `cgb_*` as the public API surface.
 - Call `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` whenever your menu or settings change.
 - `Audio_PlaySFX()` captures the current visible ROM bank. Use `Audio_PlaySFXBanked(bank, sfx, priority)` when the SFX data bank is known explicitly.
-- Music stream command IDs keep the legacy encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
+- Music stream command IDs use this channel encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
 - Use `Audio_LoadCustomWave()` with 16 bytes holding 32 packed 4-bit samples if you want a project-specific CH3 waveform.
 - `Audio_FadeToMasterVolume()` advances from `Audio_Update()`, so call `Audio_Update()` each frame during fades.
 - `audio_vblank.c` owns the VBlank IRQ vector symbol `__kq_vblank_vector`. Its BGM stream format is five bytes per event: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`; use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, and `AUDIO_VBLANK_END`.
@@ -259,7 +253,7 @@ The final eight audio note indices currently reuse the preceding octave's freque
 - The packet layer is intentionally one-deep and is best driven from a frame-paced main loop.
 - `Link4_*` models a cooperative host-selected 4-player adapter: only one peer is active on the wire at a time, and the host must rotate peers intentionally.
 - `Link4_TryReadByteFrom()` / `Link4_HasPacketFrom()` expose per-peer mailboxes so host code can poll several peers without losing attribution.
-- `Link_ReadPacket()` remains a legacy "latest packet" view; use `Link4_ReadPacketFrom()` in 4-player flows.
+- `Link_ReadPacket()` returns the latest packet; use `Link4_ReadPacketFrom()` in 4-player flows.
 - `Link4_*` does not implement the Nintendo DMG-07 electrical/protocol behavior. Use `link_dmg07.c` for the physical accessory and do not compile it together with `link.c` in the same ROM.
 - DMG-07 `GetConnectedMask()` is normalized to bits 0..3 for physical players 1..4. During transmission it remains the last ping result; peer membership can only be refreshed in ping phase.
 - A pending DMG-07 restart cannot make progress while adapter clocks are absent. Recovery traffic is discarded rather than exposed as sequencer data. If the accessory was power-cycled into a different phase instead of merely pausing its clocks, reinitialize the driver/session explicitly.
