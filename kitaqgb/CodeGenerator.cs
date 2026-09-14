@@ -194,6 +194,7 @@ class CodeGenerator
     const int BankThunkDepthEncodedBase = 0x80;
     const int BankThunkDepthEncodedLimit = BankThunkDepthEncodedBase + BankThunkStackDepth;
     int RomBankSavedAddr = -1;
+    int OamDmaStubAddr = -1;
     int StructReturnPtrAddr = -1;
     int BankThunkSpAddr = -1;
     int BankThunkBankBaseAddr = -1;
@@ -4836,6 +4837,20 @@ class CodeGenerator
     }
 
 
+    // Reserve executable HRAM before globals and function-local storage are allocated.
+    static bool UsesOamDma(Expr expr)
+    {
+        if (expr == null) return false;
+        if (expr.MatchAny(Tag.Call, out Expr target, out Expr[] arguments) &&
+            target.Match(Tag.Name, out string name) && name == "__oam_dma") return true;
+        foreach (object arg in expr.GetArgs().Skip(1))
+        {
+            if (arg is Expr child && UsesOamDma(child)) return true;
+            if (arg is Expr[] children && children.Any(UsesOamDma)) return true;
+        }
+        return false;
+    }
+
     // Register runtime storage and declarations before emitting each ROM bank and function body.
     // Function bodies are generated transactionally so their measured stack usage can precede them in an entry guard.
     void CompileProgram(Expr program)
@@ -4890,6 +4905,14 @@ class CodeGenerator
         DeclareSymbol(program, new Symbol(SymbolTag.Global, addrCriticalDepth, CType.UInt8, "__kq_critical_depth"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, addrRngLo, CType.UInt8, "__kq_rng_lo"));
         DeclareSymbol(program, new Symbol(SymbolTag.Global, addrRngHi, CType.UInt8, "__kq_rng_hi"));
+
+        if (UsesOamDma(program))
+        {
+            OamDmaStubAddr = Allocate(HramRegion, 8);
+            Emit(Tag.Variable, "__kq_oam_dma_stub", OamDmaStubAddr, 8);
+            DeclareSymbol(program, new Symbol(SymbolTag.Global, OamDmaStubAddr,
+                CType.MakeArray(CType.UInt8, 8), "__kq_oam_dma_stub"));
+        }
 
         Expr[] declarations;
         if (!program.MatchAny(Tag.Sequence, out declarations))
@@ -7958,15 +7981,30 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
-            // __oam_dma(src_ptr)
-            // Writes src high byte to FF46 (OAM DMA start).
+            // Copy one 160-byte, page-aligned OAM source and return after DMA completes.
             if (funcName == "__oam_dma")
             {
                 if (args.Length != 1) Error(expr, "__oam_dma(src_ptr) expects 1 argument");
 
-                CompileIntoHL(args[0]);
+                CompileIntoHL(args[0]); // Evaluate once; hardware uses only the high byte.
+                // Mask interrupt sources without changing IME, including calls made inside an ISR.
+                EmitAsm("LD_A_MEM", new AsmOperand(0xFFFF, AddressMode.Absolute));
+                EmitAsm("PUSH_AF");
+                EmitAsm("XOR_A");
+                EmitAsm("LD_MEM_A", new AsmOperand(0xFFFF, AddressMode.Absolute));
+                // LDH [FF46],A; LD B,40; DEC B; JR NZ,-3; RET.
+                // Initialize on every call, so no startup copy or readiness flag is needed.
+                byte[] dmaStub = { 0xE0, 0x46, 0x06, 0x28, 0x05, 0x20, 0xFD, 0xC9 };
+                for (int i = 0; i < dmaStub.Length; i++)
+                {
+                    EmitAsm("LD_A_IMM", new AsmOperand(dmaStub[i], AddressMode.Immediate));
+                    EmitAsm("LDH_MEM_A", new AsmOperand((OamDmaStubAddr + i) & 0xFF, AddressMode.HighMem));
+                }
                 EmitAsm("LD_A_H");
-                EmitAsm("LDH_MEM_A", new AsmOperand(0x46, AddressMode.HighMem)); // DMA
+                // CALL pushes before DMA starts; RET reads the stack only after the wait.
+                EmitAsm("CALL", new AsmOperand(OamDmaStubAddr, AddressMode.Absolute));
+                EmitAsm("POP_AF");
+                EmitAsm("LD_MEM_A", new AsmOperand(0xFFFF, AddressMode.Absolute));
                 return;
             }
 
