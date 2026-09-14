@@ -1,8 +1,10 @@
-// 矩形の運動を1ステップ
+// Advance a rectangular body through one physics step.
 // Expected: 042: integer pixel coordinates
 #include "gb_common.h"
 #include "physics2d.h"
 KQWorld2D world; KQBody2D boxes[1];
+// Create one box at X = 40, set horizontal velocity 2 and zero gravity,
+// then display its X coordinate after a single physics step.
 void main() {
     m_init();
     m_text(2,3,"PHYSICS");

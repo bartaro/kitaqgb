@@ -16,6 +16,7 @@ public static class Config
 
 static partial class Program
 {
+    // These accessors forward to the active compilation session; they do not store independent global copies.
     public static bool EnableDebugOutput { get { return CurrentSession.EnableDebugOutput; } private set { CurrentSession.EnableDebugOutput = value; } }
     public static bool DisableDisasm { get { return CurrentSession.DisableDisasm; } private set { CurrentSession.DisableDisasm = value; } }
     public static bool EnableIncrementalCache { get { return CurrentSession.EnableIncrementalCache; } private set { CurrentSession.EnableIncrementalCache = value; } }
@@ -55,6 +56,7 @@ static partial class Program
     static List<DiagnosticEntry> Diagnostics => CurrentSession.Diagnostics;
     static bool SuppressConsoleDiagnostics { get { return CurrentSession.SuppressConsoleDiagnostics; } set { CurrentSession.SuppressConsoleDiagnostics = value; } }
 
+    // Capture diagnostic counters and list length so speculative work can restore its prior diagnostic state.
     public struct DiagnosticSnapshot
     {
         public int ErrorCount;
@@ -79,7 +81,7 @@ static partial class Program
     public static bool TraceEnabled { get { return CurrentSession.TraceEnabled; } private set { CurrentSession.TraceEnabled = value; } }
     public static string TraceOutputPath { get { return CurrentSession.TraceOutputPath; } private set { CurrentSession.TraceOutputPath = value; } }
     static HashSet<string> TraceStages => CurrentSession.TraceStages;
-    // Optional: disassemble only functions changed against git base.
+    // Optional: disassemble functions selected from source files changed against a Git base.
     static bool EmitChangedFunctionDisasm { get { return CurrentSession.EmitChangedFunctionDisasm; } set { CurrentSession.EmitChangedFunctionDisasm = value; } }
     static string ChangedFunctionDisasmBaseRef { get { return CurrentSession.ChangedFunctionDisasmBaseRef; } set { CurrentSession.ChangedFunctionDisasmBaseRef = value; } }
     static string ChangedFunctionDisasmOutPath { get { return CurrentSession.ChangedFunctionDisasmOutPath; } set { CurrentSession.ChangedFunctionDisasmOutPath = value; } }
@@ -95,7 +97,7 @@ static partial class Program
     // -O1: cheap but effective passes (peepholes, constant-control-flow pruning, etc.)
     public static int OptLevel { get { return CurrentSession.OptLevel; } private set { CurrentSession.OptLevel = value; } }
 
-    // --- Debug-only safety checks (zero-cost in release builds) ---
+    // --- Optional safety checks controlled by command-line settings ---
     // -Zcheck : enable all safety checks
     // -Zcheck-bounds : enable only fixed-array bounds checks for a[i]
     public static bool CheckBounds { get { return CurrentSession.CheckBounds; } private set { CurrentSession.CheckBounds = value; } }
@@ -104,6 +106,7 @@ static partial class Program
     public static bool CheckBankCalls { get { return CurrentSession.CheckBankCalls; } private set { CurrentSession.CheckBankCalls = value; } }
     // Slice bounds checks are enabled only by -Zcheck (not by -Zcheck-bounds).
     public static bool CheckSliceBounds { get { return CurrentSession.CheckSliceBounds; } private set { CurrentSession.CheckSliceBounds = value; } }
+    // Select the WRAM window for stack policy; the reserve and effective limits are finalized after CLI parsing.
     public enum StackBankMode { Fixed, WramX1 }
     public static StackBankMode StackBank { get { return CurrentSession.StackBank; } private set { CurrentSession.StackBank = value; } }
     public static int? StackTop { get { return CurrentSession.StackTop; } private set { CurrentSession.StackTop = value; } }
@@ -152,6 +155,7 @@ static partial class Program
     static RomHeaderOptions RomHeaderPragma => CurrentSession.RomHeaderPragma; // #pragma rom_* specified
     static List<CgbPaletteDefinition> CgbPalettePragmas => CurrentSession.CgbPalettePragmas;
 
+    // Merge into a new options object so effective-header queries do not mutate pragma or CLI settings.
     static RomHeaderOptions BuildRequestedRomHeader()
     {
         var effective = new RomHeaderOptions();
@@ -160,12 +164,15 @@ static partial class Program
         return effective;
     }
 
+    // Preserve the compatible default when the option is unset; an explicit false disables header-logo emission.
     public static bool ShouldEmitHeaderLogo()
     {
         var effective = BuildRequestedRomHeader();
         return !effective.HeaderLogoEnabled.HasValue || effective.HeaderLogoEnabled.Value;
     }
 
+    // Fold the hardware query only for explicit DMG-only or CGB-only headers.
+    // Dual-mode or unspecified headers need a runtime decision; value is valid only when this returns true.
     public static bool TryGetKnownCgbRuntimeValue(out int value)
     {
         value = 0;
@@ -188,11 +195,14 @@ static partial class Program
         return false;
     }
 
+    // Require a known nonzero hardware value rather than treating every CGB-compatible header as CGB-only.
     public static bool IsCgbOnlyTargetRequested()
     {
         return TryGetKnownCgbRuntimeValue(out int value) && value != 0;
     }
 
+    // Accept only the two named windows, ignoring surrounding whitespace and letter case.
+    // The out value is a fallback, not a successful parse, when this returns false.
     static bool TryParseStackBankMode(string text, out StackBankMode mode)
     {
         mode = StackBankMode.WramX1;
@@ -212,52 +222,62 @@ static partial class Program
         return false;
     }
 
+    // Return the inclusive lower address of the selected 4 KiB WRAM window.
     static int GetStackWindowBottom(StackBankMode mode)
     {
         return mode == StackBankMode.Fixed ? 0xC000 : 0xD000;
     }
 
+    // Return the inclusive upper address used as the default initial stack pointer.
     static int GetStackWindowTop(StackBankMode mode)
     {
         return mode == StackBankMode.Fixed ? 0xCFFF : 0xDFFF;
     }
 
+    // Use the accepted option spelling in reports so the selection can be copied into a command.
     static string GetStackBankCliText(StackBankMode mode)
     {
         return mode == StackBankMode.Fixed ? "fixed" : "wramx1";
     }
 
+    // Give stack validation errors the corresponding hardware-window name.
     static string GetStackWindowName(StackBankMode mode)
     {
         return mode == StackBankMode.Fixed ? "WRAM0" : "WRAMX bank1";
     }
 
+    // Display the low 16 bits as a four-digit hexadecimal CPU address.
     static string FormatAddress16(int value)
     {
         return string.Format("${0:X4}", value & 0xFFFF);
     }
 
+    // A zero reserve represents no reserved interval, even though numeric endpoints can still be computed.
     static bool HasReservedStackRange()
     {
         return StackReserve > 0;
     }
 
+    // The reported reserved interval begins immediately above the automatic-placement limit.
     static int GetReservedStackRangeBegin()
     {
         return EffectiveStackAutoLimit + 1;
     }
 
+    // Use the effective initial stack pointer as the reported interval end.
     static int GetReservedStackRangeEnd()
     {
         return EffectiveStackTop;
     }
 
+    // Render no interval for a zero reserve; otherwise show the two inclusive policy endpoints.
     static string GetReservedStackRangeText()
     {
         if (!HasReservedStackRange()) return "none";
         return FormatAddress16(GetReservedStackRangeBegin()) + "-" + FormatAddress16(GetReservedStackRangeEnd());
     }
 
+    // Report finalized values so diagnostics describe the actual policy rather than unresolved CLI inputs.
     static string BuildStackPolicyText()
     {
         var sb = new StringBuilder();
@@ -269,6 +289,7 @@ static partial class Program
         return sb.ToString();
     }
 
+    // Emit numeric policy fields; consumers must check reserve before treating the endpoints as a nonempty interval.
     static void AppendStackPolicyJson(StringBuilder sb)
     {
         sb.Append("\"stack_policy\":{");
@@ -283,6 +304,8 @@ static partial class Program
 
     const int DefaultStackReserveBytes = 512;
 
+    // Resolve defaults, diagnose out-of-window values, and derive the automatic-placement limit.
+    // Fallback values keep diagnostics coherent; Main still exits when validation reports an error.
     static void FinalizeAndValidateStackPolicy()
     {
         if (!StackTop.HasValue)
@@ -313,6 +336,7 @@ static partial class Program
             EffectiveStackTop = Math.Max(windowBottom, Math.Min(EffectiveStackTop, windowTop));
         }
 
+        // Distinguish an omitted reserve from an explicit zero, which deliberately disables reservation.
         if (!StackReserveSpecified)
         {
             StackReserve = DefaultStackReserveBytes;
@@ -326,6 +350,7 @@ static partial class Program
             StackReserve = 0;
         }
 
+        // Limit reservation by the selected stack top, not by the full window size.
         int maxReserve = EffectiveStackTop - windowBottom;
         if (StackReserve > maxReserve)
         {
@@ -337,9 +362,11 @@ static partial class Program
             StackReserve = Math.Max(0, maxReserve);
         }
 
+        // Publish the validated limit consumed by automatic placement and policy reports.
         EffectiveStackAutoLimit = EffectiveStackTop - StackReserve;
     }
 
+    // Keep a palette value together with the source position that introduced its name.
     internal sealed class CgbPaletteDefinition
     {
         public string Name;
@@ -347,6 +374,7 @@ static partial class Program
         public FilePosition Position;
     }
 
+    // Carry one pipeline timing and its display detail into the final trace summary.
     internal sealed class TraceStageStat
     {
         public string Name;
@@ -354,10 +382,13 @@ static partial class Program
         public string Detail;
     }
 
+    // Dispatch utility commands first; otherwise parse options and run the compilation pipeline.
     static void Main(string[] argsArray)
     {
+        // Initialize invocation state before utility dispatch as well as ordinary compilation.
         PrepareForInvocation(argsArray);
 
+        // Each recognized subcommand owns its arguments and completion, bypassing ordinary source compilation.
         if (TryRunKqHelpCommand(argsArray)) return;
         if (TryRunSymbolFindCommand(argsArray)) return;
         if (TryRunSourceToAsmCommand(argsArray)) return;
@@ -373,6 +404,7 @@ static partial class Program
         if (TryRunAttrVizCommand(argsArray)) return;
 
         if (TryRunTestCommand(argsArray)) return;
+        // The watch driver starts child compilations; do not treat its control flag as a compiler option here.
         if (HasWatchFlag(argsArray))
         {
             RunWatchDriver(argsArray);
@@ -387,6 +419,8 @@ static partial class Program
             return;
         }
 
+        // Process options in encounter order. Presets change several settings, and later options can change them again.
+        // Only branches that explicitly dequeue a value consume the next argument.
         Queue<string> args = new Queue<string>(argsArray);
 
         List<string> sourceFilenames = new List<string>();
@@ -408,6 +442,7 @@ static partial class Program
             {
                 DisableDisasm = false;
             }
+            // This convenience switch changes diagnostic work only; it does not select an optimization level.
             else if (arg == "--fast-build" || arg == "--fast")
             {
                 DisableDisasm = true;
@@ -460,6 +495,7 @@ static partial class Program
                     StackBank = stackBank;
                 }
             }
+            // Validate literal width here; compatibility with the selected WRAM window is checked after all options.
             else if (arg == "--stack-top")
             {
                 if (args.Count == 0)
@@ -550,6 +586,7 @@ static partial class Program
                 PathManifestPath = ValueAfterEquals(arg);
                 if (string.IsNullOrWhiteSpace(PathManifestPath)) Error("error: --emit-path-manifest requires a file path");
             }
+            // A bare dependency switch requests the output-derived default; only the equals form sets its path.
             else if (arg == "--deps-out")
             {
                 EmitDependenciesList = true;
@@ -564,10 +601,12 @@ static partial class Program
             {
                 _autoMinimizeOnFail = true;
             }
+            // Apply the preset at this point in the argument stream, preserving the meaning of subsequent overrides.
             else if (arg.StartsWith("--profile="))
             {
                 ApplyProfilePreset(ValueAfterEquals(arg));
             }
+            // Accept a separate include path here; the following branches support attached and long-option spellings.
             else if (arg == "-I")
             {
                 if (args.Count > 0) AddIncludeDirectory(args.Dequeue());
@@ -596,6 +635,7 @@ static partial class Program
                 else if  (v == "legacy" || v == "default") Abi = AbiMode.Legacy;
                 else Error("error: --abi must be legacy or stack");
             }
+            // Report switches pair an enable flag with a path; an empty path requests the report-specific default.
             else if (arg == "--bank-sim")
             {
                 EmitBankSimReport = true;
@@ -716,6 +756,7 @@ static partial class Program
                 EmitCgbSymbolVerifyReport = true;
                 CgbSymbolVerifyReportPath = ValueAfterEquals(arg);
             }
+// Enable the complete check set together; the bounds-only switch below leaves other checks unchanged.
 else if (arg == "-Zcheck")
             {
                 CheckBounds = true;
@@ -809,6 +850,7 @@ else if (arg == "-Zcheck")
                 else
                     Error("error: --rst-max-vectors requires a non-negative integer");
             }
+            // Accumulate trimmed, nonempty exclusions across repeated switches rather than replacing the set.
             else if (arg.StartsWith("--rst-exclude="))
             {
                 RstDisable = false;
@@ -889,6 +931,7 @@ else if (arg == "-Zcheck")
                 ReproPackagePath = ValueAfterEquals(arg);
             }
             // --- ROM header patching (fix31_rom_header_patch) ---
+            // Load and merge this JSON immediately, so the relative order of JSON templates and explicit flags matters.
             else if (arg.StartsWith("--rom-header="))
             {
                 string path = ValueAfterEquals(arg);
@@ -962,6 +1005,7 @@ else if (arg == "-Zcheck")
                 if (args.Count > 0) outputFilename = args.Dequeue();
                 else Error("error: -o option requires a filename");
             }
+            // Reject unknown options rather than interpreting them as source paths.
             else if (arg.StartsWith("-"))
             {
                 Error("error: unknown option: " + arg);
@@ -972,6 +1016,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Help and an empty invocation take the usage path before attempting a build.
         if (help)
         {
             Console.Error.WriteLine("usage: kitaqgb first.c second.c ... [-o out.gb] [-O0|-O1] [-I dir|--include-dir=dir] [--profile=dev|release|test] [--strict|--permissive] [--rom-header=header.json] [--rom-title=TITLE] [--header-logo=on|off|--no-header-logo] [--cgb=dmg|cgb|cgb_only] [--cart=romonly|mbc1|mbc3|mbc5|...] [--romsize=32k|64k|128k|256k|512k|1m|2m|4m|8m] [--ramsize=none|2k|8k|32k|64k|128k] [--sgb=on|off] [--dest=jp|nonjp] [--version=N] [--trace[=tokens,ast,ir,asm] [--trace-out=<dir>]] [--debug-output | --debug-out[=<dir>]] [--no-disasm|--fast-build] [--disasm-changed[=<git_base>] [--disasm-changed-out=<file>]] [--cache|--no-cache] [--diag-json[=<file>]] [--emit-ai-metadata=<file>] [--emit-path-manifest=<file>] [--machine-readable] [--no-banner] [--stack-bank=fixed|wramx1] [--stack-top=ADDR] [--stack-reserve=N] [--deps-out[=<file>]] [vlist|--vlist[=<file>]] [--max-errors=N] [--abi=legacy|stack] [--bank-sim[=<file>]] [--farcall-suggest[=<file>]] [--cross-bank-report[=<file>]] [--abi-verify[=<file>]] [--abi-diff-report[=<file>]] [--rst-report[=<file>]] [--opt-diff[=<file>]] [--func-size-report[=<file>]] [--hotspot-report[=<file>]] [--repro-check[=<file>]] [--repro-pack[=<dir>]] [--cgb-consistency[=<file>]] [--verify-cgb-symbols[=<file>]] [--minimize[=<file.c>] [--minimize-out=<out.c>] [--minimize-work=<dir>] [--minimize-quick] [--minimize-trace=final|all] [--minimize-on-fail]] [--rst-enable|--rst-on] [--rst-disable|--no-rst] [--rst-use-38] [--rst-speed-safe] [--rst-safe|--rst-unsafe] [--rst-max-calls=N] [--rst-exclude=a,b] [--rst-max-vectors=N] [--watch]");
@@ -988,11 +1033,13 @@ else if (arg == "-Zcheck")
         }
 
         _outputFilenameForDiag = outputFilename;
+        // Validate combined stack options before cache lookup so a cached ROM cannot bypass this policy check.
         FinalizeAndValidateStackPolicy();
         if (ErrorCount > 0) Exit(1);
 
         if (EnableIncrementalCache && CanUseBuildCacheForThisRun())
         {
+            // A successful cache restore returns the restored key and exits through the normal completion path.
             string restoredCacheKey;
             if (TryRestoreBuildCache(sourceFilenames, outputFilename, out restoredCacheKey))
             {
@@ -1008,12 +1055,14 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Measure executed pipeline stages separately from a successful cache-restore shortcut.
         var traceStageStats = new List<TraceStageStat>();
         var compileTotalSw = Stopwatch.StartNew();
 
         try
         {
             // 0. Tokenize (optional trace)
+            // The token dump is an extra pass over top-level inputs; parsing still performs its own tokenization.
             if (TraceEnabled && (TraceStages.Contains("tokens") || TraceStages.Contains("all")))
             {
                 var swTokens = Stopwatch.StartNew();
@@ -1035,6 +1084,7 @@ else if (arg == "-Zcheck")
             var swParse = Stopwatch.StartNew();
             Expr syntaxTree = Parser.ParseFiles(sourceFilenames);
             if (ErrorCount > 0) Exit(1);
+            // Add accepted palette pragmas as readonly declarations before lowering consumes the tree.
             syntaxTree = InjectCgbPaletteDeclarations(syntaxTree);
             if (EnableDebugOutput && CgbPalettePragmas.Count > 0)
             {
@@ -1065,6 +1115,7 @@ else if (arg == "-Zcheck")
             long totalCodegenMs = 0;
             long totalAssembleMs = 0;
             int bankRelayoutPasses = 0;
+            // Bound placement retries and track previously seen assignments to detect oscillation.
             int bankRelayoutPassLimit = 16;
             var seenFunctionBankLayouts = new HashSet<string>(StringComparer.Ordinal)
             {
@@ -1079,6 +1130,7 @@ else if (arg == "-Zcheck")
                 var swCodegen = Stopwatch.StartNew();
                 assembly = CodeGenerator.CompileAll(syntaxTree);
                 if (ErrorCount > 0) Exit(1);
+                // Scale the retry bound with the compiled function count, capped at 512 passes.
                 if (bankRelayoutPasses == 0)
                 {
                     bankRelayoutPassLimit = Math.Min(512, Math.Max(16,
@@ -1100,7 +1152,9 @@ else if (arg == "-Zcheck")
                 swAssemble.Stop();
                 totalAssembleMs += swAssemble.ElapsedMilliseconds;
 
+                // Compare requested function banks with final assembler placement before accepting this output.
                 var relayout = DetectFunctionBankRelocations(CodeGenerator.LastReport, Assembler.LastReport);
+                // An explicitly fixed function cannot be repaired by moving its requested bank; report the conflict.
                 if (relayout.FixedBankConflicts.Count > 0)
                 {
                     Error("error: fixed-bank functions spilled to a different bank: {0}",
@@ -1124,8 +1178,10 @@ else if (arg == "-Zcheck")
                     Exit(1);
                 }
 
+                // Regenerate code with actual banks so bank-aware references can match the assembler placement.
                 MergeFunctionBankOverrides(relocations);
                 string bankLayoutState = BuildFunctionBankOverrideStateKey();
+                // A repeated assignment set indicates a cycle, even before the numeric retry limit is reached.
                 if (!seenFunctionBankLayouts.Add(bankLayoutState))
                 {
                     Error("error: function bank layout entered a relocation cycle after {0} passes: {1}",
@@ -1140,6 +1196,7 @@ else if (arg == "-Zcheck")
             }
 
             string codegenDetail = (assembly == null ? 0 : assembly.Count).ToString() + " asm node(s)";
+            // Accumulate timings across placement retries rather than reporting only the final code-generation pass.
             if (bankRelayoutPasses > 0) codegenDetail += ", relayout_passes=" + bankRelayoutPasses;
             traceStageStats.Add(new TraceStageStat { Name = "codegen", ElapsedMs = totalCodegenMs, Detail = codegenDetail });
             traceStageStats.Add(new TraceStageStat { Name = "assemble", ElapsedMs = totalAssembleMs, Detail = Path.GetFileName(outputFilename) });
@@ -1182,7 +1239,7 @@ else if (arg == "-Zcheck")
             }
             catch
             {
-                // ignore (header patching is best-effort)
+                // Size-based default inference is best effort; PatchFile below can still report errors.
             }
 
             if (effectiveRomHeader.HasAny || autoFilled)
@@ -1218,6 +1275,7 @@ else if (arg == "-Zcheck")
                 Warning("warning: --disasm-changed was requested but disassembly is disabled (--no-disasm)");
             }
 
+            // Run requested analysis after the final assembled/header-patched output; reported errors still fail the build.
             var swReports = Stopwatch.StartNew();
             RunAnalysisReports(sourceFilenames, assembly, outputFilename, effectiveRomHeader);
             if (ErrorCount > 0) Exit(1);
@@ -1228,6 +1286,7 @@ else if (arg == "-Zcheck")
 
             if (EnableIncrementalCache && CanUseBuildCacheForThisRun())
             {
+                // Save only after compilation and reports reach this point; compute a cache key if restore did not supply one.
                 var swCacheSave = Stopwatch.StartNew();
                 if (string.IsNullOrEmpty(_cacheKey))
                 {
@@ -1238,6 +1297,7 @@ else if (arg == "-Zcheck")
                 traceStageStats.Add(new TraceStageStat { Name = "cache_save", ElapsedMs = swCacheSave.ElapsedMilliseconds, Detail = _cacheKey });
             }
         }
+        // Preserve deliberate compiler termination; do not convert its control-flow exception into an internal error.
         catch (ControlledCompilerExit)
         {
             throw;
@@ -1256,6 +1316,7 @@ else if (arg == "-Zcheck")
         Exit(0);
     }
 
+    // Create the debug directory on demand and delegate UTF-8 writing and alternate-path handling to IoUtil.
     public static void WriteDebugFile(string filename, string text)
     {
         if (EnableDebugOutput)
@@ -1266,6 +1327,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Trace output has its own enable flag and directory, independent of ordinary debug dumps.
     static void WriteTraceFile(string filename, string text)
     {
         if (!TraceEnabled) return;
@@ -1299,6 +1361,7 @@ else if (arg == "-Zcheck")
         return null;
     }
 
+    // Keep everything after the first equals sign, including further equals signs; a missing value is empty.
     static string ValueAfterEquals(string arg)
     {
         int eq = arg.IndexOf('=');
@@ -1398,6 +1461,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Accept a named group of exactly four 15-bit colors, retaining the pragma location for later diagnostics.
     public static void ApplyCgbPalettePragma(FilePosition pos, string name, int[] colors)
     {
         string n = (name ?? "").Trim();
@@ -1422,6 +1486,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // A later valid definition replaces earlier entries with the same case-sensitive name.
         for (int i = CgbPalettePragmas.Count - 1; i >= 0; i--)
         {
             if (string.Equals(CgbPalettePragmas[i].Name, n, StringComparison.Ordinal))
@@ -1430,6 +1495,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Copy the color array so later caller mutations cannot alter the stored definition.
         CgbPalettePragmas.Add(new CgbPaletteDefinition
         {
             Name = n,
@@ -1438,6 +1504,7 @@ else if (arg == "-Zcheck")
         });
     }
 
+    // Append const u16[4] data for palette names that do not collide with an existing top-level declaration.
     static Expr InjectCgbPaletteDeclarations(Expr syntaxTree)
     {
         if (CgbPalettePragmas.Count == 0) return syntaxTree;
@@ -1446,6 +1513,7 @@ else if (arg == "-Zcheck")
         if (!syntaxTree.MatchAny(Tag.Sequence, out decls)) return syntaxTree;
 
         var merged = new List<Expr>(decls ?? new Expr[0]);
+        // Collect names before insertion so a palette cannot silently replace a user declaration.
         var usedNames = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var d in merged)
@@ -1462,6 +1530,7 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // Retain the pragma source location on generated data for meaningful compiler diagnostics.
             var type = CType.MakeArray(CType.UInt16, 4);
             type.IsConst = true;
             Expr rd = Expr.Make(Tag.ReadonlyData, type, p.Name, p.Colors.ToArray()).WithSource(p.Position);
@@ -1469,12 +1538,14 @@ else if (arg == "-Zcheck")
             usedNames.Add(p.Name);
         }
 
+        // Rebuild the sequence with its original source location while retaining declaration order.
         var args = new object[merged.Count + 1];
         args[0] = Tag.Sequence;
         for (int i = 0; i < merged.Count; i++) args[i + 1] = merged[i];
         return Expr.Make(args).WithSource(syntaxTree.Source);
     }
 
+    // Unwrap recognized placement/calling-convention tags before checking declaration shapes for a name.
     static bool TryGetTopLevelDeclName(Expr decl, out string name)
     {
         name = null;
@@ -1482,6 +1553,7 @@ else if (arg == "-Zcheck")
 
         Expr d = decl;
         int guard = 0;
+        // Bound wrapper traversal; unsupported shapes or deeper nesting fall through as unrecognized.
         while (guard++ < 16)
         {
             Expr inner;
@@ -1518,6 +1590,7 @@ else if (arg == "-Zcheck")
         return false;
     }
 
+    // Format the accepted palette definitions as four hexadecimal color values per name.
     static string BuildCgbPaletteText()
     {
         var sb = new StringBuilder();
@@ -1531,16 +1604,19 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Route pass dumps through the ordinary debug-output gate with a predictable .txt filename.
     public static void WritePassOutputToFile(string passName, string output)
     {
         WriteDebugFile(string.Format("{0}.txt", passName), output);
     }
 
+    // Expose the same assembly formatting used by internal diagnostic dumps.
     public static string ShowAssemblyPublic(IReadOnlyList<Expr> assembly)
     {
         return ShowAssembly(assembly);
     }
 
+    // Render assembly IR for inspection, preserving labels, comments and optional source positions.
     static string ShowAssembly(IReadOnlyList<Expr> assembly)
     {
         StringBuilder sb = new StringBuilder();
@@ -1554,6 +1630,7 @@ else if (arg == "-Zcheck")
             if (isTopLevel) sb.AppendLine();
             if (!isTopLevel && !e.MatchTag(Tag.Label)) line = "\t";
 
+            // Emit source annotations as assembly comments so they remain distinct from instructions.
             if (Config.ShowSourcePositionInDebugOutput)
             {
                 sb.AppendLine(line + "; <" + e.Source + ">");
@@ -1571,6 +1648,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Show each token with its location and selected payload fields; this is a diagnostic view, not a lexer input format.
     static string ShowTokens(List<Token> tokens)
     {
         StringBuilder sb = new StringBuilder();
@@ -1595,6 +1673,8 @@ else if (arg == "-Zcheck")
 
     // A compact, vibecoding-friendly AST summary.
     // Prints one line per top-level item.
+    // Summarize recognized top-level shapes and show unmatched nodes in full.
+    // Function statement counts cover immediate sequence children only, not nested statements.
     static string ShowAstSimple(Expr tree)
     {
         StringBuilder sb = new StringBuilder();
@@ -1658,18 +1738,21 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Implicit operands need no trailing operand text; other modes use the operand formatter.
     static string FormatAssembly(string mnemonic, AsmOperand operand)
     {
         string format = (operand.Mode == AddressMode.Implicit) ? "{0}" : "{0} {1}";
         return string.Format(format, mnemonic, operand.Show());
     }
 
+    // Use decimal below 256, including negative values; larger values use the dollar-prefixed hexadecimal form.
     public static string FormatAssemblyInteger(int n)
     {
         if (n < 256) return n.ToString();
         else return string.Format("${0:X}", n);
     }
 
+    // Route uncoded, positionless diagnostics through the same counting and reporting path as coded diagnostics.
     public static void GeneralError(Severity severity, string format, params object[] args)
     {
         GeneralError(severity, Maybe.Nothing, ErrorCode.None, format, args);
@@ -1703,8 +1786,10 @@ else if (arg == "-Zcheck")
     public static void Panic(Maybe<FilePosition> position, ErrorCode code, string format, params object[] args) => GeneralError(Severity.InternalError, position, code, format, args);
 
     [DebuggerStepThrough]
+    // Apply severity policy, retain a structured diagnostic, optionally print context, and enforce termination limits.
     public static void GeneralError(Severity severity, Maybe<FilePosition> position, ErrorCode code, string format, params object[] args)
     {
+        // Promoted lint warnings count and serialize as errors, while the original severity remains available for the hint.
         Severity effectiveSeverity = severity;
         if (severity == Severity.Warning && ShouldPromoteWarningToError(code))
         {
@@ -1720,6 +1805,7 @@ else if (arg == "-Zcheck")
 
         string message = string.Format(format, args);
         string suggestion = GetFixSuggestion(code, message);
+        // Record diagnostics even when console output is suppressed; stored source coordinates are one-based, or zero when absent.
         Diagnostics.Add(new DiagnosticEntry
         {
             Severity = SeverityText[effectiveSeverity],
@@ -1730,6 +1816,7 @@ else if (arg == "-Zcheck")
             Line = position.HasValue ? (position.Value.Line + 1) : 0,
             Column = position.HasValue ? (position.Value.Column + 1) : 0,
         });
+        // API mode retains structured diagnostics without writing the human-oriented console stream.
         if (!SuppressConsoleDiagnostics && CurrentHostMode != CompilerHostMode.Api)
         {
             Console.Error.WriteLine(prefix + message);
@@ -1739,6 +1826,7 @@ else if (arg == "-Zcheck")
             }
 
             // Rich diagnostics: show the source line and caret when a file position is available.
+            // Machine-readable mode omits source previews and hints while preserving the primary diagnostic line.
             if (!MachineReadableOutput && position.HasValue)
             {
                 TryWriteSourceContext(position.Value);
@@ -1749,6 +1837,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Update counters after retention/output; internal errors terminate immediately with status 2.
         if (effectiveSeverity == Severity.Warning)
         {
             WarningCount++;
@@ -1771,6 +1860,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Clamp the numeric code into the four-digit diagnostic namespace, including uncoded KQ0000.
     static string ErrorCodeText(ErrorCode code)
     {
         int n = (int)code;
@@ -1780,6 +1870,7 @@ else if (arg == "-Zcheck")
         return string.Format("KQ{0:0000}", n);
     }
 
+    // Strict mode promotes only lint codes 2400..2499, not every warning emitted by the compiler.
     static bool ShouldPromoteWarningToError(ErrorCode code)
     {
         if (!StrictDiagnostics) return false;
@@ -1787,6 +1878,7 @@ else if (arg == "-Zcheck")
         return n >= 2400 && n < 2500;
     }
 
+    // Prefer an explanation tied to the diagnostic code; a small message-based fallback handles uncoded failures.
     static string GetFixSuggestion(ErrorCode code, string message)
     {
         switch (code)
@@ -1861,12 +1953,14 @@ else if (arg == "-Zcheck")
         return "";
     }
 
+    // Show a bounded source preview when available; missing files or display failures must not hide the main diagnostic.
     static void TryWriteSourceContext(FilePosition pos)
     {
         try
         {
             if (string.IsNullOrEmpty(pos.Filename) || pos.Filename == "<unknown>") return;
 
+            // Read each source into the diagnostic cache on first use rather than reopening it for every error.
             if (!SourceCache.TryGetValue(pos.Filename, out var lines))
             {
                 if (!File.Exists(pos.Filename)) return;
@@ -1883,11 +1977,12 @@ else if (arg == "-Zcheck")
 
             Console.Error.WriteLine("  " + shown);
 
+            // Clamp the marker to the displayed prefix when the source position falls outside the preview.
             int col = pos.Column;
             if (col < 0) col = 0;
             if (col > shown.Length) col = shown.Length;
 
-            // Expand tabs to keep caret alignment reasonable.
+            // Estimate marker indentation as four columns per tab; the displayed source line remains unchanged.
             string prefixText = shown.Substring(0, col);
             int visualCols = 0;
             foreach (char c in prefixText)
@@ -1910,6 +2005,7 @@ else if (arg == "-Zcheck")
     {
         try
         {
+            // Console suppression leaves structured diagnostics intact; token-context output is optional.
             if (SuppressConsoleDiagnostics || CurrentHostMode == CompilerHostMode.Api || MachineReadableOutput) return;
             if (prevTokens == null || remainingTokens == null) return;
 
@@ -1919,6 +2015,7 @@ else if (arg == "-Zcheck")
             if (prev.Count > prevCount) prev = prev.GetRange(prev.Count - prevCount, prevCount);
 
             // Take nextCount tokens from remaining.
+            // Bound lookahead by the available tokens; the current token is bracketed separately below.
             int take = Math.Min(nextCount, remainingTokens.Count);
             List<Token> next = new List<Token>();
             for (int i = 0; i < take; i++) next.Add(remainingTokens[i]);
@@ -1958,17 +2055,21 @@ else if (arg == "-Zcheck")
 
 
     [DebuggerStepThrough]
+    // Finish invocation bookkeeping, then terminate the CLI process or unwind the API call with its status.
     internal static void Exit(int code)
     {
+        // Attempt requested diagnostics before failure-only helpers or process termination.
         TryWriteDiagnosticJson(code);
         TryWritePathManifest(code);
 
+        // Run automatic reduction once per invocation and avoid starting it recursively from an explicit minimizer run.
         if (code != 0 && _autoMinimizeOnFail && !_autoMinimizeTriggered && !Minimizer.IsMinimizeRequested(_originalArgs))
         {
             _autoMinimizeTriggered = true;
             TryRunAutoMinimize();
         }
 
+        // Collect a requested failure package before terminating, after any automatic minimization attempt.
         if (code != 0 && EmitReproPackageOnFail)
         {
             TryWriteFailureReproPackage(code);
@@ -1979,11 +2080,13 @@ else if (arg == "-Zcheck")
             if (AttachDebuggerOnError) Debugger.Launch();
             if (Debugger.IsAttached) Debugger.Break();
         }
+        // Unwind only the API compilation; the embedding process must remain alive.
         if (CurrentHostMode == CompilerHostMode.Api)
             throw new ControlledCompilerExit(code);
         Environment.Exit(code);
     }
 
+    // Replace the dependency snapshot, dropping blank entries but retaining supplied order and duplicates.
     public static void SetLastCompilationDependencies(IEnumerable<string> deps)
     {
         _lastCompilationDependencies.Clear();
@@ -1995,6 +2098,8 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Normalize include directories relative to the current process directory and deduplicate case-insensitively.
+    // This accepts paths without checking that the directory already exists.
     static void AddIncludeDirectory(string path)
     {
         if (string.IsNullOrWhiteSpace(path)) return;
@@ -2010,6 +2115,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Change only the listed debug, disassembly, optimization, RST and cache settings; other explicit options remain in force.
     static void ApplyProfilePreset(string profileName)
     {
         string p = (profileName ?? "").Trim().ToLowerInvariant();
@@ -2043,6 +2149,8 @@ else if (arg == "-Zcheck")
         Error("error: --profile must be dev|release|test");
     }
 
+    // Disable cache shortcuts for the listed outputs that require fresh pipeline work.
+    // This is a feature-eligibility check, not validation of source inputs or diagnostic status.
     static bool CanUseBuildCacheForThisRun()
     {
         if (TraceEnabled) return false;
@@ -2056,9 +2164,11 @@ else if (arg == "-Zcheck")
         return true;
     }
 
+    // Restore a ROM and required sidecars from this working directory when the computed key has a complete entry.
     static bool TryRestoreBuildCache(List<string> sourceFilenames, string outputFilename, out string cacheKey)
     {
         cacheKey = ComputeBuildCacheKey(sourceFilenames);
+        // An empty key disables the shortcut and lets normal compilation handle the input.
         if (string.IsNullOrEmpty(cacheKey)) return false;
 
         string cacheDir = Path.Combine(Environment.CurrentDirectory, ".kitaqgb_cache", cacheKey);
@@ -2070,6 +2180,7 @@ else if (arg == "-Zcheck")
         string cachedDbc = Path.Combine(cacheDir, "out.dbc");
         string cachedBanks = Path.Combine(cacheDir, "out.banks.txt");
         string cachedFuncSizes = Path.Combine(cacheDir, "out.funcsizes.txt");
+        // Require all five core sidecars before copying any cached output.
         if (!File.Exists(cachedMap) || !File.Exists(cachedDbg) || !File.Exists(cachedDbc) || !File.Exists(cachedBanks) || !File.Exists(cachedFuncSizes)) return false;
 
         try
@@ -2082,6 +2193,7 @@ else if (arg == "-Zcheck")
             IoUtil.CopyFileRobust(cachedFuncSizes, Path.ChangeExtension(outputFilename, ".funcsizes.txt"), true);
             if (EmitDependenciesList)
             {
+                // Dependency output is optional in the entry; its absence does not currently turn a restore into a miss.
                 string cachedDeps = Path.Combine(cacheDir, "out.deps.txt");
                 if (File.Exists(cachedDeps))
                     IoUtil.CopyFileRobust(cachedDeps, ResolveDepsOutputPath(outputFilename), true);
@@ -2090,15 +2202,18 @@ else if (arg == "-Zcheck")
         }
         catch (Exception ex)
         {
+            // Fall back to compilation on copy failure; earlier successful copies are not rolled back.
             Warning("warning: cache restore skipped: " + ex.Message);
             return false;
         }
     }
 
+    // Copy the completed output set into the key directory; this writes individual files, not an atomic cache transaction.
     static void TrySaveBuildCache(string cacheKey, string outputFilename)
     {
         if (string.IsNullOrEmpty(cacheKey)) return;
         string cacheDir = Path.Combine(Environment.CurrentDirectory, ".kitaqgb_cache", cacheKey);
+        // Directory creation precedes the copy-error handler and can propagate a failure to the compilation caller.
         Directory.CreateDirectory(cacheDir);
         try
         {
@@ -2108,6 +2223,7 @@ else if (arg == "-Zcheck")
             IoUtil.CopyFileRobust(Path.ChangeExtension(outputFilename, ".dbc"), Path.Combine(cacheDir, "out.dbc"), true);
             IoUtil.CopyFileRobust(Path.ChangeExtension(outputFilename, ".banks.txt"), Path.Combine(cacheDir, "out.banks.txt"), true);
             IoUtil.CopyFileRobust(Path.ChangeExtension(outputFilename, ".funcsizes.txt"), Path.Combine(cacheDir, "out.funcsizes.txt"), true);
+            // Copy an existing dependency list if present, including one produced by an earlier invocation.
             string depsPath = ResolveDepsOutputPath(outputFilename);
             if (File.Exists(depsPath))
                 IoUtil.CopyFileRobust(depsPath, Path.Combine(cacheDir, "out.deps.txt"), true);
@@ -2118,18 +2234,21 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Prefer an explicit dependency path; otherwise replace the ROM extension with .deps.txt.
     static string ResolveDepsOutputPath(string outputFilename)
     {
         if (!string.IsNullOrWhiteSpace(DependenciesListPath)) return DependenciesListPath;
         return Path.ChangeExtension(outputFilename, ".deps.txt");
     }
 
+    // Write normalized source/dependency paths when requested; listing failures produce a warning.
     static void TryWriteDependenciesList(List<string> sourceFilenames, string outputFilename)
     {
         if (!EmitDependenciesList) return;
         try
         {
             string path = ResolveDepsOutputPath(outputFilename);
+            // Deduplicate full paths case-insensitively before sorting them for stable listing order.
             var deps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var d in LastCompilationDependencies ?? Array.Empty<string>())
             {
@@ -2142,6 +2261,7 @@ else if (arg == "-Zcheck")
 
             var lines = new List<string>();
             lines.Add("# KITAQGB dependency list");
+            // The generation timestamp is informational; subsequent lines are dependency paths.
             lines.Add("# generated_utc=" + DateTime.UtcNow.ToString("O"));
             foreach (var d in deps.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
                 lines.Add(d);
@@ -2154,6 +2274,8 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Hash the selected settings, executable stamp and discovered file metadata.
+    // This implementation fingerprints source size/time, not source contents or the complete parsed dependency graph.
     static string ComputeBuildCacheKey(List<string> sourceFilenames)
     {
         try
@@ -2162,7 +2284,9 @@ else if (arg == "-Zcheck")
             foreach (var s in sourceFilenames ?? new List<string>())
             {
                 string full = Path.GetFullPath(s);
-                if (File.Exists(full)) files.Add(full);
+                // A missing requested source must reach normal input diagnostics, never a cached success.
+                if (!File.Exists(full)) return "";
+                files.Add(full);
 
                 string dir = Path.GetDirectoryName(full) ?? "";
                 if (!string.IsNullOrWhiteSpace(dir) && Directory.Exists(dir))
@@ -2171,6 +2295,7 @@ else if (arg == "-Zcheck")
                         files.Add(h);
                 }
             }
+            // Recursively include headers beneath configured include directories, even when they are not used by this build.
             foreach (var d in IncludeDirectories)
             {
                 if (!Directory.Exists(d)) continue;
@@ -2178,7 +2303,9 @@ else if (arg == "-Zcheck")
                     files.Add(h);
             }
 
+            // Fingerprint the running host executable; an embedded API host is not necessarily the compiler assembly.
             string exePath = Process.GetCurrentProcess().MainModule.FileName;
+            // Leave the executable stamp empty if its metadata or content hash cannot be read.
             string exeStamp = "";
             try
             {
@@ -2218,11 +2345,13 @@ else if (arg == "-Zcheck")
             sb.AppendLine("stack_reserve=" + StackReserve);
             sb.AppendLine("stack_auto_limit=" + EffectiveStackAutoLimit);
 
+            // Sort the discovered set for deterministic metadata ordering; this does not preserve source or include-search order.
             foreach (string f in files.OrderBy(x => x, StringComparer.OrdinalIgnoreCase))
             {
                 try
                 {
                     var fi = new FileInfo(f);
+                    // Metadata-only fingerprints cannot distinguish equal-size edits that preserve the file timestamp.
                     sb.AppendLine(f + "|" + fi.Length + "|" + fi.LastWriteTimeUtc.Ticks);
                 }
                 catch
@@ -2233,6 +2362,7 @@ else if (arg == "-Zcheck")
 
             using (var sha = SHA256.Create())
             {
+                // Encode the assembled fingerprint text as UTF-8 before producing its SHA-256 directory key.
                 var data = IoUtil.Utf8NoBom.GetBytes(sb.ToString());
                 var hash = sha.ComputeHash(data);
                 return string.Concat(hash.Select(b => b.ToString("x2")));
@@ -2244,6 +2374,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Hold estimated file-offset high-water marks and function extents, separate from final assembler reports.
     sealed class BankSimulationResult
     {
         public int[] BankMaxPc = new int[0];
@@ -2252,6 +2383,7 @@ else if (arg == "-Zcheck")
         public List<FunctionSizeInfo> FunctionSizes = new List<FunctionSizeInfo>();
     }
 
+    // Rank functions using byte size times recorded incoming calls; the score is structural, not measured execution time.
     sealed class HotspotJsonRow
     {
         public string Name;
@@ -2260,6 +2392,7 @@ else if (arg == "-Zcheck")
         public long Score;
     }
 
+    // Dispatch requested structural reports after assembly; verification reports can also add compiler errors.
     static void RunAnalysisReports(List<string> sourceFilenames, IReadOnlyList<Expr> assembly, string outputFilename, RomHeaderOptions effectiveRomHeader)
     {
         var codegen = CodeGenerator.LastReport ?? new CodegenAnalysisReport();
@@ -2271,6 +2404,7 @@ else if (arg == "-Zcheck")
             WriteDebugFile("stack_policy.txt", BuildStackPolicyText());
         }
 
+        // Emit the standard rich-debug, source-map and build-summary sidecars on this full compilation path.
         TryWriteRichDebugMetadata(outputFilename, sourceFilenames, codegen, asm);
         TryWriteAugmentedSourceMap(outputFilename, sourceFilenames, asm);
         TryWriteBuildReportJson(outputFilename, sourceFilenames, codegen, opt, asm, effectiveRomHeader);
@@ -2301,6 +2435,7 @@ else if (arg == "-Zcheck")
             WriteInfoLine("[report] cross-bank calls: " + path);
         }
 
+        // Write the recorded ABI issues, then fail compilation when that collected issue list is nonempty.
         if (EmitAbiVerifyReport)
         {
             string path = ResolveReportPath(AbiVerifyReportPath, outputFilename, ".abi_verify.txt");
@@ -2342,6 +2477,7 @@ else if (arg == "-Zcheck")
             WriteInfoLine("[report] hotspots: " + path);
         }
 
+        // Emit the consistency details before reporting a failing result to the compiler diagnostic path.
         if (EmitCgbConsistencyReport)
         {
             string path = ResolveReportPath(CgbConsistencyReportPath, outputFilename, ".cgb_consistency.txt");
@@ -2354,6 +2490,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Compare expected CGB symbols with the output map and retain the missing-symbol report on failure.
         if (EmitCgbSymbolVerifyReport)
         {
             string path = ResolveReportPath(CgbSymbolVerifyReportPath, outputFilename, ".cgb_symbols.txt");
@@ -2379,6 +2516,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Write the rich debug payload and record the actual path returned by the robust writer; failures become warnings.
     static void TryWriteRichDebugMetadata(
         string outputFilename,
         List<string> sourceFilenames,
@@ -2401,6 +2539,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Write the compact build summary beside the ROM and retain any alternate output path in artifact bookkeeping.
     static void TryWriteBuildReportJson(
         string outputFilename,
         List<string> sourceFilenames,
@@ -2425,6 +2564,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Write the requested compact tool handoff; detailed symbols remain in the separate rich-debug payload.
     static void TryWriteAiMetadata(
         string outputFilename,
         List<string> sourceFilenames,
@@ -2447,6 +2587,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Emit a text lookup map, recording the actual output path when the writer chooses an alternative.
     static void TryWriteAugmentedSourceMap(string outputFilename, List<string> sourceFilenames, AssemblerAnalysisReport asm)
     {
         try
@@ -2461,6 +2602,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Prefer assembler source locations and supplement functions with name-matched source-declaration locations.
     static string BuildAugmentedSourceMapText(List<string> sourceFilenames, AssemblerAnalysisReport asm)
     {
         var fallbackSourceByFunction = new Dictionary<string, Tuple<string, int>>(StringComparer.Ordinal);
@@ -2478,6 +2620,7 @@ else if (arg == "-Zcheck")
         lines.Add("# KITAQGB source map");
         lines.Add("# bank:addr path:line:column symbol=... section=...");
 
+        // Deduplicate complete formatted rows; distinct symbols or source fields at one address remain separate rows.
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var loc in asm.SourceLocations ?? new List<SourceLocationMetadataInfo>())
         {
@@ -2494,6 +2637,7 @@ else if (arg == "-Zcheck")
             if (seen.Add(line)) lines.Add(line);
         }
 
+        // A symbol mentioned by assembler metadata suppresses the name-based fallback, even if its location was not printable above.
         var functionsWithSource = new HashSet<string>(
             (asm.SourceLocations ?? new List<SourceLocationMetadataInfo>())
                 .Where(loc => !string.IsNullOrEmpty(loc.Symbol))
@@ -2520,16 +2664,19 @@ else if (arg == "-Zcheck")
         return string.Join(Environment.NewLine, lines) + Environment.NewLine;
     }
 
+    // Join assembler placement, code-generation ABI/call records and best-effort source fallbacks into one JSON payload.
     static string BuildRichDebugMetadataJson(
         string outputFilename,
         List<string> sourceFilenames,
         CodegenAnalysisReport codegen,
         AssemblerAnalysisReport asm)
     {
+        // Use the first ABI record per name when joining metadata; same-name scopes are not disambiguated by source file.
         var abiByName = (codegen.Functions ?? new List<FunctionAbiInfo>())
             .Where(f => !string.IsNullOrEmpty(f.Name))
             .GroupBy(f => f.Name, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        // Use the first assembler extent for each name when improving the generic symbol range.
         var functionByName = (asm.FunctionSizes ?? new List<FunctionSizeInfo>())
             .Where(f => !string.IsNullOrEmpty(f.Name))
             .GroupBy(f => f.Name, StringComparer.Ordinal)
@@ -2545,6 +2692,7 @@ else if (arg == "-Zcheck")
             }
         }
 
+        // Aggregate nonnegative call-edge counts into structural incoming, outgoing, cross-bank and farcall estimates.
         var incomingCalls = new Dictionary<string, int>(StringComparer.Ordinal);
         var outgoingCalls = new Dictionary<string, int>(StringComparer.Ordinal);
         var crossBankOutgoingCalls = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -2595,6 +2743,7 @@ else if (arg == "-Zcheck")
         {
             if (!first) sb.Append(",");
             first = false;
+            // Give generic symbols a nonempty extent, then prefer an available function end derived from its final ROM offsets.
             int symbolEnd = Math.Max(symbol.Start + 1, symbol.End);
             if (functionByName.TryGetValue(symbol.Name ?? "", out FunctionSizeInfo functionInfo))
             {
@@ -2615,6 +2764,7 @@ else if (arg == "-Zcheck")
         }
         sb.Append("],");
 
+        // Serialize assembler locations first, then add declaration-line fallbacks only for functions without a symbol-associated location.
         sb.Append("\"source_locations\":[");
         first = true;
         var functionsWithSource = new HashSet<string>(StringComparer.Ordinal);
@@ -2662,6 +2812,7 @@ else if (arg == "-Zcheck")
         {
             if (!first) sb.Append(",");
             first = false;
+            // Augment final function ranges with ABI fields only when the name join found a code-generation record.
             abiByName.TryGetValue(func.Name ?? "", out FunctionAbiInfo abi);
             int start = func.CpuAddress & 0xFFFF;
             int end = func.SizeBytes > 0
@@ -2711,6 +2862,7 @@ else if (arg == "-Zcheck")
         }
         sb.Append("],");
 
+        // Expose structural counts and ABI sizes without implying cycle-accurate profiling.
         sb.Append("\"static_estimates\":[");
         first = true;
         foreach (var func in asm.FunctionSizes ?? new List<FunctionSizeInfo>())
@@ -2748,6 +2900,7 @@ else if (arg == "-Zcheck")
         }
         sb.Append("],");
 
+        // Keep call-edge kind, bank information and transport flags so consumers can distinguish ordinary, thunked and far calls.
         sb.Append("\"call_edges\":[");
         first = true;
         foreach (var call in codegen.Calls ?? new List<CallEdgeInfo>())
@@ -2792,6 +2945,7 @@ else if (arg == "-Zcheck")
 
         sb.Append("\"bank_usage\":[");
         first = true;
+        // Derive 16 KiB bank headroom from high-water marks; used bytes include any gaps below the highest occupied cursor.
         for (int bank = 0; bank < (asm.BankMaxPc == null ? 0 : asm.BankMaxPc.Length); bank++)
         {
             if (!first) sb.Append(",");
@@ -2813,6 +2967,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Build the compact summary with bounded hotspot/cross-bank detail lists and selected compiler/header fields.
     static string BuildBuildReportJson(
         string outputFilename,
         List<string> sourceFilenames,
@@ -2821,7 +2976,9 @@ else if (arg == "-Zcheck")
         AssemblerAnalysisReport asm,
         RomHeaderOptions effectiveRomHeader)
     {
+        // Limit the compact hotspot list to sixteen entries; the detailed reports retain their own full data.
         var hotspotRows = BuildHotspotRows(codegen, asm).Take(16).ToList();
+        // Keep at most sixteen known cross-bank edges; the summary count below is the displayed row count.
         var crossBankRows = (codegen == null || codegen.Calls == null)
             ? new List<CallEdgeInfo>()
             : codegen.Calls
@@ -2920,12 +3077,14 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Use the ROM content hash as the handoff identity and list the conventional locations of related sidecars.
     static string BuildAiMetadataJson(
         string outputFilename,
         List<string> sourceFilenames,
         CodegenAnalysisReport codegen,
         AssemblerAnalysisReport asm)
     {
+        // Reuse the same digest for build_id and both ROM hash fields so downstream tools can join this artifact.
         string romHash = BuildReportUtil.ComputeSha256HexOfFile(outputFilename);
         var sb = new StringBuilder();
         sb.Append("{");
@@ -2970,6 +3129,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Join maximum size per function name with incoming structural call counts, retaining names present in either source.
     static List<HotspotJsonRow> BuildHotspotRows(CodegenAnalysisReport codegen, AssemblerAnalysisReport asm)
     {
         var sizeByFunc = (asm.FunctionSizes ?? new List<FunctionSizeInfo>())
@@ -2993,6 +3153,7 @@ else if (arg == "-Zcheck")
             {
                 int size = 0; sizeByFunc.TryGetValue(name, out size);
                 int calls = 0; incomingCalls.TryGetValue(name, out calls);
+                // Widen both factors before multiplication so the ranking product does not overflow a 32-bit integer.
                 long score = (long)size * (long)calls;
                 return new HotspotJsonRow { Name = name, Size = size, Calls = calls, Score = score };
             })
@@ -3003,6 +3164,7 @@ else if (arg == "-Zcheck")
             .ToList();
     }
 
+    // Append comma-separated escaped JSON strings; the caller supplies brackets and null values become empty strings.
     static void AppendJsonStringArray(StringBuilder sb, IEnumerable<string> values)
     {
         bool first = true;
@@ -3014,6 +3176,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Keep an explicit path unchanged; otherwise place a suffixed report beside the output ROM.
     static string ResolveReportPath(string requestedPath, string outputFilename, string suffix)
     {
         if (!string.IsNullOrWhiteSpace(requestedPath)) return requestedPath;
@@ -3023,6 +3186,8 @@ else if (arg == "-Zcheck")
         return Path.Combine(dir, stem + suffix);
     }
 
+    // Estimate layout from selected IR nodes using the legacy 16 KiB bank model.
+    // This is not a substitute for target-specific assembler placement or exact encoded instruction sizes.
     static BankSimulationResult SimulateBankLayout(IReadOnlyList<Expr> assembly)
     {
         const int bankSize = 0x4000;
@@ -3038,6 +3203,7 @@ else if (arg == "-Zcheck")
         int currentFunctionStart = 0;
         int currentFunctionBytes = 0;
 
+        // Track the supplied cursor in its containing bank and retain the greatest cursor seen overall.
         Action<int> updateBankMax = (value) =>
         {
             if (value < 0) return;
@@ -3048,6 +3214,7 @@ else if (arg == "-Zcheck")
             if (value > maxPc) maxPc = value;
         };
 
+        // Close a function using counted instruction/data bytes; alignment and explicit cursor jumps are not included in that byte count.
         Action finalizeFunction = () =>
         {
             if (string.IsNullOrEmpty(currentFunctionName)) return;
@@ -3069,6 +3236,7 @@ else if (arg == "-Zcheck")
 
         foreach (Expr e in assembly ?? new List<Expr>())
         {
+            // A new function marker closes the prior record and starts counting bytes at the current cursor.
             if (e.Match(Tag.Function, out string fn))
             {
                 finalizeFunction();
@@ -3078,6 +3246,7 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // Treat SkipTo(0) as a minimum code-start constraint; other values replace the cursor directly.
             if (e.Match(Tag.SkipTo, out int skip))
             {
                 if (skip == 0)
@@ -3092,6 +3261,7 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // Round the cursor with a bit mask, assuming positive alignments are powers of two.
             if (e.Match(Tag.Align, out int align))
             {
                 if (align > 0)
@@ -3103,6 +3273,7 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // Count inline byte arrays in both total layout and the active function estimate.
             if (e.Match(Tag.ReadonlyData, out string rdName, out byte[] rdBytes))
             {
                 int n = rdBytes == null ? 0 : rdBytes.Length;
@@ -3112,6 +3283,7 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // A symbolic word contributes two bytes even though its value is resolved later.
             if (e.Match(Tag.Word, out string wordLabel))
             {
                 pc += 2;
@@ -3122,6 +3294,7 @@ else if (arg == "-Zcheck")
 
             if (e.Match(Tag.Asm, out string mnemonic, out AsmOperand operand))
             {
+                // Use one opcode byte plus an addressing-mode estimate; this does not consult the opcode encoding table.
                 int n = 1 + OperandBytes(operand == null ? AddressMode.Implicit : operand.Mode);
                 pc += n;
                 if (!string.IsNullOrEmpty(currentFunctionName)) currentFunctionBytes += n;
@@ -3131,6 +3304,7 @@ else if (arg == "-Zcheck")
         }
         finalizeFunction();
 
+        // Round the greatest cursor up to a bank boundary, then clamp the estimate to the supported size limits.
         int romSize = Math.Max(minRomSize, RoundUpInt(maxPc, bankSize));
         if (romSize > maxRomSize) romSize = maxRomSize;
         int bankCount = Math.Max(2, romSize / bankSize);
@@ -3151,6 +3325,7 @@ else if (arg == "-Zcheck")
         };
     }
 
+    // Estimate operand length by addressing mode for the lightweight simulator.
     static int OperandBytes(AddressMode mode)
     {
         if (mode == AddressMode.Implicit) return 0;
@@ -3158,6 +3333,7 @@ else if (arg == "-Zcheck")
         return 2;
     }
 
+    // Round up using a power-of-two alignment mask; nonpositive alignment leaves the value unchanged.
     static int RoundUpInt(int value, int align)
     {
         if (align <= 0) return value;
@@ -3165,6 +3341,7 @@ else if (arg == "-Zcheck")
         return (value + mask) & ~mask;
     }
 
+    // Report estimated bank headroom and byte-counted functions, explicitly labeled as pre-assembly estimates.
     static string BuildBankSimReportText(BankSimulationResult sim)
     {
         var sb = new StringBuilder();
@@ -3193,6 +3370,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // List known cross-bank call edges that are not already marked as explicit farcalls.
     static string BuildFarcallSuggestionText(CodegenAnalysisReport report)
     {
         var sb = new StringBuilder();
@@ -3213,6 +3391,7 @@ else if (arg == "-Zcheck")
         sb.AppendLine("# caller -> callee, count, caller_bank, callee_bank, current_kind, recommendation");
         foreach (var c in rows)
         {
+            // Suggest explicit intent for thunked calls; other cross-bank candidates require a bank-safety review.
             string rec = c.ViaThunk ? "consider __farcall(bank, func) for explicit cross-bank intent" : "check bank safety";
             sb.AppendFormat("{0} -> {1}, {2}, {3}, {4}, {5}, {6}\n",
                 c.Caller, c.Callee, c.Count, c.CallerBank, c.CalleeBank, c.Kind, rec);
@@ -3220,6 +3399,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // List recorded cross-bank edges in descending structural call-count order, including thunk/farcall flags.
     static string BuildCrossBankCallText(CodegenAnalysisReport report)
     {
         var sb = new StringBuilder();
@@ -3239,6 +3419,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Format the supplied ABI issue list; PASS means that this list is empty, not that runtime calling behavior was tested.
     static string BuildAbiVerifyText(CodegenAnalysisReport report, List<string> issues)
     {
         var sb = new StringBuilder();
@@ -3258,6 +3439,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Show selected RST targets separately from optimizer rewrite counts so selection and application are distinguishable.
     static string BuildRstApplyText(CodegenAnalysisReport codegen, OptimizerAnalysisReport opt)
     {
         var sb = new StringBuilder();
@@ -3281,6 +3463,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Preserve each optimizer pass report and its captured textual diff in pass order.
     static string BuildOptimizerDiffText(OptimizerAnalysisReport report)
     {
         var sb = new StringBuilder();
@@ -3295,6 +3478,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Report final assembler extents using both banked CPU addresses and ROM file offsets, sorted by decreasing size.
     static string BuildFunctionSizeReportText(AssemblerAnalysisReport report)
     {
         var sb = new StringBuilder();
@@ -3308,6 +3492,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Snapshot counters/list length and suppress console diagnostics while speculative work runs.
     public static DiagnosticSnapshot BeginSuppressedDiagnostics()
     {
         DiagnosticSnapshot snap = new DiagnosticSnapshot
@@ -3320,6 +3505,8 @@ else if (arg == "-Zcheck")
         return snap;
     }
 
+    // Restore counters and discard later records, then enable console diagnostics.
+    // The prior suppression state is not stored, so this helper is not a nested suppression stack.
     public static void RestoreDiagnostics(DiagnosticSnapshot snap)
     {
         ErrorCount = snap.ErrorCount;
@@ -3328,11 +3515,13 @@ else if (arg == "-Zcheck")
         SuppressConsoleDiagnostics = false;
     }
 
+    // Clear prior function placement feedback before a new compilation layout begins.
     static void ClearFunctionBankOverrides()
     {
         FunctionBankOverrides.Clear();
     }
 
+    // Look up a case-sensitive relocation override; a false result does not establish bank zero.
     public static bool TryGetFunctionBankOverride(string name, out int bank)
     {
         if (string.IsNullOrEmpty(name))
@@ -3354,6 +3543,7 @@ else if (arg == "-Zcheck")
             FunctionBankOverrides[kv.Key] = kv.Value;
     }
 
+    // Sort the current assignments into a deterministic key for detecting relocation cycles.
     static string BuildFunctionBankOverrideStateKey()
     {
         return string.Join(";", FunctionBankOverrides
@@ -3361,6 +3551,7 @@ else if (arg == "-Zcheck")
             .Select(x => x.Key + "=" + x.Value));
     }
 
+    // Retain both requested and actual banks so fixed-placement failures can identify the mismatch.
     sealed class FunctionBankConflictInfo
     {
         public string Name;
@@ -3368,14 +3559,17 @@ else if (arg == "-Zcheck")
         public int ActualBank;
     }
 
+    // Separate relocations that can be fed into another pass from conflicts with explicit fixed placement.
     sealed class FunctionBankRelayoutResult
     {
         public readonly Dictionary<string, int> Relocations = new Dictionary<string, int>(StringComparer.Ordinal);
         public readonly List<FunctionBankConflictInfo> FixedBankConflicts = new List<FunctionBankConflictInfo>();
     }
 
+    // Compare code-generation bank assumptions with assembler placement, matching records by symbol name.
     static FunctionBankRelayoutResult DetectFunctionBankRelocations(CodegenAnalysisReport codegen, AssemblerAnalysisReport asm)
     {
+        // For duplicate function names, use the earliest file-offset record as the placement source.
         var actualByName = (asm?.FunctionSizes ?? new List<FunctionSizeInfo>())
             .Where(f => f != null && !string.IsNullOrEmpty(f.Name))
             .GroupBy(f => f.Name, StringComparer.Ordinal)
@@ -3388,6 +3582,7 @@ else if (arg == "-Zcheck")
         foreach (var f in codegen?.Functions ?? new List<FunctionAbiInfo>())
         {
             if (f == null || string.IsNullOrEmpty(f.Name)) continue;
+            // Only emitted ordinary functions participate in relocation feedback; declarations and inline definitions have no independent body placement.
             if (f.IsPrototype || f.IsInline) continue;
             if (!actualByName.TryGetValue(f.Name, out int actualBank)) continue;
             if (actualBank == f.Bank) continue;
@@ -3403,11 +3598,13 @@ else if (arg == "-Zcheck")
                 continue;
             }
 
+            // Request a new bank assumption only after excluding explicit fixed-bank conflicts.
             result.Relocations[f.Name] = actualBank;
         }
         return result;
     }
 
+    // Rank all known function names by incoming structural calls times maximum reported size; this is not a runtime profile.
     static string BuildHotspotReportText(CodegenAnalysisReport codegen, AssemblerAnalysisReport asm)
     {
         var sizeByFunc = (asm.FunctionSizes ?? new List<FunctionSizeInfo>())
@@ -3451,6 +3648,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Store recognized writes and compiler guard counters alongside header-derived consistency issues.
     sealed class CgbConsistencyResult
     {
         public bool Pass;
@@ -3464,6 +3662,7 @@ else if (arg == "-Zcheck")
         public readonly List<string> Issues = new List<string>();
     }
 
+    // Keep the required namespace, referenced subset and missing names separate for the symbol report.
     sealed class CgbSymbolVerifyResult
     {
         public bool Pass;
@@ -3473,6 +3672,7 @@ else if (arg == "-Zcheck")
         public int MapSymbolCount;
     }
 
+    // Recognize selected CGB registers by their low FF00-page address byte.
     static readonly Dictionary<int, string> CgbIoOffsetToName = new Dictionary<int, string>
     {
         { 0x4D, "KEY1" },
@@ -3489,11 +3689,14 @@ else if (arg == "-Zcheck")
         { 0x70, "SVBK" },
     };
 
+    // The verification contract requires this entire register-symbol list, even when only some names are referenced.
     static readonly string[] CgbRequiredSymbols = new[]
     {
         "KEY1", "VBK", "SVBK", "BCPS", "BCPD", "OCPS", "OCPD", "HDMA1", "HDMA2", "HDMA3", "HDMA4", "HDMA5"
     };
 
+    // Combine recognized direct register writes with aggregate compiler guard/check counters.
+    // This is a structural consistency check, not control-flow proof that every hardware access is guarded.
     static CgbConsistencyResult AnalyzeCgbConsistency(IReadOnlyList<Expr> assembly, CodegenAnalysisReport codegen, string outputFilename, RomHeaderOptions effectiveRomHeader)
     {
         var result = new CgbConsistencyResult();
@@ -3529,6 +3732,7 @@ else if (arg == "-Zcheck")
 
         result.TotalCgbWrites = writes;
         result.GuardedWrites = Math.Max(0, codegen == null ? 0 : codegen.CgbGuardedWriteCount);
+        // Infer the unguarded total by subtraction; this does not pair individual writes with individual guards.
         result.UnguardedWrites = Math.Max(0, result.TotalCgbWrites - result.GuardedWrites);
         result.RuntimeChecks = Math.Max(0, codegen == null ? 0 : codegen.CgbRuntimeCheckCount);
         foreach (var r in regs.OrderBy(x => x, StringComparer.Ordinal)) result.Registers.Add(r);
@@ -3541,6 +3745,7 @@ else if (arg == "-Zcheck")
         {
             result.Issues.Add("header is CGB-compatible (0x80) but unguarded CGB register writes were detected");
         }
+        // A dual-mode build reporting guards also needs an emitted runtime hardware-check count.
         if (result.HeaderFlag == 0x80 && result.GuardedWrites > 0 && result.RuntimeChecks == 0)
         {
             result.Issues.Add("CGB-compatible build uses guarded writes but no runtime CGB check calls were emitted");
@@ -3550,6 +3755,7 @@ else if (arg == "-Zcheck")
         return result;
     }
 
+    // Check required symbol names against the map and list recognized symbolic references in assembly IR.
     static CgbSymbolVerifyResult AnalyzeCgbSymbolVerification(IReadOnlyList<Expr> assembly, string mapPath)
     {
         var result = new CgbSymbolVerifyResult();
@@ -3599,6 +3805,7 @@ else if (arg == "-Zcheck")
         return result;
     }
 
+    // Read the final whitespace field of noncomment rows with at least five fields; missing maps yield an empty set.
     static HashSet<string> ParseMapSymbolNames(string mapPath)
     {
         var set = new HashSet<string>(StringComparer.Ordinal);
@@ -3618,6 +3825,7 @@ else if (arg == "-Zcheck")
         return set;
     }
 
+    // Render the collected counters and issues without adding further analysis.
     static string BuildCgbConsistencyText(CgbConsistencyResult result)
     {
         var sb = new StringBuilder();
@@ -3639,6 +3847,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Display required, referenced and missing names so an empty reference set is distinguishable from a complete map.
     static string BuildCgbSymbolVerifyText(CgbSymbolVerifyResult result)
     {
         var sb = new StringBuilder();
@@ -3662,6 +3871,8 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Recognize only direct LDH_MEM_A/LD_MEM_A stores to known symbolic or literal CGB registers.
+    // Indirect stores and other instruction shapes are outside this recognizer.
     static bool TryGetCgbWriteRegisterName(string mnemonic, AsmOperand operand, out string regName)
     {
         regName = null;
@@ -3707,6 +3918,7 @@ else if (arg == "-Zcheck")
         return false;
     }
 
+    // Read the actual ROM byte when available; missing, unreadable or short files retain the supplied fallback.
     static byte ReadRomHeaderByteSafe(string romPath, int offset, byte fallback)
     {
         try
@@ -3721,6 +3933,7 @@ else if (arg == "-Zcheck")
         return fallback;
     }
 
+    // Name the three recognized exact header values and retain unknown for all other bytes.
     static string DescribeCgbHeaderFlag(byte flag)
     {
         if (flag == 0xC0) return "cgb_only";
@@ -3729,6 +3942,7 @@ else if (arg == "-Zcheck")
         return "unknown";
     }
 
+    // Identify the listed report switches for child-build filtering; this is not a complete CLI option parser.
     static bool IsAnalysisFlag(string arg)
     {
         if (string.IsNullOrEmpty(arg)) return false;
@@ -3747,6 +3961,7 @@ else if (arg == "-Zcheck")
             arg == "--verify-cgb-symbols" || arg.StartsWith("--verify-cgb-symbols=");
     }
 
+    // Derive child compilation arguments by removing selected driver/report options, then append no-cache/output/ABI overrides.
     static string[] BuildChildCompileArgs(string childOutput, string abiOverride)
     {
         var list = new List<string>();
@@ -3755,6 +3970,7 @@ else if (arg == "-Zcheck")
         {
             string a = args[i];
 
+            // Remove the original output flag and its following value so the child owns a separate ROM path.
             if (a == "-o")
             {
                 i++;
@@ -3779,6 +3995,7 @@ else if (arg == "-Zcheck")
         return list.ToArray();
     }
 
+    // Read name/size from six-column function-size rows; later duplicate names replace earlier entries.
     static Dictionary<string, int> ParseFunctionSizesFile(string path)
     {
         var map = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -3798,6 +4015,7 @@ else if (arg == "-Zcheck")
         return map;
     }
 
+    // Compile legacy and stack variants, compare their reported function sizes, and report either child failure.
     static void TryGenerateAbiDiffReport(string reportPath)
     {
         string exe = Process.GetCurrentProcess().MainModule.FileName;
@@ -3832,6 +4050,7 @@ else if (arg == "-Zcheck")
         var all = new HashSet<string>(legacySizes.Keys, StringComparer.Ordinal);
         foreach (var k in stackSizes.Keys) all.Add(k);
 
+        // Use zero for a name missing from either side; this makes additions and removals visible as size deltas.
         var deltas = new List<(string Name, int Legacy, int Stack, int Delta)>();
         foreach (var name in all)
         {
@@ -3860,6 +4079,7 @@ else if (arg == "-Zcheck")
         try { Directory.Delete(tempDir, true); } catch { }
     }
 
+    // Rebuild once without cache and require both nonempty ROM and map hashes to match the original output.
     static void TryRunReproCheck(string outputFilename, string reportPath)
     {
         string exe = Process.GetCurrentProcess().MainModule.FileName;
@@ -3877,6 +4097,7 @@ else if (arg == "-Zcheck")
 
         bool sameGb = !string.IsNullOrEmpty(currentGbHash) && currentGbHash == reproGbHash;
         bool sameMap = !string.IsNullOrEmpty(currentMapHash) && currentMapHash == reproMapHash;
+        // Matching file hashes alone are insufficient if the child compiler reported failure.
         bool ok = (code == 0) && sameGb && sameMap;
 
         var sb = new StringBuilder();
@@ -3901,6 +4122,7 @@ else if (arg == "-Zcheck")
         try { Directory.Delete(tempDir, true); } catch { }
     }
 
+    // Handle the raw attribute-byte visualizer, validating dimensions before reading input and selecting an output destination.
     static bool TryRunAttrVizCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -3964,6 +4186,7 @@ else if (arg == "-Zcheck")
             byte[] bytes = File.ReadAllBytes(inputPath);
             if (height <= 0)
             {
+                // Infer enough rows for all bytes, including a partially filled final row.
                 height = (bytes.Length + width - 1) / width;
             }
 
@@ -3975,6 +4198,7 @@ else if (arg == "-Zcheck")
                 outPath = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(inputPath)) ?? ".", stem + ".attrviz.txt");
             }
 
+            // The visualizer uses a dash to select stdout; ordinary paths are sent to the robust file writer.
             if (outPath == "-")
             {
                 Console.Write(text);
@@ -4000,6 +4224,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Show raw bytes and the legacy GB/CGB-style bit interpretation, padding missing grid cells with placeholders.
     static string BuildAttrVizText(string inputPath, byte[] data, int width, int height)
     {
         if (data == null) data = new byte[0];
@@ -4010,6 +4235,7 @@ else if (arg == "-Zcheck")
         int rows = height;
         int cells = width * rows;
 
+        // Summary counters cover the entire input, even when explicit dimensions show only a prefix in the grids.
         int[] palCount = new int[8];
         int bank1 = 0, dmgPal1 = 0, xflip = 0, yflip = 0, pri = 0;
 
@@ -4090,6 +4316,7 @@ else if (arg == "-Zcheck")
         return sb.ToString();
     }
 
+    // Locate the repository integration script, forward its extra arguments and propagate the script process status.
     static bool TryRunTestCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -4147,12 +4374,14 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Recognize the bare watch flag case-insensitively before ordinary compilation dispatch.
     static bool HasWatchFlag(string[] args)
     {
         if (args == null) return false;
         return args.Any(a => string.Equals(a, "--watch", StringComparison.OrdinalIgnoreCase));
     }
 
+    // Build in a child process, then wait for relevant file events beneath source/include directories before rebuilding.
     static void RunWatchDriver(string[] argsArray)
     {
         string exe = Process.GetCurrentProcess().MainModule.FileName;
@@ -4167,6 +4396,7 @@ else if (arg == "-Zcheck")
             return;
         }
 
+        // Collect existing parent/include directories once; this does not use the compiler-resolved dependency graph.
         var watchDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var s in sourceFiles)
         {
@@ -4184,6 +4414,7 @@ else if (arg == "-Zcheck")
         }
 
         bool shouldStop = false;
+        // Convert Ctrl+C into an orderly stop request instead of immediate process termination.
         Console.CancelKeyPress += (sender, e) =>
         {
             e.Cancel = true;
@@ -4196,6 +4427,7 @@ else if (arg == "-Zcheck")
             Console.WriteLine("[watch] build exit code: " + code);
             if (shouldStop) break;
 
+            // Coalesce file notifications while waiting; watchers are installed after the preceding child build finishes.
             using (var changed = new AutoResetEvent(false))
             {
                 var watchers = new List<FileSystemWatcher>();
@@ -4216,6 +4448,7 @@ else if (arg == "-Zcheck")
                             changed.Set();
                         }
                     };
+                    // Filter rename events by the new path extension, matching the other event handlers.
                     RenamedEventHandler onRenamed = (s, e) =>
                     {
                         string ext = Path.GetExtension(e.FullPath).ToLowerInvariant();
@@ -4236,6 +4469,7 @@ else if (arg == "-Zcheck")
                 {
                     if (changed.WaitOne(200))
                     {
+                        // Wait a fixed debounce interval after the first event before starting another build.
                         Thread.Sleep(180);
                         break;
                     }
@@ -4247,6 +4481,7 @@ else if (arg == "-Zcheck")
         Exit(0);
     }
 
+    // Launch the executable directly with Windows-quoted arguments, inherit console streams and wait for its exit status.
     static int RunChildCompiler(string exePath, string[] args, string workingDir)
     {
         var psi = new ProcessStartInfo(exePath)
@@ -4263,6 +4498,8 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Heuristically collect non-option arguments, skipping values for -o and -I only.
+    // Other options with separate values require care when using this list for watch setup.
     static List<string> ExtractSourceFiles(List<string> args)
     {
         var files = new List<string>();
@@ -4280,6 +4517,7 @@ else if (arg == "-Zcheck")
         return files;
     }
 
+    // Collect separate, attached and long-form include-directory arguments without resolving them here.
     static List<string> ExtractIncludeDirs(List<string> args)
     {
         var dirs = new List<string>();
@@ -4306,6 +4544,7 @@ else if (arg == "-Zcheck")
         return dirs;
     }
 
+    // Walk upward for the product solution file; the caller separately checks whether its integration script exists.
     static string FindRepoRoot(string startDir)
     {
         string dir = Path.GetFullPath(startDir);
@@ -4318,14 +4557,33 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Encode one Windows process argument, including quotes and trailing backslashes.
+    // Always quote the value; each slash run before a quote or the closing delimiter is doubled.
     static string QuoteArg(string a)
     {
-        if (a == null) return "\"\"";
-        if (a.Length == 0) return "\"\"";
-        if (a.IndexOfAny(new[] { ' ', '\t', '\n', '"' }) < 0) return a;
-        return "\"" + a.Replace("\"", "\\\"") + "\"";
+        var sb = new StringBuilder("\"");
+        int slashes = 0;
+        foreach (char c in a ?? "")
+        {
+            if (c == '\\') { slashes++; continue; }
+            if (c == '"')
+            {
+                sb.Append('\\', slashes * 2 + 1);
+                sb.Append('"');
+            }
+            else
+            {
+                sb.Append('\\', slashes);
+                sb.Append(c);
+            }
+            slashes = 0;
+        }
+        sb.Append('\\', slashes * 2);
+        sb.Append('"');
+        return sb.ToString();
     }
 
+    // Remove recursive auto-minimize triggers, add the reduction driver and default trace mode, then wait for the child.
     static void TryRunAutoMinimize()
     {
         try
@@ -4364,6 +4622,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Serialize the current diagnostic snapshot and requested exit code before final termination.
     static void TryWriteDiagnosticJson(int exitCode)
     {
         if (!EmitDiagJson) return;
@@ -4393,6 +4652,7 @@ else if (arg == "-Zcheck")
 
         try
         {
+            // Diagnostic JSON uses stderr for a dash destination, unlike attrviz stdout.
             if (DiagJsonPath == "-")
             {
                 Console.Error.WriteLine(sb.ToString());
@@ -4409,6 +4669,7 @@ else if (arg == "-Zcheck")
         }
     }
 
+    // Escape quotes, backslashes and control characters for a JSON string body; callers provide the surrounding quotes.
     static string JsonEscape(string s)
     {
         if (string.IsNullOrEmpty(s)) return "";
@@ -4432,10 +4693,13 @@ else if (arg == "-Zcheck")
     }
 
     [DebuggerStepThrough]
+    // Report an unsupported internal implementation path with its stable internal-error code.
     public static void NYI() => GeneralError(Severity.InternalError, Maybe.Nothing, ErrorCode.InternalNYI, "not yet implemented");
     [DebuggerStepThrough]
+    // Report a compiler invariant case that reached no supported handler.
     public static void UnhandledCase() => GeneralError(Severity.InternalError, Maybe.Nothing, ErrorCode.InternalUnhandledCase, "unhandled case");
 
+    // Use the same severity spellings in console diagnostics and structured output.
     static readonly Dictionary<Severity, string> SeverityText = new Dictionary<Severity, string>
     {
         { Severity.Warning, "warning" },
@@ -4443,6 +4707,7 @@ else if (arg == "-Zcheck")
         { Severity.InternalError, "internal error" },
     };
 
+    // Retain formatted diagnostics independently of console visibility for JSON/API consumers.
     internal sealed class DiagnosticEntry
     {
         public string Severity;
@@ -4456,6 +4721,7 @@ else if (arg == "-Zcheck")
 }
 
 // Symbolic constants used in Exprs.
+// Centralize the string tags matched across parsing, lowering, code generation and assembly IR.
 static class Tag
 {
     // Top-level declarations:
@@ -4571,6 +4837,7 @@ static class Tag
     public static readonly string Case = "$case";
 }
 
+// Distinguish recoverable warnings, compilation errors and fatal compiler-internal failures.
 enum Severity
 {
     Warning,

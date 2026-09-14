@@ -1,8 +1,10 @@
-// 固定長オブジェクトプール
+// Allocate an entity from a fixed-capacity object pool.
 // Expected: 001
 #include "gb_common.h"
 #include "entity.h"
 
+// Create one entity and check the 0xFF allocation-failure sentinel before
+// accessing its velocity. Display the pool occupancy, not the entity ID.
 void main() {
     m_init();
     m_text(2,3,"ENTITY");

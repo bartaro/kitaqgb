@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 
 // Whole-program "dead strip" for KITAQGB assembly IR:
-// - Remove functions that are unreachable from main / RST maps / keep list
-// - Remove readonly data blobs that are never referenced from kept code
+// - Remove functions outside a conservative closure of main / RST maps / keep list / code references
+// - Remove readonly data blobs with no recognized reference anywhere in the code section
 // Safety notes:
 // - KITAQGB C subset does not support function pointers (in practice), so call-graph tracing is safe.
 // - If you jump/call labels via hand-written asm in ways we can't see, add --strip-keep=label.
 static class DeadStripper
 {
+    // Treat everything before the first ReadonlyData node as code and retain original expression objects.
+    // This conservative pass does not compute strict entry-point reachability or discover encoded/indirect references.
     public static IReadOnlyList<Expr> Strip(IReadOnlyList<Expr> assembly, HashSet<string> keepLabels)
     {
         if (assembly == null) return assembly;
@@ -54,6 +56,7 @@ static class DeadStripper
         }
 
         // Function ranges
+        // Range each function through the next Function marker or the data boundary. Duplicate names overwrite the keyed range.
         var funcRanges = new Dictionary<string, (int start, int end)>(StringComparer.Ordinal);
         for (int k = 0; k < funcStartIdx.Count; k++)
         {
@@ -83,6 +86,7 @@ static class DeadStripper
         EnqueueIfDefined("main", definedFuncs, liveFuncs, q);
 
         // keep list
+        // The explicit keep set roots defined functions here; it does not directly mark readonly data as live.
         if (keepLabels != null)
         {
             foreach (var k in keepLabels)
@@ -98,8 +102,8 @@ static class DeadStripper
             EnqueueIfDefined(t, definedFuncs, liveFuncs, q);
         }
 
-        // Also: if there is any code outside functions in the code section that references a function,
-        // treat those as roots (rare, but safe).
+        // Conservatively root references from every non-marker code expression, including
+        // bodies of functions that might otherwise be dead. Only Function markers are skipped.
         for (int i = 0; i < scanEnd; i++)
         {
             if (assembly[i].MatchTag(Tag.Function)) continue;
@@ -140,7 +144,7 @@ static class DeadStripper
                 CollectDataRefs(assembly[i], dataNames, liveData);
             }
         }
-        // Also scan non-function code section lines (safe)
+        // Scan every non-marker expression again, including dead function bodies; their data references are retained.
         for (int i = 0; i < scanEnd; i++)
         {
             if (assembly[i].MatchTag(Tag.Function)) continue;
@@ -211,6 +215,7 @@ static class DeadStripper
             // never fail
         }
 
+        // Preserve the relative order of retained IR nodes without cloning or rewriting them.
         var result = new List<Expr>(assembly.Count);
         for (int i = 0; i < assembly.Count; i++)
         {
@@ -219,6 +224,7 @@ static class DeadStripper
         return result;
     }
 
+    // Queue a nonempty defined function only on its first transition into the live set.
     static void EnqueueIfDefined(string name, HashSet<string> defined, HashSet<string> live, Queue<string> q)
     {
         if (string.IsNullOrEmpty(name)) return;
@@ -226,6 +232,8 @@ static class DeadStripper
         if (live.Add(name)) q.Enqueue(name);
     }
 
+    // Collect symbolic assembly bases in any addressing mode and string-valued Word labels.
+    // Numeric addresses and other expression shapes do not contribute dependencies.
     static void CollectLabelRefs(Expr e, HashSet<string> refs)
     {
         // CALL/JP etc
@@ -252,6 +260,7 @@ static class DeadStripper
         }
     }
 
+    // Recognize the same symbolic forms but retain only names defined as readonly data.
     static void CollectDataRefs(Expr e, HashSet<string> dataNames, HashSet<string> liveData)
     {
         string m; AsmOperand o;

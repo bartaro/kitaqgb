@@ -1,12 +1,16 @@
 #include "entity.h"
 
+// Fixed-capacity storage keeps entity addresses stable and avoids heap allocation.
+// IDs are reusable slot indices; 0xFF denotes allocation failure or no sprite.
 static Entity entity_pool[ENTITY_MAX];
 
+// Reset every slot before the game starts using the pool.
 void entity_init()
 {
     entity_clear_all();
 }
 
+// Release every entity and restore deterministic defaults, including the no-sprite sentinel.
 void entity_clear_all()
 {
     u8 i = 0;
@@ -24,6 +28,8 @@ void entity_clear_all()
     }
 }
 
+// Claim the first inactive slot, initialize its state, and return its index.
+// Return 0xFF when the pool is full; callers must check before using the ID.
 u8 entity_create(u8 type, s16 x, s16 y)
 {
     u8 i = 0;
@@ -45,12 +51,17 @@ u8 entity_create(u8 type, s16 x, s16 y)
     return 0xFF;
 }
 
+// Release a valid slot without clearing its payload. Reallocation resets the payload;
+// a saved pointer or ID must not be treated as a persistent entity identity.
 void entity_destroy(u8 id)
 {
     if (id >= ENTITY_MAX) return;
+    // Deactivation only releases this pool slot; the caller handles sprite/resource cleanup.
     entity_pool[id].active = 0;
 }
 
+// Return a pointer only for a currently active slot. Invalid or inactive IDs return null.
+// The pointer aliases pool storage and may refer to a different entity after slot reuse.
 Entity* entity_get(u8 id)
 {
     if (id >= ENTITY_MAX) return 0;
@@ -58,6 +69,8 @@ Entity* entity_get(u8 id)
     return &entity_pool[(__safe_index u8)id];
 }
 
+// Call fn for each slot that is active when the scan reaches it; null is a no-op.
+// Callbacks may change the pool, so newly activated later slots can run in this pass.
 void entity_update_all(EntityFn fn)
 {
     u8 i = 0;
@@ -70,11 +83,13 @@ void entity_update_all(EntityFn fn)
     }
 }
 
+// Use the same active-slot traversal for drawing; the callback supplies all rendering.
 void entity_draw_all(EntityFn fn)
 {
     entity_update_all(fn);
 }
 
+// Count occupied slots without changing entity state.
 u8 entity_count_active()
 {
     u8 i = 0;

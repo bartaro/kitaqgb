@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Accumulate address-based segments, symbols and synthetic source lines for the legacy debug format.
+// Bank annotations do not create separate bank-specific segment layouts.
 class DebugExporter
 {
     List<SegmentInfo> Segments = new List<SegmentInfo>();
@@ -16,6 +18,8 @@ class DebugExporter
     List<LineInfo> Lines = new List<LineInfo>();
     List<string> Comments = new List<string>();
 
+    // Install the fixed GB address-space segments and choose which regions the legacy file exports.
+    // The uncovered FEA0-FEFF interval has no segment.
     public DebugExporter()
     {
 
@@ -42,6 +46,7 @@ class DebugExporter
 
     }
 
+    // Append a segment with its current list index as a persistent ID; overlaps and sizes are not validated.
     void AddSegment(int address, int size, bool isPrgRom, bool export = true)
     {
         Segments.Add(new SegmentInfo()
@@ -54,6 +59,8 @@ class DebugExporter
         });
     }
 
+    // Find the segment containing the start address and append a relative span.
+    // The end address is not checked against that segment; return -1 when the start is unmapped.
     int AddSpan(int address, int size, bool isData)
     {
         SegmentInfo segment = GetSegment(address);
@@ -73,6 +80,8 @@ class DebugExporter
         return spanID;
     }
 
+    // Record a mapped variable in both the raw-name variable table and sanitized-name symbol list.
+    // Unmapped starts are skipped; bank is optional metadata rather than an address resolver.
     public void AddVariable(string name, int address, int size, MemoryRegion region, int? bank = null)
     {
         if (AddSpan(address, size, true) != -1)
@@ -98,11 +107,13 @@ class DebugExporter
         }
     }
 
+    // Return a new list of variable tuples, preserving original names rather than sanitized symbol names.
     public IReadOnlyList<(string Name, int Address, int Size, string Region, int? Bank)> GetVariables()
     {
         return Vars.Select(v => (v.Name, v.Address, v.Size, v.Region, v.Bank)).ToList();
     }
 
+    // Add a mapped function entry with placeholder size one; this does not measure the function body.
     public void AddFunction(string name, int address, int? bank = null)
     {
         SegmentInfo seg = GetSegment(address);
@@ -121,6 +132,8 @@ class DebugExporter
         }
     }
 
+    // Add an instruction span and, when comments exist, link it to a synthetic NOP line in the companion text.
+    // An empty comment list still creates the span but no source-line record.
     public void TagInstruction(int address, int size, List<string> localComments)
     {
         int spanID = AddSpan(address, size, false);
@@ -145,11 +158,13 @@ class DebugExporter
         }
     }
 
+    // Replace only colon and dollar characters; this is not general quoting or escaping for the debug format.
     string SanitizeName(string name)
     {
         return name.Replace(':', '_').Replace('$', '@');
     }
 
+    // Return the first segment whose half-open interval contains the address, or null when none does.
     SegmentInfo GetSegment(int address)
     {
         foreach (SegmentInfo segment in Segments)
@@ -163,6 +178,8 @@ class DebugExporter
         return null;
     }
 
+    // Remove non-exported segments, spans and symbols in place before serializing.
+    // IDs are not renumbered; the separate variable and source-line lists are not filtered by this removal.
     public void Save(string path)
     {
         foreach (SegmentInfo segment in Segments.ToArray())
@@ -182,6 +199,7 @@ class DebugExporter
             0, 1, 0, 0, 0, 0, Segments.Count, Spans.Count, Symbols.Count, 0));
         lines.Add(string.Format("file\tid=0,name=\"{0}\"", Path.ChangeExtension(Path.GetFileName(path), ".dbc")));
 
+        // The legacy read-only segment entry uses a fixed file offset of 16; it does not derive offsets from ROM banking.
         foreach (SegmentInfo segment in Segments)
         {
             lines.Add(string.Format("seg\tid={0},start=0x{1:X4},size=0x{2:X4},{3}", segment.ID, segment.Start, segment.Size, segment.IsPrgRom ? "type=ro,ooffs=16" : "type=rw"));
@@ -192,6 +210,7 @@ class DebugExporter
             lines.Add(string.Format("span\tid={0},seg={1},start={2},size={3}{4}", span.ID, span.SegmentID, span.Offset, span.Size, span.IsData ? ",type=0" : ""));
         }
 
+        // Emit WRAMX banks as wbank and other banks as bank. Names and region strings are interpolated without general escaping.
         foreach (SymbolInfo symbol in Symbols)
         {
             string extra = "";
@@ -211,12 +230,15 @@ class DebugExporter
             lines.Add(string.Format("line\tid={0},file={1},line={2},span={3}", line.ID, line.FileID, line.LineNumber, line.SpanID));
         }
 
+        // Use the actual debug output path when naming the companion file and remember both artifact paths.
+        // The file record above already contains the originally requested companion name.
         path = IoUtil.WriteAllLinesUtf8Robust(path, lines, allowAlternatePath: true);
         string dbcPath = IoUtil.WriteAllLinesUtf8Robust(Path.ChangeExtension(path, ".dbc"), Comments, allowAlternatePath: true);
         Program.RememberArtifactPath("dbg", path);
         Program.RememberArtifactPath("dbc", dbcPath);
     }
 
+    // Store a CPU-address interval and its export policy with a stable assigned ID.
     class SegmentInfo
     {
         public int ID;
@@ -226,6 +248,7 @@ class DebugExporter
         public bool Export;
     }
 
+    // Describe a code/data range relative to a segment start.
     class SpanInfo
     {
         public int ID;
@@ -235,6 +258,7 @@ class DebugExporter
         public bool IsData;
     }
 
+    // Retain the serialized name, address and optional memory/bank annotations.
     class SymbolInfo
     {
         public int ID;
@@ -246,6 +270,7 @@ class DebugExporter
         public int? Bank;
     }
 
+    // Keep the original variable name and address metadata for direct table consumers.
     class VarInfo
     {
         public string Name;
@@ -255,6 +280,7 @@ class DebugExporter
         public int? Bank;
     }
 
+    // Associate a synthetic companion-file line with an instruction span.
     class LineInfo
     {
         public int ID;
@@ -263,6 +289,8 @@ class DebugExporter
         public int SpanID;
     }
 
+    // Prefer an explicit memory-region tag; otherwise classify the address using the fixed GB map.
+    // Unknown addresses fall back to the region descriptor text in uppercase.
     static string FormatRegionName(MemoryRegion region, int address)
     {
         if (region.Tag == MemoryRegionTag.ProgramRom) return "ROM";

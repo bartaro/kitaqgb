@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 
 static partial class Program
 {
+    // Keep CPU/bank coordinates separate from the half-open ROM file-offset interval.
     sealed class DebugCliFunctionRange
     {
         public string Name;
@@ -19,12 +20,14 @@ static partial class Program
         public int SizeBytes => Math.Max(0, EndFileOffset - StartFileOffset);
     }
 
+    // Retain every display line; a negative offset marks text without a file_off annotation.
     sealed class DebugCliDisLine
     {
         public string Text;
         public int FileOffset;
     }
 
+    // Optional address, bank and size fields preserve missing metadata instead of inventing zeroes.
     sealed class DebugCliSymbol
     {
         public string Name;
@@ -36,6 +39,7 @@ static partial class Program
         public string Region;
     }
 
+    // Represent one accepted map row before symbol search or approximate range reconstruction.
     sealed class DebugCliMapEntry
     {
         public string Name;
@@ -46,6 +50,7 @@ static partial class Program
         public string Region;
     }
 
+    // Store the inclusive source-line span found by the lightweight function scanner.
     sealed class DebugCliSourceFunction
     {
         public string Name;
@@ -53,6 +58,7 @@ static partial class Program
         public int EndLine; // 1-based
     }
 
+    // Summarize one name-matched function, including additions and removals.
     sealed class RomDiffRow
     {
         public string Name;
@@ -65,11 +71,13 @@ static partial class Program
         public string NewHash;
     }
 
+    // Exclude common statement-like names from the heuristic source-function matches.
     static readonly HashSet<string> SourceControlKeywords = new HashSet<string>(StringComparer.Ordinal)
     {
         "if", "for", "while", "switch", "return", "sizeof", "static_assert", "_Static_assert"
     };
 
+    // Handle only the kqhelp subcommand; format a numeric code even when no enum entry exists.
     static bool TryRunKqHelpCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -95,6 +103,7 @@ static partial class Program
         return true;
     }
 
+    // Search map/debug symbols by substring or an explicitly requested regular expression.
     static bool TryRunSymbolFindCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -131,11 +140,13 @@ static partial class Program
             }
         }
 
+        // Auto-discover map and debug inputs independently; explicit paths are needed to select a matching build.
         if (string.IsNullOrWhiteSpace(mapPath))
             mapPath = TryGuessNewestFile("*.map", recursive: true);
         if (string.IsNullOrWhiteSpace(dbgPath))
             dbgPath = TryGuessNewestFile("*.dbg", recursive: true);
 
+        // Retain both sources, including duplicate names, so the report can show their provenance.
         var symbols = new List<DebugCliSymbol>();
         if (!string.IsNullOrWhiteSpace(mapPath) && File.Exists(mapPath))
             symbols.AddRange(ParseMapSymbolsForCli(mapPath));
@@ -149,6 +160,7 @@ static partial class Program
             return true;
         }
 
+        // Validate a requested regex before filtering; ordinary patterns are literal substrings.
         Regex re = null;
         if (useRegex)
         {
@@ -172,6 +184,7 @@ static partial class Program
             return (name ?? "").IndexOf(pattern, StringComparison.Ordinal) >= 0;
         }
 
+        // Sort by name and input format for stable output independent of enumeration order.
         var matched = symbols
             .Where(s => MatchName(s.Name))
             .OrderBy(s => s.Name, StringComparer.Ordinal)
@@ -213,6 +226,8 @@ static partial class Program
         return true;
     }
 
+    // Find the function containing the requested source line, then display its assembly range.
+    // This is a function-level lookup, not an instruction-to-source-line mapping.
     static bool TryRunSourceToAsmCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -298,6 +313,7 @@ static partial class Program
             return true;
         }
 
+        // Prefer explicit function extents; use map-derived approximations only when the sizes file is absent.
         List<DebugCliFunctionRange> ranges = null;
         if (!string.IsNullOrWhiteSpace(funcsizesPath) && File.Exists(funcsizesPath))
             ranges = ParseFunctionRanges(funcsizesPath);
@@ -306,6 +322,7 @@ static partial class Program
         else
             ranges = new List<DebugCliFunctionRange>();
 
+        // Select the first exact function name; source paths and duplicate-name scopes are not disambiguated here.
         var funcRange = ranges.FirstOrDefault(r => string.Equals(r.Name, target.Name, StringComparison.Ordinal));
         if (funcRange == null)
         {
@@ -315,6 +332,7 @@ static partial class Program
         }
 
         var disLines = ParseDisassemblyLines(disasmPath);
+        // Match annotated ROM offsets, excluding the half-open interval end.
         var hit = new List<int>();
         for (int i = 0; i < disLines.Count; i++)
         {
@@ -337,6 +355,7 @@ static partial class Program
         }
         else
         {
+            // Include surrounding display lines around the full function excerpt, clamped to the listing.
             int from = Math.Max(0, hit.Min() - context);
             int to = Math.Min(disLines.Count - 1, hit.Max() + context);
             sb.AppendLine("# disassembly excerpt");
@@ -361,6 +380,7 @@ static partial class Program
         return true;
     }
 
+    // Compare raw byte slices by function name using sidecar sizes or approximate map ranges.
     static bool TryRunRomDiffCommand(string[] argsArray)
     {
         if (argsArray == null || argsArray.Length == 0) return false;
@@ -431,6 +451,7 @@ static partial class Program
             return true;
         }
 
+        // Use the first range for each name; a moved but byte-identical body is still classified as same.
         var oldByName = oldFns.GroupBy(f => f.Name).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var newByName = newFns.GroupBy(f => f.Name).ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         var allNames = new HashSet<string>(oldByName.Keys, StringComparer.Ordinal);
@@ -442,6 +463,7 @@ static partial class Program
             oldByName.TryGetValue(name, out DebugCliFunctionRange oldFn);
             newByName.TryGetValue(name, out DebugCliFunctionRange newFn);
 
+            // Treat the entire reported extent of a newly named function as added bytes.
             if (oldFn == null && newFn != null)
             {
                 rows.Add(new RomDiffRow
@@ -457,6 +479,7 @@ static partial class Program
                 });
                 continue;
             }
+            // Treat the entire reported extent of a missing function as removed bytes.
             if (oldFn != null && newFn == null)
             {
                 rows.Add(new RomDiffRow
@@ -473,6 +496,7 @@ static partial class Program
                 continue;
             }
 
+            // Align by relative position within each slice; relocation operands are compared as ordinary bytes.
             int changed = CountChangedBytes(oldRom, oldFn.StartFileOffset, oldFn.EndFileOffset, newRom, newFn.StartFileOffset, newFn.EndFileOffset);
             string oldHash = ComputeRangeHash(oldRom, oldFn.StartFileOffset, oldFn.EndFileOffset);
             string newHash = ComputeRangeHash(newRom, newFn.StartFileOffset, newFn.EndFileOffset);
@@ -489,6 +513,7 @@ static partial class Program
             });
         }
 
+        // Show the largest byte changes first, then size changes, with names as the final tie-breaker.
         rows = rows
             .OrderByDescending(r => r.ChangedBytes)
             .ThenByDescending(r => Math.Abs(r.DeltaSize))
@@ -533,6 +558,7 @@ static partial class Program
     }
 
 
+    // Emit aggregate timings and a trace sidecar without turning optional reporting failures into build failures.
     static void EmitTraceShortSummary(List<TraceStageStat> stats, long totalMs, List<string> sourceFilenames, string outputFilename)
     {
         try
@@ -563,6 +589,8 @@ static partial class Program
     }
 
 
+    // Select all functions in changed source files, then intersect their names with this assembly report.
+    // The selection is file-based; it does not inspect Git hunks or compare function bodies.
     static void TryWriteChangedFunctionDisasm(string outputFilename, List<string> sourceFilenames, string gitBaseRef, string outPathOption)
     {
         try
@@ -571,6 +599,7 @@ static partial class Program
             if (!File.Exists(disPath)) return;
 
             var changedSourceFiles = GetChangedSourceFiles(gitBaseRef);
+            // When Git yields no usable files, fall back to the existing source files supplied for this build.
             if (changedSourceFiles.Count == 0)
             {
                 foreach (var s in sourceFilenames ?? new List<string>())
@@ -605,6 +634,7 @@ static partial class Program
                 });
             }
 
+            // Discard source-only names that produced no reported machine-code range.
             var targetRanges = ranges
                 .Where(r => changedFunctions.Contains(r.Name))
                 .OrderBy(r => r.StartFileOffset)
@@ -627,6 +657,7 @@ static partial class Program
             }
 
             var disLines = ParseDisassemblyLines(disPath);
+            // Emit each selected range independently, retaining only offset-annotated instructions.
             foreach (var fr in targetRanges)
             {
                 sb.AppendLine("; ------------------------------------------------------------");
@@ -655,9 +686,11 @@ static partial class Program
         }
     }
 
+    // Snapshot diagnostics, invocation and known inputs once; individual copy failures are best effort.
     static void TryWriteFailureReproPackage(int exitCode)
     {
         if (_reproPackageWritten) return;
+        // Set the guard before any I/O so a packaging failure cannot recursively trigger another package.
         _reproPackageWritten = true;
 
         try
@@ -687,6 +720,7 @@ static partial class Program
                 }
                 catch { }
             }
+            // Include resolved dependencies as well as command-line source inputs, deduplicated by full path.
             foreach (var d in LastCompilationDependencies ?? Array.Empty<string>())
             {
                 try
@@ -697,6 +731,7 @@ static partial class Program
                 catch { }
             }
 
+            // Keep copied inputs under a separate directory; recorded command paths are not rewritten for relocation.
             string inputRoot = Path.Combine(root, "inputs");
             Directory.CreateDirectory(inputRoot);
             string cwd = Environment.CurrentDirectory;
@@ -707,6 +742,7 @@ static partial class Program
                 {
                     string rel = MakeRelativePathSafe(cwd, src);
                     if (string.IsNullOrWhiteSpace(rel)) rel = Path.GetFileName(src);
+                    // Trim leading parent traversal or a rooted path before copying; distinct inputs can still share a destination.
                     rel = SanitizeRelativePath(rel);
                     string dst = Path.Combine(inputRoot, rel);
                     Directory.CreateDirectory(Path.GetDirectoryName(dst) ?? inputRoot);
@@ -736,6 +772,7 @@ static partial class Program
         }
     }
 
+    // Serialize the accumulated diagnostics with escaped string fields and numeric source locations.
     static string BuildDiagnosticJsonText(int exitCode)
     {
         var sb = new StringBuilder();
@@ -763,6 +800,8 @@ static partial class Program
         return sb.ToString();
     }
 
+    // Collect existing C/header paths from Git diff and, without a base ref, untracked files.
+    // An empty result also covers Git failures; the caller supplies its source-list fallback.
     static HashSet<string> GetChangedSourceFiles(string gitBaseRef)
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -804,6 +843,7 @@ static partial class Program
         return set;
     }
 
+    // Invoke Git directly in the current directory and split successful stdout into nonempty path lines.
     static IEnumerable<string> RunGitLines(params string[] gitArgs)
     {
         var psi = new ProcessStartInfo("git")
@@ -824,6 +864,7 @@ static partial class Program
         }
     }
 
+    // Combine the registered description, numeric category and existing fix suggestion into command help.
     static string BuildKqHelpText(int codeValue, string codeText)
     {
         string enumName = "";
@@ -855,6 +896,7 @@ static partial class Program
         return sb.ToString();
     }
 
+    // Accept a number with an optional KQ prefix and normalize it to four digits in the range 0000..9999.
     static bool TryParseKqCode(string input, out int codeValue, out string codeText)
     {
         codeValue = 0;
@@ -870,6 +912,7 @@ static partial class Program
         return true;
     }
 
+    // Classify by reserved numeric ranges; this does not require an individually registered code.
     static string GetKqCategory(int code)
     {
         if (code >= 1000 && code < 2000) return "parser/front-end";
@@ -882,6 +925,7 @@ static partial class Program
         return "generic";
     }
 
+    // Look up the existing diagnostic descriptions; unregistered codes receive a generic fallback.
     static string GetKqDescription(int code)
     {
         switch ((ErrorCode)code)
@@ -924,6 +968,7 @@ static partial class Program
         }
     }
 
+    // Choose by modification time beneath the current directory; discovery failures return no candidate.
     static string TryGuessNewestFile(string pattern, bool recursive)
     {
         try
@@ -943,6 +988,7 @@ static partial class Program
         }
     }
 
+    // Convert accepted map rows to searchable symbols without inferring their sizes.
     static List<DebugCliSymbol> ParseMapSymbolsForCli(string mapPath)
     {
         var list = new List<DebugCliSymbol>();
@@ -965,6 +1011,7 @@ static partial class Program
         return list;
     }
 
+    // Read only sym records; prefer explicit bank/region fields and retain missing numeric fields as null.
     static List<DebugCliSymbol> ParseDbgSymbolsForCli(string dbgPath)
     {
         var list = new List<DebugCliSymbol>();
@@ -999,6 +1046,7 @@ static partial class Program
         return list;
     }
 
+    // Read compiler CSV extents, skipping malformed rows; start/end offsets determine the reported size.
     static List<DebugCliFunctionRange> ParseFunctionRanges(string funcsizesPath)
     {
         var list = new List<DebugCliFunctionRange>();
@@ -1030,6 +1078,8 @@ static partial class Program
         return list;
     }
 
+    // Approximate ranges from ROM symbols tagged S using the current 16 KiB bank conversion.
+    // Explicit function-size metadata is preferable to this fallback.
     static List<DebugCliFunctionRange> ParseFunctionRangesFromMap(string mapPath, int romSizeBytes)
     {
         var list = new List<DebugCliFunctionRange>();
@@ -1053,8 +1103,10 @@ static partial class Program
         {
             var cur = grouped[i];
             int startFile = (cur.Bank * 0x4000) + (cur.Offset & 0x3FFF);
+            // Initialize a one-byte extent; a later symbol in the same bank can extend it.
             int endFile = startFile + 1;
 
+            // Skip same-offset aliases and stop at the next strictly greater offset within this bank.
             for (int j = i + 1; j < grouped.Count; j++)
             {
                 if (grouped[j].Bank != cur.Bank) break;
@@ -1086,6 +1138,7 @@ static partial class Program
         return list;
     }
 
+    // Parse the whitespace-separated map format with an optional decimal bank and optional region field.
     static bool TryParseMapEntry(string line, out DebugCliMapEntry entry)
     {
         entry = null;
@@ -1136,6 +1189,7 @@ static partial class Program
         return true;
     }
 
+    // Fallback to the legacy Game Boy address-region table when the input supplies no region.
     static string InferRegionNameForCli(int address)
     {
         if (address >= 0xFF80 && address <= 0xFFFE) return "HRAM";
@@ -1149,6 +1203,7 @@ static partial class Program
         return "";
     }
 
+    // Extract hexadecimal file_off annotations while preserving all original lines for context display.
     static List<DebugCliDisLine> ParseDisassemblyLines(string disasmPath)
     {
         var list = new List<DebugCliDisLine>();
@@ -1166,6 +1221,8 @@ static partial class Program
         return list;
     }
 
+    // Use a declaration regex and balanced-brace scan without preprocessing or full C parsing.
+    // Only the brace scan skips comments and quoted literals; regex matches remain heuristic.
     static List<DebugCliSourceFunction> ParseSourceFunctions(string sourcePath)
     {
         var list = new List<DebugCliSourceFunction>();
@@ -1203,6 +1260,7 @@ static partial class Program
             .ToList();
     }
 
+    // Track brace depth outside comments, strings and character literals; skip escaped quoted characters.
     static int FindMatchingBrace(string text, int openBracePos)
     {
         if (string.IsNullOrEmpty(text) || openBracePos < 0 || openBracePos >= text.Length) return -1;
@@ -1257,6 +1315,7 @@ static partial class Program
         return -1;
     }
 
+    // Index offsets after each newline so character positions can be converted without rescanning the source.
     static List<int> BuildLineStarts(string text)
     {
         var starts = new List<int>();
@@ -1270,6 +1329,7 @@ static partial class Program
         return starts;
     }
 
+    // Binary-search the last line start at or before the position and return a one-based line number.
     static int PositionToLine(List<int> lineStarts, int pos)
     {
         if (lineStarts == null || lineStarts.Count == 0) return 1;
@@ -1284,6 +1344,7 @@ static partial class Program
         return Math.Max(1, hi + 1);
     }
 
+    // Split at the final colon so Windows drive letters remain part of the path; require a positive line.
     static bool TryParseSourceLineSpec(string spec, out string sourcePath, out int line1Based)
     {
         sourcePath = "";
@@ -1301,6 +1362,7 @@ static partial class Program
         return true;
     }
 
+    // Parse a hexadecimal field with an optional 0x prefix; callers remove other format-specific markers.
     static bool TryParseHex(string text, out int value)
     {
         value = 0;
@@ -1311,6 +1373,7 @@ static partial class Program
         return int.TryParse(s, System.Globalization.NumberStyles.HexNumber, null, out value);
     }
 
+    // Parse decimal integers or hexadecimal values prefixed with 0x or $.
     static bool TryParseInt(string text, out int value)
     {
         value = 0;
@@ -1323,6 +1386,7 @@ static partial class Program
         return int.TryParse(s, out value);
     }
 
+    // Distinguish missing or malformed numeric fields from a legitimate zero.
     static int? GetDbgInt(Dictionary<string, string> kv, string key)
     {
         if (!kv.TryGetValue(key, out string raw)) return null;
@@ -1330,6 +1394,7 @@ static partial class Program
         return null;
     }
 
+    // Remove surrounding quotes from a stored debug value and decode escaped quotation marks.
     static string GetDbgString(Dictionary<string, string> kv, string key)
     {
         if (!kv.TryGetValue(key, out string raw)) return "";
@@ -1340,6 +1405,7 @@ static partial class Program
         return t.Replace("\\\"", "\"");
     }
 
+    // Split comma-delimited fields while allowing commas in quoted values; later duplicate keys replace earlier ones.
     static Dictionary<string, string> ParseDbgKeyValues(string payload)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -1361,6 +1427,7 @@ static partial class Program
             if (i < payload.Length && payload[i] == '"')
             {
                 int j = i + 1;
+                // Within quotes, a backslash quotes the following character rather than preserving the slash itself.
                 bool esc = false;
                 var sb = new StringBuilder();
                 while (j < payload.Length)
@@ -1394,6 +1461,7 @@ static partial class Program
         return map;
     }
 
+    // Clamp both slices to their ROMs, compare common relative positions, and count every unmatched tail byte.
     static int CountChangedBytes(byte[] oldRom, int oldStart, int oldEnd, byte[] newRom, int newStart, int newEnd)
     {
         if (oldRom == null) oldRom = Array.Empty<byte>();
@@ -1414,6 +1482,7 @@ static partial class Program
         return diff;
     }
 
+    // Hash the clamped byte interval with SHA-256; an empty interval is represented by an empty string.
     static string ComputeRangeHash(byte[] rom, int start, int end)
     {
         if (rom == null) rom = Array.Empty<byte>();
@@ -1431,12 +1500,14 @@ static partial class Program
         }
     }
 
+    // Display at most eight hexadecimal characters; the underlying range hash remains full length.
     static string ShortHash(string hex)
     {
         if (string.IsNullOrEmpty(hex)) return "";
         return hex.Length <= 8 ? hex : hex.Substring(0, 8);
     }
 
+    // Use URI-relative conversion when possible; return the original path if conversion is unavailable.
     static string MakeRelativePathSafe(string baseDir, string path)
     {
         try
@@ -1455,6 +1526,7 @@ static partial class Program
         }
     }
 
+    // Mark the base URI as a directory without adding a second trailing separator.
     static string AppendDirectorySeparator(string path)
     {
         if (string.IsNullOrEmpty(path)) return path;
@@ -1463,6 +1535,8 @@ static partial class Program
         return path + Path.DirectorySeparatorChar;
     }
 
+    // Normalize separators, remove leading parent components, and reduce rooted paths to a filename.
+    // This is a copy-path formatting helper, not a general containment validator.
     static string SanitizeRelativePath(string rel)
     {
         if (string.IsNullOrWhiteSpace(rel)) return "";

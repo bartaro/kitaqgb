@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 
+// Nullable GB header overrides preserve the difference between an unspecified field and an explicit zero/off value.
 public sealed class RomHeaderOptions
 {
     public bool? HeaderLogoEnabled = null; // 0x0104..0x0133
@@ -18,6 +19,8 @@ public sealed class RomHeaderOptions
 
     public bool HasAny => HeaderLogoEnabled.HasValue || Title != null || CgbFlag.HasValue || CartType.HasValue || RomSizeCode.HasValue || RamSizeCode.HasValue || SgbFlag.HasValue || DestinationCode.HasValue || Version.HasValue;
 
+    // Merge only fields supplied by the other options object, either overwriting or filling unset fields.
+    // ROM size code and byte count are merged independently.
     public void MergeFrom(RomHeaderOptions other, bool overwrite)
     {
         if (other == null) return;
@@ -33,6 +36,7 @@ public sealed class RomHeaderOptions
         if (other.Version.HasValue && (overwrite || !this.Version.HasValue)) this.Version = other.Version;
     }
 
+    // Resolve a supported key alias and report whether that option has a value, including explicit false/zero values.
     public bool IsFieldSetByKey(string key)
     {
         string k = NormalizeKey(key);
@@ -60,6 +64,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Dispatch a normalized key to its value parser; unknown keys and invalid values return an explanatory message.
     public bool TrySetByKey(string key, string value, out string err)
     {
         err = null;
@@ -93,6 +98,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Normalize case, hyphens and the optional rom_ prefix, then resolve the supported header-field aliases.
     static string NormalizeKey(string key)
     {
         string k = (key ?? "").Trim();
@@ -113,6 +119,8 @@ public sealed class RomHeaderOptions
         return k;
     }
 
+    // Read a small JSON-like template using regular expressions rather than a complete JSON parser.
+    // Unmatched text is not schema-validated, and comment stripping below does not distinguish quoted strings.
     public static RomHeaderOptions LoadFromJson(string path)
     {
         if (string.IsNullOrEmpty(path)) throw new ArgumentException("path is empty");
@@ -122,7 +130,7 @@ public sealed class RomHeaderOptions
         // Supported value kinds: string, number, true, false.
         string json = IoUtil.ReadAllTextUtf8(path);
 
-        // Strip C/C++-style comments if present (handy while vibing).
+        // Strip C/C++-style comments before extracting primitive key/value pairs.
         json = Regex.Replace(json, @"//.*?$", "", RegexOptions.Multiline);
         json = Regex.Replace(json, @"/\*.*?\*/", "", RegexOptions.Singleline);
 
@@ -160,6 +168,7 @@ public sealed class RomHeaderOptions
         return opt;
     }
 
+    // Decode the supported quote, backslash and whitespace escapes; unrecognized escapes retain only the escaped character.
     static string UnescapeJsonString(string s)
     {
         if (s == null) return null;
@@ -186,6 +195,7 @@ public sealed class RomHeaderOptions
         return sb.ToString();
     }
 
+    // Map accepted monochrome, compatible and color-only spellings to their GB header flag values.
     public bool TrySetCgb(string s, out string err)
     {
         err = null;
@@ -211,6 +221,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Parse whether the GB boot-header validation bytes should be emitted or replaced with 0xFF.
     public bool TrySetHeaderLogo(string s, out string err)
     {
         err = null;
@@ -229,6 +240,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Accept the supported boolean/legacy spellings and encode enabled SGB support as 0x03.
     public bool TrySetSgb(string s, out string err)
     {
         err = null;
@@ -249,6 +261,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Map Japanese and non-Japanese destination aliases to the corresponding single-byte flag.
     public bool TrySetDest(string s, out string err)
     {
         err = null;
@@ -270,6 +283,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Select only the listed ROM-only/MBC variants; this helper does not infer RAM size or cartridge compatibility.
     public bool TrySetCart(string s, out string err)
     {
         err = null;
@@ -308,6 +322,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Record both the header code and byte count for a supported power-of-two ROM capacity.
     public bool TrySetRomSize(string s, out string err)
     {
         err = null;
@@ -328,6 +343,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Encode the supported external-RAM capacity, including the nonsequential 64/128 KiB header codes.
     public bool TrySetRamSize(string s, out string err)
     {
         err = null;
@@ -345,6 +361,7 @@ public sealed class RomHeaderOptions
         return false;
     }
 
+    // Normalize case and remove spaces, bytes and b spellings before comparing the supported size tokens.
     static string NormalizeSizeToken(string s)
     {
         s = (s ?? "").Trim().ToLowerInvariant();
@@ -357,6 +374,7 @@ public sealed class RomHeaderOptions
     }
 }
 
+// Apply GB header fields and checksum updates after assembly; ROM content outside the header is preserved except padding.
 public static class RomHeaderPatcher
 {
     // Header offsets
@@ -383,6 +401,7 @@ public static class RomHeaderPatcher
         0xBB, 0xBB, 0x67, 0x63, 0x6E, 0x0E, 0xEC, 0xCC, 0xDD, 0xDC, 0x99, 0x9F, 0xBB, 0xB9, 0x33, 0x3E
     };
 
+    // Decode standard and legacy GB ROM-size codes; unknown codes provide no expected byte count.
     static int? RomSizeBytesFromCode(byte code)
     {
         switch (code)
@@ -404,6 +423,8 @@ public static class RomHeaderPatcher
         }
     }
 
+    // Read an existing GB-format ROM, validate requested capacity and ROM-only limits, then patch selected fields.
+    // Only after those checks pass are both checksums recomputed and the file overwritten.
     public static void PatchFile(string romPath, RomHeaderOptions opt)
     {
         if (opt == null || !opt.HasAny) return;
@@ -421,6 +442,7 @@ public static class RomHeaderPatcher
         }
 
         int originalLen = rom.Length;
+        // Prefer the explicit byte count; otherwise derive capacity from the supplied code, not from the existing header bytes.
         int? expectedRomSize = opt.RomSizeBytes;
         if (!expectedRomSize.HasValue && opt.RomSizeCode.HasValue)
         {
@@ -489,6 +511,7 @@ public static class RomHeaderPatcher
         File.WriteAllBytes(romPath, rom);
     }
 
+    // Write or clear only the 48-byte validation field; checksum updates are the caller's responsibility.
     internal static void WriteHeaderLogo(byte[] rom, bool enabled)
     {
         if (rom == null || rom.Length < OFF_LOGO + LEN_LOGO) return;
@@ -501,6 +524,8 @@ public static class RomHeaderPatcher
         for (int i = 0; i < LEN_LOGO; i++) rom[OFF_LOGO + i] = 0xFF;
     }
 
+    // Replace the full 16-byte legacy title field with printable ASCII and zero padding.
+    // This includes offset 0x0143; a separately supplied CGB flag is written after the title.
     static void WriteTitle(byte[] rom, string title)
     {
         // Use ASCII; non-ASCII -> '?'
@@ -517,6 +542,7 @@ public static class RomHeaderPatcher
         }
     }
 
+    // Compute the wrapping eight-bit subtractive checksum over the title and header fields through 0x014C.
     static byte ComputeHeaderChecksum(byte[] rom)
     {
         // x = 0; for i=0x0134..0x014C: x = x - rom[i] - 1
@@ -528,6 +554,7 @@ public static class RomHeaderPatcher
         return (byte)x;
     }
 
+    // Sum the complete padded image modulo 65536, excluding the two stored global-checksum bytes.
     static ushort ComputeGlobalChecksum(byte[] rom)
     {
         int sum = 0;

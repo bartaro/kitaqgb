@@ -10,6 +10,7 @@ $ErrorActionPreference = 'Stop'
 $romFull = Resolve-Path $RomPath
 $mapFull = Resolve-Path $MapPath
 
+# Find the first four-hex-digit map address for the literal symbol name; a switchable-bank address is rejected.
 $escaped = [regex]::Escape($Symbol)
 $vectorAddr = $null
 foreach ($line in Get-Content -LiteralPath $mapFull) {
@@ -27,6 +28,7 @@ if ($vectorAddr -ge 0x4000) {
 }
 
 $bytes = [IO.File]::ReadAllBytes($romFull)
+# Recognize PUSH AF, BC, DE, HL near the mapped vector symbol. This short signature is a heuristic, not ISR validation.
 $signature = [byte[]](0xF5, 0xC5, 0xD5, 0xE5)
 $entryAddr = $null
 
@@ -48,10 +50,13 @@ if ($null -eq $entryAddr) {
   throw ('patch_gb_vblank_irq: raw ISR body signature not found near 0x{0:X4}' -f $vectorAddr)
 }
 
+# Replace the VBlank entry with JP entryAddr using a little-endian target; patch the supplied ROM in place.
 $bytes[0x40] = 0xC3
 $bytes[0x41] = [byte]($entryAddr -band 0xFF)
 $bytes[0x42] = [byte](($entryAddr -shr 8) -band 0xFF)
 
+# Unless disabled, also replace FF bytes in 0134..0143 with zero and recompute both header/global checksums.
+# NoHeaderFix leaves checksums unchanged even though the vector changes; it does not preserve checksum validity.
 if (!$NoHeaderFix) {
   for ($i = 0x0134; $i -le 0x0143; $i++) {
     if ($bytes[$i] -eq 0xFF) { $bytes[$i] = 0x00 }
@@ -63,6 +68,7 @@ if (!$NoHeaderFix) {
   }
   $bytes[0x014D] = [byte]$headerChk
 
+  # Sum all ROM bytes except the two global-checksum bytes, then store the resulting word big-endian.
   $globalChk = 0
   for ($i = 0; $i -lt $bytes.Length; $i++) {
     if ($i -ne 0x014E -and $i -ne 0x014F) {
@@ -73,6 +79,7 @@ if (!$NoHeaderFix) {
   $bytes[0x014F] = [byte]($globalChk -band 0xFF)
 }
 
+# Persist only after symbol/signature checks and checksum work; no backup or atomic replacement is created.
 [IO.File]::WriteAllBytes($romFull, $bytes)
 
 if ($NoHeaderFix) {

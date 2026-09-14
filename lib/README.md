@@ -1,5 +1,26 @@
 # KITAQGB Libraries
 
+`wire3d_dmg` is a monochrome wireframe renderer for Game Boy. Select 128 × 96 with `wire3d_dmg_96.c`, or 128 × 120 with `wire3d_dmg.c`, and use `Wire3DDMG_*`. The old `wire3d` and `dmg3d` files remain compatibility entries for those respective profiles. Compile only one entry. `wire3d_cgb` retains its name and remains the separate color renderer.
+
+[Shared renderer guide](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Español | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Português (Brasil) | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/pt/gb-library.html) |
+| Français | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Deutsch | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+
+
 This folder contains three kinds of files:
 
 - Public API
@@ -19,7 +40,7 @@ This folder contains three kinds of files:
 | `physics2d_circle.h` / `physics2d_circle.c` | 2D circle-body physics for ball-style games. | Include the header and compile the source when used. |
 | `physics3d.h` / `physics3d.c` | 3D AABB physics with acceleration, mass-weighted bounce, break flags, plus `kq3d_dot_q8_8()`. | Include the header and compile the source when used. |
 | `wire3d.h` / `wire3d.c` | Fixed-point wireframe 3D renderer with WRAM staging, hidden-line models, and scene occlusion masks. | Include `wire3d.h` and compile `wire3d.c` when used. |
-| `x3d.h` / `x3d.c` | DMG X-style wireframe renderer with a 128x120 D000 staging surface, fixed-order inline-assembly line drawing, and STAT-gated D000-to-8900 transfer. | Include `x3d.h` and compile `x3d.c` when an X-style 1bpp wireframe pipeline is needed. |
+| `dmg3d.h` / `dmg3d.c` | DMG staged wireframe renderer with a 128x120 D000 staging surface, fixed-order inline-assembly line drawing, and STAT-gated D000-to-8900 transfer. | Include `dmg3d.h` and compile `dmg3d.c` when a staged 1bpp wireframe pipeline is needed. |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB-only 8MHz color wireframe renderer with 2bpp WRAM staging, hidden-line/scene occlusion, clipped ASM drawing, and tear-free HBlank DMA presentation. | Include `wire3d_cgb.h` and compile `wire3d_cgb.c` with a CGB-only ROM build. |
 | `system.h` / `system.c` | Small GB runtime base: init, frame count, VBlank wait, cooperative VBlank callback, DI/EI wrappers. | Include `system.h` and compile `system.c` for frame-paced game loops. |
 | `input.h` / `input.c` | Frame input state with down/pressed/released/repeat helpers. | Include `input.h` and compile `input.c` for menu, action, puzzle, and SLG controls. |
@@ -39,7 +60,7 @@ This folder contains three kinds of files:
 | `raster.h` / `raster.c` | Raster scroll band builders plus structured per-scanline X-warp profiles. | Include `raster.h` and compile `raster.c` with `scroll.c` when using `Raster_*` helpers. |
 | `camera.h` / `camera.c` | 8.8 fixed-point camera helper built on `scroll.*`, plus simple global camera wrappers and world/screen conversion. | Include the header and compile the source when used. |
 | `audio.h` / `audio.c` | Shared Game Boy audio driver with music/SFX/pan/wave/fade helpers and a 68-note range through stream note 67 (`G6`). | Include `audio.h` and compile `audio.c` for audio-enabled projects. |
-| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM driver with the same 68-note range, a 16-record WRAM queue for banked songs, and an optional per-frame hook. | Keep direct-pointer songs in fixed bank 0, or refill the queue from banked code; patch vector `0x0040` with `tools/patch_gb_vblank_irq.ps1`. |
+| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM driver with the same 68-note range, a 16-record WRAM queue for banked songs, and an optional per-frame hook. | Keep direct-pointer songs in fixed bank 0, or refill the queue from banked code; patch vector `0x0040` with `scripts/patch_gb_vblank_irq.ps1`. |
 | `link.h` / `link.c` | Shared serial byte-transfer layer for link cable projects, plus cooperative logical `Link4_*` helpers. | Include `link.h` and compile `link.c` for link-enabled projects. |
 | `link_packet.c` | Optional packet-layer extension on top of `link.c`, including per-peer `Link4_*` packet mailboxes. | Compile together with `link.c` only if packet send/read helpers are needed. |
 | `link_dmg07.h` / `link_dmg07.c` | Polling external-clock driver for the physical Nintendo DMG-07 Four Player Adapter. | Compile with `link_hwregs_gb.c`; this is separate from the logical `Link4_*` API. |
@@ -71,12 +92,18 @@ This folder contains three kinds of files:
 | --- | --- |
 | `README.md` | This overview and build-usage note. |
 | `wire3d_guide_ja.md` | Japanese quick-start guide for the wireframe 3D renderer. |
-| `x3d_guide_ja.md` | Japanese quick-start guide for the DMG X-style wireframe renderer. |
+| `dmg3d_guide_ja.md` | Japanese quick-start guide for the DMG staged wireframe renderer. |
 | `wire3d_cgb_guide.md` | Quick-start guide for the CGB-only color wireframe renderer. |
 | `physics_guide.html` | English physics usage guide. |
 | `physics_guide_ja.html` | Japanese physics usage guide. |
 
 ## Build usage
+
+Several commands below refer to historical development demos that are not
+included in this public repository, such as `wire3d_cube_demo.c`. They are
+build templates requiring the named sources. For the bundled beginner
+programs, use `../examples/build.ps1` and the HTML manual. The short
+`kitaqgb` command assumes the executable is available on PATH.
 
 Compile your game source together with the library source files:
 
@@ -87,18 +114,18 @@ kitaqgb hwregs.c lib/audio.c main.c lib/physics2d.c lib/physics2d_circle.c lib/p
 Wireframe 3D projects compile the renderer source with the game source:
 
 ```powershell
-kitaqgb lib/wire3d.c lib/physics3d.c examples/wire3d_cube_demo.c -I lib -o examples/wire3d_cube_demo.gb --profile=dev --stack-bank=fixed --rst-disable --rom-title=WIRE3DDEMO
+.\kitaqgb.exe lib/wire3d.c examples/wire3d_minimal.c -I lib -o examples/wire3d_minimal.gb --profile=dev --stack-bank=fixed --rst-disable --no-disasm
 ```
 
-The included `examples/wire3d_cube_demo.c` starts with two hidden-line wireframe models; holding A adds physics bodies up to six, with acceleration, bounce, scene occlusion, and break fragments on hard impacts.
+The supplied `examples/wire3d_minimal.c` initializes every model field and rotates a cube in the 128x96 viewport. It needs no external graphics or font assets.
 
-X-style DMG wireframe projects can use the separate `x3d.*` renderer:
+DMG projects with a 128x120 viewport can use the 120-line compatibility entry `dmg3d.*`:
 
 ```powershell
-kitaqgb lib/x3d.c examples/x3d_demo.c -I lib -o examples/x3d_demo.gb --profile=dev --stack-bank=fixed --rst-disable --rom-title=X3DDEMO
+.\kitaqgb.exe lib/dmg3d.c examples/dmg3d_minimal.c -I lib -o examples/dmg3d_minimal.gb --profile=dev --stack-bank=fixed --rst-disable --no-disasm
 ```
 
-`X3D_Init()` configures a 128x120 visible wire surface using the D000 WRAM stage and 0x8900 VRAM tile transfer layout. `X3D_BeginFrame()` clears the stage, draw calls plot through inline assembly, and `X3D_EndFrame()` performs the STAT-gated VRAM transfer during VBlank.
+`DMG3D_Init()` configures a 128x120 visible wire surface using the D000 WRAM stage and tile uploads starting at 0x8900. `DMG3D_BeginFrame()` only resets occlusion state; uploads consume and clear the pixels. `DMG3D_EndFrame()` waits for VBlank and then polls STAT while transferring, potentially continuing beyond VBlank. The supplied `examples/dmg3d_minimal.c` redraws a cross each frame with dirty transfer enabled. Auxiliary transfer is separate and shares source storage with the main stage.
 
 CGB-only color wireframe projects use the separate `wire3d_cgb.*` renderer:
 
@@ -110,9 +137,15 @@ kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wir
 
 For CAD-generated direction LODs, `Wire3DCGB_DrawMaskedModel2D()` accepts preprojected signed vertex offsets and a packed visible-edge mask. Its edge walk and assembly rasterizer stay in renderer bank 4, so one model draw does not perform a cross-bank call for every line.
 
-Sparse games that also use shadow OAM can call `sprite_flush_oam()` followed by `Wire3DCGB_EndFrameSparseNow()`. This performs OAM DMA and the dirty-range GDMA in the same VBlank instead of waiting for a second frame. `Wire3DCGB_EndFrameSparseNow()` must only be called when the caller has already entered VBlank.
+Sparse games that also use shadow OAM can call `sprite_flush_oam()` followed by `Wire3DCGB_EndFrameSparseNow()` after entering VBlank. This skips an initial wait for a fresh VBlank, but DMA and presentation can still wait depending on the dirty range and current scanline. It does not guarantee that all work finishes in that same VBlank.
 
-The included `examples/wire3d_cgb_hiddenline_demo.c` is the interactive hidden-line check. `START` cycles the visible count from one through three, `B` selects an object, the D-pad moves it on X/Y, `A`+Up/Down moves it on Z, `A`+Left/Right rotates Z, and `SELECT`+D-pad rotates X/Y in 22.5-degree steps. Hidden-line and inter-object occlusion stay enabled, and colliding bodies push apart.
+For CGB lines, use colors 1, 2 and 3. Normal 128 × 96 lines combine color bits, so overlapping colors 1 and 2 become color 3. Color 0 does not erase a line. Clear the frame or use the dedicated erasing functions. Normal `Wire3DCGB_DrawLine2D` and model drawing do not record sparse upload bounds: use `Wire3DCGB_DrawLineClipped2D` for lines that need this tracking, or call `Wire3DCGB_InvalidateFrameHistory` to include the entire viewport in the next sparse upload.
+
+The 160 × 144 mode allocates at most 127 tiles per frame. An allocation failure or an out-of-range coordinate in its fast line path sets `Wire3DCGB_GetFullScreenOverflow()` and suppresses further pixel writes until the next frame reset. Keep vertices within the selected viewport. Triangle-mask padding stops at X=127 in 128 × 96 mode and X=159 in full-screen mode. Follow the API notes for WRAM bank mapping, especially when using full-screen or FastMap functions.
+
+See the [CGB triangle-mask boundary regression](../tests/library/wire3d_cgb_mask_bounds.c) for a complete program that checks both viewport modes.
+
+The historical development example `examples/wire3d_cgb_hiddenline_demo.c` is the interactive hidden-line check. `START` cycles the visible count from one through three, `B` selects an object, the D-pad moves it on X/Y, `A`+Up/Down moves it on Z, `A`+Left/Right rotates Z, and `SELECT`+D-pad rotates X/Y in 22.5-degree steps. Hidden-line and inter-object occlusion stay enabled, and colliding bodies push apart.
 
 RPG / ADV / SLG helper build examples:
 
@@ -197,8 +230,10 @@ Then include headers from your game code:
 
 ## Notes
 
+The final eight audio note indices currently reuse the preceding octave's frequencies; a 68-index range is not a 68-distinct-pitch guarantee.
+
 - `inv_mass_q8 == 0` means a static body.
-- `Wire3D_Init()` owns a 128x120 BG wireframe surface, WRAM stage bytes starting at `0xD000`, and tile data starting at `0x8900`; build Wire3D projects with `--stack-bank=fixed`.
+- `Wire3D_Init()` owns a 128x96 BG wireframe surface, WRAM stage bytes starting at `0xD000`, and tile data starting at `0x8900`; build Wire3D projects with `--stack-bank=fixed`.
 - `Wire3D_BeginFrame()` clears the WRAM stage, while `Wire3D_EndFrame()` waits for VBlank and uses a STAT-gated burst copy into VRAM.
 - Wire3D angles are 16-step values, and the initial model path supports up to `WIRE3D_MODEL_VERTEX_LIMIT` vertices per model.
 - Use `Wire3D_DrawScene()` when multiple solid-ish wire objects overlap; it draws near objects first and accumulates their visible face masks so farther lines are skipped conservatively.
@@ -211,10 +246,10 @@ Then include headers from your game code:
 - Call `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` whenever your menu or settings change.
 - `Audio_PlaySFX()` captures the current visible ROM bank. Use `Audio_PlaySFXBanked(bank, sfx, priority)` when the SFX data bank is known explicitly.
 - Music stream command IDs keep the legacy encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
-- Use `Audio_LoadCustomWave()` with 16 packed 4-bit samples if you want a project-specific CH3 waveform.
+- Use `Audio_LoadCustomWave()` with 16 bytes holding 32 packed 4-bit samples if you want a project-specific CH3 waveform.
 - `Audio_FadeToMasterVolume()` advances from `Audio_Update()`, so call `Audio_Update()` each frame during fades.
 - `audio_vblank.c` owns the VBlank IRQ vector symbol `__kq_vblank_vector`. Its BGM stream format is five bytes per event: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`; use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, and `AUDIO_VBLANK_END`.
-- VBlank BGM songs must be fixed-bank data. After linking a ROM with `lib/audio_vblank.c`, run `tools/patch_gb_vblank_irq.ps1 <rom> <map>` so vector `0x0040` jumps to the ISR and the ROM checksums are refreshed.
+- Direct-pointer VBlank BGM songs must be fixed-bank data; queue mode can be replenished from banked songs. After linking a ROM with `lib/audio_vblank.c`, run `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` so vector `0x0040` jumps to the ISR and the ROM checksums are refreshed.
 - Do not combine `audio_vblank.c` with another library or game stub that also owns VBlank vector `0x0040` unless you add a shared IRQ dispatcher.
 - `Scroll_SplitCommit()` auto-enables IE bits `0x01 | 0x02` and uses compiler-owned VBlank/STAT handlers for split playback.
 - Split helpers currently reserve vectors `0x0040` and `0x0048` for that build, so do not combine them with a separate custom VBlank/STAT stub yet.

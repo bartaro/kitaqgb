@@ -4,14 +4,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Rewrite assembly IR using local patterns and record textual pass summaries.
+// Pattern matching is not a whole-program register/flag liveness proof.
 class Optimizer
 {
+    // Read and replace the report stored in the current compiler session.
     public static OptimizerAnalysisReport LastReport
     {
         get { return Program.CurrentOptimizerLastReport; }
         private set { Program.CurrentOptimizerLastReport = value; }
     }
 
+    // Run two base peephole/unreachable passes and load reuse even at level zero;
+    // level one or higher additionally enables the final O1 patterns.
     public static List<Expr> Optimize(List<Expr> sourceLines, int optLevel)
     {
         var report = new OptimizerAnalysisReport();
@@ -34,6 +39,8 @@ class Optimizer
         return lines;
     }
 
+    // Run one pass and compare diagnostic lines by position. Added/removed counts are net length differences,
+    // not an edit-distance diff or measurements of encoded instruction bytes.
     static List<Expr> RunWithDiff(string passName, List<Expr> before, Func<List<Expr>, List<Expr>> pass, OptimizerAnalysisReport report)
     {
         var beforeLines = before.Select(ShowExprForDiff).ToList();
@@ -63,6 +70,7 @@ class Optimizer
         return after;
     }
 
+    // Render assembly operands or general IR nodes for reports, omitting implicit operand text.
     static string ShowExprForDiff(Expr e)
     {
         string m;
@@ -75,6 +83,8 @@ class Optimizer
         return e.Show();
     }
 
+    // Show at most 120 differing positions or tail entries, with no insertion alignment.
+    // One changed position can emit several text lines; the limit counts entries, not output lines.
     static string BuildSimpleDiff(List<string> before, List<string> after)
     {
         const int MaxLines = 120;
@@ -121,10 +131,11 @@ class Optimizer
         return sb.ToString();
     }
 
-    // -O1: cheap but effective peepholes that are safe on GB.
+    // -O1: local GB instruction-pattern rewrites.
     // - remove no-op moves (LD r,r)
     // - remove unconditional jump to immediate next label
-    // - trim redundant RET/JP-to-ret patterns at function ends (falls out of the above)
+    // - earlier base passes handle linear unreachable instructions separately
+    // Remove register self-moves and jumps to a matching following label after skipping comment/section/alignment nodes.
     static List<Expr> ApplyO1Peepholes(List<Expr> lines)
     {
         var outLines = new List<Expr>(lines.Count);
@@ -171,6 +182,8 @@ class Optimizer
         return outLines;
     }
 
+    // Apply adjacent instruction patterns from left to right and copy unmatched expressions.
+    // Generated replacements generally omit the original source coordinate; later passes can match their results.
     static List<Expr> RunPass(List<Expr> sourceLines, Dictionary<string, int> rstTargetToVector, OptimizerAnalysisReport report)
     {
         List<Expr> optimized = new List<Expr>();
@@ -215,6 +228,8 @@ class Optimizer
 
                 if (next1.Match(Tag.Asm, out m1, out o1) && next2.Match(Tag.Asm, out m2, out o2))
                 {
+                    // Collapse load/modify/store to an in-memory increment or decrement.
+                    // This pattern does not check later uses of A or flag differences from immediate arithmetic.
                     if (mnemonic == "LD_A_HL" && m2 == "LD_HL_A")
                     {
                         // INC
@@ -260,6 +275,7 @@ class Optimizer
 
                         if (hlIsImmediate && deIsImmediate)
                         {
+                            // Fold only the second operand's numeric offset; this rule does not check for a symbolic base or extraction modifier there.
                             int offsetToAdd = o1.Offset;
                             AsmOperand newOp = new AsmOperand(operand.Base, operand.Offset + offsetToAdd, AddressMode.Immediate16, ImmediateModifier.None);
 
@@ -305,6 +321,7 @@ class Optimizer
                         }
                     }
 
+                    // Remove immediately balanced same-register stack pairs; intermediate stack-memory effects are not modeled.
                     if ((mnemonic == "PUSH_HL" && nextMnemonic == "POP_HL") ||
                         (mnemonic == "PUSH_BC" && nextMnemonic == "POP_BC") ||
                         (mnemonic == "PUSH_DE" && nextMnemonic == "POP_DE") ||
@@ -313,6 +330,7 @@ class Optimizer
                         i++; continue;
                     }
 
+                    // Replace adjacent cross-pair stack copies with byte register moves.
                     if (mnemonic == "PUSH_HL" && nextMnemonic == "POP_DE") { optimized.Add(Expr.MakeAsm("LD_D_H")); optimized.Add(Expr.MakeAsm("LD_E_L")); i++; continue; }
                     if (mnemonic == "PUSH_DE" && nextMnemonic == "POP_HL") { optimized.Add(Expr.MakeAsm("LD_H_D")); optimized.Add(Expr.MakeAsm("LD_L_E")); i++; continue; }
                     if (mnemonic == "PUSH_BC" && nextMnemonic == "POP_DE") { optimized.Add(Expr.MakeAsm("LD_D_B")); optimized.Add(Expr.MakeAsm("LD_E_C")); i++; continue; }
@@ -320,6 +338,7 @@ class Optimizer
                     if (mnemonic == "PUSH_BC" && nextMnemonic == "POP_HL") { optimized.Add(Expr.MakeAsm("LD_H_B")); optimized.Add(Expr.MakeAsm("LD_L_C")); i++; continue; }
                     if (mnemonic == "PUSH_HL" && nextMnemonic == "POP_BC") { optimized.Add(Expr.MakeAsm("LD_B_H")); optimized.Add(Expr.MakeAsm("LD_C_L")); i++; continue; }
 
+                    // Route an immediate directly into the following destination register; no later A-use analysis is performed here.
                     if (mnemonic == "LD_A_IMM" && operand.Mode == AddressMode.Immediate)
                     {
                         string repl =
@@ -335,6 +354,8 @@ class Optimizer
                             i++; continue;
                         }
                     }
+                    // Replace small numeric DE offsets with repeated HL increments/decrements.
+                    // The rule does not inspect a symbolic base or prove later DE/flag values dead.
                     if (mnemonic == "LD_DE_IMM" && nextMnemonic == "ADD_HL_DE")
                     {
                         if (operand.Mode == AddressMode.Immediate16)
@@ -352,12 +373,14 @@ class Optimizer
                             }
                         }
                     }
+                    // Fuse adjacent HL memory accesses and pointer increments/decrements into auto-update forms.
                     if (mnemonic == "LD_HL_A" && nextMnemonic == "INC_HL") { optimized.Add(Expr.MakeAsm("LDI_HL_A")); i++; continue; }
                     if (mnemonic == "LD_A_HL" && nextMnemonic == "INC_HL") { optimized.Add(Expr.MakeAsm("LDI_A_HL")); i++; continue; }
 
                     if (mnemonic == "LD_HL_A" && nextMnemonic == "DEC_HL") { optimized.Add(Expr.MakeAsm("LDD_HL_A")); i++; continue; }
                     if (mnemonic == "LD_A_HL" && nextMnemonic == "DEC_HL") { optimized.Add(Expr.MakeAsm("LDD_A_HL")); i++; continue; }
 
+                    // Fold a following increment/decrement into the immediate displacement while retaining its symbolic base.
                     if (mnemonic == "LD_HL_IMM" && operand.Mode == AddressMode.Immediate16 &&
                         (nextMnemonic == "INC_HL" || nextMnemonic == "DEC_HL"))
                     {
@@ -369,6 +392,7 @@ class Optimizer
 
 
                     // JR Label -> Label:
+                    // This legacy label check is nested inside a successful next-Asm match, so a normal Label node cannot reach it.
                     if ((mnemonic == "JR" || mnemonic == "JP") && next.MatchTag(Tag.Label))
                     {
                         string labelName = (string)next.GetArgs()[1];
@@ -393,6 +417,7 @@ class Optimizer
         return optimized;
     }
 
+    // Collect label-to-vector directives with last definition winning; vector validity is checked elsewhere.
     static Dictionary<string, int> BuildRstTargetMap(IEnumerable<Expr> lines)
     {
         var map = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -412,7 +437,7 @@ class Optimizer
     // Mini CSE within a basic block: eliminate redundant fixed-address reloads into A.
     // - Removes consecutive (or repeated within a block) LD A,[abs] / LDH A,[zp] reloads when A is known unchanged.
     // - Rewrites reloads to LD A,r when another register is known to still hold the same value.
-    // Conservative invalidation: resets knowledge on control-flow, calls, unknown memory writes, and unknown A-writes.
+    // Name-based invalidation covers selected control flow, stores and register writes; unlisted effects are not inferred.
     static List<Expr> ApplyMiniCsePass(List<Expr> lines)
     {
         var outLines = new List<Expr>(lines.Count);
@@ -420,20 +445,24 @@ class Optimizer
         // reg -> memKey (only for values loaded from fixed addresses)
         var regMem = new Dictionary<string, string>(StringComparer.Ordinal);
 
+        // Forget all cached register-to-memory associations at an invalidation point.
         Action reset = () => regMem.Clear();
 
+        // Return a tracked memory key or null when the register's value is unknown.
         Func<string, string> get = (r) =>
         {
             string v;
             return regMem.TryGetValue(r, out v) ? v : null;
         };
 
+        // Replace a register association, removing it when the value becomes unknown.
         Action<string, string> set = (r, v) =>
         {
             if (v == null) regMem.Remove(r);
             else regMem[r] = v;
         };
 
+        // Find an alternate register holding the same key, preferring B/C before D/E and H/L.
         Func<string, string> findRegHolding = (memKey) =>
         {
             // Prefer common scratch registers first.
@@ -509,6 +538,8 @@ class Optimizer
         return outLines;
     }
 
+    // Recognize numeric absolute/high-memory loads into A and exclude FF00-FF7F.
+    // Keys distinguish absolute and high-memory forms; other asynchronously changed locations are not excluded by this range check.
     static bool TryGetFixedLoadKey(string mnemonic, AsmOperand operand, out string memKey)
     {
         memKey = null;
@@ -532,6 +563,7 @@ class Optimizer
         return false;
     }
 
+    // Propagate memory associations through the explicitly listed byte moves; return false for every other form.
     static bool TryApplyRegisterMove(string mnemonic, Func<string, string> get, Action<string, string> set)
     {
         // LD X,A
@@ -557,6 +589,8 @@ class Optimizer
         return false;
     }
 
+    // Recognize the listed branch, return, wait and restart names plus unconditional CALL.
+    // Conditional CALL names are not matched by the exact CALL check.
     static bool IsControlFlowOrCall(string mnemonic)
     {
         return mnemonic.StartsWith("JP") || mnemonic.StartsWith("JR") ||
@@ -566,6 +600,8 @@ class Optimizer
                mnemonic == "CALL";
     }
 
+    // Invalidate for the listed store prefixes and HL_REF spellings, including some reads.
+    // This name-based filter does not describe every possible memory-writing instruction.
     static bool IsMemoryWrite(string mnemonic)
     {
         // Conservative: any explicit memory-store or (HL) write is treated as clobbering.
@@ -575,6 +611,8 @@ class Optimizer
         return false;
     }
 
+    // Clear associations for recognized register writes and stack operations.
+    // An unrecognized mnemonic falls through without clearing state; this is not an exhaustive instruction effect table.
     static void ApplyConservativeRegInvalidation(string mnemonic, Action<string, string> set, Action reset)
     {
         // Instructions that can change A in unknown ways -> drop A knowledge.
@@ -617,11 +655,14 @@ class Optimizer
         }
     }
 
+    // Identify unconditional jumps and returns that end linear fallthrough in this IR.
     static bool IsTerminator(string m)
     {
         return m == "JP" || m == "JR" || m == "JP_HL" || m == "RET" || m == "RETI";
     }
 
+    // Drop assembly nodes after a terminator until a label or any non-assembly node resumes the stream.
+    // This local sweep does not trace branch targets or discard unreachable labeled blocks.
     static List<Expr> RemoveUnreachable(List<Expr> lines)
     {
         var outLines = new List<Expr>(lines.Count);
@@ -662,6 +703,8 @@ class Optimizer
     }
 
 
+    // Recognize selected mnemonic spellings whose zero flag describes A for the adjacent compare-zero rewrite.
+    // This check does not track subsequent uses of carry or other flags.
     static bool SetsZFromA(string mnemonic)
     {
         if (mnemonic == null) return false;

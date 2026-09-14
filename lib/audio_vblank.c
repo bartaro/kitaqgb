@@ -13,6 +13,8 @@ extern __hram u8 Audio_Pan;
 
 __location(0xFFFF) u8 AudioVBlank_IE;
 
+// Playback gates, direct-stream cursors and cached hardware parameters live in
+// fixed WRAM. Foreground producers must coordinate updates with the ISR.
 __wram u8 AudioVBlank_MusicPlaying;
 __wram u8 AudioVBlank_MusicEnabled;
 __wram u8 AudioVBlank_MusicDelay;
@@ -40,6 +42,8 @@ __wram u8 AudioVBlank_ControlCommand;
 __wram u8 AudioVBlank_ControlArg0;
 __wram u8 AudioVBlank_ControlArg1;
 __wram u8 AudioVBlank_ControlArg2;
+// The queue stores five-byte records in 16 reusable slots. Count distinguishes
+// empty from full when the read and write indices are equal; underruns wrap at 255.
 __wram u8 AudioVBlank_QueueMode;
 __wram u8 AudioVBlank_QueueReadIndex;
 __wram u8 AudioVBlank_QueueWriteIndex;
@@ -71,6 +75,9 @@ __prg_rom u8 AudioVBlank_FreqHi[68] = {
     0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07
 };
 
+// Service fixed-bank music during VBlank, preserving CPU registers and SVBK.
+// Accept either a directly addressable record stream or the 16-slot WRAM queue;
+// no ROM bank switch is performed. The frame hook runs even when music is gated off.
 __unsafe void __kq_vblank_vector()
 {
     __asm {
@@ -130,6 +137,8 @@ audiovb_irq_restore_ch3_pending:
         XOR_A
         LD_MEM_A AudioVBlank_RestoreCh3Pending
 
+// Recover released effect channels before consuming the frame delay, so a
+// suppressed music event need not wait for the next scheduled stream record.
 audiovb_irq_restore_pending_done:
 
         LD_A_MEM AudioVBlank_MusicDelay
@@ -153,6 +162,8 @@ audiovb_irq_queue_mode:
         LD_MEM_A AudioVBlank_QueueUnderruns
         JP audiovb_irq_done
 
+// Claim one queued record and compute its address as base + index * 5.
+// Wrap the read index modulo 16 before decoding the record.
 audiovb_irq_queue_ready:
         DEC_A
         LD_MEM_A AudioVBlank_QueueCount
@@ -185,11 +196,15 @@ audiovb_irq_queue_ready:
         INC_HL
         LD_A_HL
         LD_MEM_A AudioVBlank_ControlArg2
+// Dispatch predecoded control arguments. These use hardware-ready encodings,
+// not the legacy API duty/pan representation; unrecognized controls are skipped.
 audiovb_irq_control_apply:
         LD_A_MEM AudioVBlank_ControlCommand
         CP_IMM 0x01
         JR_Z audiovb_irq_control_reset
         JP audiovb_irq_control_not_reset
+// Reset instrument and mix defaults, install the triangle wave, and defer
+// the first timed record by the legacy startup delay.
 audiovb_irq_control_reset:
         LD_A_IMM 0x80
         LD_MEM_A AudioVBlank_Ch1Duty
@@ -265,6 +280,8 @@ audiovb_irq_control_not_pan:
         LD_MEM_A AudioVBlank_Ch1Sweep
         LD_MEM_A Audio_Ch1Sweep
         JP audiovb_irq_control_done
+// This ISR supports two preset wave payloads: zero selects triangle, and any
+// nonzero wave argument selects the saw preset.
 audiovb_irq_control_not_sweep:
         CP_IMM 0x14
         JP_NZ audiovb_irq_control_not_wave
@@ -301,6 +318,8 @@ audiovb_irq_control_not_ch2_duty:
         LD_A_MEM AudioVBlank_ControlArg0
         LD_MEM_A AudioVBlank_Ch3Level
 
+// Control records do not consume a timed music step. Continue with another
+// available queue record, or with the following direct-stream record.
 audiovb_irq_control_done:
         LD_A_MEM AudioVBlank_QueueMode
         OR_A
@@ -340,6 +359,8 @@ audiovb_irq_queue_regular:
         LD_A_C
         JP audiovb_irq_active
 
+// Load a directly addressable cursor. The stream must contain valid records;
+// loop/control chains have no byte limit and must eventually yield or stop.
 audiovb_irq_pointer_stream:
         LD_A_MEM AudioVBlank_MusicPointer
         LD_L_A
@@ -385,6 +406,8 @@ audiovb_irq_pointer_maybe_control:
         INC_HL
         JP audiovb_irq_control_apply
 
+// Read the common timed payload in CH2, CH1, CH3, CH4 order and store its delay.
+// Queue-only IMMEDIATE records enter here with zero delay and continue this frame.
 audiovb_irq_active:
         LD_MEM_A AudioVBlank_MusicDelay
         LD_A_HL
@@ -484,6 +507,8 @@ audiovb_irq_ch2_note_now:
         OR_IMM 0x80
         LDH_MEM_A 0x19
 
+// Apply CH1 after CH2. A pulse effect owns only the selected physical channel;
+// new music notes or stops on that channel are latched for deferred recovery.
 audiovb_irq_skip_ch2:
         LD_A_MEM AudioVBlank_Ch1Note
         CP_IMM 0xFD
@@ -540,6 +565,8 @@ audiovb_irq_ch1_note_now:
         OR_IMM 0x80
         LDH_MEM_A 0x14
 
+// For wave notes, 0xFD means stop, indices below 0x44 trigger, and other values
+// hold the current note. An active wave effect postpones note/stop register writes.
 audiovb_irq_maybe_ch3:
         LD_A_MEM AudioVBlank_Ch3Note
         CP_IMM 0xFD
@@ -590,6 +617,8 @@ audiovb_irq_ch3_note_now:
         OR_IMM 0x80
         LDH_MEM_A 0x1E
 
+// Leave CH4 untouched while a noise effect owns it. Otherwise 0xFD stops,
+// 0xFF holds, and other values become raw noise polynomial parameters.
 audiovb_irq_maybe_noise:
         LD_A_MEM Audio_NoiseEffectActive
         OR_A
@@ -626,6 +655,9 @@ audiovb_irq_done:
         LD_A_MEM AudioVBlank_QueueCount
         OR_A
         JP_NZ audiovb_irq_queue_ready
+// Invoke the optional hook through a manually stacked return address. The hook
+// must be accessible without changing ROM banks and must return normally; SVBK
+// still selects bank 1 until the interrupt epilogue restores the saved value.
 audiovb_irq_really_done:
         LD_A_MEM AudioVBlank_FrameHook
         LD_E_A
@@ -648,6 +680,8 @@ audiovb_irq_no_hook:
         POP_AF
         RETI
 
+// Replace all 16 triangle bytes with the wave DAC disabled, then re-enable it.
+// This internal ASM helper returns to the control dispatcher without triggering a note.
 audiovb_irq_load_wave0:
         XOR_A
         LDH_MEM_A 0x1A
@@ -687,6 +721,7 @@ audiovb_irq_load_wave0:
         LDH_MEM_A 0x1A
         RET
 
+// Replace all 16 saw bytes with the wave DAC disabled, then re-enable it.
 audiovb_irq_load_wave1:
         XOR_A
         LDH_MEM_A 0x1A
@@ -728,6 +763,9 @@ audiovb_irq_load_wave1:
     }
 }
 
+// Recover the borrowed pulse channel (CH1 or CH2) from its latched music event.
+// Pending value 2, disabled music, or a non-note latch silences it instead.
+// The caller must first establish that the effect has released the channel.
 void AudioVBlank_RestoreCh1()
 {
     __asm {
@@ -816,6 +854,9 @@ audiovb_restore_square_done:
     }
 }
 
+// Recover a latched wave-channel music event after effect release, or disable
+// the DAC for a release-only request, disabled music, or a non-note latch.
+// The caller owns effect arbitration and clearing the pending flag.
 void AudioVBlank_RestoreCh3()
 {
     __asm {
@@ -870,6 +911,8 @@ void AudioVBlank_RequestRestoreCh1()
         AudioVBlank_RestoreCh1Pending = 2;
 }
 
+// Request a deferred wave-channel release only if no recovery is pending.
+// Preserve value 1, which records a new music event suppressed by the effect.
 void AudioVBlank_RequestRestoreCh3()
 {
     if (AudioVBlank_RestoreCh3Pending == 0)

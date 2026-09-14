@@ -1,8 +1,10 @@
-// 円の物理計算
+// Advance a circular body through one physics step.
 // Expected: 042 after one step; this example uses integer pixels
 #include "gb_common.h"
 #include "physics2d_circle.h"
 KQCircleBody2D balls[1]; KQCircleWorld2D world;
+// Activate one circle at X = 40 with horizontal velocity 2 and zero gravity.
+// Advance one step and display its resulting integer-pixel X coordinate.
 void main() {
     m_init();
     m_text(2,3,"CIRCLE");

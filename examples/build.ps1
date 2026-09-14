@@ -14,13 +14,16 @@ $Output = [IO.Path]::GetFullPath($Output)
 New-Item -ItemType Directory -Force $Output | Out-Null
 $programs = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $failed = @()
+# Accept either an array of sample IDs or comma-separated IDs, then reject unknown selections.
 $selected = @($Only | ForEach-Object { $_ -split ',' })
 $built = 0
 foreach ($id in $selected) {
     if ($id -notin $programs.id) { throw ('Unknown sample: '+$id) }
 }
+# Use manifest order and compile library units before the sample source.
 foreach ($program in $programs) {
     if ($selected.Count -and $program.id -notin $selected) { continue }
+    # Default builds skip entries with a recorded issue; selecting one explicitly attempts its build.
     if (!$Only -and $program.known_issue) { Write-Host ('SKIP '+$program.id+': '+$program.known_issue); continue }
     $targetDir = Join-Path $Output $program.id
     $built++
@@ -36,6 +39,7 @@ foreach ($program in $programs) {
     if ($isGb) { $compileArgs += @('--profile=dev','--rst-disable','--stack-bank=fixed') }
     else { $compileArgs += @('--mapper=nrom',('--nes-chr='+(Join-Path $PSScriptRoot 'font.chr'))) }
     $compileArgs += $program.options
+    # Run in a separate directory per sample so compiler sidecars do not overwrite each other.
     Push-Location $targetDir
     try {
         & $compiler @compileArgs *> build.log
@@ -43,6 +47,7 @@ foreach ($program in $programs) {
         else { Write-Host ('OK '+$program.id) }
     } finally { Pop-Location }
 }
+# Try every selected sample, then fail the script if any compiler returned an error.
 if ($failed.Count) { throw ('Build failures: '+($failed -join ', ')) }
 if ($built -eq 0) { throw 'No samples were selected' }
 Write-Host ('ROMs and logs: '+$Output)

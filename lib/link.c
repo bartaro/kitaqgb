@@ -70,24 +70,31 @@ __wram u8 Link4_ReceivedPacketCmd[LINK4_MAX_PLAYERS];
 __wram u8 Link4_ReceivedPacketLen[LINK4_MAX_PLAYERS];
 __wram u8 Link4_ReceivedPacketBuf[LINK4_MAX_PLAYERS * LINK_PKT_MAX_PAYLOAD];
 
+// Advance a ring index and wrap at size; callers provide a nonzero queue size.
 u8 Link_NextIndex(u8 index, u8 size) {
     index++;
     if (index >= size) return 0;
     return index;
 }
 
+// Flatten a peer and byte-ring index into the shared receive array.
+// Callers validate indices; the combined offset must fit in one byte.
 u8 Link4_QueueOffset(u8 peer_slot, u8 index) {
     return (u8)((u8)(peer_slot * LINK_RX_QUEUE_SIZE) + index);
 }
 
+// Flatten a peer and payload index into the per-peer packet array.
+// Callers validate the peer and payload length before indexing.
 u8 Link4_PacketOffset(u8 peer_slot, u8 index) {
     return (u8)((u8)(peer_slot * LINK_PKT_MAX_PAYLOAD) + index);
 }
 
+// Report whether a cooperative host or peer configuration is active.
 u8 Link4_IsEnabledInternal() {
     return (u8)(Link4_ModeState != LINK4_MODE_NONE);
 }
 
+// Accept only a configured slot other than the local slot.
 u8 Link4_IsValidRemoteSlotInternal(u8 peer_slot) {
     if (Link4_IsEnabledInternal() == 0) return 0;
     if (peer_slot >= Link4_SlotCount) return 0;
@@ -95,17 +102,22 @@ u8 Link4_IsValidRemoteSlotInternal(u8 peer_slot) {
     return 1;
 }
 
+// Attribute a host transfer to the selected peer and a peer transfer to slot zero.
+// An ordinary two-player transfer has no cooperative peer identity.
 u8 Link4_CurrentTransferPeerInternal() {
     if (Link4_ModeState == LINK4_MODE_HOST) return Link4_SelectedPeer;
     if (Link4_ModeState == LINK4_MODE_PEER) return LINK4_HOST_SLOT;
     return LINK4_INVALID_SLOT;
 }
 
+// Latch the latest nonzero error; a successful operation does not clear an older error.
 void Link_SetErrorInternal(u8 code) {
     if (code == LINK_ERR_NONE) return;
     Link_LastErrorCode = code;
 }
 
+// Clear a pending serial interrupt and change only its IE enable bit inside
+// a critical section. The caller still installs the actual serial IRQ handler.
 void Link_SetSerialInterruptEnabled(u8 on) {
     u8 tok = __critical_enter();
 
@@ -116,6 +128,8 @@ void Link_SetSerialInterruptEnabled(u8 on) {
     __critical_leave(tok);
 }
 
+// Append a byte under interrupt protection, reserving one ring slot to distinguish
+// full from empty. On overflow, discard the new byte and latch an error.
 void Link_PushRxByte(u8 value) {
     u8 next;
     u8 tok = __critical_enter();
@@ -134,6 +148,8 @@ void Link_PushRxByte(u8 value) {
     __critical_leave(tok);
 }
 
+// Append to a valid peer ring under interrupt protection. A full peer ring drops
+// the new byte independently of the ordinary receive ring.
 void Link4_PushRxByte(u8 peer_slot, u8 value) {
     u8 next;
     u8 offset;
@@ -156,6 +172,8 @@ void Link4_PushRxByte(u8 peer_slot, u8 value) {
     __critical_leave(tok);
 }
 
+// Remove one byte atomically and refresh the ready flag. Return zero if empty;
+// a null output pointer discards the byte while still returning success.
 u8 Link_PopRxByte(u8 *out) {
     u8 value;
     u8 next;
@@ -179,6 +197,8 @@ u8 Link_PopRxByte(u8 *out) {
     return 1;
 }
 
+// Remove one byte from a valid peer ring under interrupt protection. A null
+// output discards it; reading this ring does not drain the ordinary receive ring.
 u8 Link4_PopRxByte(u8 peer_slot, u8 *out) {
     u8 value;
     u8 next;
@@ -204,6 +224,8 @@ u8 Link4_PopRxByte(u8 peer_slot, u8 *out) {
     return 1;
 }
 
+// Read SB, mark the transfer idle and enqueue the received byte in both the
+// ordinary ring and, when enabled, the selected peer ring. Either ring may overflow.
 void Link_FinishTransfer() {
     u8 value = LinkHw_ReadSB();
     u8 peer_slot = Link4_CurrentTransferPeerInternal();
@@ -216,6 +238,8 @@ void Link_FinishTransfer() {
     Link4_PushRxByte(peer_slot, value);
 }
 
+// Reset byte queues, packet mailboxes, cooperative-peer state and errors, then
+// disable serial transfers and serial IRQ delivery. Existing data is discarded.
 void Link_InitCommon() {
     u8 i;
 
@@ -281,16 +305,20 @@ void Link_InitCommon() {
     Link_SetSerialInterruptEnabled(0);
 }
 
+// Reset link state and select the internal-clock role for subsequent transfers.
 void Link_InitMaster() {
     Link_InitCommon();
     Link_Mode = LINK_MODE_MASTER;
 }
 
+// Reset link state and select the external-clock role for subsequent transfers.
 void Link_InitSlave() {
     Link_InitCommon();
     Link_Mode = LINK_MODE_SLAVE;
 }
 
+// Enable or disable serial IRQ delivery and clear its pending flag. Enabling
+// does not install the handler or globally enable interrupts.
 void __stackcall Link_SetUseInterrupt(u8 on) {
     if (on != 0) {
         Link_UseInterrupt = 1;
@@ -301,28 +329,36 @@ void __stackcall Link_SetUseInterrupt(u8 on) {
     }
 }
 
+// Select the fast-clock bit for future master transfers; this does not restart
+// an active transfer or verify that the hardware supports CGB fast mode.
 void __stackcall Link_SetFastClock(u8 on) {
     if (on != 0) Link_FastClock = LINK_CLOCK_FAST;
     else Link_FastClock = LINK_CLOCK_NORMAL;
 }
 
+// Poll once before returning busy state, so this query may collect a completed byte.
 u8 Link_IsBusy() {
     Link_Poll();
     return Link_Busy;
 }
 
+// Read the ordinary receive-ready flag without polling hardware.
 u8 Link_HasByte() {
     return Link_RxReady;
 }
 
+// Return the latest latched error without clearing it.
 u8 Link_LastError() {
     return Link_LastErrorCode;
 }
 
+// Clear the error latch without resetting queues or an active transfer.
 void Link_ClearError() {
     Link_LastErrorCode = LINK_ERR_NONE;
 }
 
+// Start one full-duplex byte exchange, or return BUSY without replacing an
+// active transfer. Slave mode arms reception and waits for external clocks.
 u8 __stackcall Link_BeginTransfer(u8 out) {
     u8 sc = LINK_SC_START;
 
@@ -348,12 +384,15 @@ u8 __stackcall Link_BeginTransfer(u8 out) {
 
 #pragma bank 1
 
+// Collect a pending transfer only after hardware clears the SC start bit.
 void Link_Poll() {
     if (Link_Busy == 0) return;
     if ((LinkHw_ReadSC() & LINK_SC_START) != 0) return;
     Link_FinishTransfer();
 }
 
+// Stop the hardware transfer under interrupt protection. Queued receive bytes
+// and packet-layer state remain available; this is not a full protocol reset.
 void Link_Cancel() {
     u8 tok = __critical_enter();
 
@@ -366,12 +405,15 @@ void Link_Cancel() {
 
 #pragma bank 1
 
+// Acknowledge serial IRQ and finish a software-busy transfer. Call this from
+// the actual serial interrupt handler, not an unrelated interrupt.
 void Link_OnSerialIRQ() {
     LinkHw_WriteIF((u8)(LinkHw_ReadIF() & (u8)~LINK_IF_SERIAL));
     if (Link_Busy == 0) return;
     Link_FinishTransfer();
 }
 
+// Pop the ordinary receive queue without waiting or polling hardware; null discards a byte.
 u8 __stackcall Link_TryReadByte(u8 *out) {
     return Link_PopRxByte(out);
 }
@@ -380,12 +422,16 @@ u8 __stackcall Link_TryReadByte(u8 *out) {
 // Keep them banked with Link4 so the fixed bank has deterministic headroom.
 #pragma bank 1
 
+// Pop one byte, returning zero when empty. Use Link_TryReadByte when a received
+// zero byte must be distinguished from an empty queue.
 u8 Link_ReadByte() {
     u8 value = 0;
     if (Link_PopRxByte(&value) != 0) return value;
     return 0;
 }
 
+// Require an output pointer, poll immediately, then wait at most timeout_frames
+// VBlanks for a byte. Zero timeout still performs the initial poll and read.
 u8 __stackcall Link_WaitByte(u16 timeout_frames, u8 *out) {
     u16 waited = 0;
 
@@ -408,6 +454,8 @@ u8 __stackcall Link_WaitByte(u16 timeout_frames, u8 *out) {
 // Cooperative Link4 helpers are banked so two-player applications can keep
 // the timing-critical raw serial path in the fixed bank.
 
+// Validate two to four logical slots: host is slot zero, and peers occupy
+// nonzero slots below slot_count. This does not discover connected hardware.
 u8 Link4_ValidateConfig(u8 mode, u8 local_slot, u8 slot_count) {
     if (slot_count < 2 || slot_count > LINK4_MAX_PLAYERS) return LINK_ERR_PROTOCOL;
     if (mode == LINK4_MODE_HOST) {
@@ -422,6 +470,8 @@ u8 Link4_ValidateConfig(u8 mode, u8 local_slot, u8 slot_count) {
     return LINK_ERR_PROTOCOL;
 }
 
+// Install an already validated logical topology and reset peer attribution.
+// This helper does not clear the receive rings or send adapter-selection commands.
 void Link4_ApplyConfig(u8 mode, u8 local_slot, u8 slot_count) {
     Link4_ModeState = mode;
     Link4_LocalSlot = local_slot;
@@ -434,6 +484,8 @@ void Link4_ApplyConfig(u8 mode, u8 local_slot, u8 slot_count) {
     else Link4_SelectedPeer = LINK4_INVALID_SLOT;
 }
 
+// Reset as master, validate the requested slot count and select peer one.
+// An invalid configuration still leaves the earlier link state reset.
 u8 __stackcall Link4_InitHost(u8 slot_count) {
     u8 err;
 
@@ -448,6 +500,8 @@ u8 __stackcall Link4_InitHost(u8 slot_count) {
     return LINK_ERR_NONE;
 }
 
+// Reset as slave and validate the local nonzero slot and total slot count.
+// An invalid configuration still discards the previous link state.
 u8 __stackcall Link4_InitPeer(u8 local_slot, u8 slot_count) {
     u8 err;
 
@@ -462,30 +516,39 @@ u8 __stackcall Link4_InitPeer(u8 local_slot, u8 slot_count) {
     return LINK_ERR_NONE;
 }
 
+// Return the configured cooperative role; this is not a hardware connection probe.
 u8 Link4_GetMode() {
     return Link4_ModeState;
 }
 
+// Return the configured zero-based local slot.
 u8 Link4_GetLocalSlot() {
     return Link4_LocalSlot;
 }
 
+// Return the configured number of logical slots, not a live connection count.
 u8 Link4_GetSlotCount() {
     return Link4_SlotCount;
 }
 
+// Return the current logical destination, or the invalid-slot sentinel when unset.
 u8 Link4_GetSelectedPeer() {
     return Link4_SelectedPeer;
 }
 
+// Return the peer attributed to the last completed byte transfer.
 u8 Link4_GetLastRxPeer() {
     return Link4_LastRxPeer;
 }
 
+// Return the peer attributed when the last byte transfer was started.
 u8 Link4_GetLastTxPeer() {
     return Link4_LastTxPeer;
 }
 
+// Poll completion, then change the logical destination only while byte and
+// packet state are idle. A peer can select only the host. No adapter-routing
+// command is sent here; the transport must provide the matching physical route.
 u8 __stackcall Link4_SelectPeer(u8 peer_slot) {
     Link_Poll();
 
@@ -517,22 +580,27 @@ u8 __stackcall Link4_SelectPeer(u8 peer_slot) {
     return LINK_ERR_PROTOCOL;
 }
 
+// Select the logical peer and start a byte exchange, returning the first error.
 u8 __stackcall Link4_BeginTransferTo(u8 peer_slot, u8 out) {
     u8 err = Link4_SelectPeer(peer_slot);
     if (err != LINK_ERR_NONE) return err;
     return Link_BeginTransfer(out);
 }
 
+// Inspect a valid peer ring without polling the hardware.
 u8 __stackcall Link4_HasByteFrom(u8 peer_slot) {
     if (Link4_IsValidRemoteSlotInternal(peer_slot) == 0) return 0;
     if (Link4_RxHead[(__safe_index u8)peer_slot] == Link4_RxTail[(__safe_index u8)peer_slot]) return 0;
     return 1;
 }
 
+// Pop one byte from the selected peer ring; null output discards it.
 u8 __stackcall Link4_TryReadByteFrom(u8 peer_slot, u8 *out) {
     return Link4_PopRxByte(peer_slot, out);
 }
 
+// Scan remote rings in increasing slot order and return the first available
+// byte. Null output pointers are allowed; lower slots have polling priority.
 u8 __stackcall Link4_TryReadByteAny(u8 *peer_slot, u8 *out) {
     u8 slot;
 

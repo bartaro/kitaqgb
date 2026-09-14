@@ -28,6 +28,8 @@ enum CSimpleType
 }
 
 [DebuggerDisplay("{Show(),nq}")]
+// Represent a mutable tagged C type. Factories retain child/parameter objects;
+// shared built-in instances must not be modified as though they were private copies.
 class CType : IEquatable<CType>
 {
     public CTypeTag Tag;
@@ -84,6 +86,7 @@ class CType : IEquatable<CType>
     public static readonly CType Int16 = MakeSimple(CSimpleType.Int16);
     public static readonly CType UInt16Ptr = MakePointer(UInt16);
 
+    // Create an unqualified scalar node; semantic annotations start at their default values.
     public static CType MakeSimple(CSimpleType simple)
     {
         return new CType
@@ -100,6 +103,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Create an unqualified pointer node referencing the supplied pointee type without cloning it.
     public static CType MakePointer(CType subtype)
     {
         return new CType
@@ -115,6 +119,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Create a named struct reference; field layout is resolved separately from this type node.
     public static CType MakeStruct(string name)
     {
         return new CType
@@ -130,6 +135,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Create a named union reference without constructing or validating its member layout.
     public static CType MakeUnion(string name)
     {
         return new CType
@@ -145,6 +151,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Create an enum reference with strict enum-mixing diagnostics initially disabled.
     public static CType MakeEnum(string name)
     {
         return new CType
@@ -161,6 +168,7 @@ class CType : IEquatable<CType>
     }
 
 
+    // Store an already evaluated array dimension without checking positivity or total layout size.
     public static CType MakeArray(CType elementType, int dimension)
     {
         return new CType
@@ -177,6 +185,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Retain an unevaluated dimension expression for a later compiler phase.
     public static CType MakeArray(CType elementType, Expr dimension)
     {
         return new CType
@@ -193,6 +202,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Retain the return type and parameter array, treating a null parameter array as empty.
     public static CType MakeFunction(CType returnType, CType[] paramTypes)
     {
         return new CType
@@ -209,6 +219,8 @@ class CType : IEquatable<CType>
         };
     }
 
+    // Return this node when already non-const; otherwise make a shallow copy with const
+    // removed. The copy also resets enum-strict/restrict/safe-index annotations in this implementation.
     public CType WithoutConst()
     {
         if (!IsConst) return this;
@@ -230,6 +242,7 @@ class CType : IEquatable<CType>
         };
     }
 
+    // These convenience predicates inspect the tag; they do not resolve named aggregate definitions.
     public bool IsSimple => Tag == CTypeTag.Simple;
     public bool IsPointer => Tag == CTypeTag.Pointer;
     public bool IsStructOrUnion => Tag == CTypeTag.Struct || Tag == CTypeTag.Union;
@@ -240,6 +253,7 @@ class CType : IEquatable<CType>
         (SimpleType == CSimpleType.UInt8 || SimpleType == CSimpleType.Int8 ||
          SimpleType == CSimpleType.UInt16 || SimpleType == CSimpleType.Int16)) || IsEnum;
 
+    // Enums satisfy IsInteger but are not classified as signed/unsigned by these scalar-kind checks.
     public bool IsUnsigned => IsInteger && (SimpleType == CSimpleType.UInt8 || SimpleType == CSimpleType.UInt16);
     public bool IsSigned => IsSimple && (SimpleType == CSimpleType.Int8 || SimpleType == CSimpleType.Int16);
 
@@ -249,11 +263,15 @@ class CType : IEquatable<CType>
         throw new NotSupportedException();
     }
 
+    // Hash-based use is unsupported; callers must not put CType keys in an ordinary hash collection.
     public override int GetHashCode()
     {
         throw new NotSupportedException();
     }
 
+    // Compare type structure and selected annotations against a non-null peer.
+    // Array dimensions/expressions are intentionally not consulted by this comparator,
+    // so equality here is not an aggregate-size or exact-declarator comparison.
     public bool Equals(CType other)
     {
         if (IsConst != other.IsConst) return false;
@@ -286,6 +304,7 @@ class CType : IEquatable<CType>
         }
     }
 
+    // Handle identity and null operands before dispatching to typed structural equality.
     public static bool operator ==(CType a, CType b)
     {
         if (ReferenceEquals(a, b)) return true;
@@ -294,8 +313,11 @@ class CType : IEquatable<CType>
         return a.Equals(b);
     }
 
+    // Negate the null-safe typed equality operator.
     public static bool operator !=(CType a, CType b) => !(a == b);
 
+    // Render a diagnostic type description with recursive const/restrict placement.
+    // Alignment, packing and safe-index annotations are omitted; this is not a lossless C declaration.
     public string Show()
     {
         string core;

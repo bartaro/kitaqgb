@@ -1,8 +1,10 @@
-// 世界座標から画面座標へ
+// Convert world coordinates to screen coordinates.
 // Expected: 042: world x=52 minus camera x=10
 #include "gb_common.h"
 #include "camera.h"
 Camera8_8 cam;
+// Set the camera X coordinate to 10 pixels in Q8.8 (10 * 256), then subtract
+// it from world X = 52 to display screen X = 42.
 void main() {
     m_init();
     m_text(2,3,"CAMERA");

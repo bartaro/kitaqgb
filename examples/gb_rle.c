@@ -1,8 +1,10 @@
-// 連長圧縮データの展開
+// Decode run-length encoded data.
 // Expected: 042; three bytes each equal to 42
 #include "gb_common.h"
 #include "rpg.h"
 __prg_rom u8 packed[] = {3,42,0};
+// Decode count/value pair (3,42), terminated by a zero count, into a
+// three-byte buffer and display the final decoded byte.
 void main() {
     m_init();
     m_text(2,3,"RLE");

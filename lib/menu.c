@@ -3,6 +3,8 @@
 __prg_rom u8 menu_yes[] = { 'Y', 'E', 'S', 0 };
 __prg_rom u8 menu_no[] = { 'N', 'O', 0 };
 
+// Draw a two-digit quantity by repeated subtraction. Callers must keep value
+// below 100 so the tens digit remains a decimal font tile.
 static void menu_draw_ascii_qty(u8 x, u8 y, u8 value)
 {
     u8 tens = 0;
@@ -15,6 +17,11 @@ static void menu_draw_ascii_qty(u8 x, u8 y, u8 value)
     __settile_xy((u8)(x + 1), y, (u8)(TEXT_DIGIT_BASE + ones));
 }
 
+// Run a blocking menu loop with wraparound up/down selection, A to accept
+// and B to cancel. Return 0xFF for an empty menu or cancellation. Item strings
+// and menu dimensions must fit the visible tile area.
+// Pass a non-null menu and readable item strings. Initial prev=0 treats a button already held on entry
+// as a new press; A wins over B when both occur together in this blocking API.
 u8 menu_run(const menu_t* menu)
 {
     u8 cursor;
@@ -64,6 +71,10 @@ u8 menu_run(const menu_t* menu)
     }
 }
 
+// Initialize a nonblocking menu state that borrows the item pointer table.
+// Selection starts unset (0xFF), and the cancellation flag starts clear.
+// Borrow both the item table and its strings; keep them visible in the active ROM mapping.
+// Use non-null state storage and initialize again to clear latched completion flags.
 void menu_init_state(menu_state_t* state, u8 x, u8 y, u8 w, u8 h, const u8* const* items, u8 count)
 {
     state->x = x;
@@ -78,6 +89,8 @@ void menu_init_state(menu_state_t* state, u8 x, u8 y, u8 w, u8 h, const u8* cons
     state->cancelled = 0;
 }
 
+// Draw the current menu and cursor without waiting or sampling input. The
+// caller schedules suitable display timing and keeps item text within bounds.
 void menu_draw(menu_state_t* state)
 {
     u8 i;
@@ -99,6 +112,9 @@ void menu_draw(menu_state_t* state)
     }
 }
 
+// Sample new button presses and update cursor/selection state without drawing.
+// Selected and cancelled results remain latched; a B press in the same update
+// as A clears selection and leaves cancellation set.
 void menu_update(menu_state_t* state)
 {
     u16 kt;
@@ -128,18 +144,21 @@ void menu_update(menu_state_t* state)
     }
 }
 
+// Read the latched selection without clearing it; null state returns 0xFF.
 u8 menu_get_selected(menu_state_t* state)
 {
     if (state == 0) return 0xFF;
     return state->selected;
 }
 
+// Read the latched cancellation flag; null state returns false.
 u8 menu_was_cancelled(menu_state_t* state)
 {
     if (state == 0) return 0;
     return state->cancelled;
 }
 
+// Open a two-choice dialog and return the text-choice result (YES first, NO second).
 u8 menu_yesno()
 {
     const u8* items[2];
@@ -150,6 +169,10 @@ u8 menu_yesno()
     return text_choice(items, 2);
 }
 
+// Run a blocking item menu, drawing names and two-digit quantities. Return
+// the selected index or 0xFF on empty input/B; this does not consume an item.
+// Use at most 15 visible items for this fixed dialog placement; quantities must be below 100.
+// Long names are not clipped and can overwrite the quantity column.
 u8 menu_inventory(const item_t* items, u8 count)
 {
     u8 cursor;

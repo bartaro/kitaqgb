@@ -17,6 +17,8 @@ class Lowerer
 {
     // ---------- Public entry ----------
 
+    // Build global type/constant metadata before lowering each top-level declaration.
+    // Non-sequence input is returned unchanged; the final unused-global scan sees the lowered declarations.
     public static Expr Lower(Expr program)
     {
         GlobalEnv genv = new GlobalEnv();
@@ -37,6 +39,8 @@ class Lowerer
         return MakeSequence(loweredDecls).WithSource(program.Source);
     }
 
+    // Rebuild recognized declaration wrappers around lowered function bodies while preserving source locations.
+    // Prototypes and other declarations pass through; legacy function shapes gain an explicit must-check field.
     static Expr LowerTopDeclaration(GlobalEnv genv, Expr decl)
     {
         Expr inner;
@@ -101,6 +105,8 @@ class Lowerer
 
     // ---------- Environment ----------
 
+    // Collect first-seen declaration metadata and a shared constant-value cache for lowering and lints.
+    // These dictionaries describe types and expressions; they do not allocate target memory.
     sealed class GlobalEnv
     {
         // variables (globals): name -> type
@@ -122,6 +128,8 @@ class Lowerer
         // struct/union field types: structName -> fieldName -> fieldType
         public readonly Dictionary<string, Dictionary<string, CType>> StructFieldTypes = new Dictionary<string, Dictionary<string, CType>>();
 
+        // Scan unwrapped top-level declarations in order. Most names retain their first metadata entry;
+        // extern declarations also compare against a preceding variable type.
         public void Build(Expr program)
         {
             Expr[] decls;
@@ -238,6 +246,8 @@ class Lowerer
         // extern type compatibility (minimal C-like rules)
         // - exact match is OK
         // - array with unspecified dimension (e.g. extern u8 a[]) is compatible with any concrete size definition
+        // Apply CType equality before special array rules. CType equality itself ignores array dimensions,
+        // so equal array tags/subtypes can bypass the dimension comparisons below.
         static bool ExternTypeCompatible(CType a, CType b)
         {
             if (a == null || b == null) return a == b;
@@ -269,7 +279,7 @@ class Lowerer
                     if (TryEvalConstArrayDim(b.DimensionExpression, out dim)) return dim == a.Dimension;
                 }
 
-                // both dimension-expr arrays: we only accept if expressions are structurally equal
+                // Compare rendered dimension expressions when the earlier type-equality shortcut did not accept them.
                 // (Keep it conservative; the definition will ultimately decide the size.)
                 if (a.Tag == CTypeTag.ArrayWithDimensionExpression && b.Tag == CTypeTag.ArrayWithDimensionExpression)
                 {
@@ -280,6 +290,7 @@ class Lowerer
             return false;
         }
 
+        // Recognize only a nonnegative integer literal, not a general constant expression.
         static bool TryEvalConstArrayDim(Expr dimExpr, out int dim)
         {
             dim = 0;
@@ -289,6 +300,7 @@ class Lowerer
         }
 
 
+        // Retain the first return type and copy the parameter type references into a new array.
         void StoreFuncSig(string name, CType ret, FieldInfo[] ps)
         {
             if (!FuncReturns.ContainsKey(name)) FuncReturns.Add(name, ret);
@@ -300,6 +312,7 @@ class Lowerer
             }
         }
 
+        // Supply fallback return metadata and an empty parameter list only when the name is not already declared.
         void AddIntrinsicReturn(string name, CType ret)
         {
             if (!FuncReturns.ContainsKey(name)) FuncReturns.Add(name, ret);
@@ -308,6 +321,8 @@ class Lowerer
 
 
         // --- __range(min,max) constant evaluation ---
+        // Evaluate the two range endpoints and diagnose malformed or reversed bounds.
+        // If diagnostics return, malformed input yields [0,0] and reversed endpoints remain as supplied.
         public int[] EvaluateRange(Expr rangeExpr)
         {
             if (rangeExpr == null) return null;
@@ -326,6 +341,8 @@ class Lowerer
             return new int[] { min, max };
         }
 
+        // Evaluate the supported arithmetic/name/sizeof subset using host integer arithmetic.
+        // Null yields zero; division errors are not translated to range diagnostics here.
         int EvalConstInt(Expr expr)
         {
             if (expr == null) return 0;
@@ -364,7 +381,9 @@ class Lowerer
             return EvalConstInt(expr);
         }
 
-        // Lint-friendly constant evaluation: returns false instead of emitting diagnostics.
+        // Lint-oriented constant evaluation; sizeof delegates to the diagnostic-capable size helper.
+        // Attempt constant evaluation and cache named results. Null succeeds as zero.
+        // Most unsupported forms return false, but delegated sizeof can diagnose incomplete types and host arithmetic can still throw.
         public bool TryEvalConstInt(Expr expr, out int value)
         {
             value = 0;
@@ -375,7 +394,7 @@ class Lowerer
                 if (ConstValues.TryGetValue(nm, out int cv)) { value = cv; return true; }
                 if (ConstExprs.TryGetValue(nm, out var ce))
                 {
-                    // Guard recursion.
+                    // Cache a provisional zero while descending into a named definition.
                     if (ConstValues.ContainsKey(nm)) return false;
                     ConstValues[nm] = 0;
                     if (!TryEvalConstInt(ce, out var tmp)) { ConstValues.Remove(nm); return false; }
@@ -386,6 +405,7 @@ class Lowerer
                 return false;
             }
 
+            // Fold supported scalar casts with target-width masking/sign extension; pointer/enum casts keep the low 16 bits.
             if (expr.Match(Tag.Cast, out CType castType, out Expr castSub))
             {
                 if (!TryEvalConstInt(castSub, out int cv)) return false;
@@ -440,6 +460,8 @@ class Lowerer
             return false;
         }
 
+        // Resolve and cache a named constant, inserting zero before recursive evaluation.
+        // A cycle can read that provisional zero; this is not explicit cyclic-definition rejection.
         int EvalConstName(string nm, Expr origin)
         {
             if (ConstValues.TryGetValue(nm, out int v)) return v;
@@ -455,6 +477,8 @@ class Lowerer
             return v;
         }
 
+        // Estimate byte size recursively: pointer/function/enum fallback is two, structs sum fields and unions take the maximum.
+        // This helper does not apply aggregate alignment/padding; missing aggregate fields produce an incomplete-type diagnostic.
         public int SizeOfType(CType type, Expr origin)
         {
             if (type == null) return 1;
@@ -505,6 +529,8 @@ class Lowerer
             return 2;
         }
 
+        // Unwrap one pointer/array layer and look up a named aggregate field.
+        // The output starts as u8 but a missing dictionary entry can replace it with null; callers must check the Boolean.
         public bool TryGetFieldType(CType baseType, string fieldName, out CType fieldType)
         {
             fieldType = CType.UInt8;
@@ -522,11 +548,13 @@ class Lowerer
         }
     }
 
+    // Map a lowered aggregate local to scalar field-variable names while retaining its original type.
     sealed class StructLocalInfo
     {
         public readonly CType StructType;
         public readonly Dictionary<string, string> FieldToVar = new Dictionary<string, string>();
 
+        // Retain the supplied aggregate type; field mappings are populated separately.
         public StructLocalInfo(CType structType)
         {
             StructType = structType;
@@ -534,6 +562,8 @@ class Lowerer
     }
 
 
+    // Keep function-wide name/type/use metadata, nested range overrides and statement temporary lifetimes.
+    // Local dictionaries are not pushed and popped as lexical block scopes.
     sealed class FunctionCtx
     {
         public readonly GlobalEnv Global;
@@ -553,21 +583,27 @@ class Lowerer
         // Tracks whether we are inside a __unsafe { ... } boundary.
         // Used to suppress certain lints (e.g. restrict alias lint) inside unsafe regions.
         public int UnsafeDepth = 0;
+        // Expose whether at least one lowering-time unsafe boundary is active.
         public bool InUnsafe { get { return UnsafeDepth > 0; } }
+        // Enter one nested unsafe boundary for lint suppression.
         public void PushUnsafe() { UnsafeDepth++; }
+        // Leave an unsafe boundary without allowing the depth to become negative.
         public void PopUnsafe() { if (UnsafeDepth > 0) UnsafeDepth--; }
 
 
+        // Push a nonempty override map by reference; an empty map has no stack entry.
         public void PushRangeOverride(Dictionary<string, int[]> ov)
         {
             if (ov == null || ov.Count == 0) return;
             RangeOverrideStack.Push(ov);
         }
+        // Pop one override for a nonempty supplied map; the map identity is not compared with the stack top.
         public void PopRangeOverride(Dictionary<string, int[]> ov)
         {
             if (ov == null || ov.Count == 0) return;
             if (RangeOverrideStack.Count > 0) RangeOverrideStack.Pop();
         }
+        // Search from the innermost override outward and return the first matching interval.
         public bool TryGetRangeOverride(string name, out int[] r)
         {
             if (RangeOverrideStack.Count == 0) { r = null; return false; }
@@ -583,6 +619,8 @@ class Lowerer
 
         readonly Stack<List<string>> tempsInStatementStack = new Stack<List<string>>();
 
+        // Remove top-level const, decay arrays to pointers and represent aggregate temporaries as u16.
+        // Unannotated unknown types also use u16; WithoutConst retains its own qualifier-copy behavior.
         static CType NormalizeTempType(CType t)
         {
             if (t == null) return CType.UInt16;
@@ -592,16 +630,19 @@ class Lowerer
             return t;
         }
 
+        // Associate a fresh function context with the shared global metadata.
         public FunctionCtx(GlobalEnv global)
         {
             Global = global;
         }
 
+        // Begin a nested lifetime list for temporaries acquired during one statement.
         public void BeginStatement()
         {
             tempsInStatementStack.Push(new List<string>());
         }
 
+        // Return this statement's temporary names to their pools in reverse acquisition order.
         public void EndStatement()
         {
             if (tempsInStatementStack.Count == 0) return;
@@ -610,6 +651,8 @@ class Lowerer
                 Temps.Release(tempsInStatement[i]);
         }
 
+        // Normalize a temporary type, acquire/reuse a name and register it as a local.
+        // Only acquisitions inside an active statement lifetime are automatically released.
         public string AcquireTemp(CType t)
         {
             CType tt = NormalizeTempType(t);
@@ -620,6 +663,7 @@ class Lowerer
             return name;
         }
 
+        // Resolve a split aggregate field to its generated scalar name, returning false when either mapping is absent.
         public bool TryGetStructLocalFieldVar(string baseName, string fieldName, out string fieldVarName)
         {
             fieldVarName = null;
@@ -628,16 +672,19 @@ class Lowerer
             return info.FieldToVar.TryGetValue(fieldName, out fieldVarName);
         }
 
+        // Test whether the name has a split-aggregate mapping.
         public bool IsStructLocal(string name)
         {
             return StructLocals.ContainsKey(name);
         }
 
+        // Retrieve the stored split-aggregate descriptor without constructing one.
         public bool TryGetStructLocalInfo(string name, out StructLocalInfo info)
         {
             return StructLocals.TryGetValue(name, out info);
         }
 
+        // Search split aggregates, locals, parameters, globals and constants in that order; unknown names default to u8.
         public CType FindTypeOfName(string name)
         {
             StructLocalInfo info;
@@ -650,6 +697,7 @@ class Lowerer
             return CType.UInt8;
         }
 
+        // Return registered function return metadata, defaulting to u8 for unknown names.
         public CType FindFuncReturn(string fname)
         {
             CType t;
@@ -658,6 +706,7 @@ class Lowerer
         }
 
 
+        // Return the borrowed parameter type array, or null when no signature is registered.
         public CType[] FindFuncParams(string fname)
         {
             CType[] pts;
@@ -665,6 +714,7 @@ class Lowerer
             return null;
         }
 
+        // Record first-seen local type/range/location metadata and initialize its use counter.
         public void RegisterLocal(CType t, string name, int[] range = null, FilePosition pos = default(FilePosition))
         {
             if (!Locals.ContainsKey(name)) Locals.Add(name, t);
@@ -673,6 +723,7 @@ class Lowerer
             if (pos.Filename != null && !LocalDeclPos.ContainsKey(name)) LocalDeclPos.Add(name, pos);
         }
 
+        // Record first-seen parameter type/range/location metadata and initialize its use counter.
         public void RegisterParam(CType t, string name, int[] range = null, FilePosition pos = default(FilePosition))
         {
             if (!Params.ContainsKey(name)) Params.Add(name, t);
@@ -681,6 +732,7 @@ class Lowerer
             if (pos.Filename != null && !ParamDeclPos.ContainsKey(name)) ParamDeclPos.Add(name, pos);
         }
 
+        // Increment both matching local and parameter counters when present; no scope disambiguation occurs here.
         public void MarkNameUse(string name)
         {
             if (string.IsNullOrEmpty(name)) return;
@@ -690,6 +742,7 @@ class Lowerer
         }
     }
 
+    // Reuse generated temporary names by a diagnostic type-string key and accumulate declarations for new names.
     sealed class TempPool
     {
         int nextId = 0;
@@ -697,6 +750,8 @@ class Lowerer
         readonly Dictionary<string, string> typeKeyByName = new Dictionary<string, string>();
         public readonly List<Expr> Decls = new List<Expr>();
 
+        // Remove top-level const, decay arrays to pointers and represent aggregate temporaries as u16.
+        // Unannotated unknown types also use u16; WithoutConst retains its own qualifier-copy behavior.
         static CType NormalizeTempType(CType t)
         {
             if (t == null) return CType.UInt16;
@@ -706,11 +761,14 @@ class Lowerer
             return t;
         }
 
+        // Use diagnostic type text as the reuse key; annotations omitted by CType.Show are not distinguished.
         static string TempTypeKey(CType t)
         {
             return (t == null) ? "<null>" : t.Show();
         }
 
+        // Reuse the most recently released name with this type key or append a new declaration.
+        // The name prefix distinguishes one-byte values from the two-byte fallback; it does not itself allocate storage.
         public string Acquire(CType t)
         {
             CType declType = NormalizeTempType(t);
@@ -737,6 +795,7 @@ class Lowerer
             return name;
         }
 
+        // Return a known name to its type pool; callers must avoid releasing the same acquisition twice.
         public void Release(string name)
         {
             string key;
@@ -753,6 +812,7 @@ class Lowerer
     }
 
     
+    // Recognize a literal integer only, resetting the output on mismatch.
     static bool TryConstInt(Expr e, out int v)
     {
         if (e.Match(Tag.Integer, out v)) return true;
@@ -760,6 +820,7 @@ class Lowerer
         return false;
     }
 
+    // Prefer nested overrides, then local/parameter annotations, then globals; no range means false with zero outputs.
     static bool TryGetRange(FunctionCtx ctx, string name, out int min, out int max)
     {
         int[] r;
@@ -790,6 +851,8 @@ class Lowerer
     }
 
 
+    // Read a concrete array dimension or evaluate an expression dimension.
+    // Only the concrete-dimension path explicitly rejects negative lengths here.
     static bool TryGetArrayLength(FunctionCtx ctx, CType t, out int len)
     {
         len = 0;
@@ -802,12 +865,13 @@ class Lowerer
         }
         if (t.Tag == CTypeTag.ArrayWithDimensionExpression)
         {
-            // Evaluate the dimension expression without emitting diagnostics.
+            // Attempt dimension evaluation using the shared lint-oriented constant evaluator.
             return ctx.Global.TryEvalConstInt(t.DimensionExpression, out len);
         }
         return false;
     }
 
+    // Saturate a host-wide intermediate to signed 32-bit endpoints.
     static int ClampLongToInt(long v)
     {
         if (v < int.MinValue) return int.MinValue;
@@ -815,6 +879,8 @@ class Lowerer
         return (int)v;
     }
 
+    // Infer intervals from annotations, literals and selected arithmetic forms, falling back to constant evaluation.
+    // This approximation does not model every target-width wraparound or establish a runtime bounds proof.
     static bool TryInferIntRange(FunctionCtx ctx, Expr e, out int min, out int max)
     {
         min = 0; max = 0;
@@ -953,6 +1019,8 @@ class Lowerer
         return false;
     }
 
+    // Reject calls, assignments and increments/decrements recursively through expression children.
+    // Reads and unfamiliar nodes are otherwise accepted; volatile-memory semantics are not resolved here.
     static bool IsSideEffectFreeForRangeEval(Expr expr)
     {
         if (expr == null) return true;
@@ -984,6 +1052,8 @@ class Lowerer
         return true;
     }
 
+    // Reduce accepted side-effect-free conditions to zero/one when the available intervals decide them.
+    // Ambiguous intervals return false; results depend on the range estimator and annotations being valid.
     static bool TryEvalConditionFromRanges(FunctionCtx ctx, Expr cond, out int value01)
     {
         value01 = 0;
@@ -1083,6 +1153,7 @@ class Lowerer
         return false;
     }
 
+    // Create a fresh u8/u16 type marked safe-index according to the inferred maximum.
     static CType MakeSafeIndexCastTypeForRange(int maxValue)
     {
         CType t = CType.MakeSimple((maxValue <= 0xFF) ? CSimpleType.UInt8 : CSimpleType.UInt16);
@@ -1090,6 +1161,8 @@ class Lowerer
         return t;
     }
 
+    // Warn when an inferred index interval can exceed an array length and otherwise consider a narrowing cast.
+    // An uncast plain-integer name receives the safe-index lint; this pass does not emit a runtime guard.
     static Expr ApplyIndexRangeAndLints(FunctionCtx ctx, Expr sourceExpr, Expr arrayExpr, Expr indexExpr)
     {
         Expr idx = indexExpr;
@@ -1188,6 +1261,7 @@ class Lowerer
         }
     }
 
+    // Peel consecutive top-level casts and remember that an explicit cast was encountered.
     static Expr StripRestrictCasts(Expr e, ref bool hadCast)
     {
         CType ct;
@@ -1201,6 +1275,7 @@ class Lowerer
     }
 
 
+    // Allow ROM materialization only for enabled const 8/16-bit scalar integer types.
     static bool IsConstScalarInRomType(CType t)
     {
         // const scalar materialization option: allow &k by storing it in ROM
@@ -1212,16 +1287,19 @@ class Lowerer
                t.SimpleType == CSimpleType.UInt16 || t.SimpleType == CSimpleType.Int16;
     }
 
+    // Test pointee constness for a non-null pointer type; the pointer's own const flag is separate.
     static bool IsPointerToConst(CType t)
     {
         return t.Tag == CTypeTag.Pointer && t.Subtype != null && t.Subtype.IsConst;
     }
 
+    // Test for a present, mutable pointee in a non-null pointer type.
     static bool IsPointerToNonConst(CType t)
     {
         return t.Tag == CTypeTag.Pointer && t.Subtype != null && !t.Subtype.IsConst;
     }
 
+    // Recognize either array shape whose element type is const.
     static bool IsArrayOfConst(CType t)
     {
         if (t == null) return false;
@@ -1230,6 +1308,7 @@ class Lowerer
         return false;
     }
 
+    // Recognize an explicit cast at the expression root without searching nested operands.
     static bool HasTopLevelCast(Expr e)
     {
         CType _t;
@@ -1237,6 +1316,7 @@ class Lowerer
         return e.Match(Tag.Cast, out _t, out _sub);
     }
 
+    // Preserve an inferred pointer, decay an array to an element pointer, or use u16 for an unknown address expression.
     static CType PointerTempType(FunctionCtx ctx, Expr ptrExpr)
     {
         CType t = InferType(ctx, ptrExpr);
@@ -1248,6 +1328,7 @@ class Lowerer
         return CType.UInt16;
     }
 
+    // Emit the standard pointee-const diagnostic at the originating expression.
     static void WarnConstDiscard(Expr origin, string context)
     {
         Program.Warning(origin.Source, ErrorCode.ConstDiscard, $"{context}: discards 'const' qualifier from pointee type");
@@ -1259,6 +1340,8 @@ class Lowerer
     // p+1 -> p
     // &buf[i] -> buf
     // &s.field -> s
+    // Follow simple names, address/index/field forms and literal-offset arithmetic to a base name.
+    // This is a spelling-based alias hint rather than an address-range or pointer-provenance analysis.
     static string GetRestrictBaseSym(Expr e, ref bool hadCast)
     {
         e = StripRestrictCasts(e, ref hadCast);
@@ -1309,6 +1392,8 @@ class Lowerer
         return null;
     }
 
+    // Register parameters, lower the body with a temporary lifetime and emit unused-name warnings.
+    // Prepend all generated temporary declarations while preserving the body source coordinate.
     static Expr LowerFunctionBody(GlobalEnv genv, string fname, CType retType, FieldInfo[] ps, Expr body)
     {
         FunctionCtx ctx = new FunctionCtx(genv);
@@ -1343,6 +1428,8 @@ class Lowerer
         return MakeSequence(lowered).WithSource(body.Source);
     }
 
+    // Lower statement forms recursively, moving extracted expression work before its execution point.
+    // Unreachable sequence entries are warned about but still lowered; constant loop/if pruning is handled separately.
     static List<Expr> LowerStatement(FunctionCtx ctx, Expr stmt)
     {
         List<Expr> result = new List<Expr>();
@@ -1659,6 +1746,7 @@ if (stmt.MatchAny(Tag.If, out parts))
     }
 
 
+    // Join two statements, discarding empty nodes and flattening one sequence level on each side.
     static Expr ConcatStatements(Expr first, Expr second, FilePosition src)
     {
         if (first.Match(Tag.Empty)) return second;
@@ -1671,12 +1759,21 @@ if (stmt.MatchAny(Tag.If, out parts))
         return MakeSequence(items).WithSource(src);
     }
 
+    // Prefix continues through sequences, ifs, unsafe wrappers and expression-valued switch cases.
+    // Nested loop bodies are left intact so their continues retain their own induction behavior.
     static Expr RewriteContinueInCurrentLoop(Expr stmt, Expr inductAndPrefix, FilePosition src)
     {
         // Important: do NOT rewrite continues that belong to nested loops.
         Expr init, test, induct, body;
         if (stmt.Match(Tag.For, out init, out test, out induct, out body))
             return stmt;
+
+        // An unsafe wrapper changes safety checks, not the loop targeted by continue.
+        Expr unsafeBody;
+        if (stmt.Match(Tag.Unsafe, out unsafeBody))
+        {
+            return Expr.Make(Tag.Unsafe, RewriteContinueInCurrentLoop(unsafeBody, inductAndPrefix, src)).WithSource(stmt.Source);
+        }
 
         if (stmt.Match(Tag.Continue))
         {
@@ -1718,12 +1815,12 @@ if (stmt.MatchAny(Tag.If, out parts))
 	            Expr[] newCases = new Expr[cases.Length];
 	            for (int i = 0; i < cases.Length; i++)
 	            {
-	                int v;
+	                Expr caseValue;
 	                Expr caseBody;
-	                if (cases[i].Match(Tag.Case, out v, out caseBody))
+	                if (cases[i].Match(Tag.Case, out caseValue, out caseBody))
 	                {
 	                    Expr newCaseBody = RewriteContinueInCurrentLoop(caseBody, inductAndPrefix, src);
-	                    newCases[i] = Expr.Make(Tag.Case, v, newCaseBody).WithSource(cases[i].Source);
+	                    newCases[i] = Expr.Make(Tag.Case, caseValue, newCaseBody).WithSource(cases[i].Source);
 	                }
 	                else
 	                {
@@ -1744,6 +1841,7 @@ if (stmt.MatchAny(Tag.If, out parts))
     // Supported:
     // x <const, x <=const, x >const, x >=const, x ==const
     // LogicalAnd/LogicalOr/Not with the usual conservative rules.
+    // Build a fresh override map for facts expressible as one interval per annotated name.
     static Dictionary<string, int[]> RefineRangesFromCondition(FunctionCtx ctx, Expr cond, bool assumeTrue)
     {
         Dictionary<string, int[]> ov = new Dictionary<string, int[]>();
@@ -1751,6 +1849,8 @@ if (stmt.MatchAny(Tag.If, out parts))
         return ov;
     }
 
+    // Refine true conjunctions, false disjunctions and supported name/constant comparisons.
+    // Ambiguous or empty intersections are left unrefined; endpoint +/-1 uses host integer arithmetic.
     static void AddRefinements(FunctionCtx ctx, Expr cond, bool assumeTrue, Dictionary<string, int[]> ov)
     {
         if (cond == null) return;
@@ -1887,11 +1987,14 @@ if (stmt.MatchAny(Tag.If, out parts))
         }
     }
 
+// Start recursive lowering of a nonempty alternating condition/body list.
 static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
     {
         return LowerIfAt(ctx, parts, 0, src);
     }
 
+	    // Lower one arm under its true-range overrides and recurse under false-range overrides.
+	    // Condition prefixes retain execution order; a known condition selects a branch after the current body has already been lowered.
 	    static Expr LowerIfAt(FunctionCtx ctx, Expr[] parts, int idx, FilePosition src)
     {
         Expr cond = parts[idx];
@@ -1909,7 +2012,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         Expr newBody = LowerStatementAsSingle(ctx, body);
         ctx.PopRangeOverride(thenOv);
 
-        // Constant/range-backed condition pruning (-O1 style, but always safe when proven).
+        // Constant/range-backed condition pruning using the available inferred facts.
         // if (0) { ... } else { ... } => else
         // if (1) { ... } else { ... } => then
         // (prefix side-effects from condition are preserved)
@@ -1968,6 +2071,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 
     // ---------- Expression lowering ----------
 
+    // Lower recognized expression forms and append extracted statement work to the caller's prefix list.
+    // The allowExtract flag gates selected rewrites; it is not a universal side-effect isolation mechanism.
     static Expr LowerExpr(FunctionCtx ctx, Expr expr, bool allowExtract, List<Expr> prefix)
     {
         // Atoms
@@ -1998,6 +2103,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             // We'll keep it conservative: do not extract from cond.
             List<Expr> dummy = new List<Expr>();
             Expr newCond = LowerExpr(ctx, cond, false, dummy);
+            // Both arms currently append extracted work to the same outer prefix.
+            // Any extracted arm work is therefore outside the eventual conditional expression.
             Expr newT = LowerExpr(ctx, texpr, allowExtract, prefix);
             Expr newF = LowerExpr(ctx, fexpr, allowExtract, prefix);
             return Expr.Make(Tag.Conditional, newCond, newT, newF).WithSource(expr.Source);
@@ -2012,6 +2119,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             if (callFunc != null && callFunc.Match(Tag.Name, out knownCallName) &&
                 knownCallName == "__cgb_is_cgb" &&
                 callArgs != null && callArgs.Length == 0 &&
+                // A resolved target configuration can replace the zero-argument CGB query with a literal.
                 Program.TryGetKnownCgbRuntimeValue(out int knownCgbValue))
             {
                 return Expr.Make(Tag.Integer, knownCgbValue).WithSource(expr.Source);
@@ -2052,6 +2160,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                 {
                     preserveConstantArgIntrinsic = (argFuncName == "__bankof" || argFuncName == "__cgb_is_cgb");
                 }
+                // Keep evaluable constants and special intrinsic/bank operands visible to code generation instead of spilling them.
                 bool preserveCompileTimeConstantArg = ctx.Global.TryEvalConstInt(a, out _);
                 bool preserveFarcallBankArg = (__fname == "__farcall" && i == 0);
 
@@ -2323,6 +2432,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                     rt.Show(), lt.Show());
             }
 
+            // Require matching named aggregate kinds before choosing field copies for split locals or readonly sources.
             bool leftAggregate = IsAggregateType(lt);
             bool rightAggregate = IsAggregateType(rt);
             if (leftAggregate || rightAggregate)
@@ -2349,6 +2459,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                     ContainsSplitStructLocal(ctx, newR) ||
                     ContainsReadonlyData(ctx, newR))
                 {
+                    // Expand selected aggregate assignments into prefix statements even when allowExtract is false.
                     List<Expr> copyStatements = MakeAggregateFieldCopyStatements(ctx, newL, newR, lt, expr.Source);
                     for (int i = 0; i < copyStatements.Count; i++)
                     {
@@ -2397,6 +2508,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                     "compound assignment is not supported for struct/union types");
                 return Expr.Make(Tag.Empty).WithSource(expr.Source);
             }
+            // Infer the compound result type for narrowing diagnostics; the value supplied to constant evaluation remains the RHS.
             Expr widened = Expr.Make(opName, newL, newR).WithSource(expr.Source);
             WarnImplicitNarrowingIfNeeded(ctx, newR, InferType(ctx, widened), lt, expr.Source, "compound assignment");
             if (IsStrictEnum(lt))
@@ -2446,7 +2558,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                     rt.Show(), lt.Show());
             }
 
-            // Lint: __range(min,max) variable assigned an out-of-range constant.
+            // Lint the literal RHS against the declared interval; this does not compute the compound-assignment result.
             string __rname;
             if (newL.Match(Tag.Name, out __rname))
             {
@@ -2462,7 +2574,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             }
 
             // Lint: __safe_index - compound assignments imply arithmetic on indices.
-            // Allow += / -= with constant literals; otherwise require explicit casts.
+            // The current check accepts a literal RHS for any compound operator; it does not restrict this to += or -=.
             if (IsSafeIndex(lt) && !IsSafeIndex(rt))
             {
                 int __v;
@@ -2536,6 +2648,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                 int sz = SizeOfType(lt);
 
                 // tmpVal = left
+                // Use an unsigned value temporary and an eight-bit count for the generated one-bit-at-a-time shift loop.
                 string tmpVal = ctx.AcquireTemp(sz == 1 ? CType.UInt8 : CType.UInt16);
                 Expr tmpValName = Expr.Make(Tag.Name, tmpVal).WithSource(expr.Source);
                 prefix.Add(Expr.Make(Tag.Assign, tmpValName, newLeft).WithSource(expr.Source));
@@ -2583,6 +2696,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 	        string binTag;
 	        if (expr.MatchAnyTag(out binTag, out left, out right) && IsBinaryOpTag(binTag))
 	        {
+            // Both operands share the outer prefix, including logical AND/OR.
+            // Extracted RHS work is not enclosed in a short-circuit branch by this path.
             Expr newL = LowerExpr(ctx, left, allowExtract, prefix);
             Expr newR = LowerExpr(ctx, right, allowExtract, prefix);
 
@@ -2740,11 +2855,11 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             return Expr.Make(binTag, newL, newR).WithSource(expr.Source);
         }
 
-        // Default: try to recursively lower all Expr children if it's an Expr-only tag.
-        // If we can't recognize the shape, keep it to avoid breaking the compiler.
+        // Unrecognized shapes are returned unchanged; their children are not recursively lowered here.
         return expr;
     }
 
+    // Recognize name, dereference, index and field shapes that can be lowered as storage locations.
     static bool IsLValueLikeExpr(Expr e)
     {
         if (e == null) return false;
@@ -2753,12 +2868,15 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 
     const int LargeStructCopyWarningThreshold = 64;
 
+    // Recognize struct/union tags after removing top-level const.
     static bool IsAggregateType(CType t)
     {
         if (t == null) return false;
         return t.WithoutConst().IsStructOrUnion;
     }
 
+    // Require the same aggregate kind/name and an entry in the global field table.
+    // This checks named metadata presence, not independently computed layout equality.
     static bool IsSameCompleteAggregateType(GlobalEnv genv, CType leftType, CType rightType)
     {
         if (!IsAggregateType(leftType) || !IsAggregateType(rightType)) return false;
@@ -2769,6 +2887,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                genv.StructFieldTypes.ContainsKey(l.Name);
     }
 
+    // Search selected address/field/index forms for a split-local name, including names appearing in index expressions.
     static bool ContainsSplitStructLocal(FunctionCtx ctx, Expr expr)
     {
         if (expr == null) return false;
@@ -2789,6 +2908,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Search selected forms for any readonly-data name, including the index operand.
+    // This is a syntactic occurrence check rather than proof that the final lvalue resides in ROM.
     static bool ContainsReadonlyData(FunctionCtx ctx, Expr expr)
     {
         if (expr == null || ctx == null || ctx.Global == null) return false;
@@ -2809,6 +2930,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Peel top-level casts while retaining the underlying expression object.
     static Expr StripCastsForLowerer(Expr expr)
     {
         while (expr != null && expr.Match(Tag.Cast, out CType _t, out Expr sub))
@@ -2816,16 +2938,20 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return expr;
     }
 
+    // Build a field-access node carrying the requested source coordinate.
     static Expr FieldExpr(Expr baseExpr, string fieldName, FilePosition source)
     {
         return Expr.Make(Tag.Field, baseExpr, fieldName).WithSource(source);
     }
 
+    // Build an address-of node without validating lvalue addressability here.
     static Expr AddressOfExpr(Expr lvalue, FilePosition source)
     {
         return Expr.Make(Tag.AddressOf, lvalue).WithSource(source);
     }
 
+    // Return empty for a nonpositive size; otherwise copy between field addresses.
+    // Sizes 17-255 select __memcpy_small and other positive sizes select __memcpy.
     static Expr MakeAggregateMemcpyExpr(Expr dst, Expr src, int size, FilePosition source)
     {
         if (size <= 0) return Expr.Make(Tag.Empty).WithSource(source);
@@ -2838,6 +2964,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             Expr.Make(Tag.Integer, size).WithSource(source)).WithSource(source);
     }
 
+    // Visit the aggregate field table in enumeration order, copying arrays through a helper and other fields by assignment.
+    // Union members are also visited individually; overlapping storage is not deduplicated here.
     static List<Expr> MakeAggregateFieldCopyStatements(FunctionCtx ctx, Expr dst, Expr src, CType aggregateType, FilePosition source)
     {
         List<Expr> statements = new List<Expr>();
@@ -2866,6 +2994,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return statements;
     }
 
+    // Warn at the configured 64-byte threshold using the lowerer's estimated aggregate size.
     static void WarnLargeAggregateCopyIfNeeded(FunctionCtx ctx, Expr origin, CType aggregateType)
     {
         if (!IsAggregateType(aggregateType)) return;
@@ -2878,6 +3007,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             string.IsNullOrEmpty(ctx.FunctionName) ? "<global>" : ctx.FunctionName);
     }
 
+    // Preserve storage-oriented names/fields while lowering pointer and index computations.
+    // Constant names require ROM materialization to be addressable; unrecognized lvalue shapes pass through.
     static Expr LowerLValue(FunctionCtx ctx, Expr lval, bool allowExtract, List<Expr> prefix)
     {
         // Name lvalue
@@ -2969,6 +3100,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 
     // ---------- Helpers ----------
 
+    // Exclude empty names, underscore and double-underscore-prefixed names from unused-symbol warnings.
     static bool IsInternalOrGeneratedName(string name)
     {
         if (string.IsNullOrEmpty(name)) return true;
@@ -2978,12 +3110,14 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Omit a source position when its filename is absent or explicitly unknown.
     static Maybe<FilePosition> ToMaybePos(FilePosition pos)
     {
         if (string.IsNullOrEmpty(pos.Filename) || pos.Filename == "<unknown>") return Maybe.Nothing;
         return Maybe.Just(pos);
     }
 
+    // Warn on zero recorded uses after filtering generated names. Lowered name visits include writes as well as reads.
     static void EmitUnusedLocalAndParamWarnings(FunctionCtx ctx)
     {
         if (ctx == null) return;
@@ -3015,6 +3149,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         }
     }
 
+    // Peel recognized unsafe/static/placement wrappers while carrying their source position into the inner node.
     static Expr UnwrapDeclWrappers(Expr d)
     {
         while (d != null)
@@ -3051,6 +3186,9 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return d;
     }
 
+    // Collect syntactic name occurrences recursively through expression nodes and expression arrays.
+    // This does not resolve lexical shadowing or distinguish reads from writes.
+    // This GB collector does not inspect AsmOperand objects for embedded symbolic bases.
     static void CollectNameUses(Expr expr, HashSet<string> used)
     {
         if (expr == null || used == null) return;
@@ -3079,6 +3217,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         }
     }
 
+    // Compare declared globals/functions with names encountered in function bodies, variable ranges and constants.
+    // This name-based lint is not entry-point reachability; main and internal names are exempt.
     static void WarnUnusedGlobalSymbols(List<Expr> loweredDecls)
     {
         if (loweredDecls == null || loweredDecls.Count == 0) return;
@@ -3151,12 +3291,15 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         }
     }
 
+    // Inspect only the final lowered statement, returning false for an empty list.
     static bool EndsControlFlowLowered(List<Expr> lowered)
     {
         if (lowered == null || lowered.Count == 0) return false;
         return EndsControlFlowStmt(lowered[lowered.Count - 1]);
     }
 
+    // Recognize explicit terminators and recursively inspect unsafe/sequence tails.
+    // An if chain counts only when every arm terminates and its final condition is an unconditional nonzero literal.
     static bool EndsControlFlowStmt(Expr stmt)
     {
         if (stmt == null) return false;
@@ -3199,6 +3342,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Describe scalar 8/16-bit signedness, treating pointers and enums as unsigned 16-bit values.
     static bool TryGetNarrowingTypeInfo(CType t, out int bits, out bool isSigned)
     {
         bits = 0;
@@ -3228,6 +3372,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Test an integer against the inclusive bounds for the caller's supported bit width and signedness.
     static bool ValueFitsInType(int value, int bits, bool isSigned)
     {
         long v = value;
@@ -3245,6 +3390,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return v >= min && v <= max;
     }
 
+    // Try a literal first, then the shared constant evaluator, resetting the result on failure.
     static bool TryEvalIntForNarrowing(FunctionCtx ctx, Expr e, out int value)
     {
         if (TryConstInt(e, out value)) return true;
@@ -3253,6 +3399,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Warn on smaller widths or selected signedness changes unless an explicit root cast or fitting constant suppresses it.
+    // This is a diagnostic check and does not insert conversion code.
     static void WarnImplicitNarrowingIfNeeded(
         FunctionCtx ctx,
         Expr valueExpr,
@@ -3285,12 +3433,15 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             srcType.Show(), dstType.Show());
     }
 
+    // Recognize pointer types after removing top-level const; arrays are not treated as pointers here.
     static bool IsPointerLike(CType t)
     {
         if (t == null) return false;
         return t.WithoutConst().Tag == CTypeTag.Pointer;
     }
 
+    // Warn for selected pointer combinations, void pointees and signed/negative offsets.
+    // The first matching condition emits one warning; no address validity or lifetime analysis is attempted.
     static void WarnDangerousPointerArithmetic(string binTag, Expr leftExpr, Expr rightExpr, CType leftType, CType rightType, FilePosition source)
     {
         if (binTag != Tag.Add && binTag != Tag.Subtract) return;
@@ -3340,6 +3491,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         }
     }
 
+    // Choose a temporary type, append its assignment to the prefix and return its name expression.
+    // Array values decay to pointers and aggregate fallback storage is represented as u16.
     static Expr SpillToTemp(FunctionCtx ctx, Expr rhs, CType rhsType, List<Expr> prefix)
     {
         CType t = rhsType ?? CType.UInt16;
@@ -3353,6 +3506,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return tmpName;
     }
 
+    // Treat only integer literals and names as already atomic.
     static bool IsAtom(Expr e)
     {
         int n;
@@ -3360,6 +3514,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return e.Match(Tag.Integer, out n) || e.Match(Tag.Name, out s);
     }
 
+    // Keep atoms, recognized constants and aggregate/large values intact; spill other small operands to a temporary.
     static Expr SpillComparisonOperand(FunctionCtx ctx, Expr operand, List<Expr> prefix)
     {
         if (IsAtom(operand)) return operand;
@@ -3374,11 +3529,13 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return SpillToTemp(ctx, operand, t, prefix);
     }
 
+    // Recognize a strictly positive integer containing exactly one set bit.
     static bool IsPow2(int v)
     {
         return v > 0 && (v & (v - 1)) == 0;
     }
 
+    // Count right shifts for a previously validated positive power of two; callers must enforce that precondition.
     static int Log2Pow2(int v)
     {
         int n = 0;
@@ -3386,6 +3543,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return n;
     }
 
+    // Accept nonnegative literals/ranges or unsigned, enum and pointer types as evidence for strength reduction.
     static bool IsKnownNonNegativeExpr(FunctionCtx ctx, Expr e)
     {
         if (e == null) return false;
@@ -3412,6 +3570,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                (t.SimpleType == CSimpleType.UInt8 || t.SimpleType == CSimpleType.Int8);
     }
 
+    // Recognize the six equality and ordered-comparison AST tags.
     static bool IsComparisonTag(string tag)
     {
         return tag == Tag.Equal || tag == Tag.NotEqual ||
@@ -3420,13 +3579,19 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
     }
 
 	    
+    // Test the enum tag and strict-mixing annotation.
     static bool IsStrictEnum(CType t) => t != null && t.IsEnum && t.IsEnumStrict;
+    // Compare named enum identity without requiring equal annotations.
     static bool IsSameEnum(CType a, CType b) => a != null && b != null && a.IsEnum && b.IsEnum && a.Name == b.Name;
+    // Recognize integer types while excluding enums.
     static bool IsPlainInteger(CType t) => t != null && t.IsInteger && !t.IsEnum;
 
+    // Recognize non-enum integer types carrying the bitflags annotation.
     static bool IsBitFlags(CType t) => t != null && t.IsInteger && !t.IsEnum && t.IsBitFlags;
+    // Recognize non-enum integer types carrying the safe-index annotation.
     static bool IsSafeIndex(CType t) => t != null && t.IsInteger && !t.IsEnum && t.IsSafeIndex;
 
+    // Recognize the binary arithmetic, bitwise, logical, shift and comparison forms handled by this pass.
     static bool IsBinaryOpTag(string tag)
 	    {
 	        if (IsComparisonTag(tag)) return true;
@@ -3436,6 +3601,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 	               tag == Tag.ShiftLeft || tag == Tag.ShiftRight;
 	    }
 
+    // Choose a lowering width using CType equality with the built-in byte/void types; everything else defaults to two bytes.
+    // This is not aggregate layout, and annotations participating in equality can affect the chosen width.
     static int SizeOfType(CType t)
     {
         if (t == null) return 1;
@@ -3445,6 +3612,7 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return 2;
     }
 
+    // Unwrap top-level const and accept a function type directly or behind one pointer layer.
     static bool TryGetCallableFunctionType(CType callableType, out CType functionType)
     {
         functionType = null;
@@ -3463,6 +3631,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         return false;
     }
 
+    // Infer enough type information for temporaries and lints, defaulting unknown forms to u8.
+    // Integer arithmetic promotes to s16 when either operand is signed, otherwise u16; this is not a full C type checker.
     static CType InferType(FunctionCtx ctx, Expr expr)
     {
         int n;
@@ -3591,6 +3761,7 @@ if (expr.Match(Tag.BitwiseNot, out sub))
         return CType.UInt8;
     }
 
+    // Build a call tuple from the function expression and ordered argument references.
     static Expr MakeCall(Expr func, Expr[] args)
     {
         List<object> parts = new List<object>();
@@ -3600,6 +3771,7 @@ if (expr.Match(Tag.BitwiseNot, out sub))
         return Expr.Make(parts.ToArray());
     }
 
+    // Build a sequence tuple without flattening children; an empty/null list gets an unknown-source empty sequence.
     static Expr MakeSequence(List<Expr> stmts)
     {
 	        if (stmts == null || stmts.Count == 0) return Expr.Make(Tag.Sequence).WithSource(FilePosition.Unknown);

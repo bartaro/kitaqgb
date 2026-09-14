@@ -47,22 +47,28 @@ __wram u8 LinkDmg07_LastErrorCode;
 __wram u8 LinkDmg07_SeenAdapter;
 __wram u8 LinkDmg07_TimeoutLatched;
 
+// Increment a byte counter without wrapping past 0xFF.
 u8 LinkDmg07_IncrementSaturatingInternal(u8 value) {
     if (value != 0xFF) value++;
     return value;
 }
 
+// Load the next response, clear pending serial IRQ and arm external-clock
+// transfer. The adapter supplies clocks; this helper does not wait for completion.
 void LinkDmg07_ArmInternal(u8 value) {
     LinkHw_WriteSB(value);
     LinkHw_WriteIF((u8)(LinkHw_ReadIF() & LINK_DMG07_IRQ_SERIAL_CLEAR));
     LinkHw_WriteSC(LINK_DMG07_SC_EXTERNAL_START);
 }
 
+// Record the latest error and increment the saturating runtime-error count.
 void LinkDmg07_SetRuntimeErrorInternal(u8 code) {
     LinkDmg07_LastErrorCode = code;
     LinkDmg07_ErrorCount = LinkDmg07_IncrementSaturatingInternal(LinkDmg07_ErrorCount);
 }
 
+// Discard transfer/handshake readiness and return to adapter discovery.
+// Keep lifetime counters, the configured rate and the local application byte.
 void LinkDmg07_ResetToPingInternal() {
     LinkDmg07_Phase = LINK_DMG07_PHASE_PING;
     LinkDmg07_PingIndex = 0;
@@ -81,6 +87,8 @@ void LinkDmg07_ResetToPingInternal() {
     LinkDmg07_HandshakeFrames = 0;
 }
 
+// Validate the one-based player slot and reserved bit before updating the
+// connection mask. A changed local slot is rejected until discovery is reset.
 void LinkDmg07_ApplyStatusInternal(u8 status) {
     u8 slot;
 
@@ -100,6 +108,8 @@ void LinkDmg07_ApplyStatusInternal(u8 status) {
     LinkDmg07_LastStatus = status;
 }
 
+// Latch a complete status exchange and count a disconnect event when one
+// or more previously connected players disappear from the mask.
 void LinkDmg07_CompletePingInternal() {
     u8 removed;
 
@@ -110,6 +120,8 @@ void LinkDmg07_CompletePingInternal() {
     LinkDmg07_PingStatusReady = 1;
 }
 
+// Respond to discovery with ACK, rate and packet size. A start reply enters
+// the CC handshake; only player one can arm a requested AA start sequence.
 u8 LinkDmg07_ProcessPingInternal(u8 value) {
     if (value == LINK_DMG07_START_REPLY) {
         LinkDmg07_Phase = LINK_DMG07_PHASE_WAIT_CC;
@@ -158,6 +170,8 @@ u8 LinkDmg07_ProcessPingInternal(u8 value) {
     return LINK_DMG07_ACK;
 }
 
+// Emit at most four AA start bytes, then wait for CC replies. A received CC
+// can enter the wait phase earlier with one reply already counted.
 u8 LinkDmg07_ProcessRequestInternal(u8 value) {
     if (value == LINK_DMG07_START_REPLY) {
         LinkDmg07_Phase = LINK_DMG07_PHASE_WAIT_CC;
@@ -177,6 +191,8 @@ u8 LinkDmg07_ProcessRequestInternal(u8 value) {
     return 0;
 }
 
+// Require four consecutive CC replies before entering transfer mode. Reset
+// the receive pipeline and sequence counters at that transition.
 u8 LinkDmg07_ProcessWaitCcInternal(u8 value) {
     if (value == LINK_DMG07_START_REPLY) {
         if (LinkDmg07_CcCount < 4) LinkDmg07_CcCount++;
@@ -198,6 +214,9 @@ u8 LinkDmg07_ProcessWaitCcInternal(u8 value) {
     return 0;
 }
 
+// Assemble four player bytes per packet and discard the first pipeline fill.
+// Later packets overwrite the one-deep mailbox, recording overflow if unread.
+// An all-FF packet restarts discovery; restart traffic is never delivered as data.
 u8 LinkDmg07_ProcessTransferInternal(u8 value) {
     u8 copy_value;
 
@@ -258,6 +277,8 @@ u8 LinkDmg07_ProcessTransferInternal(u8 value) {
     return LinkDmg07_LocalByte;
 }
 
+// Reset the polling driver and counters, substitute the default rate for zero,
+// disable serial IRQ delivery and arm an external-clock discovery response.
 void __stackcall LinkDmg07_Init(u8 rate) {
     u8 i;
 
@@ -285,6 +306,8 @@ void __stackcall LinkDmg07_Init(u8 rate) {
     LinkDmg07_ArmInternal(LINK_DMG07_ACK);
 }
 
+// Process at most one completed serial byte, dispatch it to the active phase
+// and immediately arm the next response. Poll frequently enough for adapter timing.
 void LinkDmg07_Poll() {
     u8 value;
     u8 next;
@@ -314,6 +337,8 @@ void LinkDmg07_Poll() {
     LinkDmg07_ArmInternal(next);
 }
 
+// Count and latch a timeout. During transfer, preserve the armed byte and
+// packet alignment until a boundary allows recovery; otherwise restart discovery.
 void LinkDmg07_TimeoutInternal(u8 is_disconnect) {
     LinkDmg07_TimeoutCount = LinkDmg07_IncrementSaturatingInternal(LinkDmg07_TimeoutCount);
     LinkDmg07_LastErrorCode = LINK_DMG07_ERR_TIMEOUT;
@@ -339,6 +364,8 @@ void LinkDmg07_TimeoutInternal(u8 is_disconnect) {
     LinkDmg07_ArmInternal(LINK_DMG07_ACK);
 }
 
+// Advance silence and handshake watchdogs once per application frame. Serial
+// polling resets silence; a timeout remains latched until another byte arrives.
 void LinkDmg07_TickFrame() {
     LinkDmg07_SilenceFrames = LinkDmg07_IncrementSaturatingInternal(LinkDmg07_SilenceFrames);
 
@@ -362,32 +389,40 @@ void LinkDmg07_TickFrame() {
     }
 }
 
+// Return the discovery, start-handshake or transfer phase without polling.
 u8 LinkDmg07_GetPhase() {
     return LinkDmg07_Phase;
 }
 
+// Return the one-based player slot, or LINK_DMG07_NO_SLOT before discovery.
 u8 LinkDmg07_GetLocalSlot() {
     return LinkDmg07_LocalSlot;
 }
 
+// Return the last accepted four-player connection mask; this is a cached status.
 u8 LinkDmg07_GetConnectedMask() {
     return LinkDmg07_ConnectedMask;
 }
 
+// Return the last validated raw adapter status byte.
 u8 LinkDmg07_GetLastStatus() {
     return LinkDmg07_LastStatus;
 }
 
+// Read the completed-discovery status flag without clearing it.
 u8 LinkDmg07_HasPingStatus() {
     return LinkDmg07_PingStatusReady;
 }
 
+// Clear and report the completed-discovery flag; return zero if no new status exists.
 u8 LinkDmg07_ConsumePingStatus() {
     if (LinkDmg07_PingStatusReady == 0) return 0;
     LinkDmg07_PingStatusReady = 0;
     return 1;
 }
 
+// Schedule the start handshake only from player one during discovery with
+// its connection bit set. Return success means requested, not transfer-ready.
 u8 LinkDmg07_RequestTransmission() {
     if (LinkDmg07_Phase != LINK_DMG07_PHASE_PING) {
         LinkDmg07_LastErrorCode = LINK_DMG07_ERR_STATE;
@@ -405,6 +440,8 @@ u8 LinkDmg07_RequestTransmission() {
     return LINK_DMG07_ERR_NONE;
 }
 
+// Request aligned recovery only in transfer mode. Repeated requests preserve
+// an already pending or active restart rather than starting it again.
 u8 LinkDmg07_RequestRestart() {
     if (LinkDmg07_Phase != LINK_DMG07_PHASE_TRANSFER) {
         LinkDmg07_LastErrorCode = LINK_DMG07_ERR_STATE;
@@ -416,22 +453,29 @@ u8 LinkDmg07_RequestRestart() {
     return LINK_DMG07_ERR_NONE;
 }
 
+// Return whether aligned recovery is absent, pending or sending control traffic.
 u8 LinkDmg07_GetRestartState() {
     return LinkDmg07_RestartState;
 }
 
+// Set the application byte for a future packet boundary; an already armed SB
+// byte is unchanged. Treat all-FF packets as reserved recovery traffic.
 void __stackcall LinkDmg07_SetLocalByte(u8 value) {
     LinkDmg07_LocalByte = value;
 }
 
+// Report whether the initial transfer packet has been discarded to prime the pipeline.
 u8 LinkDmg07_IsPipelinePrimed() {
     return LinkDmg07_PipelinePrimed;
 }
 
+// Inspect the one-packet receive mailbox without consuming it.
 u8 LinkDmg07_HasPacket() {
     return LinkDmg07_PacketReady;
 }
 
+// Consume the latest four-byte packet. A nonnull destination must hold four
+// bytes; null discards the packet. Packet storage remains after the flag clears.
 u8 __stackcall LinkDmg07_ReadPacket(u8 *dst) {
     if (LinkDmg07_PacketReady == 0) return 0;
     if (dst != 0) {
@@ -450,39 +494,50 @@ u8 __stackcall LinkDmg07_ReadPacket(u8 *dst) {
     return 1;
 }
 
+// Read one cached player byte using a one-based slot. Invalid slots return
+// zero; the function neither requires readiness nor consumes the packet.
 u8 __stackcall LinkDmg07_GetPacketSlot(u8 player_slot) {
     if ((player_slot == 0) || (player_slot > LINK_DMG07_MAX_PLAYERS)) return 0;
     return LinkDmg07_RxPacket[(__safe_index u8)(player_slot - 1)];
 }
 
+// Return the modulo-256 count of application packets started, excluding recovery traffic.
 u8 LinkDmg07_GetSentSequence() {
     return LinkDmg07_SentSequence;
 }
 
+// Return the modulo-256 sequence associated with the most recently published packet.
 u8 LinkDmg07_GetPacketSequence() {
     return LinkDmg07_PacketSequence;
 }
 
+// Return the saturating frame count since the last received serial byte.
 u8 LinkDmg07_GetSilenceFrames() {
     return LinkDmg07_SilenceFrames;
 }
 
+// Return the saturating lifetime timeout count, preserved across protocol restarts.
 u8 LinkDmg07_GetTimeoutCount() {
     return LinkDmg07_TimeoutCount;
 }
 
+// Return the saturating count of removed-player and previously-seen-adapter timeout events.
 u8 LinkDmg07_GetDisconnectCount() {
     return LinkDmg07_DisconnectCount;
 }
 
+// Return the saturating protocol/overflow error count. Timeout and request
+// validation paths use separate counters or latches and do not increment this value.
 u8 LinkDmg07_GetErrorCount() {
     return LinkDmg07_ErrorCount;
 }
 
+// Return the latest error latch without clearing counters or restarting the protocol.
 u8 LinkDmg07_LastError() {
     return LinkDmg07_LastErrorCode;
 }
 
+// Clear only the latest error code, preserving counters and protocol state.
 void LinkDmg07_ClearError() {
     LinkDmg07_LastErrorCode = LINK_DMG07_ERR_NONE;
 }

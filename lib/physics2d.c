@@ -2,6 +2,9 @@
 
 u16 __mul16x8(u16 a, u8 b);
 
+// Scale by a signed Q8 coefficient in -256..256, truncating the magnitude
+// before restoring the sign. The assembly handles zero and +/-256 separately;
+// coefficients outside this interval are not supported.
 s16 kq2d_scale_q8(s16 value, s16 coefficient)
 {
     // Eight-bit shift/add product in HL:C, with sign applied after truncation.
@@ -90,6 +93,8 @@ kqscale_zero:
 }
 
 // Fractional long division avoids overflowing numerator * 256 on the LR35902.
+// Return floor(256*numerator/denominator), capped at 256; zero denominator
+// returns zero. Keep denominator <= 32767 so doubling the remainder fits 16 bits.
 u16 kq2d__fraction_q8(u16 numerator, u16 denominator)
 {
     __asm {
@@ -154,6 +159,9 @@ __prg_rom u8 kq2d_hypot_extra[] = {
     0,1,1,1,1,1,2,2,2,3,4,4,5,6,7,7,8,9,10,12,13,14,15,17,18,19,21,22,24,26,27,29,31,33,34,36,38,40,42,44,46,49,51,53,55,57,60,62,64,67,69,72,74,77,79,82,85,87,90,93,95,98,101,104,107
 };
 
+// Reduce both velocity components with one conservative length estimate.
+// A null body is ignored; a nonpositive limit zeros velocity. This helper ignores
+// active/mass flags. Components and positive limits must have magnitude <= 16383.
 void kq2d_body_limit_speed(KQBody2D* body, s16 max_speed)
 {
     u16 x;
@@ -171,6 +179,8 @@ void kq2d_body_limit_speed(KQBody2D* body, s16 max_speed)
     if (x < y) { swap = x; x = y; y = swap; }
     // major + minor/2 bounds hypot from above for 0 <= minor <= major.
     if (x + (y >> 1) + 1 <= (u16)max_speed) return;
+    // Round the minor/major ratio upward for the 65-entry upper-bound table.
+    // The extra unit covers truncation when converting the estimate back to speed.
     ratio = (kq2d__fraction_q8(y, x) + 4) >> 2;
     if (ratio > 64) ratio = 64;
     length = x + (u16)kq2d_scale_q8((s16)x, (s16)kq2d_hypot_extra[(__safe_index u8)ratio]) + 1;
@@ -180,6 +190,9 @@ void kq2d_body_limit_speed(KQBody2D* body, s16 max_speed)
     body->vy = kq2d_scale_q8(body->vy, (s16)ratio);
 }
 
+// Estimate a linear gap crossing: initial contact returns 0, and an endpoint
+// still outside or exactly on the surface returns 256. Otherwise interpolate in
+// Q8. Keep both signed gaps within +/-8191; no body position is changed.
 u16 kq2d_surface_toi_q8(s16 start_gap, s16 end_gap)
 {
     if (start_gap <= 0) return 0;
@@ -188,6 +201,8 @@ u16 kq2d_surface_toi_q8(s16 start_gap, s16 end_gap)
 }
 
 // Retain sub-unit gravity along a shallow support without rounding every fast hit.
+// For small resting velocities, scale at extra precision and round halves away
+// from zero. Values outside -63..63 use the ordinary truncating Q8 helper.
 s16 kq2d__rest_component(s16 value, s16 normal)
 {
     s16 product;
@@ -197,6 +212,10 @@ s16 kq2d__rest_component(s16 value, s16 normal)
     return (s16)((product+64) >> 7);
 }
 
+// Resolve incoming velocity relative to a moving surface and return the
+// positive incoming normal speed; null inputs or separating motion return zero.
+// Use a Q8 unit normal, nonnegative threshold/kick, and relative components
+// within +/-8191. This does not detect contact, move positions, or check body mass.
 s16 kq2d_body_resolve_surface(KQBody2D* body, const KQSurface2D* surface)
 {
     s16 vx;
@@ -239,11 +258,15 @@ s16 kq2d_body_resolve_surface(KQBody2D* body, const KQSurface2D* surface)
     return speed;
 }
 
+// Shared operands avoid repeated C arithmetic in the hot integration path.
+// Do not call these helpers from an interrupt while another physics call is active.
 s16 kq2d_asm_value;
 s16 kq2d_asm_operand;
 s16 kq2d_asm_limit;
 s16 kq2d_asm_tmp;
 
+// Add the shared operand to the shared value with carry between bytes.
+// The 16-bit result wraps; this routine does not saturate on signed overflow.
 void kq2d_add_s16_asm()
 {
     __asm {
@@ -272,6 +295,8 @@ void kq2d_add_s16_asm()
     }
 }
 
+// Negate a negative shared value in place using two's complement.
+// The minimum signed value stays 0x8000, which is not a positive s16 magnitude.
 void kq2d_abs_s16_asm()
 {
     __asm {
@@ -297,6 +322,8 @@ kq2dabs_ret:
     }
 }
 
+// Clamp the shared signed value to +/- the shared nonnegative limit. Compare
+// magnitude high bytes first, then low bytes; negative inputs use shared scratch.
 void kq2d_clamp_abs_s16_asm()
 {
     __asm {
@@ -427,6 +454,8 @@ kq2dcl_done:
 }
 
 // Internal helper: absolute value for signed 16-bit integers.
+// Return a magnitude through shared assembly scratch; exclude -32768 when
+// a positive s16 result is required. Calls are not reentrant.
 s16 kq2d__abs_s16(s16 v)
 {
     kq2d_asm_value = v;
@@ -434,6 +463,9 @@ s16 kq2d__abs_s16(s16 v)
     return kq2d_asm_value;
 }
 
+// Retain the caller-owned body array without initializing its elements.
+// Set gravity to (0,32), four contact iterations and a per-axis speed limit of 512.
+// A null world is ignored; the array must outlive subsequent world operations.
 void kq2d_world_init(KQWorld2D* world, KQBody2D* bodies, u8 body_count)
 {
     if (world == 0) return;
@@ -446,6 +478,9 @@ void kq2d_world_init(KQWorld2D* world, KQBody2D* bodies, u8 body_count)
     world->max_speed = 512;
 }
 
+// Test strict overlap of two centered boxes; touching edges return false.
+// Both pointers must be valid. Active/mass flags are ignored, and coordinate
+// differences and extent sums must fit the signed 16-bit calculations.
 u8 kq2d_overlap_aabb(const KQBody2D* a, const KQBody2D* b)
 {
     s16 dx = (s16)(b->x - a->x);
@@ -462,6 +497,8 @@ u8 kq2d_overlap_aabb(const KQBody2D* a, const KQBody2D* b)
     return 1;
 }
 
+// Initialize an active unit-inverse-mass body at the supplied center and half
+// extents, with zero velocity and reserved restitution set to zero. Null is ignored.
 void kq2d_body_init(KQBody2D* body, s16 x, s16 y, s16 half_x, s16 half_y)
 {
     if (body == 0) return;
@@ -476,6 +513,7 @@ void kq2d_body_init(KQBody2D* body, s16 x, s16 y, s16 half_x, s16 half_y)
     body->active = 1;
 }
 
+// Replace the center without altering velocity, extents or activity. Null is ignored.
 void kq2d_body_set_pos(KQBody2D* body, s16 x, s16 y)
 {
     if (body == 0) return;
@@ -483,6 +521,7 @@ void kq2d_body_set_pos(KQBody2D* body, s16 x, s16 y)
     body->y = y;
 }
 
+// Replace velocity without clamping or checking activity/mass. Null is ignored.
 void kq2d_body_set_velocity(KQBody2D* body, s16 vx, s16 vy)
 {
     if (body == 0) return;
@@ -490,6 +529,9 @@ void kq2d_body_set_velocity(KQBody2D* body, s16 vx, s16 vy)
     body->vy = vy;
 }
 
+// Add gravity and clamp each velocity axis separately for an active dynamic
+// body. Null, inactive and static bodies are ignored. Supply a nonnegative limit
+// and avoid overflow in the additions before clamping; position is unchanged.
 void kq2d_body_apply_gravity(KQBody2D* body, s16 gravity_x, s16 gravity_y, s16 max_speed)
 {
     if (body == 0) return;
@@ -511,6 +553,9 @@ void kq2d_body_apply_gravity(KQBody2D* body, s16 gravity_x, s16 gravity_y, s16 m
     body->vy = kq2d_asm_value;
 }
 
+// Scale both velocities through the signed 8-bit coefficient intrinsic.
+// Despite the unsigned parameter, values 128..255 become negative coefficients;
+// this is not a full-range unsigned Q8 damping helper. Null is ignored.
 void kq2d_body_apply_friction(KQBody2D* body, u8 friction_q8)
 {
     if (body == 0) return;
@@ -518,6 +563,9 @@ void kq2d_body_apply_friction(KQBody2D* body, u8 friction_q8)
     body->vy = (s16)__smul16x8(body->vy, (s8)friction_q8);
 }
 
+// For one active dynamic body, add gravity, clamp each velocity axis and then
+// add velocity to position. Null inputs are ignored; no contacts are solved.
+// Use a nonnegative speed limit and keep additions in signed 16-bit range.
 void kq2d_integrate_body(KQWorld2D* world, KQBody2D* body)
 {
     if (world == 0) return;
@@ -550,17 +598,25 @@ void kq2d_integrate_body(KQWorld2D* world, KQBody2D* body)
     body->y = kq2d_asm_value;
 }
 
+// Delegate strict rectangle overlap to the fixed-point utility; edge-only
+// contact is false. Coordinate-plus-size sums must remain representable as s16.
 u8 kq2d_rect_intersect(KQRect a, KQRect b)
 {
     return kq_rect_intersect(a, b);
 }
 
+// Delegate the half-open point test: include left/top and exclude right/bottom.
+// Coordinate-plus-size sums must remain representable as s16.
 u8 kq2d_point_in_rect(s16 x, s16 y, KQRect r)
 {
     return kq_point_in_rect(x, y, r);
 }
 
 // Resolve one pair with axis-aligned positional correction and simple velocity response.
+// Separate overlapping boxes on the smaller-penetration axis; ties use Y.
+// Split displacement by inverse mass. Two dynamic bodies receive their average
+// axis velocity; a body against a static obstacle loses that axis velocity.
+// Restitution is unused. Inputs and intermediate products must fit 16-bit arithmetic.
 void kq2d__resolve_pair(KQBody2D* a, KQBody2D* b)
 {
     if (kq2d_overlap_aabb(a, b) == 0) return;
@@ -636,6 +692,10 @@ void kq2d__resolve_pair(KQBody2D* a, KQBody2D* b)
     }
 }
 
+// Advance active dynamic bodies, then visit each active unordered pair for
+// the configured contact passes (zero means one). Static bodies still participate
+// as obstacles. The world borrows its array and shares non-reentrant ASM scratch.
+// This is discrete integration; fast bodies can pass through thin obstacles.
 void kq2d_step(KQWorld2D* world)
 {
     if (world == 0) return;

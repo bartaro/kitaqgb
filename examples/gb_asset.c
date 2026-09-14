@@ -1,8 +1,10 @@
-// 素材IDからRAMへ読み込む
+// Load asset bytes into RAM by asset ID.
 // Expected: 042
 #include "gb_common.h"
 #include "asset.h"
 AssetDesc table[1]; __prg_rom u8 values[] = {7,42}; u8 copied[2];
+// Register a two-byte raw asset, copy it into RAM and display its second byte.
+// This example uses bank zero and a destination sized for the complete payload.
 void main() {
     m_init();
     m_text(2,3,"ASSET");

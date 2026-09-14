@@ -1,10 +1,13 @@
 #include "slg.h"
 
+// Convert tile coordinates to a row-major cell offset using the board width.
 static u16 slg_index(const SLGBoard* board, u8 x, u8 y)
 {
     return (u16)((u16)y * (u16)board->width + (u16)x);
 }
 
+// Walk to a previously validated cell using a 16-bit offset and byte pointer.
+// Bounds checking belongs to the public get/set routines.
 static u8* slg_cell_ptr(SLGBoard* board, u8 x, u8 y)
 {
     u16 index;
@@ -19,6 +22,8 @@ static u8* slg_cell_ptr(SLGBoard* board, u8 x, u8 y)
     return p;
 }
 
+// Attach width * height bytes of caller-owned cell storage without clearing it.
+// Initialization requires non-null board storage. Nonempty dimensions require width*height accessible bytes.
 void slg_board_init(SLGBoard* board, u8 width, u8 height, u8* cells)
 {
     board->width = width;
@@ -26,6 +31,8 @@ void slg_board_init(SLGBoard* board, u8 width, u8 height, u8* cells)
     board->cells = cells;
 }
 
+// Fill every cell with value; a null board is ignored. A valid board must own
+// enough accessible cell storage for its declared dimensions.
 void slg_board_clear(SLGBoard* board, u8 value)
 {
     u16 total;
@@ -42,6 +49,8 @@ void slg_board_clear(SLGBoard* board, u8 value)
     }
 }
 
+// Return zero for a null board or out-of-range coordinate; otherwise read the
+// cell. Zero therefore cannot distinguish an invalid lookup from an empty cell.
 u8 slg_board_get(const SLGBoard* board, u8 x, u8 y)
 {
     u8* p;
@@ -51,6 +60,7 @@ u8 slg_board_get(const SLGBoard* board, u8 x, u8 y)
     return *p;
 }
 
+// Write a cell only when the board and coordinate are valid.
 void slg_board_set(SLGBoard* board, u8 x, u8 y, u8 value)
 {
     u8* p;
@@ -60,6 +70,8 @@ void slg_board_set(SLGBoard* board, u8 x, u8 y, u8 value)
     *p = value;
 }
 
+// Attach caller-owned move storage and reset the list length.
+// Use non-null list storage and room for capacity records; no allocation is performed.
 void slg_move_list_init(SLGMoveList* list, SLGMove* items, u8 capacity)
 {
     list->items = items;
@@ -67,12 +79,15 @@ void slg_move_list_init(SLGMoveList* list, SLGMove* items, u8 capacity)
     list->count = 0;
 }
 
+// Forget the moves without erasing their storage; a null list is ignored.
 void slg_move_list_clear(SLGMoveList* list)
 {
     if (list == 0) return;
     list->count = 0;
 }
 
+// Append coordinates and a value to the bounded move list. Return zero on a
+// null/full list without replacing any existing move.
 u8 slg_move_list_push(SLGMoveList* list, u8 x, u8 y, u8 value)
 {
     SLGMove* move;
@@ -86,6 +101,8 @@ u8 slg_move_list_push(SLGMoveList* list, u8 x, u8 y, u8 value)
     return 1;
 }
 
+// Attach caller-owned undo records and initialize an empty stack.
+// Use non-null stack storage and room for capacity records; entries are not cleared here.
 void slg_undo_init(SLGUndoStack* stack, SLGMove* items, u8 capacity)
 {
     stack->items = items;
@@ -93,6 +110,8 @@ void slg_undo_init(SLGUndoStack* stack, SLGMove* items, u8 capacity)
     stack->count = 0;
 }
 
+// Record a cell's previous value for later undo. Return zero if the stack is
+// null or full; this function does not change the board itself.
 u8 slg_undo_push(SLGUndoStack* stack, u8 x, u8 y, u8 old_value)
 {
     if (stack == 0) return 0;
@@ -104,6 +123,8 @@ u8 slg_undo_push(SLGUndoStack* stack, u8 x, u8 y, u8 old_value)
     return 1;
 }
 
+// Remove the newest undo record and optionally copy it out. A null output
+// still discards the record; a null or empty stack returns zero.
 u8 slg_undo_pop(SLGUndoStack* stack, SLGMove* out_move)
 {
     if (stack == 0) return 0;

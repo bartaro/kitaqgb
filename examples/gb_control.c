@@ -1,8 +1,9 @@
-// 条件分岐と繰り返し
+// Conditional branches and loops.
 // Expected: 042
 #include "gb_common.h"
 
 
+// Exercise loop control and a final branch, then display the selected value 42.
 void main() {
     m_init();
     m_text(2,3,"CONTROL");

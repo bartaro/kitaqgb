@@ -1,9 +1,16 @@
 #include "rpg.h"
 
+// Shared non-reentrant BFS workspace. The current map must fit 1024 cells;
+// byte distances must remain below 255 because 0xFF marks an unvisited cell.
 static u8 path_dist[1024];
 static u16 path_queue[1024];
 static u8 path_rev[1024];
 
+// Flood cardinal neighbors at unit cost, stopping expansion at the movement
+// limit and rejecting blocked destinations. Initialize output to 0xFF only
+// after validating the map and origin; invalid input leaves output unchanged.
+// Require width*height <=1024 and move <=254; neither limit is checked here.
+// The origin is seeded even if its own cell is blocked, allowing paths out of that cell.
 void range_fill_move(u8 sx, u8 sy, u8 move, u8* out_costmap)
 {
     u8 w = map_current_width();
@@ -62,6 +69,12 @@ void range_fill_move(u8 sx, u8 sy, u8 move, u8* out_costmap)
     }
 }
 
+// Find a shortest cardinal path with BFS and write direction codes 0=up,
+// 1=right, 2=down, 3=left. Return its byte length, or zero for failure or an
+// already-reached goal. The caller supplies max_len output bytes and respects
+// the shared workspace/distance limits; excessive paths are not truncated.
+// Require at most 1024 cells and all explored distances below 255; max_len only limits returned output,
+// not the search radius. An unvisited FF distance must never become a legitimate reachable cost.
 u8 path_find_bfs(u8 sx, u8 sy, u8 gx, u8 gy, u8* out_path, u8 max_len)
 {
     u8 w = map_current_width();
@@ -127,10 +140,13 @@ u8 path_find_bfs(u8 sx, u8 sy, u8 gx, u8 gy, u8* out_path, u8 max_len)
         }
     }
 
+    // Reject unreachable or oversized paths before reconstructing output.
     if (found == 0) return 0;
     if (path_dist[goal] > max_len) return 0;
 
     {
+        // Walk backward through decreasing costs, recording forward directions in
+        // reverse order. The fixed neighbor order makes tied routes deterministic.
         u8 len = 0;
         u16 cur = goal;
 
@@ -162,6 +178,7 @@ u8 path_find_bfs(u8 sx, u8 sy, u8 gx, u8 gy, u8* out_path, u8 max_len)
             return 0;
         }
 
+        // Reverse the recovered directions so the first output step starts at the origin.
         while (len != 0) {
             len--;
             out_path[path_dist[goal] - 1 - len] = path_rev[len];

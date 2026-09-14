@@ -17,6 +17,7 @@ static class ExprMatchCompatibility
 
 class CodeGenerator
 {
+    // Distinguish explicit tile-map coordinates from window and background targets.
     enum CgbTileTargetKind
     {
         At,
@@ -24,18 +25,21 @@ class CodeGenerator
         Bg
     }
 
+    // Retain the source declaration alongside its type and requested memory region for later resolution.
     sealed class ExternDeclInfo
     {
         public Expr Origin;
         public CType Type;
         public MemoryRegion Region;
     }
+    // Keep a typed constant expression unevaluated until its dependencies can be resolved.
     sealed class PendingConstantInfo
     {
         public Expr Origin;
         public CType Type;
         public Expr ValueExpr;
     }
+    // Describe a bank-switching call stub, including stack-ABI argument bytes when applicable.
     sealed class BankThunkInfo
     {
         public int Bank;
@@ -44,12 +48,14 @@ class CodeGenerator
         public int StackArgBytes;
     }
 
+    // Expose the report through the active compiler session rather than a separate process-wide backing field.
     public static CodegenAnalysisReport LastReport
     {
         get { return Program.CurrentCodegenLastReport; }
         private set { Program.CurrentCodegenLastReport = value; }
     }
 
+    // Accumulate call, copy, RST and ABI observations for the final code-generation report.
     readonly Dictionary<string, CallEdgeInfo> CallReportMap = new Dictionary<string, CallEdgeInfo>(StringComparer.Ordinal);
     readonly List<AggregateCopyInfo> AggregateCopyReport = new List<AggregateCopyInfo>();
     readonly List<RstSelectionInfo> RstSelections = new List<RstSelectionInfo>();
@@ -60,6 +66,7 @@ class CodeGenerator
     readonly HashSet<string> StaticAssertDiagnosticDedupe = new HashSet<string>(StringComparer.Ordinal);
     readonly HashSet<string> ManualSvbkWarningDedupe = new HashSet<string>(StringComparer.Ordinal);
 
+    // Keep nested emission transactions and inline/aggregate return destinations scoped independently.
     Stack<OutputTransaction> OutputStack = new Stack<OutputTransaction>();
     Stack<AsmOperand> InlineReturnLabels = new Stack<AsmOperand>();
     Stack<int> InlineStructReturnDestAddrs = new Stack<int>();
@@ -90,6 +97,7 @@ class CodeGenerator
 
     Dictionary<string, int> VariableUsageCounts = new Dictionary<string, int>();
     const int HotThreshold = 8;
+    // Treat a recorded usage count of at least eight as hot for allocation decisions.
     bool IsHotVar(string name) =>
         VariableUsageCounts.TryGetValue(name, out int c) && c >= HotThreshold;
 
@@ -118,6 +126,7 @@ class CodeGenerator
     int FuncMaxWram0Next;
     int FuncMaxWram1Next;
 
+    // Share WRAMX bank 1 with the ordinary WRAM1 allocator; give banks 2-7 independent cursors over the same CPU window.
     public CodeGenerator()
     {
         WramXBankRegions[1] = Wram1Region;
@@ -127,6 +136,7 @@ class CodeGenerator
         ApplyStackPolicyToAllocationRegions();
     }
 
+    // Reduce the selected work-RAM allocator limit to leave the configured stack area available.
     void ApplyStackPolicyToAllocationRegions()
     {
         if (Program.StackBank == Program.StackBankMode.Fixed)
@@ -135,6 +145,7 @@ class CodeGenerator
             Wram1Region.Top = Math.Min(Wram1Region.Top, Program.EffectiveStackAutoLimit);
     }
 
+    // Start a function high-water mark from the current HRAM, WRAM0 and WRAM1 allocation cursors.
     void BeginFunctionFrameTracking()
     {
         TrackFunctionFrame = true;
@@ -143,6 +154,7 @@ class CodeGenerator
         FuncMaxWram1Next = Wram1Region.Next;
     }
 
+    // End peak tracking and preserve the largest cursor reached even after lexical-scope rollback.
     void EndFunctionFrameTrackingAndCommit()
     {
         TrackFunctionFrame = false;
@@ -153,6 +165,7 @@ class CodeGenerator
         Wram1Region.Next = Math.Max(Wram1Region.Next, FuncMaxWram1Next);
     }
 
+    // Update peaks only for the three shared allocator objects; other banked regions and OAM are not tracked here.
     void TrackAllocPeak(AllocationRegion region)
     {
         if (!TrackFunctionFrame) return;
@@ -175,6 +188,7 @@ class CodeGenerator
     bool UseFarMemcpyBank0Helper;
     readonly Dictionary<string, BankThunkInfo> Bank0ThunkMap = new Dictionary<string, BankThunkInfo>();
     readonly Dictionary<string, string> Bank0RuntimeFarcallThunkMap = new Dictionary<string, string>();
+    // Reserve eight nested bank-thunk entries and encode their depth relative to 0x80.
     const int BankThunkStackDepth = 8;
     const int BankThunkDepthEncodedBase = 0x80;
     const int BankThunkDepthEncodedLimit = BankThunkDepthEncodedBase + BankThunkStackDepth;
@@ -208,6 +222,7 @@ class CodeGenerator
     AsmOperand ScrollSplitTmpFlagsVar;
     int ScrollSplitTableAddr = -1;
 
+    // Define pending-scroll flags and the six-byte, eight-entry split table format used by the runtime helpers.
     const int ScrollDirtyBgMask = 0x01;
     const int ScrollDirtyWinMask = 0x02;
     const int ScrollSplitFlagUseBg = 0x01;
@@ -227,11 +242,12 @@ class CodeGenerator
     int CurrentStackBaseAddr = -1;
     bool CurrentFunctionIsStackCall = false;
 
-    // ====== Stack usage tracking for -Zcheck (precise stack overuse) ======
+    // ====== Stack usage estimate from emitted instructions for -Zcheck ======
     bool TrackStackUsage;
     int CurStackBytes;
     int MaxStackBytes;
 
+    // Reset the current emitted stack depth and its per-function peak.
     void BeginStackUsageTracking()
     {
         TrackStackUsage = true;
@@ -239,12 +255,15 @@ class CodeGenerator
         MaxStackBytes = 0;
     }
 
+    // Stop recording instructions and return the peak accumulated for this function.
     int EndStackUsageTracking()
     {
         TrackStackUsage = false;
         return MaxStackBytes;
     }
 
+    // Estimate stack growth in emission order from recognized pushes, pops, SP adjustments and call return addresses.
+    // This does not analyze control-flow joins or add callee/interrupt stack requirements.
     void TrackStackInstr(string mnemonic, AsmOperand operand)
     {
         if (!TrackStackUsage) return;
@@ -312,6 +331,7 @@ class CodeGenerator
 
     static readonly bool ShowVerboseComments = true;
 
+    // Apply a configured bank override to recognized function definitions/prototypes; retain the declaration bank otherwise.
     int ResolveTopLevelRomBank(int declaredBank, Expr decl)
     {
         if (decl == null) return declaredBank;
@@ -346,6 +366,7 @@ class CodeGenerator
         return declaredBank;
     }
 
+    // Strip up to sixteen supported declaration wrappers while carrying the outer source position inward.
     Expr UnwrapTopLevelDeclForPlacement(Expr decl)
     {
         Expr d = decl;
@@ -372,6 +393,7 @@ class CodeGenerator
         return d;
     }
 
+    // Collect readonly symbols first, then mark those used without the explicit bank-argument pattern as near data.
     void AnalyzeReadonlyDataPlacement(Expr[] declarations)
     {
         NearReadonlyDataNames.Clear();
@@ -394,6 +416,8 @@ class CodeGenerator
             ScanReadonlyDataUsage(decl, readonlyNames);
     }
 
+    // Use syntax to distinguish near references from __bankof queries and paired far-call arguments.
+    // This is a placement heuristic, not whole-program pointer-flow analysis.
     void ScanReadonlyDataUsage(Expr expr, HashSet<string> readonlyNames)
     {
         if (expr == null || readonlyNames == null || readonlyNames.Count == 0) return;
@@ -409,6 +433,7 @@ class CodeGenerator
                 return;
             }
 
+            // A bare readonly argument paired with __bankof of that exact symbol in the same call is treated as explicit far use.
             var bankofSiblingNames = new HashSet<string>(StringComparer.Ordinal);
             if (callArgs != null)
             {
@@ -466,6 +491,7 @@ class CodeGenerator
         }
     }
 
+    // Generate assembly and required runtime helpers, optimize the result, then publish the collected ABI/codegen report.
     public static List<Expr> CompileAll(Expr program)
     {
         CodeGenerator converter = new CodeGenerator();
@@ -526,6 +552,7 @@ class CodeGenerator
         return optimizedLines;
     }
 
+    // Produce deterministic function/call/copy/RST ordering and include the accumulated guard and ABI observations.
     CodegenAnalysisReport BuildCodegenAnalysisReport()
     {
         var report = new CodegenAnalysisReport();
@@ -592,6 +619,8 @@ class CodeGenerator
         return report;
     }
 
+    // Estimate report widths with two-byte pointers/enums and known aggregate layouts.
+    // Unknown aggregate sizes and invalid or unavailable array dimensions use small fallbacks; this is not strict sizeof validation.
     int SizeOfTypeLoose(CType type)
     {
         if (type == null || type == CType.Void) return 0;
@@ -626,12 +655,14 @@ class CodeGenerator
         return 1;
     }
 
+    // Recognize the signed eight- and sixteen-bit scalar types.
     static bool IsSignedIntegerType(CType t)
     {
         return t != null && t.IsSimple &&
                (t.SimpleType == CSimpleType.Int8 || t.SimpleType == CSimpleType.Int16);
     }
 
+    // Classify enums with unsigned eight- and sixteen-bit scalar types for this backend.
     static bool IsUnsignedIntegerType(CType t)
     {
         if (t == null) return false;
@@ -639,30 +670,37 @@ class CodeGenerator
         return t.IsSimple && (t.SimpleType == CSimpleType.UInt8 || t.SimpleType == CSimpleType.UInt16);
     }
 
+    // Accept integer scalars and enums, excluding pointer and aggregate types.
     static bool IsIntegerLike(CType t)
     {
         return t != null && (t.IsInteger || t.IsEnum);
     }
 
+    // Use a sixteen-bit result, signed whenever either operand is a signed integer type.
     static CType PromoteIntegerBinaryType(CType leftType, CType rightType)
     {
         bool hasSigned = IsSignedIntegerType(leftType) || IsSignedIntegerType(rightType);
         return hasSigned ? CType.Int16 : CType.UInt16;
     }
 
+    // Keep the low eight bits without saturating.
     static int ToUInt8(int v) => v & 0xFF;
+    // Keep the low sixteen bits without saturating.
     static int ToUInt16(int v) => v & 0xFFFF;
+    // Interpret the low byte as a signed two's-complement value.
     static int ToInt8(int v)
     {
         int b = v & 0xFF;
         return (b >= 0x80) ? (b - 0x100) : b;
     }
+    // Interpret the low word as a signed two's-complement value.
     static int ToInt16(int v)
     {
         int w = v & 0xFFFF;
         return (w >= 0x8000) ? (w - 0x10000) : w;
     }
 
+    // Apply the target scalar width and signedness; pointers/enums use unsigned words and other types retain the input.
     static int NormalizeConstValueForType(int value, CType t)
     {
         if (t == null) return value;
@@ -677,6 +715,7 @@ class CodeGenerator
         return value;
     }
 
+    // Use signed comparison only for integer-like operands promoted to a signed word; pointer comparisons stay unsigned.
     bool ShouldUseSignedComparison(Expr left, Expr right)
     {
         if (left == null || right == null) return false;
@@ -689,6 +728,7 @@ class CodeGenerator
         return IsSignedIntegerType(promoted);
     }
 
+    // Choose signed arithmetic from the inferred integer/enum operand types, using unsigned-byte type fallbacks.
     bool ShouldUseSignedArithmetic(Expr left, Expr right)
     {
         if (left == null || right == null) return false;
@@ -699,6 +739,7 @@ class CodeGenerator
         return IsSignedIntegerType(PromoteIntegerBinaryType(lt, rt));
     }
 
+    // Identify a repeated assertion diagnostic by source position, rendered condition and user message.
     string BuildStaticAssertDedupeKey(Expr origin, Expr condition, string message)
     {
         string src = origin == null ? "" : origin.Source.ToString();
@@ -707,6 +748,7 @@ class CodeGenerator
         return src + "|" + cond + "|" + msg;
     }
 
+    // Report each assertion failure once, including raw and type-normalized values even if condition type inference fails.
     void ReportStaticAssertFailure(Expr origin, Expr condition, string message, int rawValue)
     {
         string key = BuildStaticAssertDedupeKey(origin, condition, message);
@@ -729,11 +771,13 @@ class CodeGenerator
         Error(origin, ErrorCode.StaticAssertFailed, text);
     }
 
+    // Group calls by caller/callee, their banks, call kind and thunk/farcall routing.
     string BuildCallEdgeKey(string caller, string callee, int callerBank, int calleeBank, string kind, bool viaThunk, bool viaFarcall)
     {
         return caller + "|" + callee + "|" + callerBank + "|" + calleeBank + "|" + kind + "|" + (viaThunk ? "1" : "0") + "|" + (viaFarcall ? "1" : "0");
     }
 
+    // Count equivalent call edges and retain copied argument widths and the source position of their most recent occurrence.
     void RecordCallEdge(Expr origin, string callee, int calleeBank, string kind, bool viaThunk, bool viaFarcall, int[] actualArgSizes, int[] expectedArgSizes)
     {
         string caller = string.IsNullOrEmpty(CurrentFunctionName) ? "<global>" : CurrentFunctionName;
@@ -763,6 +807,8 @@ class CodeGenerator
         edge.LastSource = origin == null ? "" : origin.Source.ToString();
     }
 
+    // Append report issues for unsupported stack-parameter/return widths and the last argument widths recorded on each edge.
+    // This method records strings rather than raising compiler errors; extra arguments with no expected width are not flagged here.
     void RunAbiConsistencyChecks()
     {
         foreach (var kv in Functions)
@@ -806,10 +852,11 @@ class CodeGenerator
         }
     }
 
+    // Inject referenced tile-write helpers ahead of ordinary code, using global function symbols in fixed bank zero.
     void AppendSetTileV9RoutinesIfUsed(List<Expr> rawLines)
     {
         // Robust detection: in some compile paths the "UsedSetTile*" flags can be missed.
-        // Also scan the already-emitted asm for CALL targets.
+        // Also scan symbolic operands in the already-emitted assembly for helper references.
         bool needCore = UsedSetTileCore;
         bool needFast = UsedSetTileFastCore;
         bool needBulk = UsedSetTileBulkCore;
@@ -851,6 +898,8 @@ class CodeGenerator
         // and later CALL/JMP fixups will remain unresolved.
         // Emit entrypoints as Tag.Function so they remain global symbols.
 
+        // Write one tile after coordinate checks; with the LCD on, wait for STAT mode 0/1 under DI and issue EI on return.
+        // The LCD-on path does not preserve an already-disabled interrupt state.
         if (needCore)
         {
             injected.Add(Expr.Make(Tag.Function, "__settile_core"));
@@ -932,6 +981,7 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("RET"));
         }
 
+        // Check coordinates but omit LCD polling and interrupt changes; the caller must provide a valid VRAM access period.
         if (needFast)
         {
             injected.Add(Expr.Make(Tag.Function, "__settile_fast_core"));
@@ -973,6 +1023,8 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("RET"));
         }
 
+        // Copy a nonzero byte count, polling before each LCD-on write and enabling interrupts after the transfer.
+        // The caller supplies valid source/destination spans; this helper performs no address bounds check.
         if (needBulk)
         {
             injected.Add(Expr.Make(Tag.Function, "__settile_bulk_core"));
@@ -1026,6 +1078,7 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("RET"));
         }
 
+        // Copy B bytes without polling or changing interrupt state; a zero count returns without touching memory.
         if (needBulkFast)
         {
             injected.Add(Expr.Make(Tag.Function, "__settile_bulk_fast_core"));
@@ -1056,6 +1109,7 @@ class CodeGenerator
         rawLines.InsertRange(insertAt, injected);
     }
 
+    // Allocate one named scroll-state byte in WRAM bank 1 and emit its debug storage declaration.
     AsmOperand AllocateScrollByte(string name)
     {
         int address = Allocate(Wram1Region, 1);
@@ -1063,6 +1117,7 @@ class CodeGenerator
         return MemOp(address, name);
     }
 
+    // Allocate shared scroll/split state once, including an eight-entry table with six bytes per entry.
     void EnsureScrollState()
     {
         if (ScrollStateAllocated) return;
@@ -1093,6 +1148,7 @@ class CodeGenerator
         Emit(Tag.Variable, "__kq_scroll_split_table", ScrollSplitTableAddr, tableBytes);
     }
 
+    // Emit the split-table operations and VBlank/STAT handlers when requested or referenced by symbolic assembly operands.
     void AppendScrollHelpersIfUsed(List<Expr> rawLines)
     {
         bool needScrollHelpers = UseScrollSplitHelpers;
@@ -1121,6 +1177,7 @@ class CodeGenerator
         var injected = new List<Expr>();
         injected.Add(Expr.Make(Tag.Comment, "[KITAQGB] injected scroll split helpers"));
 
+        // Reset the split count/index and disable STAT coincidence interrupts; existing table bytes are left in place.
         string resetDone = "__kq_scroll_split_reset_done";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_split_reset_core"));
         injected.Add(Expr.MakeAsm("XOR_A"));
@@ -1133,6 +1190,7 @@ class CodeGenerator
         injected.Add(Expr.Make(Tag.Label, resetDone));
         injected.Add(Expr.MakeAsm("RET"));
 
+        // Append staged LY, SCX, SCY, WX, WY and masked flags; silently ignore entries beyond the eight-slot capacity.
         string pushHaveRoom = "__kq_scroll_split_push_have_room";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_split_push_core"));
         injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollSplitCountVar));
@@ -1167,6 +1225,7 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LD_MEM_A", ScrollSplitCountVar));
         injected.Add(Expr.MakeAsm("RET"));
 
+        // Schedule entry A by programming LYC and STAT bit 6, or disable that bit when A is outside the current count.
         string schedDisable = "__kq_scroll_schedule_next_disable";
         string schedHaveTarget = "__kq_scroll_schedule_next_have_target";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_schedule_next"));
@@ -1198,6 +1257,7 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x41, AddressMode.HighMem)));
         injected.Add(Expr.MakeAsm("RET"));
 
+        // Apply the fields selected by an entry's flags. Show follows hide when both are set; palette color zero reuses SCX/SCY bytes.
         string applySkipBg = "__kq_scroll_apply_entry_skip_bg";
         string applySkipWin = "__kq_scroll_apply_entry_skip_win";
         string applySkipHide = "__kq_scroll_apply_entry_skip_hide";
@@ -1262,6 +1322,7 @@ class CodeGenerator
         injected.Add(Expr.Make(Tag.Label, applyDone));
         injected.Add(Expr.MakeAsm("RET"));
 
+        // Capture base window visibility and arm a nonempty table at index zero, enabling VBlank/STAT interrupts and issuing EI.
         string commitDisable = "__kq_scroll_split_commit_disable";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_split_commit_core"));
         injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x40, AddressMode.HighMem))); // LCDC
@@ -1287,6 +1348,8 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_schedule_next", AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("RET"));
 
+        // Save registers/SVBK, select WRAM bank 1, restore base scroll state and restart the split sequence for the frame.
+        // A first entry at LY zero is applied immediately before scheduling the following entry.
         string vbDisable = "__kq_vblank_disable";
         string vbFirstNonZero = "__kq_vblank_first_nonzero";
         string vbDone = "__kq_vblank_done";
@@ -1300,6 +1363,7 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x70, AddressMode.HighMem)));
         injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)));
+        // Set the existing fixed-address frame-ready flag used by the VBlank path.
         injected.Add(Expr.MakeAsm("LD_MEM_A", new AsmOperand(0xC29C, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollBgXCurVar));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x43, AddressMode.HighMem))); // SCX
@@ -1347,6 +1411,7 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("POP_AF"));
         injected.Add(Expr.MakeAsm("RETI"));
 
+        // Save registers/SVBK, apply the current entry and advance its index, or disable further coincidence interrupts at the end.
         string statDisable = "__kq_stat_disable";
         string statDone = "__kq_stat_done";
         injected.Add(Expr.Make(Tag.Function, "__kq_stat_vector"));
@@ -1401,6 +1466,7 @@ class CodeGenerator
         rawLines.InsertRange(insertAt, injected);
     }
 
+    // Direct calls are valid to common bank zero or to the caller's currently mapped bank.
     bool IsDirectCallBankSafe(int calleeBank, int callerBank)
     {
         // bank0 is fixed ROM and always directly callable.
@@ -1408,6 +1474,7 @@ class CodeGenerator
         return calleeBank == callerBank;
     }
 
+    // Reuse a target/bank-specific stub and reject conflicting stack-ABI metadata; the stored bank number is masked to eight bits.
     string EnsureBank0Thunk(string targetName, int targetBank, bool isStackCall, int stackArgBytes)
     {
         string thunkName = "__kq_thunk_b" + (targetBank & 0xFF) + "_" + targetName;
@@ -1432,6 +1499,7 @@ class CodeGenerator
         return thunkName;
     }
 
+    // Deduplicate runtime-selected-bank call stubs by target name.
     string EnsureBank0RuntimeFarcallThunk(string targetName)
     {
         string thunkName = "__kq_farcall_" + targetName;
@@ -1440,6 +1508,7 @@ class CodeGenerator
         return thunkName;
     }
 
+    // Emit only requested bank-switch/copy/call stubs in fixed bank zero, keeping common code available across ROM switches.
     void AppendBankHelpersIfUsed(List<Expr> rawLines)
     {
         if (!UseBankSwitchBank0Helper &&
@@ -1450,6 +1519,7 @@ class CodeGenerator
         var injected = new List<Expr>();
         injected.Add(Expr.Make(Tag.Comment, "[KITAQGB] injected bank0 banking helpers"));
 
+        // Write the requested low bank byte to $2000 and update its HRAM shadow at $FF82.
         if (UseBankSwitchBank0Helper)
         {
             injected.Add(Expr.Make(Tag.Function, "__kq_bankswitch_bank0"));
@@ -1458,6 +1528,8 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("RET"));
         }
 
+        // Switch for a BC-byte forward copy from DE to HL, then restore the bank from a shared HRAM slot.
+        // This helper does not mask interrupts or nest saved banks on the CPU stack.
         if (UseFarMemcpyBank0Helper)
         {
             string loopLabel = "__kq_far_memcpy_loop";
@@ -1487,6 +1559,7 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("RET"));
         }
 
+        // Emit runtime-bank call wrappers that save the old bank on the CPU stack and preserve returned A/HL across restoration.
         if (Bank0RuntimeFarcallThunkMap.Count > 0)
         {
             foreach (var kv in Bank0RuntimeFarcallThunkMap.OrderBy(x => x.Key))
@@ -1523,6 +1596,7 @@ class CodeGenerator
             }
         }
 
+        // Include the depth-failure spin loop only when at least one stack-ABI thunk needs it.
         bool hasStackCallThunk = Bank0ThunkMap.Values.Any(v => v.IsStackCall);
         if (hasStackCallThunk)
         {
@@ -1574,6 +1648,7 @@ class CodeGenerator
                 // pop caller return-address so callee sees args at SP+2,
                 // and keep nested-safe bank/return stacks in HRAM buffers.
                 injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(BankThunkSpAddr & 0xFF, AddressMode.Immediate)));
+                // Treat an out-of-encoding-range entry depth as uninitialized, but trap at the valid full-depth value.
                 injected.Add(Expr.MakeAsm("CP_IMM", new AsmOperand(BankThunkDepthEncodedBase, AddressMode.Immediate)));
                 injected.Add(Expr.MakeAsm("JP_C", new AsmOperand("kq_thunk_depth_init_" + thunkName, AddressMode.Absolute)));
                 injected.Add(Expr.MakeAsm("CP_IMM", new AsmOperand(BankThunkDepthEncodedLimit + 1, AddressMode.Immediate)));
@@ -1592,6 +1667,7 @@ class CodeGenerator
                 injected.Add(Expr.MakeAsm("LD_C_A"));
                 injected.Add(Expr.MakeAsm("LD_B_IMM", new AsmOperand(0, AddressMode.Immediate)));
 
+                // Remove the caller return address from the CPU stack and store it with the bank in the selected HRAM depth slot.
                 injected.Add(Expr.MakeAsm("POP_DE"));
 
                 injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x82, AddressMode.Immediate)));
@@ -1618,6 +1694,7 @@ class CodeGenerator
                 injected.Add(Expr.MakeAsm("PUSH_HL"));
 
                 injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(BankThunkSpAddr & 0xFF, AddressMode.Immediate)));
+                // Validate the return depth before decrementing it and retrieving the matching saved bank/return address.
                 injected.Add(Expr.MakeAsm("CP_IMM", new AsmOperand(BankThunkDepthEncodedBase + 1, AddressMode.Immediate)));
                 injected.Add(Expr.MakeAsm("JP_C", new AsmOperand("__kq_thunk_stack_trap", AddressMode.Absolute)));
                 injected.Add(Expr.MakeAsm("CP_IMM", new AsmOperand(BankThunkDepthEncodedLimit + 1, AddressMode.Immediate)));
@@ -1657,6 +1734,7 @@ class CodeGenerator
         rawLines.InsertRange(insertAt, injected);
     }
 
+    // Emit the VBK readback probe when needed, restoring VBK and BC/DE and returning a byte Boolean in A.
     void AppendCgbHelpersIfUsed(List<Expr> rawLines)
     {
         if (!UseCgbRuntimeDetectHelper) return;
@@ -1707,6 +1785,7 @@ class CodeGenerator
         rawLines.InsertRange(insertAt, injected);
     }
 
+    // Map each supported safe-write intrinsic and alias to its CGB I/O offset and report name.
     bool TryGetCgbSafeRegister(string funcName, out int ioOffset, out string regName)
     {
         ioOffset = 0;
@@ -1734,6 +1813,7 @@ class CodeGenerator
         }
     }
 
+    // Read the three WRAM-bank bits and normalize bank zero to the effective bank-one selection.
     void EmitReadNormalizedSvbkIntoA()
     {
         EmitAsm("LDH_A_MEM", new AsmOperand(0x70, AddressMode.HighMem));
@@ -1745,6 +1825,7 @@ class CodeGenerator
         EmitLabel(ok);
     }
 
+    // Load a configured known result directly, otherwise request/call the runtime probe and count that emitted check.
     void EmitRuntimeCgbCheckCall()
     {
         if (Program.TryGetKnownCgbRuntimeValue(out int knownCgbValue))
@@ -1758,11 +1839,13 @@ class CodeGenerator
         CgbRuntimeCheckCount++;
     }
 
+    // Return true only when compile-time runtime-mode knowledge explicitly identifies CGB.
     bool IsKnownCgbRuntimeTrue()
     {
         return Program.TryGetKnownCgbRuntimeValue(out int knownCgbValue) && knownCgbValue != 0;
     }
 
+    // Zero-extend A into HL and push a two-byte word.
     void EmitPushAAsWord()
     {
         EmitAsm("LD_L_A");
@@ -1770,36 +1853,44 @@ class CodeGenerator
         EmitAsm("PUSH_HL");
     }
 
+    // Push B zero-extended through HL without changing the live value in A.
     void EmitPushBAsWord()
     {
-        EmitAsm("LD_A_B");
-        EmitPushAAsWord();
+        EmitAsm("LD_L_B");
+        EmitAsm("LD_H_IMM", new AsmOperand(0, AddressMode.Immediate));
+        EmitAsm("PUSH_HL");
     }
 
+    // Push D zero-extended through HL without changing the live value in A.
     void EmitPushDAsWord()
     {
-        EmitAsm("LD_A_D");
-        EmitPushAAsWord();
+        EmitAsm("LD_L_D");
+        EmitAsm("LD_H_IMM", new AsmOperand(0, AddressMode.Immediate));
+        EmitAsm("PUSH_HL");
     }
 
+    // Evaluate the expression as a byte and push it zero-extended; the upper expression byte is not retained.
     void EmitPushExprAsWord(Expr expr)
     {
         CompileIntoA(expr);
         EmitPushAAsWord();
     }
 
+    // Evaluate and push the full word result in HL.
     void EmitPushExprAsWideWord(Expr expr)
     {
         CompileIntoHL(expr);
         EmitAsm("PUSH_HL");
     }
 
+    // Pop the requested word count into HL; nonpositive counts emit nothing.
     void EmitDiscardStackWords(int count)
     {
         for (int i = 0; i < count; ++i)
             EmitAsm("POP_HL");
     }
 
+    // Write only the low VBK bit and record the write; a hardware-mode guard must be supplied by the surrounding path.
     void EmitSetVbkUnchecked(byte value)
     {
         EmitAsm("LD_A_IMM", new AsmOperand(value & 0x01, AddressMode.Immediate));
@@ -1808,6 +1899,7 @@ class CodeGenerator
         CgbGuardedRegisters.Add("VBK");
     }
 
+    // Select and mark the ordinary or fast single-tile helper for later injection.
     void EmitCallSetTileCore(bool fast)
     {
         if (fast)
@@ -1822,6 +1914,7 @@ class CodeGenerator
         }
     }
 
+    // Select and mark the ordinary or fast bulk-tile helper for later injection.
     void EmitCallSetTileBulkCore(bool fast)
     {
         if (fast)
@@ -1836,6 +1929,7 @@ class CodeGenerator
         }
     }
 
+    // Select $9800 or $9C00 in DE from the requested LCDC map-selection bit.
     void EmitLoadTileMapBaseToDe(int lcdcMask, string labelPrefix)
     {
         AsmOperand base0 = MakeUniqueLabel(labelPrefix + "_base0");
@@ -1851,6 +1945,7 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Select $9800 or $9C00 in HL from the requested LCDC map-selection bit.
     void EmitLoadTileMapBaseToHl(int lcdcMask, string labelPrefix)
     {
         AsmOperand base0 = MakeUniqueLabel(labelPrefix + "_base0");
@@ -1866,6 +1961,7 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Copy BC bytes forward from DE to HL, advancing both pointers and consuming BC; zero length skips the load/store.
     void EmitRamMemcpyLoop(string labelPrefix)
     {
         AsmOperand loop = MakeUniqueLabel(labelPrefix + "_loop");
@@ -1883,6 +1979,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Copy BC bytes from DE to HL; safe LCD-on writes each use STAT polling under DI followed by EI.
+    // The caller supplies valid spans, and the helper does not preserve an initially disabled interrupt state.
     void EmitVramMemcpyLoop(bool safe, string labelPrefix)
     {
         AsmOperand fast = MakeUniqueLabel(labelPrefix + "_fast");
@@ -1931,6 +2029,7 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Unroll constant counts from zero through eight without consuming BC; optionally emit per-byte LCD-on wait sections.
     bool TryEmitVramMemcpyConstCount(bool safe, int count, string labelPrefix)
     {
         if (count < 0 || count > 8) return false;
@@ -1976,6 +2075,7 @@ class CodeGenerator
         return true;
     }
 
+    // Load a masked constant word or zero-extended byte/word expression into BC for transfer loops.
     void EmitLengthExprIntoBC(Expr lenExpr)
     {
         Expr foldedLen = FoldConstants(lenExpr);
@@ -1999,11 +2099,14 @@ class CodeGenerator
         EmitAsm("LD_C_L");
     }
 
+    // Use the shared tile-map address calculation for rectangle operations.
     void EmitTileMapRectAddressIntoHL(Expr baseExpr, Expr xExpr, Expr yExpr)
     {
         EmitTileMapAddressIntoHL(baseExpr, xExpr, yExpr);
     }
 
+    // Compute base + 32*y + x using byte coordinates, specializing constant coordinates to avoid runtime arithmetic.
+    // This helper does not clamp coordinates to the map dimensions.
     void EmitTileMapAddressIntoHL(Expr baseExpr, Expr xExpr, Expr yExpr)
     {
         Expr foldedBaseExpr = FoldConstants(baseExpr);
@@ -2085,6 +2188,8 @@ class CodeGenerator
         EmitAsm("ADD_HL_DE");
     }
 
+    // Unroll up to eight sequential source bytes into a column with destination stride 32.
+    // HL remains at the last written cell; DE advances past the source bytes.
     bool TryEmitVramColumnCopyConstCount(bool safe, int count, string labelPrefix)
     {
         if (count < 0 || count > 8) return false;
@@ -2148,6 +2253,7 @@ class CodeGenerator
         return true;
     }
 
+    // Fill BC consecutive bytes at HL with D, using optional per-byte LCD/STAT waits and consuming BC.
     void EmitVramMemsetLoop(bool safe, string labelPrefix)
     {
         AsmOperand fast = MakeUniqueLabel(labelPrefix + "_fast");
@@ -2194,6 +2300,7 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Unroll up to eight fills from D, optionally waiting before each LCD-on write; zero count emits no memory access.
     bool TryEmitVramMemsetConstCount(bool safe, int count, string labelPrefix)
     {
         if (count < 0 || count > 8) return false;
@@ -2237,6 +2344,7 @@ class CodeGenerator
         return true;
     }
 
+    // Store C through HL directly or after an LCD-on STAT wait; the guarded path uses DI/EI rather than saving interrupt state.
     void EmitVramStoreCToHl(bool safe, string labelPrefix)
     {
         if (!safe)
@@ -2267,12 +2375,15 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Request the common-bank far-copy helper and emit its call.
     void EmitCallFarMemcpyHelper()
     {
         UseFarMemcpyBank0Helper = true;
         EmitAsm("CALL", new AsmOperand("__kq_far_memcpy_bank0", AddressMode.Absolute));
     }
 
+    // Compute a tile-map offset from B=x and D=y with optional doubled axes.
+    // The doubled X path uses an eight-bit rotate, so callers must supply the supported coordinate range.
     void EmitComputeTile16CellOffsetToHlFromRegs(bool doubleX, bool doubleY)
     {
         // Inputs: B=x, D=y.
@@ -2298,6 +2409,8 @@ class CodeGenerator
         EmitAsm("ADD_HL_DE");
     }
 
+    // Write a 2-by-2 tile cell into a RAM buffer with a 32-byte tile-row stride.
+    // The caller supplies valid cell coordinates and enough storage for both rows.
     void EmitTile16BufferedWriteIntrinsic(Expr bufExpr, Expr xExpr, Expr yExpr, Expr valueExpr, bool incrementQuad, string labelPrefix)
     {
         EmitPushExprAsWideWord(bufExpr);
@@ -2315,6 +2428,7 @@ class CodeGenerator
         EmitAsm("LD_A_L");
         EmitAsm("LD_B_A");
 
+        // Double both cell coordinates to locate the upper-left tile in the buffer.
         EmitComputeTile16CellOffsetToHlFromRegs(true, true);
 
         EmitAsm("POP_DE");
@@ -2325,6 +2439,8 @@ class CodeGenerator
         if (incrementQuad) EmitAsm("INC_C");
         EmitAsm("LD_HL_C");
 
+        // After writing the upper-right tile, skip to the lower-left tile.
+        // Quad mode increments the byte value in row-major order; fill mode repeats it.
         EmitAsm("LD_DE_IMM", new AsmOperand(31, AddressMode.Immediate));
         EmitAsm("ADD_HL_DE");
         if (incrementQuad) EmitAsm("INC_C");
@@ -2334,6 +2450,8 @@ class CodeGenerator
         EmitAsm("LD_HL_C");
     }
 
+    // Emit two row copies from a 32-byte-stride buffer to the selected background map.
+    // X and count are tile units, while Y is a 16-pixel cell row; count is narrowed to a byte.
     void EmitTile16FlushRowsIntrinsic(Expr bufExpr, Expr yExpr, Expr xExpr, Expr countExpr, bool cgbAttr, string labelPrefix)
     {
         Expr foldedCountExpr = FoldConstants(countExpr);
@@ -2360,12 +2478,13 @@ class CodeGenerator
 
         EmitComputeTile16CellOffsetToHlFromRegs(false, true);
 
-        EmitAsm("POP_DE");
+        EmitAsm("POP_DE"); // DE = buffer base
+        EmitAsm("PUSH_HL"); // preserve the offset before DE replaces the saved Y
         EmitAsm("ADD_HL_DE"); // HL = src row0 start
-        EmitAsm("PUSH_HL");   // save src row0 start
-
-        // Recompute dest row0 from x/y.
-        EmitComputeTile16CellOffsetToHlFromRegs(false, true);
+        EmitAsm("LD_D_H");
+        EmitAsm("LD_E_L");
+        EmitAsm("POP_HL"); // reuse the original offset for the destination map
+        EmitAsm("PUSH_DE"); // save src row0 start
         EmitLoadTileMapBaseToDe(0x08, labelPrefix + "_bgbase");
         EmitAsm("ADD_HL_DE"); // HL = dest row0 start
 
@@ -2373,6 +2492,7 @@ class CodeGenerator
         EmitAsm("PUSH_HL");
         EmitAsm("PUSH_DE");
         EmitAsm("LD_B_C");
+        // Use the small constant-count VRAM copy when available, otherwise the shared copy core.
         if (foldedCountExpr.Match(Tag.Integer, out int tile16CountConst) &&
             TryEmitVramMemcpyConstCount(true, tile16CountConst & 0xFF, labelPrefix + "_row0_small"))
         {
@@ -2400,6 +2520,7 @@ class CodeGenerator
         EmitAsm("POP_HL");
 
         EmitAsm("LD_B_C");
+        // Apply the same count to the lower tile row after restoring and advancing both starts.
         if (foldedCountExpr.Match(Tag.Integer, out int tile16CountConst2) &&
             TryEmitVramMemcpyConstCount(true, tile16CountConst2 & 0xFF, labelPrefix + "_row1_small"))
         {
@@ -2413,6 +2534,8 @@ class CodeGenerator
             EmitSetVbkUnchecked(0);
     }
 
+    // Write one byte at base + 32*y + x, rejecting unsigned coordinates outside 0..31.
+    // The safe LCD-on path waits for STAT mode 0/1 and enables interrupts after the write.
     void EmitTileWriteAtDeFromRegs(bool safe, string labelPrefix)
     {
         AsmOperand end = MakeUniqueLabel(labelPrefix + "_end");
@@ -2476,6 +2599,8 @@ class CodeGenerator
         EmitLabel(end);
     }
 
+    // Use the supplied DE base, or select a window/background map from LCDC.
+    // Save Y across map selection because reading LCDC overwrites A.
     void EmitTileWriteForTargetFromRegs(CgbTileTargetKind target, bool safe, string labelPrefix)
     {
         switch (target)
@@ -2498,6 +2623,8 @@ class CodeGenerator
         }
     }
 
+    // Emit a tile attribute write in VRAM bank 1 and return to bank 0 afterward.
+    // Without a known CGB runtime, evaluate arguments first and skip the write on DMG.
     void EmitSetTileAttrIntrinsic(Expr xExpr, Expr yExpr, Expr attrExpr, bool fast)
     {
         if (IsKnownCgbRuntimeTrue())
@@ -2516,13 +2643,15 @@ class CodeGenerator
             EmitAsm("LD_A_L");
             EmitAsm("LD_B_A");
 
-            EmitAsm("LD_A_D");
             EmitSetVbkUnchecked(1);
+            // Selecting VBK overwrites A; restore the saved Y coordinate afterward.
+            EmitAsm("LD_A_D");
             EmitCallSetTileCore(fast);
             EmitSetVbkUnchecked(0);
             return;
         }
 
+        // Keep argument words on the stack until the runtime CGB check has finished.
         AsmOperand skip = MakeUniqueLabel("settileattr_skip");
         AsmOperand done = MakeUniqueLabel("settileattr_done");
 
@@ -2558,6 +2687,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Evaluate and save X, Y, tile and attribute bytes before issuing either write.
+    // The tile write uses the current bank (normally 0); CGB attributes use bank 1, then bank 0 is restored.
     void EmitSetTileCgbIntrinsic(Expr xExpr, Expr yExpr, Expr tileExpr, Expr attrExpr, bool fast)
     {
         if (IsKnownCgbRuntimeTrue())
@@ -2606,6 +2737,7 @@ class CodeGenerator
             return;
         }
 
+        // On DMG, still write the tile and discard the three saved attribute-pass arguments.
         AsmOperand skip = MakeUniqueLabel("settilecgb_skip");
         AsmOperand done = MakeUniqueLabel("settilecgb_done");
 
@@ -2662,6 +2794,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Write one attribute to an explicit, window or background map only on CGB.
+    // The explicit base is a full word; coordinate and attribute arguments are bytes.
     void EmitTileTargetAttrIntrinsic(CgbTileTargetKind target, Expr baseExpr, Expr xExpr, Expr yExpr, Expr attrExpr, bool safe, string labelPrefix)
     {
         if (IsKnownCgbRuntimeTrue())
@@ -2671,6 +2805,9 @@ class CodeGenerator
             EmitPushExprAsWord(xExpr);
             EmitPushExprAsWord(yExpr);
             EmitPushExprAsWord(attrExpr);
+
+            // Select the bank before loading the Y argument into A.
+            EmitSetVbkUnchecked(1);
 
             EmitAsm("POP_HL");
             EmitAsm("LD_A_L");
@@ -2689,7 +2826,6 @@ class CodeGenerator
                 EmitAsm("LD_E_L");
             }
 
-            EmitSetVbkUnchecked(1);
             EmitTileWriteForTargetFromRegs(target, safe, labelPrefix);
             EmitSetVbkUnchecked(0);
             return;
@@ -2737,6 +2873,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Write tile and attribute passes at the same selected map coordinate.
+    // Keep the second pass on the stack because map selection and VRAM writes use the working registers.
     void EmitTileTargetCgbIntrinsic(CgbTileTargetKind target, Expr baseExpr, Expr xExpr, Expr yExpr, Expr tileExpr, Expr attrExpr, bool safe, string labelPrefix)
     {
         if (IsKnownCgbRuntimeTrue())
@@ -2766,7 +2904,7 @@ class CodeGenerator
             {
                 EmitAsm("POP_HL");
                 EmitAsm("PUSH_HL");
-                EmitPushDAsWord();
+                EmitAsm("PUSH_DE"); // Save the attribute in the high byte; preserve A and the base in HL.
                 EmitAsm("LD_D_H");
                 EmitAsm("LD_E_L");
                 EmitPushBAsWord();
@@ -2792,7 +2930,7 @@ class CodeGenerator
                 EmitAsm("LD_B_L");
 
                 EmitAsm("POP_HL");
-                EmitAsm("LD_C_L");
+                EmitAsm("LD_C_H");
 
                 EmitAsm("POP_HL");
                 EmitAsm("LD_D_H");
@@ -2845,7 +2983,7 @@ class CodeGenerator
         {
             EmitAsm("POP_HL");
             EmitAsm("PUSH_HL");
-            EmitPushDAsWord();
+            EmitAsm("PUSH_DE"); // Save the attribute in the high byte; preserve A and the base in HL.
             EmitAsm("LD_D_H");
             EmitAsm("LD_E_L");
             EmitPushBAsWord();
@@ -2875,7 +3013,7 @@ class CodeGenerator
             EmitAsm("LD_B_L");
 
             EmitAsm("POP_HL");
-            EmitAsm("LD_C_L");
+            EmitAsm("LD_C_H");
 
             EmitAsm("POP_HL");
             EmitAsm("LD_D_H");
@@ -2903,6 +3041,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Copy byte-counted attribute data into bank 1, skipping the copy on DMG.
+    // The fast form relies on the caller to provide a VRAM-safe transfer interval.
     void EmitSetTileAttrBulkIntrinsic(Expr destExpr, Expr srcExpr, Expr countExpr, bool fast, string labelPrefix)
     {
         Expr foldedCountExpr = FoldConstants(countExpr);
@@ -2920,6 +3060,7 @@ class CodeGenerator
             EmitAsm("POP_DE");
             EmitAsm("POP_HL");
 
+            // Small constant counts can inline the transfer; other counts use the shared copy helper.
             if (foldedCountExpr.Match(Tag.Integer, out int attrBulkCountConst) &&
                 TryEmitVramMemcpyConstCount(!fast, attrBulkCountConst & 0xFF, labelPrefix + "_small"))
             {
@@ -2950,6 +3091,7 @@ class CodeGenerator
         EmitAsm("POP_DE");
         EmitAsm("POP_HL");
 
+        // The runtime-guarded path uses the same transfer selection after restoring arguments.
         if (foldedCountExpr.Match(Tag.Integer, out int attrBulkCountConst2) &&
             TryEmitVramMemcpyConstCount(!fast, attrBulkCountConst2 & 0xFF, labelPrefix + "_small"))
         {
@@ -2966,6 +3108,8 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Copy tile and attribute streams to the same address while retaining the byte count.
+    // The first copy uses the current bank (normally 0); the attribute pass is conditional on CGB.
     void EmitSetTileCgbBulkIntrinsic(Expr destExpr, Expr tileSrcExpr, Expr attrSrcExpr, Expr countExpr, bool fast, string labelPrefix)
     {
         Expr foldedCountExpr = FoldConstants(countExpr);
@@ -2994,6 +3138,7 @@ class CodeGenerator
             EmitAsm("PUSH_BC");
             EmitAsm("LD_B_C");
 
+            // Save destination, attribute source and count before the tile transfer consumes its registers.
             if (foldedCountExpr.Match(Tag.Integer, out int cgbBulkCountConst) &&
                 TryEmitVramMemcpyConstCount(!fast, cgbBulkCountConst & 0xFF, labelPrefix + "_tile_small"))
             {
@@ -3010,6 +3155,7 @@ class CodeGenerator
             EmitAsm("POP_HL");
             EmitAsm("LD_B_C");
 
+            // Reload the saved count for the attribute copy, then return to VRAM bank 0.
             if (foldedCountExpr.Match(Tag.Integer, out int cgbBulkCountConst2) &&
                 TryEmitVramMemcpyConstCount(!fast, cgbBulkCountConst2 & 0xFF, labelPrefix + "_attr_small"))
             {
@@ -3047,6 +3193,7 @@ class CodeGenerator
         EmitAsm("PUSH_BC");
         EmitAsm("LD_B_C");
 
+        // Tile data is copied even when runtime detection subsequently skips CGB attributes.
         if (foldedCountExpr.Match(Tag.Integer, out int cgbBulkCountConst3) &&
             TryEmitVramMemcpyConstCount(!fast, cgbBulkCountConst3 & 0xFF, labelPrefix + "_tile_small"))
         {
@@ -3067,6 +3214,7 @@ class CodeGenerator
         EmitAsm("POP_HL");
         EmitAsm("LD_B_C");
 
+        // After a successful runtime check, restore the attribute source and original destination.
         if (foldedCountExpr.Match(Tag.Integer, out int cgbBulkCountConst4) &&
             TryEmitVramMemcpyConstCount(!fast, cgbBulkCountConst4 & 0xFF, labelPrefix + "_attr_small"))
         {
@@ -3083,6 +3231,7 @@ class CodeGenerator
         EmitLabel(done);
     }
 
+    // Inject the requested self-loop trap after RST metadata at the start of bank-zero code.
     void AppendCheckTrapIfUsed(List<Expr> rawLines)
     {
         if (CheckTrapLabel == null) return;
@@ -3098,6 +3247,7 @@ class CodeGenerator
         rawLines.InsertRange(insertAt, injected);
     }
 
+    // Inject a bank-zero panic helper that disables interrupts and remains in a HALT loop.
     void AppendRuntimeAssertHelperIfUsed(List<Expr> rawLines)
     {
         if (!UseRuntimeAssertPanicHelper) return;
@@ -3120,6 +3270,7 @@ class CodeGenerator
 
 
     // ====== RST call compression (assembler stub + optimizer rewrite) ======
+    // Describe one selected restart-vector mapping and its estimated static byte savings.
     struct RstHotEntry
     {
         public int Vector;
@@ -3127,6 +3278,7 @@ class CodeGenerator
         public int Calls;
         public int NetBytes;
 
+        // Capture the selected vector, target and static call-site count for later emission/reporting.
         public RstHotEntry(int vector, string targetLabel, int calls, int netBytes)
         {
             Vector = vector;
@@ -3136,6 +3288,7 @@ class CodeGenerator
         }
     }
 
+    // Track definitions, direct timing-sensitive operations and named callees for RST filtering.
     sealed class RstTargetSafetyInfo
     {
         public bool Defined;
@@ -3145,6 +3298,7 @@ class CodeGenerator
         public readonly HashSet<string> Calls = new HashSet<string>(StringComparer.Ordinal);
     }
 
+    // Recognize conventional case-sensitive hardware names; this is a naming heuristic, not symbol resolution.
     static bool LooksLikeHardwareRegisterName(string sym)
     {
         if (string.IsNullOrEmpty(sym)) return false;
@@ -3167,6 +3321,8 @@ class CodeGenerator
         return false;
     }
 
+    // Classify selected interrupt, IO and mapper-access patterns conservatively for RST selection.
+    // This scan does not prove the absence of timing-sensitive indirect memory access.
     static bool IsDirectTimingSensitiveInstruction(string mnemonic, AsmOperand operand)
     {
         if (mnemonic == null) return false;
@@ -3215,10 +3371,12 @@ class CodeGenerator
         return false;
     }
 
+    // Scan function bodies and propagate sensitivity through recognized direct CALL edges.
     static Dictionary<string, RstTargetSafetyInfo> BuildRstTargetSafetyMap(List<Expr> rawLines)
     {
         var map = new Dictionary<string, RstTargetSafetyInfo>(StringComparer.Ordinal);
 
+        // Create records for referenced targets as well as definitions; Defined distinguishes the two.
         RstTargetSafetyInfo EnsureInfo(string name)
         {
             if (!map.TryGetValue(name, out var inf))
@@ -3262,6 +3420,7 @@ class CodeGenerator
             }
         }
 
+        // Exclude entry/runtime labels and, in safe mode, ordinary user-function names.
         bool NameForcesSensitive(string name)
         {
             if (string.IsNullOrEmpty(name)) return true;
@@ -3299,6 +3458,7 @@ class CodeGenerator
 
                 foreach (string callee in info.Calls)
                 {
+                    // Propagate a conservative result when a referenced target has no safety record.
                     if (!map.TryGetValue(callee, out var cInfo))
                     {
                         info.Sensitive = true;
@@ -3329,6 +3489,8 @@ class CodeGenerator
         return map;
     }
 
+    // Rank eligible named CALL targets by estimated ROM-byte savings and assign restart vectors.
+    // Counts are static call sites, not measured runtime invocation frequencies.
     static IEnumerable<RstHotEntry> SelectRstHotEntriesFromAssembly(List<Expr> rawLines)
     {
         // Available vectors. By default we keep 0x38 free (often used as a trap/debug RST).
@@ -3366,6 +3528,7 @@ class CodeGenerator
             counts[name]++;
         }
 
+        // Apply size, maximum-call-count and explicit-exclusion limits before the safety filter.
         var preFiltered = counts
             .Select(kv => new { Name = kv.Key, Calls = kv.Value, Net = (CallSaveBytes * kv.Value) - StubCostBytes })
             .Where(x => x.Calls >= MinCalls && x.Net > 0)
@@ -3373,6 +3536,7 @@ class CodeGenerator
             .Where(x => !exclude.Contains(x.Name))
             .ToList();
 
+        // Unsafe mode bypasses definition/sensitivity checks; safe mode requires a defined allowed target.
         bool IsSafetyAllowed(string name)
         {
             if (Program.RstUnsafe) return true;
@@ -3381,6 +3545,7 @@ class CodeGenerator
             return !sInfo.Sensitive && !sInfo.DirectSensitive;
         }
 
+        // Prefer the largest estimated savings, then use call counts and names to break ties.
         var ordered = preFiltered
             .Where(x => IsSafetyAllowed(x.Name))
             .OrderByDescending(x => x.Net)
@@ -3468,8 +3633,10 @@ class CodeGenerator
     }
 
     // ====== Helpers: Addressing ======
+    // Select the high-memory form for addresses at or above FF00; callers supply 16-bit addresses.
     bool IsHighMemAddr(int addr) => (addr >= 0xFF00);
 
+    // Encode high memory by its low-byte offset, retaining absolute addressing elsewhere.
     AsmOperand MemOp(int addr, string comment = null)
     {
         AsmOperand op = IsHighMemAddr(addr)
@@ -3480,6 +3647,7 @@ class CodeGenerator
         return op;
     }
 
+    // Represent a little-endian word as two independently classified adjacent byte operands.
     WideOperand WideMemOp(int addr, string comment = null)
     {
         return new WideOperand(
@@ -3488,12 +3656,14 @@ class CodeGenerator
         );
     }
 
+    // Choose LDH for high-memory reads and the absolute byte-load form otherwise.
     void EmitLoadA(AsmOperand src)
     {
         if (src.Mode == AddressMode.HighMem) EmitAsm("LDH_A_MEM", src);
         else EmitAsm("LD_A_MEM", src);
     }
 
+    // Choose LDH for high-memory writes and the absolute byte-store form otherwise.
     void EmitStoreA(AsmOperand dst)
     {
         if (dst.Mode == AddressMode.HighMem) EmitAsm("LDH_MEM_A", dst);
@@ -3501,6 +3671,7 @@ class CodeGenerator
     }
 
     // ====== Stack ABI helpers (stack parameters, SP base) ======
+    // Reload the saved entry stack pointer; this path uses A while assembling HL.
     void EmitLoadStackBaseIntoHL()
     {
         if (CurrentStackBaseAddr >= 0)
@@ -3517,12 +3688,14 @@ class CodeGenerator
         }
     }
 
+    // Add a word displacement through DE, replacing DE and updating the addition flags.
     void EmitAddImm16ToHL(int imm16)
     {
         EmitAsm("LD_DE_IMM", new AsmOperand(imm16, AddressMode.Immediate16));
         EmitAsm("ADD_HL_DE");
     }
 
+    // Address a parameter relative to the saved entry stack pointer, past the two-byte return address.
     void EmitStackParamAddrIntoHL(int offsetFromArg0, string comment = null)
     {
         // arg0 starts at (SP_entry + 2)
@@ -3531,12 +3704,14 @@ class CodeGenerator
         if (comment != null) EmitComment(comment);
     }
 
+    // Resolve the parameter slot and read its byte into A.
     void EmitLoadStackParamU8IntoA(Symbol sym)
     {
         EmitStackParamAddrIntoHL(sym.Value, $"stack param {sym.Name}");
         EmitAsm("LD_A_HL");
     }
 
+    // Read consecutive low/high bytes through DE, then return the parameter word in HL.
     void EmitLoadStackParamU16IntoHL(Symbol sym)
     {
         EmitStackParamAddrIntoHL(sym.Value, $"stack param {sym.Name}");
@@ -3549,12 +3724,14 @@ class CodeGenerator
         EmitAsm("LD_L_E");
     }
 
+    // Emit a byte store after resolving the stack parameter address.
     void EmitStoreAIntoStackParam(Symbol sym)
     {
         EmitStackParamAddrIntoHL(sym.Value, $"stack param {sym.Name}");
         EmitAsm("LD_HL_A");
     }
 
+    // Keep the source word on the machine stack while computing its destination slot.
     void EmitStoreHLIntoStackParam(Symbol sym)
     {
         // Save value
@@ -3570,7 +3747,9 @@ class CodeGenerator
 
 
     // ====== Helpers: scaled index (base + index * elemSize) ======
+    // Recognize positive powers of two before choosing shift-only index scaling.
     static bool IsPow2(int n) => n > 0 && (n & (n - 1)) == 0;
+    // Count left shifts for the positive power-of-two input selected by IsPow2.
     static int Log2Pow2(int n)
     {
         int s = 0;
@@ -3618,6 +3797,7 @@ class CodeGenerator
         return false;
     }
 
+    // Accept only an already-folded nonnegative integer dimension in this compatibility check.
     static bool TryEvalConstArrayDim(Expr dimExpr, out int dim)
     {
         dim = 0;
@@ -3626,6 +3806,7 @@ class CodeGenerator
         return false;
     }
 
+    // Use the complete element size for array/pointer indexing; other expression types default to one byte.
     int GetIndexElementSize(Expr baseExpr)
     {
         CType t = TypeOf(baseExpr);
@@ -3639,6 +3820,7 @@ class CodeGenerator
 	// B3) __prg_rom u8 table[i] read optimization
 	// - constant index: ld a,(table+off)
 	// - aligned-to-256 table + u8 index: HL = (HIGH(table)<<8) | idx ; ld a,(hl)
+	// Optimize named readonly byte-array reads, preserving the optional bounds-check emission.
 	bool TryCompilePrgRomU8IndexIntoA(Expr origin, Expr left, Expr right)
 	{
 	    // Only for 1-byte element arrays
@@ -3694,6 +3876,7 @@ class CodeGenerator
         if (elemSize <= 0) elemSize = 1;
         if (elemSize == 1)
         {
+            // Unit-stride byte indices are zero-extended; wider indices retain their word value.
             if (SizeOf(indexExpr) == 1)
             {
                 if (indexExpr.Match(Tag.Integer, out int k))
@@ -3859,6 +4042,7 @@ class CodeGenerator
         return false;
     }
 
+    // Ignore top-level const and require matching aggregate kind/name with a completed layout.
     bool IsSameCompleteAggregateType(CType leftType, CType rightType)
     {
         if (leftType == null || rightType == null) return false;
@@ -3870,6 +4054,7 @@ class CodeGenerator
         return AggregateTypes.TryGetValue(l.Name, out ai) && ai.TotalSize >= 0;
     }
 
+    // Reject implicit copies touching ROM, VRAM, OAM or IO; wrapped ranges are rejected conservatively.
     bool IsSpecialImplicitCopyAddress(int address, int size, out string region)
     {
         region = null;
@@ -3888,6 +4073,7 @@ class CodeGenerator
         return false;
     }
 
+    // Recognize numeric addresses and addresses of named fixed storage after stripping casts.
     bool TryGetConstantAddress(Expr expr, out int address)
     {
         address = 0;
@@ -3904,6 +4090,8 @@ class CodeGenerator
         return false;
     }
 
+    // Check recognizable storage against implicit aggregate-copy restrictions.
+    // Unknown pointer values are allowed here; this is not a runtime memory-region check.
     bool IsImplicitAggregateCopyStorageAllowed(Expr lvalue, bool destination, int size, out string reason)
     {
         reason = null;
@@ -3959,6 +4147,7 @@ class CodeGenerator
             return true;
         }
 
+        // Apply the storage restriction recursively to the containing object for fields and indexed elements.
         if (e.Match(Tag.Field, out Expr baseExpr, out string _fieldName))
             return IsImplicitAggregateCopyStorageAllowed(baseExpr, destination, size, out reason);
 
@@ -3983,6 +4172,7 @@ class CodeGenerator
         return false;
     }
 
+    // Choose the legacy size-based strategy label recorded in aggregate-copy reports.
     string AggregateCopyStrategy(int size)
     {
         if (size <= 2) return "scalar";
@@ -3993,6 +4183,7 @@ class CodeGenerator
 
     const int StructValueArgumentWarningThreshold = 16;
 
+    // Record the chosen copy strategy with the current function, aggregate type and source location.
     void RecordAggregateCopy(Expr origin, CType type, int size, string strategy)
     {
         AggregateCopyReport.Add(new AggregateCopyInfo
@@ -4005,6 +4196,7 @@ class CodeGenerator
         });
     }
 
+    // Resolve the source before the destination, preserving its address on the stack, then emit a forward copy.
     void EmitAggregateCopy(Expr origin, Expr dst, Expr src, CType aggregateType, int size)
     {
         string strategy = AggregateCopyStrategy(size);
@@ -4032,12 +4224,15 @@ class CodeGenerator
         EmitCopyBytesFromDEToHL(size);
     }
 
+    // Copy bytes forward from DE to HL using inline loads/stores; overlapping ranges are not handled as memmove.
+    // The register end positions depend on the selected block/remainder path.
     void EmitCopyBytesFromDEToHL(int size)
     {
         if (size <= 0) return;
 
         if (size > 16 && size <= 255)
         {
+            // Medium copies loop over unrolled eight- or sixteen-byte blocks, then emit the remaining bytes.
             int blockSize = size <= 64 ? 8 : 16;
             int blocks = size / blockSize;
             int rem = size % blockSize;
@@ -4067,6 +4262,7 @@ class CodeGenerator
         if (size > 255)
         {
             EmitAsm("LD_BC_IMM", new AsmOperand(size & 0xFFFF, AddressMode.Immediate16));
+            // Large copies use a 16-bit countdown; the emitted count is the low word of the requested size.
             AsmOperand loop = MakeUniqueLabel("aggcpy16_loop");
             EmitLabel(loop);
             EmitAsm("LD_A_DE");
@@ -4087,6 +4283,7 @@ class CodeGenerator
         }
     }
 
+    // Prefer the primary source location, fall back to the argument location, and omit unknown positions.
     Maybe<FilePosition> BestDiagnosticPosition(Expr primary, Expr fallback)
     {
         FilePosition pos = primary == null ? FilePosition.Unknown : primary.Source;
@@ -4097,6 +4294,7 @@ class CodeGenerator
         return Maybe.Just(pos);
     }
 
+    // Warn when a by-value aggregate exceeds the configured copy-warning threshold.
     void WarnStructValueArgumentIfNeeded(Expr origin, Expr argExpr, string funcName, int argIndex, CType aggregateType, int size)
     {
         if (size <= StructValueArgumentWarningThreshold) return;
@@ -4107,6 +4305,7 @@ class CodeGenerator
             argIndex);
     }
 
+    // When either side is an aggregate, require matching complete struct/union types before copying argument bytes.
     bool ValidateAggregateArgument(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType)
     {
         CType argType = TypeOf(argExpr);
@@ -4127,6 +4326,7 @@ class CodeGenerator
         return true;
     }
 
+    // Validate recognizable source/destination storage and copy a by-value aggregate into a fixed argument slot.
     void EmitAggregateArgumentCopyToFixedAddress(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int dstAddr, string dstName)
     {
         int size = SizeOf(callExpr, paramType);
@@ -4168,6 +4368,7 @@ class CodeGenerator
         EmitCopyBytesFromDEToHL(size);
     }
 
+    // Copy an aggregate argument to the supplied offset from the current SP after evaluating its source address.
     void EmitAggregateArgumentCopyToStackOffset(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int stackOffset)
     {
         int size = SizeOf(callExpr, paramType);
@@ -4202,6 +4403,7 @@ class CodeGenerator
         EmitCopyBytesFromDEToHL(size);
     }
 
+    // Route aggregate arguments through validation/copying; store scalar bytes or little-endian words directly.
     void EmitStoreArgumentToFixedAddress(Expr callExpr, string funcName, int argIndex, Expr argExpr, CType paramType, int dstAddr, string dstName)
     {
         CType argType = TypeOf(argExpr);
@@ -4233,10 +4435,12 @@ class CodeGenerator
         }
     }
 
+    // Copy a type-compatible aggregate result to the active inline destination or saved caller return storage.
     void EmitAggregateReturnValue(Expr returnExpr)
     {
         CFunctionInfo info = null;
         int inlineDestAddr = -1;
+        // Inline returns require a destination associated with the current inline-return context.
         if (InlineReturnLabels.Count > 0)
         {
             if (InlineStructReturnDestAddrs.Count == 0)
@@ -4295,6 +4499,7 @@ class CodeGenerator
         EmitCopyBytesFromDEToHL(size);
     }
 
+    // Recognize aggregate assignment, validate both storage locations, and report unsupported copies as handled errors.
     bool TryEmitAggregateAssignment(Expr assignExpr, Expr left, Expr right)
     {
         CType leftType = TypeOf(left);
@@ -4359,6 +4564,7 @@ class CodeGenerator
             if (k >= 0 && k < len) return;
         }
 
+        // A safe-index type suppresses this optional fixed-array bounds check.
         CType indexType = TypeOf(indexExpr);
         if (indexType != null && indexType.IsSafeIndex) return;
 
@@ -4397,6 +4603,7 @@ class CodeGenerator
         EmitLabel(ok);
     }
 
+    // Create a shared trap label lazily; bank-zero trap code is injected only if it is used.
     AsmOperand EnsureCheckTrap()
     {
         if (CheckTrapLabel == null)
@@ -4404,6 +4611,8 @@ class CodeGenerator
         return CheckTrapLabel;
     }
 
+    // Compare HL with an unsigned word limit, jumping on decisive high/low-byte differences.
+    // Equality falls through to the caller rather than jumping explicitly to okLabel.
     void EmitCheckHLGeImm16(int limit, AsmOperand okLabel, AsmOperand trapLabel)
     {
         EmitAsm("LD_DE_IMM", new AsmOperand(limit & 0xFFFF, AddressMode.Immediate16));
@@ -4442,6 +4651,7 @@ class CodeGenerator
         EmitLabel(ok);
     }
 
+    // Preserve the first fastcall argument in B or BC while the low-water check uses A, HL and DE.
     void EmitFunctionEntryStackCheck(CFunctionInfo info, Expr origin, int bytesNeeded)
     {
         if (!Program.CheckStack || InUnsafe)
@@ -4478,6 +4688,7 @@ class CodeGenerator
     void CompileDiscard(Expr expr)
     {
         if (expr == null) return;
+        // An unused aggregate result still requires its call and return-storage handling.
         if (IsStructReturnType(TypeOf(expr)))
         {
             CompileCall(expr);
@@ -4524,6 +4735,7 @@ class CodeGenerator
         EmitLabel(ok);
     }
 
+    // Remove nested outer cast nodes to inspect the underlying expression shape.
     static Expr StripCasts(Expr e)
     {
         while (e.Match(Tag.Cast, out CType _t, out Expr sub))
@@ -4531,6 +4743,7 @@ class CodeGenerator
         return e;
     }
 
+    // Recognize a named fixed-size array and return its full storage size in bytes.
     bool TryGetFixedArrayByteLength(Expr e, out int byteLen, out string baseName)
     {
         byteLen = 0;
@@ -4586,11 +4799,14 @@ class CodeGenerator
     }
 
 
+    // Register runtime storage and declarations before emitting each ROM bank and function body.
+    // Function bodies are generated transactionally so their measured stack usage can precede them in an entry guard.
     void CompileProgram(Expr program)
     {
         OutputStack.Push(new OutputTransaction());
         CurrentScope = new LexicalScope(null);
 
+        // Reserve the compiler register slots before user declarations consume the remaining HRAM.
         int addrL = Allocate(HramRegion, 1);
         int addrH = Allocate(HramRegion, 1);
         RegisterL = MemOp(addrL, "reg L");
@@ -4649,6 +4865,7 @@ class CodeGenerator
         // ($decl_align N <decl>)
         // ($decl_section "NAME" <decl>)
         // ...and record per-declaration metadata.
+        // Preserve source positions and placement/calling-convention metadata while stripping declaration wrappers.
         var declItems = new List<(int sourceIndex, int bank, bool isFixedBank, int? fixedOrder, int align, string section, bool isUnsafe, bool isStackCall, Expr decl)>();
         int declSourceIndex = 0;
         foreach (var d0 in declarations)
@@ -4694,6 +4911,7 @@ class CodeGenerator
 
         if (declItems.Count > 0)
         {
+            // Resolve automatic bank choices only after explicit and near-data placement constraints are known.
             var resolvedDeclItems = new List<(int sourceIndex, int bank, bool isFixedBank, int? fixedOrder, int align, string section, bool isUnsafe, bool isStackCall, Expr decl)>(declItems.Count);
             foreach (var it in declItems)
             {
@@ -4703,12 +4921,14 @@ class CodeGenerator
             declItems = resolvedDeclItems;
         }
 
+        // Collect compile-time constants before resolving their expressions, permitting dependency lookup across declarations.
         PendingConstants.Clear();
         PendingConstantsResolving.Clear();
         foreach (var it in declItems)
         {
             if (it.decl.Match(Tag.Constant, out CType pendingType, out string pendingName, out Expr pendingValue))
             {
+                // ROM-materialized scalar constants remain addressable objects rather than compile-time-only symbols.
                 bool materializedConstScalar =
                     Program.ConstScalarInRom &&
                     pendingType.IsConst &&
@@ -4802,6 +5022,7 @@ class CodeGenerator
 
                 bool isFastCall = CanUseFastCall(decl, paramsFields, desiredStack: false);
 
+                // Retain inline bodies and their fixed parameter slots for later call-site expansion.
                 CFunctionInfo inlInfo = new CFunctionInfo
                 {
                     Parameters = paramsFields,
@@ -4826,6 +5047,7 @@ class CodeGenerator
             Expr saCond; string saMsg;
             if (decl.Match(Tag.StaticAssert, out saCond, out saMsg))
             {
+                // Report a false static assertion only when evaluating its condition introduced no earlier error.
                 int prevErr = Program.ErrorCount;
                 int v = CalculateConstantExpression(saCond);
                 if (Program.ErrorCount == prevErr && v == 0)
@@ -4855,6 +5077,7 @@ int mustCheckFlag;
                     }
                 }
 
+                // Store prototype bank, ABI and result metadata without emitting a function body.
                 CFunctionInfo protoInfo = new CFunctionInfo
                 {
                     Parameters = paramsFields,
@@ -4881,6 +5104,7 @@ int mustCheckFlag;
                     if (fi.IsStackCall != desiredStack)
                         Error(decl, "Function calling convention mismatch (__stackcall): " + funcName);
 
+                    // Keep the result-check requirement if any compatible declaration supplied it.
                     fi.MustCheck = fi.MustCheck || (mustCheckFlag != 0);
                     if (fi.IsPrototype)
                     {
@@ -4897,6 +5121,7 @@ int mustCheckFlag;
                 continue;
             }
 
+            // Definitions complete or create function metadata before the bank-emission pass.
             int mustCheckDef = 0;
             if (decl.Match(Tag.Function, out retType, out funcName, out paramsFields, out mustCheckDef, out body) ||
                 (mustCheckDef = 0) == 0 && decl.Match(Tag.Function, out retType, out funcName, out paramsFields, out body))
@@ -5035,6 +5260,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             // Note: we intentionally do not enforce memory region qualifiers in v1.
         }
 
+        // Record whether any declared function uses a switchable bank beyond the first ROM window.
         BankSwitchingUsed = Functions.Values.Any(fi => fi.RomBank >= 2);
 
         // Emit ROM content bank-by-bank (readonly data and functions), inserting $skip_to at each bank boundary.
@@ -5050,6 +5276,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                 .ToList();
             if (bankDeclItems.Any(x => x.fixedOrder.HasValue))
             {
+                // Reorder only explicitly marked positions, leaving unmarked declarations in their original relative slots.
                 var reordered = bankDeclItems.ToArray();
                 var markedPositions = new List<int>();
                 var markedItems = new List<(int sourceIndex, int bank, bool isFixedBank, int? fixedOrder, int align, string section, bool isUnsafe, bool isStackCall, Expr decl)>();
@@ -5187,8 +5414,10 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                     }
                     else
                     {
+                        // Choose local copies for parameters written by name; other stack parameters keep their incoming storage.
                         bool[] needCopy = AnalyzeStackAbiParamNeedsCopy(body, fields);
                         int[] offsets = new int[fields.Length];
+                        // Lay out stack arguments consecutively and request an entry-SP snapshot only when later access needs it.
                         int curOff = 0;
                         bool needsEntrySpSnapshot = false;
                         for (int i = 0; i < fields.Length; i++)
@@ -5337,6 +5566,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                     EndFunctionFrameTrackingAndCommit();
 
                     OutputTransaction fnTx = OutputStack.Pop();
+                    // Use the completed body transaction to obtain the peak extra stack usage for the entry check.
                     int fnMaxStack = EndStackUsageTracking();
 
                     // Emit function entry and precise stack guard, then append the function body.
@@ -5364,6 +5594,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         if (Output.SpeculationError) Program.Panic("root transaction error: {0}", Output.AbortReason);
     }
 
+    // Round upward using a bit mask; alignments above one are expected to be powers of two.
     static int AlignUp(int v, int a)
     {
         if (a <= 1) return v;
@@ -5392,6 +5623,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return 1;
     }
 
+    // Register an incomplete aggregate with unknown size unless that name already has an entry.
     void DeclareOpaqueAggregate(Expr decl, string name, AggregateLayout layout)
     {
         AggregateInfo existing;
@@ -5399,6 +5631,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         AggregateTypes.Add(name, new AggregateInfo(layout, -1, 1, false, Array.Empty<FieldInfo>()));
     }
 
+    // Calculate member offsets and final padding, replacing an incomplete declaration or rejecting a duplicate definition.
     void DefineAggregate(Expr decl, string name, FieldInfo[] parsedFields, AggregateLayout layout, bool isPacked, int forcedAlign)
     {
         FieldInfo[] fields = new FieldInfo[parsedFields.Length];
@@ -5407,6 +5640,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         int aggAlign = 1;
         for (int i = 0; i < parsedFields.Length; i++)
         {
+            // Resolve array extents before choosing each member size and packed/natural alignment.
             CType fieldType = CalculateConstantArrayDimensions(parsedFields[i].Type);
             int fieldSize = SizeOf(decl, fieldType);
             int fieldAlign = isPacked ? 1 : NaturalAlignOf(decl, fieldType);
@@ -5448,6 +5682,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         AggregateTypes.Add(name, info);
     }
 
+    // Use register passing for exactly one non-aggregate byte/word parameter when the stack ABI is not requested.
     bool CanUseFastCall(Expr origin, FieldInfo[] fields, bool desiredStack)
     {
         if (desiredStack || fields == null || fields.Length != 1) return false;
@@ -5460,22 +5695,26 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return size == 1 || size == 2;
     }
 
+    // Recognize struct/union results after removing top-level const.
     bool IsStructReturnType(CType type)
     {
         return type != null && type.WithoutConst().IsStructOrUnion;
     }
 
+    // Scalar word results use HL; aggregate results are returned through dedicated storage.
     bool ReturnsInHL(Expr origin, CType type)
     {
         return type != null && !IsStructReturnType(type) && SizeOf(origin, type) == 2;
     }
 
+    // Build a stable hidden return-storage symbol, using anon when no function name is available.
     string StructReturnSlotName(string funcName)
     {
         string safe = string.IsNullOrEmpty(funcName) ? "anon" : funcName;
         return "__kq_sret_" + safe;
     }
 
+    // Name the hidden per-function slot that saves an incoming aggregate-result destination.
     string StructReturnPointerSlotName(string funcName)
     {
         string safe = string.IsNullOrEmpty(funcName) ? "anon" : funcName;
@@ -5484,6 +5723,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
     int StructReturnTempCounter = 0;
 
+    // Allocate an aligned aggregate-result temporary in preferred cold storage and register its debug symbol.
     int AllocateStructReturnTemp(Expr origin, CType retType, string hint)
     {
         int size = SizeOf(origin, retType);
@@ -5496,6 +5736,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return addr;
     }
 
+    // Publish HL as the little-endian destination pointer used by the aggregate-return calling convention.
     void EmitStoreHLToGlobalStructReturnPointer()
     {
         EmitAsm("LD_A_L");
@@ -5504,6 +5745,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         EmitStoreA(StructReturnPtrHiVar);
     }
 
+    // Load a known result address and publish it for the next aggregate-return call.
     void EmitSetGlobalStructReturnPointer(int address, string comment = null)
     {
         EmitAsm("LD_HL_IMM", new AsmOperand(address, AddressMode.Immediate16));
@@ -5511,6 +5753,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         if (comment != null) EmitComment(comment);
     }
 
+    // Reload the destination saved by this function; diagnose missing metadata before emitting a zero fallback.
     void EmitLoadSavedStructReturnDestIntoHL(CFunctionInfo info)
     {
         if (info == null || info.ReturnPointerSymbol == null)
@@ -5527,6 +5770,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         EmitAsm("LD_H_A");
     }
 
+    // Copy the shared incoming destination into the function slot before nested calls can replace it.
     void EmitSaveIncomingStructReturnPointer(CFunctionInfo info)
     {
         if (info == null || !IsStructReturnType(info.ReturnType)) return;
@@ -5539,6 +5783,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         EmitStoreA(MemOp(addr + 1, info.ReturnPointerSymbol.Name + "+1"));
     }
 
+    // Reuse or allocate the function result buffer, plus a hot two-byte destination slot when function metadata is available.
     Symbol EnsureStructReturnSlot(Expr origin, CFunctionInfo info, string funcName, CType retType)
     {
         if (!IsStructReturnType(retType)) return null;
@@ -5573,6 +5818,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return sym;
     }
 
+    // Prefer an explicit destination override, then a named result buffer, otherwise an indirect-call temporary.
     int PrepareStructReturnDestination(Expr origin, CType retType, CFunctionInfo info, string funcName)
     {
         if (!IsStructReturnType(retType))
@@ -5601,6 +5847,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return address;
     }
 
+    // Recognize a direct call whose registered return type is a struct or union.
     bool TryGetStructReturnCallInfo(Expr expr, out CFunctionInfo info, out string funcName)
     {
         info = null;
@@ -5613,6 +5860,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return IsStructReturnType(info.ReturnType);
     }
 
+    // Resolve aggregate return types from direct functions, function pointers, or expression type inference.
     bool TryGetStructReturnCallType(Expr expr, out CType retType, out CFunctionInfo info, out string funcName)
     {
         retType = null;
@@ -5658,6 +5906,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return IsStructReturnType(retType);
     }
 
+    // Emit an aggregate-producing call and return its selected result-storage address in HL.
     bool TryCompileStructReturnCallAddressIntoHL(Expr expr, out CType retType)
     {
         retType = null;
@@ -5683,6 +5932,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return true;
     }
 
+    // Accept a compatible aggregate call temporary or resolve an ordinary source lvalue address.
     bool TryCompileAggregateSourceAddressIntoHL(Expr expr, CType expectedType)
     {
         CType retType;
@@ -5702,6 +5952,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         return TryCompileLValueAddressIntoHL(expr, false);
     }
 
+    // Dispatch statement forms, using specialized stores and control flow before falling back to an expression result in A.
     void CompileStatement(Expr expr)
     {
         if (ShowVerboseComments && !expr.MatchTag(Tag.Sequence) && !expr.Match(Tag.Empty))
@@ -5738,6 +5989,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         string opName;
         if (expr.Match(Tag.AssignModify, out opName, out left, out right))
         {
+            // Express compound assignment as a read-modify-write tree for the normal assignment paths.
             Expr expanded = Expr.Make(Tag.Assign, left, Expr.Make(opName, left, right));
             CompileStatement(expanded);
             return;
@@ -5757,6 +6009,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
         if (expr.Match(Tag.Asm, out mnemonic, out operand))
         {
+            // Resolve known data symbols in inline assembly and select LDH addressing for HRAM operands.
             AsmOperand fixedOp = operand;
             if (operand.Base.HasValue && TryFindSymbol(operand.Base.Value, out Symbol sym) && sym.Tag != SymbolTag.ReadonlyData)
             {
@@ -5883,6 +6136,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
         if (expr.MatchAny(Tag.If, out parts))
         {
+            // Fold constant arms and share an exit label only when a preceding arm must skip later alternatives.
             AsmOperand endIf = MakeUniqueLabel("end_if");
             bool usedEndIf = false;
             for (int i = 0; i < parts.Length; i += 2)
@@ -5914,12 +6168,16 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         {
             test = FoldConstants(test);
             AsmOperand top = MakeUniqueLabel("do_top");
+            // Continue in a do-while loop targets the condition after the body.
             AsmOperand check = MakeUniqueLabel("do_check");
             AsmOperand end = MakeUniqueLabel("do_end");
             Loop = new LoopScope { Outer = Loop, ContinueLabel = check, BreakLabel = end };
             EmitLabel(top);
             BeginScope();
+            // The nearest loop or switch owns break, irrespective of nesting order.
+            BreakLabels.Push(end);
             CompileStatement(body);
+            BreakLabels.Pop();
             EmitLabel(check);
             CompileJumpIf(true, test, top);
             EmitLabel(end);
@@ -5935,6 +6193,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                 return;
             }
 
+            // A constant-false for condition still executes the initializer within its scope.
             Expr foldedTest = test.Match(Tag.Empty) ? test : FoldConstants(test);
             if (!foldedTest.Match(Tag.Empty) && foldedTest.Match(Tag.Integer, out int forConst) && forConst == 0)
             {
@@ -5949,7 +6208,10 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             Loop = new LoopScope { Outer = Loop, ContinueLabel = top, BreakLabel = end };
             BeginScope(); CompileStatement(init); EmitLabel(top);
             if (!foldedTest.Match(Tag.Empty)) CompileJumpIf(false, foldedTest, end);
-            CompileStatement(body); CompileStatement(induct);
+            BreakLabels.Push(end);
+            CompileStatement(body);
+            BreakLabels.Pop();
+            CompileStatement(induct);
             EmitAsm("JP", top); EmitLabel(end); EndScope();
             Loop = Loop.Outer; return;
         }
@@ -6026,6 +6288,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             if (TryEmitAggregateAssignment(expr, left, right))
                 return;
 
+            // For an indexed aggregate field, form base plus scaled index plus field offset before evaluating the stored value.
             if (left.Match(Tag.Field, out Expr structExpr2, out string fieldName2))
             {
                 if (structExpr2.Match(Tag.Index, out Expr arrExpr2, out Expr idxExpr2))
@@ -6075,6 +6338,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                 }
             }
 
+            // For a dereferenced aggregate field, keep its computed address on the stack while producing the value.
             if (left.Match(Tag.Field, out Expr structExpr, out string fieldName))
             {
                 if (structExpr.Match(Tag.Load, out Expr ptrExpr))
@@ -6421,9 +6685,19 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             if (cases.Length == 0)
             {
                 CompileIntoA(test);
+                // A default-only switch still executes its body and owns its break target.
+                if (!defaultStmt.Match(Tag.Empty))
+                {
+                    AsmOperand defaultEnd = MakeUniqueLabel("switch_end");
+                    BreakLabels.Push(defaultEnd);
+                    CompileStatement(defaultStmt);
+                    BreakLabels.Pop();
+                    EmitLabel(defaultEnd);
+                }
                 return;
             }
 
+            // Validate enum case labels, then collect the byte range and source order for jump-table dispatch.
             CType switchType = TypeOf(test);
             bool switchIsEnum = (switchType != null && switchType.IsEnum);
             bool switchIsStrictEnum = switchIsEnum && switchType.IsEnumStrict;
@@ -6493,6 +6767,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
             AsmOperand afterTable = MakeUniqueLabel("switch_after_table");
             AsmOperand tableLabel = MakeUniqueLabel("switch_table");
 
+            // Keep the switch exit available while compiling its case bodies and default body.
             BreakLabels.Push(endLabel);
 
             // A = test (u8)
@@ -6573,6 +6848,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
 
     // CodeGenerator.cs
 
+    // Emit a conditional jump with constant folding, short-circuit evaluation and byte/word comparisons.
     void CompileJumpIf(bool condition, Expr expr, AsmOperand target)
     {
         expr = FoldConstants(expr);
@@ -6632,6 +6908,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         string tag;
         if (expr.MatchAnyTag(out tag, out left, out right) && IsComparisonTag(tag))
         {
+            // Choose signed ordering before selecting the byte or word comparison path.
             bool signedCmp = ShouldUseSignedComparison(left, right);
 
             if (SizeOf(left) == 1 && SizeOf(right) == 1)
@@ -6758,6 +7035,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
                tag == Tag.LessThanOrEqual || tag == Tag.GreaterThanOrEqual;
     }
 
+    // Translate comparison flags into jumps; strict greater-than requires both carry and zero to be clear.
     void EmitBranch(string tag, bool condition, AsmOperand target)
     {
 
@@ -6844,6 +7122,7 @@ else if (decl.Match(Tag.Variable, out region, out type, out name, out Expr _rang
         EmitLabel(lblEnd);
     }
 
+// Load the left word into HL and the right word into DE, preserving the left across RHS evaluation.
 void Load16BitCompareOperands(Expr left, Expr right)
     {
         CompileIntoHL(left);
@@ -6858,6 +7137,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
         }
     }
 
+    // Branch past the panic helper on success; evaluate an optional failure code only when the assertion fails.
     void CompileRuntimeAssert(Expr origin, Expr[] args)
     {
         if (args == null || args.Length < 1 || args.Length > 2)
@@ -6880,6 +7160,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
         EmitLabel(ok);
     }
 
+    // Dispatch recognized intrinsics before ordinary calls, tracking scalar width and aggregate-result storage for the caller.
     void CompileCall(Expr expr)
     {
 
@@ -6890,6 +7171,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
         string funcName = null;
         if (expr.MatchAny(Tag.Call, out Expr funcExpr, out Expr[] args) && funcExpr.Match(Tag.Name, out funcName))
         {
+            // Normalize compatibility aliases to the implementations shared by their canonical intrinsic names.
             if (funcName == "__settile_xy") funcName = "__settilebg";
             else if (funcName == "__vram_copy" || funcName == "__vram_copy_hblank" || funcName == "__vram_copy_dma") funcName = "__vram_memcpy";
             else if (funcName == "__vram_fill" || funcName == "__fill_tilemap") funcName = "__vram_memset";
@@ -6933,6 +7215,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                         LastCallReturnsHL = ReturnsInHL(expr, targetInfo.ReturnType);
                 }
 
+                // A known bank permits direct dispatch when safe, otherwise request a fixed-bank thunk.
                 if (TryResolveBankExprToConstU8(args[0], out int bankLiteral))
                 {
                     int optimizedBank = bankLiteral & 0xFF;
@@ -7002,6 +7285,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Expose the normalized WRAM bank only for a color-only target.
             if (funcName == "__svbk_get")
             {
                 if (args.Length != 0) Error(expr, "__svbk_get() expects 0 arguments");
@@ -7011,6 +7295,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select a WRAM bank and return the prior normalized bank; diagnose out-of-range constant requests.
             if (funcName == "__svbk_set")
             {
                 if (args.Length != 1) Error(expr, "__svbk_set(bank_u8) expects 1 argument");
@@ -7120,6 +7405,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Write both background coordinates immediately, synchronize current/pending state and clear its dirty bit.
             if (funcName == "__scroll_bg_set")
             {
                 if (args.Length != 2) Error(expr, "__scroll_bg_set(scx, scy) expects 2 arguments");
@@ -7147,6 +7433,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit background X now and discard any queued Y change by resynchronizing it with current Y.
             if (funcName == "__scroll_bg_x_set")
             {
                 if (args.Length != 1) Error(expr, "__scroll_bg_x_set(scx) expects 1 argument");
@@ -7164,6 +7451,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit background Y now and discard any queued X change by resynchronizing it with current X.
             if (funcName == "__scroll_bg_y_set")
             {
                 if (args.Length != 1) Error(expr, "__scroll_bg_y_set(scy) expects 1 argument");
@@ -7181,6 +7469,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Read the tracked current background X, excluding any pending buffered value.
             if (funcName == "__scroll_bg_x_get")
             {
                 if (args.Length != 0) Error(expr, "__scroll_bg_x_get() expects 0 arguments");
@@ -7189,6 +7478,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Read the tracked current background Y, excluding any pending buffered value.
             if (funcName == "__scroll_bg_y_get")
             {
                 if (args.Length != 0) Error(expr, "__scroll_bg_y_get() expects 0 arguments");
@@ -7197,6 +7487,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit both window register coordinates and synchronize the current and pending pairs.
             if (funcName == "__scroll_win_set")
             {
                 if (args.Length != 2) Error(expr, "__scroll_win_set(wx, wy) expects 2 arguments");
@@ -7224,6 +7515,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit window X and reset pending Y to its current value before clearing the window dirty bit.
             if (funcName == "__scroll_win_x_set")
             {
                 if (args.Length != 1) Error(expr, "__scroll_win_x_set(wx) expects 1 argument");
@@ -7241,6 +7533,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit window Y and reset pending X to its current value before clearing the window dirty bit.
             if (funcName == "__scroll_win_y_set")
             {
                 if (args.Length != 1) Error(expr, "__scroll_win_y_set(wy) expects 1 argument");
@@ -7258,6 +7551,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Return the tracked current WX register value.
             if (funcName == "__scroll_win_x_get")
             {
                 if (args.Length != 0) Error(expr, "__scroll_win_x_get() expects 0 arguments");
@@ -7266,6 +7560,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Return the tracked current WY register value.
             if (funcName == "__scroll_win_y_get")
             {
                 if (args.Length != 0) Error(expr, "__scroll_win_y_get() expects 0 arguments");
@@ -7274,6 +7569,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Queue both background coordinates and mark them for a later scroll flush.
             if (funcName == "__scroll_bg_set_buffered")
             {
                 if (args.Length != 2) Error(expr, "__scroll_bg_set_buffered(scx, scy) expects 2 arguments");
@@ -7295,6 +7591,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Replace pending background X while retaining the queued Y coordinate.
             if (funcName == "__scroll_bg_x_set_buffered")
             {
                 if (args.Length != 1) Error(expr, "__scroll_bg_x_set_buffered(scx) expects 1 argument");
@@ -7308,6 +7605,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Replace pending background Y while retaining the queued X coordinate.
             if (funcName == "__scroll_bg_y_set_buffered")
             {
                 if (args.Length != 1) Error(expr, "__scroll_bg_y_set_buffered(scy) expects 1 argument");
@@ -7321,6 +7619,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Queue both window coordinates without writing WX or WY yet.
             if (funcName == "__scroll_win_set_buffered")
             {
                 if (args.Length != 2) Error(expr, "__scroll_win_set_buffered(wx, wy) expects 2 arguments");
@@ -7342,6 +7641,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Update pending window X and mark the window pair dirty.
             if (funcName == "__scroll_win_x_set_buffered")
             {
                 if (args.Length != 1) Error(expr, "__scroll_win_x_set_buffered(wx) expects 1 argument");
@@ -7355,6 +7655,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Update pending window Y and mark the window pair dirty.
             if (funcName == "__scroll_win_y_set_buffered")
             {
                 if (args.Length != 1) Error(expr, "__scroll_win_y_set_buffered(wy) expects 1 argument");
@@ -7368,6 +7669,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Commit dirty background/window pairs to tracked state and hardware, then clear all scroll dirty flags.
             if (funcName == "__scroll_flush")
             {
                 if (args.Length != 0) Error(expr, "__scroll_flush() expects 0 arguments");
@@ -7403,6 +7705,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Enable the LCDC window bit and mirror that bit in the tracked visibility state.
             if (funcName == "__scroll_win_show")
             {
                 if (args.Length != 0) Error(expr, "__scroll_win_show() expects 0 arguments");
@@ -7416,6 +7719,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Clear the LCDC window bit and the tracked visibility state.
             if (funcName == "__scroll_win_hide")
             {
                 if (args.Length != 0) Error(expr, "__scroll_win_hide() expects 0 arguments");
@@ -7429,6 +7733,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Add byte-sized deltas to current background coordinates, commit immediately and discard pending changes.
             if (funcName == "__scroll_bg_add")
             {
                 if (args.Length != 2) Error(expr, "__scroll_bg_add(dx, dy) expects 2 arguments");
@@ -7459,6 +7764,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Add byte-sized deltas to current window coordinates, then synchronize pending state and hardware.
             if (funcName == "__scroll_win_add")
             {
                 if (args.Length != 2) Error(expr, "__scroll_win_add(dx, dy) expects 2 arguments");
@@ -7489,6 +7795,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Request the split-scroll helpers and dispatch the queue reset operation.
             if (funcName == "__scroll_split_reset")
             {
                 if (args.Length != 0) Error(expr, "__scroll_split_reset() expects 0 arguments");
@@ -7498,6 +7805,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Stage one background-only split entry in shared helper arguments, with unused window fields cleared.
             if (funcName == "__scroll_split_push")
             {
                 if (args.Length != 3) Error(expr, "__scroll_split_push(ly, scx, scy) expects 3 arguments");
@@ -7519,6 +7827,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Stage a complete split entry and warn about unsupported constant flag bits before helper dispatch.
             if (funcName == "__scroll_split_push_ex")
             {
                 if (args.Length != 6) Error(expr, "__scroll_split_push_ex(ly, scx, scy, wx, wy, flags) expects 6 arguments");
@@ -7548,6 +7857,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch the staged split-scroll configuration to the shared commit helper.
             if (funcName == "__scroll_split_commit")
             {
                 if (args.Length != 0) Error(expr, "__scroll_split_commit() expects 0 arguments");
@@ -7620,6 +7930,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 // Evaluate args left-to-right.
                 CompileIntoHL(args[0]); EmitAsm("PUSH_HL"); // dst
                 CompileIntoHL(args[1]); EmitAsm("PUSH_HL"); // src
+                // Fold the length for small-copy selection after saving both addresses across length evaluation.
                 Expr vramCopyLen = FoldConstants(args[2]);
                 EmitLengthExprIntoBC(vramCopyLen);
                 EmitAsm("POP_DE"); // src
@@ -7683,6 +7994,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
 
                 CompileIntoHL(args[0]); EmitAsm("PUSH_HL"); // dst
                 CompileIntoHL(args[1]); EmitAsm("PUSH_HL"); // src
+                // Use the same count specialization without emitting LCD-mode waits.
                 Expr vramCopyUnsafeLen = FoldConstants(args[2]);
                 EmitLengthExprIntoBC(vramCopyUnsafeLen);
                 EmitAsm("POP_DE"); // src
@@ -7715,6 +8027,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
 
                 CompileIntoHL(args[0]); EmitAsm("PUSH_HL"); // dst
                 CompileIntoA(args[1]); EmitAsm("LD_D_A"); // value
+                // Select a small constant fill when possible; the general path uses BC as count and D as value.
                 Expr vramSetLen = FoldConstants(args[2]);
                 EmitLengthExprIntoBC(vramSetLen);
                 EmitAsm("POP_HL"); // dst
@@ -7773,6 +8086,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
 
                 CompileIntoHL(args[0]); EmitAsm("PUSH_HL"); // dst
                 CompileIntoA(args[1]); EmitAsm("LD_D_A"); // value
+                // Specialize a constant unsafe fill or fall back to its unchecked byte loop.
                 Expr vramSetUnsafeLen = FoldConstants(args[2]);
                 EmitLengthExprIntoBC(vramSetUnsafeLen);
                 EmitAsm("POP_HL"); // dst
@@ -7816,6 +8130,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Copy a fixed RAM block after staging both pointers, using the shared BC-counted loop.
             if (funcName == "__copy16" || funcName == "__copy32")
             {
                 if (args.Length != 2) Error(expr, funcName + "(dst, src) expects 2 arguments");
@@ -7830,6 +8145,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Stage the bank/address and use a stack-based destination for a one-byte far-memory helper call.
             if (funcName == "__farpeek8")
             {
                 if (args.Length != 2) Error(expr, "__farpeek8(bank, addr) expects 2 arguments");
@@ -7837,30 +8153,32 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 CompileIntoA(args[0]); EmitPushAAsWord(); // bank
                 CompileIntoHL(args[1]); EmitAsm("PUSH_HL"); // src
                 EmitAsm("ADD_SP_IMM", new AsmOperand(-2, AddressMode.Relative)); // scratch
+                // At SP: scratch, saved address, saved bank; each occupies two bytes.
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
                 EmitAsm("PUSH_HL"); // dst = &scratch
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // bank
 
                 EmitAsm("POP_HL"); // dst
                 EmitAsm("LD_BC_IMM", new AsmOperand(1, AddressMode.Immediate16));
                 EmitCallFarMemcpyHelper();
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("ADD_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 return;
             }
 
+            // Fetch two bytes through the far-memory helper and mark the little-endian word result as returned in HL.
             if (funcName == "__farpeek16")
             {
                 if (args.Length != 2) Error(expr, "__farpeek16(bank, addr) expects 2 arguments");
@@ -7868,25 +8186,26 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 CompileIntoA(args[0]); EmitPushAAsWord(); // bank
                 CompileIntoHL(args[1]); EmitAsm("PUSH_HL"); // src
                 EmitAsm("ADD_SP_IMM", new AsmOperand(-2, AddressMode.Relative)); // scratch
+                // At SP: scratch, saved address, saved bank; each occupies two bytes.
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
                 EmitAsm("PUSH_HL"); // dst = &scratch
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // bank
 
                 EmitAsm("POP_HL"); // dst
                 EmitAsm("LD_BC_IMM", new AsmOperand(2, AddressMode.Immediate16));
                 EmitCallFarMemcpyHelper();
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
@@ -7899,6 +8218,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // This dispatch evaluates and discards both arguments; it emits no indirect call here.
             if (funcName == "__farcall_ptr")
             {
                 if (args.Length != 2) Error(expr, "__farcall_ptr(bank, func) expects 2 arguments");
@@ -7907,6 +8227,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Compute a tile-map address in HL and expose it as a word-valued intrinsic result.
             if (funcName == "__tile_addr")
             {
                 if (args.Length != 3) Error(expr, "__tile_addr(base, x, y) expects 3 arguments");
@@ -7916,6 +8237,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Choose constant folding, power-of-two multiplication or the general byte-multiply path for y*width+x.
             if (funcName == "__map_index")
             {
                 if (args.Length != 3) Error(expr, "__map_index(x, y, width) expects 3 arguments");
@@ -7923,10 +8245,14 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 Expr xExpr = FoldConstants(args[0]);
                 Expr yExpr = FoldConstants(args[1]);
                 Expr widthExpr = FoldConstants(args[2]);
+                // Apply the width parameter's byte conversion before choosing a shift specialization.
+                if (widthExpr.Match(Tag.Integer, out int byteWidth))
+                    widthExpr = Expr.Make(Tag.Integer, byteWidth & 0xFF).WithSource(widthExpr.Source);
                 if (xExpr.Match(Tag.Integer, out int fullXConst) &&
                     yExpr.Match(Tag.Integer, out int fullYConst) &&
                     widthExpr.Match(Tag.Integer, out int fullWidthConst))
                 {
+                    // Apply the byte argument widths before calculating the word-sized constant index.
                     int fullIndexConst = (((fullYConst & 0xFF) * (fullWidthConst & 0xFF)) + (fullXConst & 0xFF)) & 0xFFFF;
                     EmitAsm("LD_HL_IMM", new AsmOperand(fullIndexConst, AddressMode.Immediate16));
                     LastCallReturnsHL = true;
@@ -7969,16 +8295,20 @@ void Load16BitCompareOperands(Expr left, Expr right)
 
                 EmitMul8x8ToHL_EC("__map_index");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                // Loading the saved X argument uses HL, so preserve the multiplication result first.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("LD_D_IMM", new AsmOperand(0, AddressMode.Immediate));
+                EmitAsm("POP_HL");
                 EmitAsm("ADD_HL_DE");
                 EmitAsm("ADD_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 LastCallReturnsHL = true;
                 return;
             }
 
+            // Check half-open rectangle bounds using coordinate differences, with a fully constant fast path.
             if (funcName == "__xy_in_rect")
             {
                 if (args.Length != 6) Error(expr, "__xy_in_rect(x, y, rx, ry, rw, rh) expects 6 arguments");
@@ -8057,6 +8387,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Return the byte-sized sum of unsigned coordinate distances, wrapping sums beyond 255.
             if (funcName == "__manhattan")
             {
                 if (args.Length != 4) Error(expr, "__manhattan(x1, y1, x2, y2) expects 4 arguments");
@@ -8122,6 +8453,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Split a word bit index into a byte offset and mask; GB bit tests normalize the result to zero or one.
             if (funcName == "__bit_test" || funcName == "__bit_set" || funcName == "__bit_clear" || funcName == "__bit_toggle")
             {
                 if (args.Length != 2) Error(expr, funcName + "(ptr, bit_index) expects 2 arguments");
@@ -8212,6 +8544,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Read count/value pairs from banked memory until a zero count, filling VRAM and accumulating the output length.
             if (funcName == "__rle_decode_vram")
             {
                 if (args.Length != 3) Error(expr, "__rle_decode_vram(dst, bank, src) expects 3 arguments");
@@ -8228,6 +8561,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_HL_A");
 
                 AsmOperand loop = MakeUniqueLabel("rlevram_loop");
+                // Keep total, scratch, source, bank and destination in stack slots across repeated far-memory calls.
                 AsmOperand countDone = MakeUniqueLabel("rlevram_count_inc_done");
                 AsmOperand valueDone = MakeUniqueLabel("rlevram_value_inc_done");
                 AsmOperand finished = MakeUniqueLabel("rlevram_finished");
@@ -8304,6 +8638,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_H_D");
                 EmitAsm("LD_L_E"); // dst
 
+                // Use the LCD-aware fill loop for each decoded run, then store its advanced destination pointer.
                 EmitVramMemsetLoop(true, "rlevram_fill");
 
                 EmitAsm("PUSH_HL");
@@ -8458,6 +8793,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
             //    __memset_small(dest_ptr, val_u8, len_u8)
             if (funcName == "__memset" || funcName == "__memset_small")
             {
+                // The small API truncates its count to a byte; the general API uses a word count.
                 bool useU8Count = (funcName == "__memset_small");
                 if (args.Length != 3) { Error(expr, "__memset requires 3 arguments"); return; }
 
@@ -8514,6 +8850,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                         if (blocks8 > 0)
                         {
                             EmitAsm("LD_B_IMM", new AsmOperand(blocks8, AddressMode.Immediate));
+                            // Emit groups of eight stores followed by the constant remainder for medium fills.
                             AsmOperand loop8 = MakeUniqueLabel("memset8_loop");
                             EmitLabel(loop8);
                             for (int k = 0; k < 8; k++) EmitAsm("LDI_HL_A");
@@ -8537,6 +8874,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                         if (blocks16 > 0)
                         {
                             EmitAsm("LD_B_IMM", new AsmOperand(blocks16, AddressMode.Immediate));
+                            // Use sixteen-store groups for larger byte-range constant fills.
                             AsmOperand loop16 = MakeUniqueLabel("memset16_loop");
                             EmitLabel(loop16);
                             for (int k = 0; k < 16; k++) EmitAsm("LDI_HL_A");
@@ -8590,6 +8928,11 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("POP_HL");
 
                 AsmOperand loopLabel = MakeUniqueLabel("memset_loop");
+                AsmOperand wordDoneLabel = MakeUniqueLabel("memset_done");
+                // A zero word count must skip the first write as well as the loop.
+                EmitAsm("LD_A_B");
+                EmitAsm("OR_C");
+                EmitAsm("JP_Z", wordDoneLabel);
                 EmitLabel(loopLabel);
 
                 EmitAsm("LD_A_D");
@@ -8599,6 +8942,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_A_B");
                 EmitAsm("OR_C");
                 EmitAsm("JP_NZ", loopLabel);
+                EmitLabel(wordDoneLabel);
 
                 return;
             }
@@ -8607,6 +8951,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
             //    __memcpy_small(dst_ptr, src_ptr, len_u8)
             if (funcName == "__memcpy" || funcName == "__memcpy_small")
             {
+                // Select byte or word count semantics before optional fixed-array bounds diagnostics.
                 bool useU8Count = (funcName == "__memcpy_small");
                 if (args.Length != 3) { Error(expr, "__memcpy requires 3 arguments"); return; }
 
@@ -8677,6 +9022,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                         if (blocks8 > 0)
                         {
                             EmitAsm("LD_B_IMM", new AsmOperand(blocks8, AddressMode.Immediate));
+                            // Advance source and destination through eight-byte groups, then emit the remaining constant bytes.
                             AsmOperand loop8 = MakeUniqueLabel("memcpy8_loop");
                             EmitLabel(loop8);
                             for (int k = 0; k < 8; k++)
@@ -8702,6 +9048,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                     if (blocks16 > 0)
                     {
                         EmitAsm("LD_B_IMM", new AsmOperand(blocks16, AddressMode.Immediate));
+                        // Use sixteen-byte groups while keeping the residual copy length known at compile time.
                         AsmOperand loop16 = MakeUniqueLabel("memcpy16_loop");
                         EmitLabel(loop16);
                         for (int k = 0; k < 16; k++)
@@ -8774,6 +9121,11 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("POP_HL");
 
                 AsmOperand loopLabel = MakeUniqueLabel("memcpy_loop");
+                AsmOperand wordDoneLabel = MakeUniqueLabel("memcpy_done");
+                // A zero word count must skip the first write as well as the loop.
+                EmitAsm("LD_A_B");
+                EmitAsm("OR_C");
+                EmitAsm("JP_Z", wordDoneLabel);
                 EmitLabel(loopLabel);
 
                 EmitAsm("LD_A_DE");
@@ -8784,6 +9136,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_A_B");
                 EmitAsm("OR_C");
                 EmitAsm("JP_NZ", loopLabel);
+                EmitLabel(wordDoneLabel);
 
                 return;
             }
@@ -9491,6 +9844,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Stage the rectangle arguments and use the BG map selected by LCDC for row fills.
             if (funcName == "__settile_rect")
             {
                 if (args.Length != 5) Error(expr, "__settile_rect(x, y, w, h, tile) expects 5 arguments");
@@ -9507,11 +9861,11 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                EmitAsm("JP_Z", done);
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                EmitAsm("JP_Z", done);
 
                 EmitLoadTileMapBaseToHl(0x08, "settilerect_base");
                 EmitAsm("PUSH_HL");
@@ -9526,9 +9880,12 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADD_HL_HL");
                 EmitAsm("POP_DE");
                 EmitAsm("ADD_HL_DE");
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
+                // Preserve the VRAM destination while retrieving the saved X coordinate.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(10, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // x
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_L");
                 EmitAsm("ADD_C");
                 EmitAsm("LD_L_A");
@@ -9537,29 +9894,34 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_H_A");
 
                 EmitLabel(loop);
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
-                EmitAsm("LD_A_HL"); // h
-                EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                // Preserve the row destination while updating height and loading row arguments.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                EmitAsm("LD_A_HL");
                 EmitAsm("DEC_A");
                 EmitAsm("LD_HL_A");
-
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A"); // tile
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_C_A");
                 EmitAsm("LD_B_IMM", new AsmOperand(0, AddressMode.Immediate));
+                EmitAsm("POP_HL");
                 EmitVramMemsetLoop(true, "settilerect_fill");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
-                EmitAsm("LD_A_HL");
-                EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                // Restore the end-of-row pointer before testing height or adding the row stride.
+                EmitAsm("PUSH_HL");
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
+                EmitAsm("OR_A");
+                EmitAsm("POP_HL");
+                EmitAsm("JP_Z", done);
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                EmitAsm("LD_A_HL");
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_IMM", new AsmOperand(32, AddressMode.Immediate));
                 EmitAsm("SUB_C");
                 EmitAsm("LD_C_A");
@@ -9569,13 +9931,14 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_A_H");
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
-                EmitAsm("JR", loop);
+                EmitAsm("JP", loop);
 
                 EmitLabel(done);
                 EmitAsm("ADD_SP_IMM", new AsmOperand(10, AddressMode.Relative));
                 return;
             }
 
+            // Stage a source pointer and byte length for a horizontal copy into the selected BG map.
             if (funcName == "__settile_row")
             {
                 if (args.Length != 4) Error(expr, "__settile_row(x, y, src, len) expects 4 arguments");
@@ -9607,9 +9970,12 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADD_HL_HL");
                 EmitAsm("POP_DE");
                 EmitAsm("ADD_HL_DE");
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                // Preserve the VRAM destination while retrieving the saved X coordinate.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // x
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_L");
                 EmitAsm("ADD_C");
                 EmitAsm("LD_L_A");
@@ -9617,17 +9983,22 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                // Stack-address loads use HL; retain the destination while restoring DE.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A"); // src
+                EmitAsm("POP_HL");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_C_A");
                 EmitAsm("LD_B_IMM", new AsmOperand(0, AddressMode.Immediate));
+                EmitAsm("POP_HL");
                 if (!(rowLen.Match(Tag.Integer, out int rowLenConst) &&
                       TryEmitVramMemcpyConstCount(true, rowLenConst & 0xFF, "settilerow_small")))
                 {
@@ -9639,6 +10010,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Stage the column arguments and select an unrolled or iterative strided copy.
             if (funcName == "__settile_col")
             {
                 if (args.Length != 4) Error(expr, "__settile_col(x, y, src, len) expects 4 arguments");
@@ -9671,9 +10043,12 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADD_HL_HL");
                 EmitAsm("POP_DE");
                 EmitAsm("ADD_HL_DE");
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                // Preserve the VRAM destination while retrieving the saved X coordinate.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // x
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_L");
                 EmitAsm("ADD_C");
                 EmitAsm("LD_L_A");
@@ -9681,12 +10056,15 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
+                // Stack-address loads use HL; retain the destination while restoring DE.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A"); // src
+                EmitAsm("POP_HL");
 
                 if (colLen.Match(Tag.Integer, out int colLenConst) &&
                     TryEmitVramColumnCopyConstCount(true, colLenConst & 0xFF, "settilecol_small"))
@@ -9697,21 +10075,24 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 }
 
                 EmitLabel(loop);
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
+                // The initial guard and loop-tail check ensure a nonzero remaining count.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
-                EmitAsm("OR_A");
-                EmitAsm("JP_Z", done);
                 EmitAsm("DEC_A");
                 EmitAsm("LD_HL_A");
+                EmitAsm("POP_HL");
 
                 EmitAsm("LD_A_DE");
                 EmitAsm("LD_C_A");
                 EmitVramStoreCToHl(true, "settilecol_store");
                 EmitAsm("INC_DE");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("OR_A");
+                EmitAsm("POP_HL");
                 EmitAsm("JP_Z", done);
                 EmitAsm("LD_A_L");
                 EmitAsm("ADD_A_IMM", new AsmOperand(32, AddressMode.Immediate));
@@ -9719,13 +10100,14 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_A_H");
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
-                EmitAsm("JR", loop);
+                EmitAsm("JP", loop);
 
                 EmitLabel(done);
                 EmitAsm("ADD_SP_IMM", new AsmOperand(8, AddressMode.Relative));
                 return;
             }
 
+            // Specialize single rows or columns before emitting the general explicit-map rectangle copy.
             if (funcName == "__settilemap_rect")
             {
                 if (args.Length != 6) Error(expr, "__settilemap_rect(base, x, y, w, h, src) expects 6 arguments");
@@ -9797,11 +10179,11 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                EmitAsm("JP_Z", done);
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                EmitAsm("JP_Z", done);
 
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // y
@@ -9821,9 +10203,12 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_D_A"); // base
                 EmitAsm("POP_HL");
                 EmitAsm("ADD_HL_DE");
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(8, AddressMode.Relative));
+                // Preserve the VRAM destination while retrieving the saved X coordinate.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(10, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // x
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_L");
                 EmitAsm("ADD_C");
                 EmitAsm("LD_L_A");
@@ -9831,34 +10216,42 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
+                // Stack-address loads use HL; retain the destination while restoring DE.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_E_A");
                 EmitAsm("INC_HL");
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_D_A"); // src
+                EmitAsm("POP_HL");
 
                 EmitLabel(loop);
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
-                EmitAsm("LD_A_HL"); // h
-                EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                // Preserve the row destination while updating height and loading row arguments.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                EmitAsm("LD_A_HL");
                 EmitAsm("DEC_A");
                 EmitAsm("LD_HL_A");
-
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
                 EmitAsm("LD_C_A");
                 EmitAsm("LD_B_IMM", new AsmOperand(0, AddressMode.Immediate));
+                EmitAsm("POP_HL");
                 EmitVramMemcpyLoop(true, "settilemaprect_copy");
 
-                EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
-                EmitAsm("LD_A_HL");
-                EmitAsm("OR_A");
-                EmitAsm("JR_Z", done);
+                // Restore the end-of-row pointer before testing height or adding the row stride.
+                EmitAsm("PUSH_HL");
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
                 EmitAsm("LD_A_HL");
+                EmitAsm("OR_A");
+                EmitAsm("POP_HL");
+                EmitAsm("JP_Z", done);
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(6, AddressMode.Relative));
+                EmitAsm("LD_A_HL");
                 EmitAsm("LD_C_A");
+                EmitAsm("POP_HL");
                 EmitAsm("LD_A_IMM", new AsmOperand(32, AddressMode.Immediate));
                 EmitAsm("SUB_C");
                 EmitAsm("LD_C_A");
@@ -9868,13 +10261,14 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_A_H");
                 EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
                 EmitAsm("LD_H_A");
-                EmitAsm("JR", loop);
+                EmitAsm("JP", loop);
 
                 EmitLabel(done);
                 EmitAsm("ADD_SP_IMM", new AsmOperand(12, AddressMode.Relative));
                 return;
             }
 
+            // Dispatch a safe attribute-only write through the CGB-aware scalar helper.
             if (funcName == "__settileattr")
             {
                 if (args.Length != 3) Error(expr, "__settileattr requires 3 arguments");
@@ -9882,6 +10276,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch an attribute-only write with VRAM access timing supplied by the caller.
             if (funcName == "__settileattr_unsafe")
             {
                 if (args.Length != 3) Error(expr, "__settileattr_unsafe requires 3 arguments");
@@ -9889,6 +10284,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch a tile and attribute pair through the safe CGB-aware helper.
             if (funcName == "__settilecgb")
             {
                 if (args.Length != 4) Error(expr, "__settilecgb requires 4 arguments");
@@ -9896,6 +10292,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch a tile and attribute pair without waiting for accessible VRAM.
             if (funcName == "__settilecgb_unsafe")
             {
                 if (args.Length != 4) Error(expr, "__settilecgb_unsafe requires 4 arguments");
@@ -9903,6 +10300,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Pass an explicit map base to the safe attribute-target helper.
             if (funcName == "__settileatattr")
             {
                 if (args.Length != 4) Error(expr, "__settileatattr requires 4 arguments");
@@ -9910,6 +10308,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Pass an explicit map base to the attribute-target helper without VRAM timing waits.
             if (funcName == "__settileatattr_unsafe")
             {
                 if (args.Length != 4) Error(expr, "__settileatattr_unsafe requires 4 arguments");
@@ -9917,6 +10316,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Use an explicit map base for a safe tile and attribute write.
             if (funcName == "__settileatcgb")
             {
                 if (args.Length != 5) Error(expr, "__settileatcgb requires 5 arguments");
@@ -9924,6 +10324,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Use an explicit map base for a tile and attribute write at caller-controlled timing.
             if (funcName == "__settileatcgb_unsafe")
             {
                 if (args.Length != 5) Error(expr, "__settileatcgb_unsafe requires 5 arguments");
@@ -9931,6 +10332,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the Window map when emitting a safe attribute write.
             if (funcName == "__settilewinattr")
             {
                 if (args.Length != 3) Error(expr, "__settilewinattr requires 3 arguments");
@@ -9938,6 +10340,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the Window map for an attribute write without a VRAM wait.
             if (funcName == "__settilewinattr_unsafe")
             {
                 if (args.Length != 3) Error(expr, "__settilewinattr_unsafe requires 3 arguments");
@@ -9945,6 +10348,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the Window map for a safe combined tile and attribute write.
             if (funcName == "__settilewincgb")
             {
                 if (args.Length != 4) Error(expr, "__settilewincgb requires 4 arguments");
@@ -9952,6 +10356,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the Window map for a combined write at caller-controlled timing.
             if (funcName == "__settilewincgb_unsafe")
             {
                 if (args.Length != 4) Error(expr, "__settilewincgb_unsafe requires 4 arguments");
@@ -9959,6 +10364,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the displayed BG map when emitting a safe attribute write.
             if (funcName == "__settilebgattr")
             {
                 if (args.Length != 3) Error(expr, "__settilebgattr requires 3 arguments");
@@ -9966,6 +10372,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the displayed BG map for an attribute write without a VRAM wait.
             if (funcName == "__settilebgattr_unsafe")
             {
                 if (args.Length != 3) Error(expr, "__settilebgattr_unsafe requires 3 arguments");
@@ -9973,6 +10380,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the displayed BG map for a safe combined tile and attribute write.
             if (funcName == "__settilebgcgb")
             {
                 if (args.Length != 4) Error(expr, "__settilebgcgb requires 4 arguments");
@@ -9980,6 +10388,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Select the displayed BG map for a combined write at caller-controlled timing.
             if (funcName == "__settilebgcgb_unsafe")
             {
                 if (args.Length != 4) Error(expr, "__settilebgcgb_unsafe requires 4 arguments");
@@ -9987,6 +10396,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch an attribute-buffer transfer with safe VRAM timing.
             if (funcName == "__settileattr_bulk")
             {
                 if (args.Length != 3) Error(expr, "__settileattr_bulk requires 3 arguments");
@@ -9994,6 +10404,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Dispatch an attribute-buffer transfer whose timing is controlled by the caller.
             if (funcName == "__settileattr_bulk_fast")
             {
                 if (args.Length != 3) Error(expr, "__settileattr_bulk_fast requires 3 arguments");
@@ -10001,6 +10412,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Transfer tile and attribute buffers through the safe combined bulk helper.
             if (funcName == "__settilecgb_bulk")
             {
                 if (args.Length != 4) Error(expr, "__settilecgb_bulk requires 4 arguments");
@@ -10008,6 +10420,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Transfer tile and attribute buffers without VRAM timing waits.
             if (funcName == "__settilecgb_bulk_fast")
             {
                 if (args.Length != 4) Error(expr, "__settilecgb_bulk_fast requires 4 arguments");
@@ -10015,6 +10428,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Write four consecutive tile numbers into a two-by-two cell in the RAM map buffer.
             if (funcName == "__settilebg16_buf")
             {
                 if (args.Length != 4) Error(expr, "__settilebg16_buf requires 4 arguments");
@@ -10022,6 +10436,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Update tile and attribute RAM buffers separately, repeating the attribute across the cell.
             if (funcName == "__settilebg16cgb_buf")
             {
                 if (args.Length != 6) Error(expr, "__settilebg16cgb_buf requires 6 arguments");
@@ -10030,6 +10445,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Flush both tile rows belonging to the requested buffered cell row.
             if (funcName == "__settilebg16_flush")
             {
                 if (args.Length != 4) Error(expr, "__settilebg16_flush requires 4 arguments");
@@ -10037,6 +10453,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
+            // Flush the tile buffer first and copy attributes only when CGB hardware is available.
             if (funcName == "__settilebg16cgb_flush")
             {
                 if (args.Length != 5) Error(expr, "__settilebg16cgb_flush requires 5 arguments");
@@ -10052,7 +10469,8 @@ void Load16BitCompareOperands(Expr left, Expr right)
                     AsmOperand done = MakeUniqueLabel("settilebg16cgbflush_done");
                     EmitRuntimeCgbCheckCall();
                     EmitAsm("OR_A");
-                    EmitAsm("JR_Z", skip);
+                    // Two unrolled row copies can exceed the relative-branch range.
+                    EmitAsm("JP_Z", skip);
                     EmitSetVbkUnchecked(1);
                     EmitTile16FlushRowsIntrinsic(args[1], args[2], args[3], args[4], cgbAttr: true, labelPrefix: "settilebg16cgbflush_attr");
                     EmitAsm("JR", done);
@@ -10306,28 +10724,11 @@ if (funcName == "__padrep_reset")
     return;
 }
 
-// 2.22 __padrep_lr(state_ptr, keys_u8, trigger_u8) -> u8 in A
-// Implements a lightweight DAS/ARR scheduler for Left/Right movement.
-// Returns a movement bitmask (0x01=Right, 0x02=Left) for *this frame*.
-// Typical usage:
-// u8 rep = __padrep_lr(&st, keys, trigger);
-// if(rep & 0x01) { try move right } else if(rep & 0x02) { try move left }
-// Notes:
-// - Initial press (trigger) returns an immediate move and resets counters.
-// - When held: after dasFrames, repeats every arrFrames (arr=0 => every frame after DAS).
-// - If both L+R held, returns 0 (no jitter).
-// Treated as a compiler intrinsic (no C definition required).
-// 2.22 __padrep_lr(state_ptr, keys_u8, trigger_u8) -> u8 in A
-// Implements a lightweight DAS/ARR scheduler for Left/Right movement.
-// Returns a movement bitmask (0x01=Right, 0x02=Left) for *this frame*.
-// Typical usage:
-// u8 rep = __padrep_lr(&st, keys, trigger);
-// if(rep & 0x01) { try move right } else if(rep & 0x02) { try move left }
-// Notes:
-// - Initial press (trigger) returns an immediate move and resets counters.
-// - When held: after dasFrames, repeats every arrFrames (arr=0 => every frame after DAS).
-// - If both L+R held, returns 0 (no jitter).
-// Treated as a compiler intrinsic (no C definition required).
+// __padrep_lr(state*, keys, trigger) returns Right (1), Left (2), or zero.
+// New triggers take priority, with Right selected first when both trigger bits are set.
+// Without a new trigger, simultaneous Left/Right holds suppress movement without resetting counters.
+// A single held direction is adopted without immediate movement when no direction is active.
+// Subsequent updates use the five-byte state's initial delay and repeat interval; ARR=0 repeats each update.
 if (funcName == "__padrep_lr")
 {
     if (args.Length != 3) Error(expr, "__padrep_lr requires 3 arguments (state*, keys, trigger)");
@@ -10459,12 +10860,11 @@ if (funcName == "__padrep_lr")
     EmitAsm("LD_A_HL"); EmitAsm("LD_D_A"); // arrFrames
     EmitAsm("INC_HL"); // -> [3] dasCnt
 
-    // Increment dasCnt with saturation at 255
+    // A saturated delay counter has already fired its first repeat; proceed to ARR.
     EmitAsm("LD_A_HL");
     EmitAsm("CP_IMM", new AsmOperand(0xFF, AddressMode.Immediate));
     EmitAsm("JP_Z", pr_skip_dasinc);
     EmitAsm("INC_A");
-    EmitLabel(pr_skip_dasinc);
     EmitAsm("LD_HL_A"); // store dasCnt
 
     // Compare dasCnt vs dasFrames
@@ -10472,6 +10872,7 @@ if (funcName == "__padrep_lr")
     EmitAsm("JP_C", pr_ret0); // dasCnt < dasFrames
     EmitAsm("JP_Z", pr_first_rep); // dasCnt == dasFrames
 
+    EmitLabel(pr_skip_dasinc);
     // After DAS: if arrFrames==0 => every frame
     EmitAsm("LD_A_D");
     EmitAsm("OR_A");
@@ -10530,16 +10931,9 @@ if (funcName == "__padrep_lr")
 
 
 
-// 2.23 __padrep_down(state_ptr, keys_u8, trigger_u8) -> u8 in A
-// Convenience DAS/ARR scheduler for Down (bit3 = 0x08).
-// Returns 0x08 when a soft-drop step should be applied this frame, else 0.
-// State layout is the same 5-byte PadRepeatState used by __padrep_lr.
-// Treated as a compiler intrinsic (no C definition required).
-// 2.23 __padrep_down(state_ptr, keys_u8, trigger_u8) -> u8 in A
-// Convenience DAS/ARR scheduler for Down (bit3 = 0x08).
-// Returns 0x08 when a soft-drop step should be applied this frame, else 0.
-// State layout is the same 5-byte PadRepeatState used by __padrep_lr.
-// Treated as a compiler intrinsic (no C definition required).
+// __padrep_down(state*, keys, trigger) returns Down (8) or zero using the same five-byte state.
+// A Down trigger fires immediately and resets counters; releasing Down clears the active direction.
+// An already-held Down input is adopted without an immediate move when the state is inactive.
 if (funcName == "__padrep_down")
 {
     if (args.Length != 3) Error(expr, "__padrep_down requires 3 arguments (state*, keys, trigger)");
@@ -10646,12 +11040,11 @@ if (funcName == "__padrep_down")
     EmitAsm("LD_A_HL"); EmitAsm("LD_D_A"); // arrFrames
     EmitAsm("INC_HL"); // -> [3] dasCnt
 
-    // Increment dasCnt with saturation at 255
+    // A saturated delay counter has already fired its first repeat; proceed to ARR.
     EmitAsm("LD_A_HL");
     EmitAsm("CP_IMM", new AsmOperand(0xFF, AddressMode.Immediate));
     EmitAsm("JP_Z", pd_skip_dasinc);
     EmitAsm("INC_A");
-    EmitLabel(pd_skip_dasinc);
     EmitAsm("LD_HL_A"); // store dasCnt
 
     // Compare dasCnt vs dasFrames
@@ -10659,6 +11052,7 @@ if (funcName == "__padrep_down")
     EmitAsm("JP_C", pd_ret0); // dasCnt < dasFrames
     EmitAsm("JP_Z", pd_first_rep); // dasCnt == dasFrames
 
+    EmitLabel(pd_skip_dasinc);
     // After DAS: if arrFrames==0 => every frame
     EmitAsm("LD_A_D");
     EmitAsm("OR_A");
@@ -10716,24 +11110,10 @@ if (funcName == "__padrep_down")
 
 
 
-// 2.24 __padrep(state_ptr, keys_u8, trigger_u8, mask_u8) -> u8 in A
-// Generic DAS/ARR scheduler for arbitrary key masks.
-// Returns a single-bit mask indicating which action should fire this frame (subset of mask), else 0.
-// Selection rule:
-// - If (trigger & mask) != 0: selects lowest set bit and fires immediately (and resets counters).
-// - Else if held: repeats after DAS, then every ARR (ARR=0 => every frame after DAS).
-// - If multiple held and an existing dirMask is still held, it keeps that dirMask.
-// State layout is the same 5-byte PadRepeatState used by __padrep_lr.
-// Treated as a compiler intrinsic (no C definition required).
-// 2.24 __padrep(state_ptr, keys_u8, trigger_u8, mask_u8) -> u8 in A
-// Generic DAS/ARR scheduler for arbitrary key masks.
-// Returns a single-bit mask indicating which action should fire this frame (subset of mask), else 0.
-// Selection rule:
-// - If (trigger & mask) != 0: selects lowest set bit and fires immediately (and resets counters).
-// - Else if held: repeats after DAS, then every ARR (ARR=0 => every frame after DAS).
-// - If multiple held and an existing dirMask is still held, it keeps that dirMask.
-// State layout is the same 5-byte PadRepeatState used by __padrep_lr.
-// Treated as a compiler intrinsic (no C definition required).
+// __padrep(state*, keys, trigger, mask), also named __padrep_mask, schedules one selected action.
+// A masked trigger selects its lowest set bit and fires immediately, resetting the counters.
+// With no trigger, retain the active action while held; otherwise adopt the lowest masked held bit without firing.
+// Use the same five-byte delay/repeat state as the directional variants; an empty held mask clears it.
 if (funcName == "__padrep" || funcName == "__padrep_mask")
 {
     if (args.Length != 4) Error(expr, "__padrep requires 4 arguments (state*, keys, trigger, mask)");
@@ -10862,12 +11242,11 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
     EmitAsm("LD_A_HL"); EmitAsm("LD_D_A"); // arrFrames
     EmitAsm("INC_HL"); // -> [3] dasCnt
 
-    // Increment dasCnt with saturation at 255
+    // A saturated delay counter has already fired its first repeat; proceed to ARR.
     EmitAsm("LD_A_HL");
     EmitAsm("CP_IMM", new AsmOperand(0xFF, AddressMode.Immediate));
     EmitAsm("JP_Z", pm_skip_dasinc);
     EmitAsm("INC_A");
-    EmitLabel(pm_skip_dasinc);
     EmitAsm("LD_HL_A"); // store dasCnt
 
     // Compare dasCnt vs dasFrames
@@ -10875,6 +11254,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
     EmitAsm("JP_C", pm_ret0); // dasCnt < dasFrames
     EmitAsm("JP_Z", pm_first_rep); // dasCnt == dasFrames
 
+    EmitLabel(pm_skip_dasinc);
     // After DAS: if arrFrames==0 => every frame
     EmitAsm("LD_A_D");
     EmitAsm("OR_A");
@@ -10936,6 +11316,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
             // Conventions:
             // - u8 return in A
             // - u16 return in HL
+            // Preserve the first byte while evaluating the second, then return the product high byte.
             if (funcName == "__mul8x8_hi")
             {
                 if (args.Length != 2) Error(expr, "__mul8x8_hi requires 2 arguments");
@@ -10950,6 +11331,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
                 EmitAsm("LD_A_H");
                 return;
             }
+            // Dispatch unsigned word-by-byte multiplication with an eight-bit fractional shift.
             if (funcName == "__mul16x8")
             {
                 if (args.Length != 2) Error(expr, "__mul16x8 requires 2 arguments");
@@ -10981,6 +11363,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
                 LastCallReturnsHL = true;
                 return;
             }
+            // Compute the shifted product first, preserve it, then add the accumulator modulo one word.
             if (funcName == "__mac16")
             {
                 if (args.Length != 3) Error(expr, "__mac16 requires 3 arguments");
@@ -11031,6 +11414,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
                 return;
             }
 
+            // Accumulate three individually shifted unsigned terms, preserving each partial sum on the stack.
             if (funcName == "__dot3_q8_8")
             {
                 if (args.Length != 6) Error(expr, "__dot3_q8_8 requires 6 arguments");
@@ -11280,6 +11664,7 @@ if (funcName == "__sdot2_q1_7")
             }
             // --- Function / Function-pointer dispatch ---
             // If funcName is not a known function symbol, it may be a variable holding a function pointer.
+            // Resolve unknown function names as typed pointer variables before reporting an undefined function.
             if (!Functions.TryGetValue(funcName, out CFunctionInfo info))
             {
                 if (TryFindSymbol(funcName, out Symbol fpSym) && fpSym.Type != null && fpSym.Type.IsPointer && fpSym.Type.Subtype != null && fpSym.Type.Subtype.IsFunction)
@@ -11365,6 +11750,7 @@ if (funcName == "__sdot2_q1_7")
                 expectedArgSizes[i] = (i < commonArgCount) ? SizeOf(expr, info.Parameters[i].Type) : -1;
             }
 
+            // Reject direct self-recursion when the callee would reuse the caller's static parameter and local slots.
             if (!info.IsInline &&
                 !info.IsStackCall &&
                 !string.IsNullOrEmpty(CurrentFunctionName) &&
@@ -11381,6 +11767,7 @@ if (funcName == "__sdot2_q1_7")
 
                 BeginScope();
 
+                // Give this expansion its own return target and, for aggregate results, a fixed destination.
                 AsmOperand returnLabel = MakeUniqueLabel("inline_end");
                 InlineReturnLabels.Push(returnLabel);
                 bool inlineStructReturn = IsStructReturnType(info.ReturnType);
@@ -11402,12 +11789,14 @@ if (funcName == "__sdot2_q1_7")
                     Symbol sym = new Symbol(SymbolTag.Local, addr, param.Type, param.Name);
 
                     if (CurrentScope.Symbols.ContainsKey(sym.Name))
+                        // Reject duplicate parameter bindings within the newly opened inline scope.
                         Error(expr, "Symbol redefined in inline expansion: " + sym.Name);
                     CurrentScope.Symbols.Add(sym.Name, sym);
 
                     EmitStoreArgumentToFixedAddress(expr, funcName, i, args[i], param.Type, addr, $"inl arg:{sym.Name}");
                 }
 
+                // Compile the inline body with its declared return type, then restore the enclosing function's type.
                 CType savedReturnType = ReturnType;
                 ReturnType = info.ReturnType;
                 CompileStatement(info.Body);
@@ -11433,6 +11822,7 @@ if (funcName == "__sdot2_q1_7")
 
                 // Compute total arg bytes and offsets (arg0 is first param)
                 int totalBytes = 0;
+                // Lay out arguments consecutively in the caller-reserved stack block, retaining each declared width.
                 int[] argOffs = new int[args.Length];
                 int[] argSz = new int[args.Length];
                 for (int i = 0; i < args.Length; i++)
@@ -11454,6 +11844,7 @@ if (funcName == "__sdot2_q1_7")
 
                 if (totalBytes > 0)
                 {
+                    // Keep the reserved argument block within the signed SP-relative instruction range.
                     if (totalBytes > 127)
                         Error(expr, "Too many stack arguments (total bytes > 127)");
                     EmitAsm("ADD_SP_IMM", new AsmOperand(-totalBytes, AddressMode.Relative));
@@ -11534,6 +11925,7 @@ if (funcName == "__sdot2_q1_7")
 
             PrepareStructReturnDestination(expr, info.ReturnType, info, funcName);
 
+            // Track byte fastcall arguments so optional bank checks can preserve A before the actual call.
             bool fastcallArgInA = false;
             if (info.IsFastCall)
             {
@@ -11693,6 +12085,7 @@ if (funcName == "__sdot2_q1_7")
             CType ct = TypeOf(calleeExpr);
             Expr calleeAddressExpr = calleeExpr;
             CType fnType = null;
+            // Accept either a pointer-valued callee or a dereference of a typed function pointer.
             if (ct != null && ct.IsPointer && ct.Subtype != null && ct.Subtype.IsFunction)
             {
                 fnType = ct.Subtype;
@@ -11768,10 +12161,11 @@ if (funcName == "__sdot2_q1_7")
             }
         }
 
+        // Reject callee expressions outside the supported direct and typed-indirect calling conventions.
         NYI(expr, "Complex call not supported");
     }
 
-    // Store A to a symbol operand (direct or zero-page)
+    // Store A through an absolute operand or the GB high-memory addressing mode.
     void StoreAToOperand(AsmOperand op)
     {
         if (op.Mode == AddressMode.HighMem) EmitAsm("LDH_MEM_A", op);
@@ -11891,6 +12285,7 @@ if (funcName == "__sdot2_q1_7")
             }
 
             int elemSize = GetIndexElementSize(baseArr);
+            // Use the actual indexed lvalue width when the base expression alone does not describe its element type.
             int lhsElemSize = SizeOf(lhs);
             if (lhsElemSize == 1 || lhsElemSize == 2)
                 elemSize = lhsElemSize; // assignment expression must follow lvalue element width
@@ -11954,6 +12349,7 @@ if (funcName == "__sdot2_q1_7")
         NYI(lhs, "Assignment expression LHS not supported");
     }
 
+    // Emit a byte-valued conditional chain with a shared exit, evaluating only the selected result branch.
     void CompileTernaryElseChainIntoA(Expr expr, AsmOperand endLabel)
     {
         Expr cond, texpr, fexpr;
@@ -11975,12 +12371,14 @@ if (funcName == "__sdot2_q1_7")
             CompileIntoA(fexpr);
     }
 
+    // Identify signed byte expressions that require a sign-filled high byte when widened.
     bool ShouldSignExtendExprToHL(Expr expr)
     {
         CType t = TypeOf(expr);
         return t != null && t.IsSimple && t.SimpleType == CSimpleType.Int8;
     }
 
+    // Copy A into L and fill H with zero or the original sign bit; signed extension also changes A.
     void EmitExtendAIntoHL(bool signExtend)
     {
         EmitAsm("LD_L_A");
@@ -11996,6 +12394,7 @@ if (funcName == "__sdot2_q1_7")
         }
     }
 
+    // Preserve L and derive H from its sign bit using carry and subtract-with-borrow.
     void EmitSignExtendLIntoH()
     {
         EmitAsm("LD_A_L");
@@ -12004,6 +12403,7 @@ if (funcName == "__sdot2_q1_7")
         EmitAsm("LD_H_A");
     }
 
+    // Emit the low byte of an expression into A, folding constants before selecting an evaluation path.
     void CompileIntoA(Expr expr)
     {
         expr = FoldConstants(expr);
@@ -12271,8 +12671,10 @@ if (funcName == "__sdot2_q1_7")
                 {
                     if (signedShift)
                     {
-                        EmitAsm("RLCA"); // carry = sign bit
-                        EmitAsm("RRA"); // arithmetic shift right
+                        // Compare without changing A, then invert borrow to recover its original sign bit.
+                        EmitAsm("CP_IMM", new AsmOperand(0x80, AddressMode.Immediate));
+                        EmitAsm("CCF");
+                        EmitAsm("RRA"); // shift the unchanged byte with its sign in carry
                     }
                     else
                     {
@@ -12336,6 +12738,7 @@ if (funcName == "__sdot2_q1_7")
 
         if (expr.Match(Tag.LogicalOr, out left, out right))
         {
+            // Short-circuit on either true operand and normalize the byte result to zero or one.
             AsmOperand lblTrue = MakeUniqueLabel("lor_t"), lblEnd = MakeUniqueLabel("lor_e");
             CompileJumpIf(true, left, lblTrue);
             CompileJumpIf(true, right, lblTrue);
@@ -12348,6 +12751,7 @@ if (funcName == "__sdot2_q1_7")
         }
         if (expr.Match(Tag.LogicalAnd, out left, out right))
         {
+            // Skip the right operand when the left is false and normalize the result to zero or one.
             AsmOperand lblFalse = MakeUniqueLabel("land_f"), lblEnd = MakeUniqueLabel("land_e");
             CompileJumpIf(false, left, lblFalse);
             CompileJumpIf(false, right, lblFalse);
@@ -12360,6 +12764,7 @@ if (funcName == "__sdot2_q1_7")
         }
         if (expr.Match(Tag.LogicalNot, out sub))
         {
+            // Invert the operand truth value through the shared conditional-branch emitter.
             AsmOperand lblTrue = MakeUniqueLabel("lnot_t"), lblEnd = MakeUniqueLabel("lnot_e");
             CompileJumpIf(false, sub, lblTrue);
             EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate));
@@ -12395,6 +12800,7 @@ if (funcName == "__sdot2_q1_7")
         {
             if (TryGetOperand(right, out AsmOperand rOp) && rOp.Mode == AddressMode.Immediate)
             {
+                // Use an immediate byte addition when the right operand is already a literal operand.
                 CompileIntoA(left); EmitAsm("ADD_A_IMM", rOp); return;
             }
             CompileIntoA(left);
@@ -12409,6 +12815,7 @@ if (funcName == "__sdot2_q1_7")
         {
             if (TryGetOperand(right, out AsmOperand rOp) && rOp.Mode == AddressMode.Immediate)
             {
+                // Use an immediate byte subtraction without allocating a saved right operand.
                 CompileIntoA(left); EmitAsm("SUB_IMM", rOp); return;
             }
             CompileIntoA(left);
@@ -12423,6 +12830,7 @@ if (funcName == "__sdot2_q1_7")
         {
             if (TryGetOperand(right, out AsmOperand rOp) && rOp.Mode == AddressMode.Immediate)
             {
+                // Apply a constant low-byte AND mask directly.
                 CompileIntoA(left); EmitAsm("AND_IMM", rOp); return;
             }
             CompileIntoA(left);
@@ -12437,6 +12845,7 @@ if (funcName == "__sdot2_q1_7")
         {
             if (TryGetOperand(right, out AsmOperand rOp) && rOp.Mode == AddressMode.Immediate)
             {
+                // Apply a constant low-byte OR mask directly.
                 CompileIntoA(left); EmitAsm("OR_IMM", rOp); return;
             }
             CompileIntoA(left);
@@ -12451,6 +12860,7 @@ if (funcName == "__sdot2_q1_7")
         {
             if (TryGetOperand(right, out AsmOperand rOp) && rOp.Mode == AddressMode.Immediate)
             {
+                // Apply a constant low-byte XOR mask directly.
                 CompileIntoA(left); EmitAsm("XOR_IMM", rOp); return;
             }
             CompileIntoA(left);
@@ -12474,6 +12884,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_B_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_B");
+            // Convert byte equality flags into a normalized boolean value.
             AsmOperand lblEqT = MakeUniqueLabel("eq_t"), lblEqE = MakeUniqueLabel("eq_e");
             EmitAsm("JP_Z", lblEqT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblEqE);
             EmitLabel(lblEqT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblEqE); return;
@@ -12490,6 +12901,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_B_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_B");
+            // Convert byte inequality flags into a normalized boolean value.
             AsmOperand lblNeqT = MakeUniqueLabel("neq_t"), lblNeqE = MakeUniqueLabel("neq_e");
             EmitAsm("JP_NZ", lblNeqT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblNeqE);
             EmitLabel(lblNeqT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblNeqE); return;
@@ -12506,6 +12918,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_B_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_B");
+            // Use borrow from the unsigned byte comparison to produce the less-than result.
             AsmOperand lblLtT = MakeUniqueLabel("lt_t"), lblLtE = MakeUniqueLabel("lt_e");
             EmitAsm("JP_C", lblLtT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblLtE);
             EmitLabel(lblLtT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblLtE); return;
@@ -12522,6 +12935,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_B_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_B");
+            // Invert unsigned borrow to produce the greater-than-or-equal result.
             AsmOperand lblGeT = MakeUniqueLabel("ge_t"), lblGeE = MakeUniqueLabel("ge_e");
             EmitAsm("JP_NC", lblGeT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblGeE);
             EmitLabel(lblGeT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblGeE); return;
@@ -12538,6 +12952,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_C_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_C");
+            // The reversed operand comparison turns unsigned borrow into greater-than.
             AsmOperand lblGtT = MakeUniqueLabel("gt_t"), lblGtE = MakeUniqueLabel("gt_e");
             EmitAsm("JP_C", lblGtT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblGtE);
             EmitLabel(lblGtT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblGtE); return;
@@ -12554,6 +12969,7 @@ if (funcName == "__sdot2_q1_7")
             EmitAsm("LD_C_A");
             EmitAsm("POP_AF");
             EmitAsm("CP_C");
+            // The reversed operand comparison turns no borrow into less-than-or-equal.
             AsmOperand lblLeT = MakeUniqueLabel("le_t"), lblLeE = MakeUniqueLabel("le_e");
             EmitAsm("JP_NC", lblLeT); EmitAsm("LD_A_IMM", new AsmOperand(0, AddressMode.Immediate)); EmitAsm("JP", lblLeE);
             EmitLabel(lblLeT); EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate)); EmitLabel(lblLeE); return;
@@ -12583,6 +12999,7 @@ if (funcName == "__sdot2_q1_7")
         NYI(expr, "Expression too complex for CompileIntoA");
     }
 
+    // Emit a word value or address into HL, widening byte loads according to their signedness.
     void CompileIntoHL(Expr expr)
     {
         expr = FoldConstants(expr);
@@ -12633,6 +13050,7 @@ if (funcName == "__sdot2_q1_7")
                 return;
             }
 
+            // Merge the selected word-valued branch in HL without evaluating the other branch.
             AsmOperand lblFalse = MakeUniqueLabel("tern_hl_false");
             AsmOperand lblEnd = MakeUniqueLabel("tern_hl_end");
             CompileJumpIf(false, cond, lblFalse);
@@ -12649,6 +13067,7 @@ if (funcName == "__sdot2_q1_7")
 
         if (expr.Match(Tag.Name, out string name))
         {
+            // A bare function name yields its address when no local/global symbol shadows it.
             if (!TryFindSymbol(name, out Symbol sym) && Functions.ContainsKey(name))
             {
                 EmitAsm("LD_HL_IMM", new AsmOperand(name, AddressMode.Immediate16));
@@ -13200,6 +13619,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
             CType leftType = TypeOf(left);
             CType rightType = TypeOf(right);
             bool leftPtrInt = leftType != null && leftType.IsPointer && rightType != null && (rightType.IsInteger || rightType.IsEnum);
+            // Recognize integer-plus-pointer as well as pointer-plus-integer so offsets use pointee storage size.
             bool rightPtrInt = rightType != null && rightType.IsPointer && leftType != null && (leftType.IsInteger || leftType.IsEnum);
 
             if (leftPtrInt || rightPtrInt)
@@ -13330,6 +13750,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
                 // HL = left
                 CompileIntoHL(left);
 
+                // Try the shared constant-multiplication expansion before the general word multiply loop.
                 if (EmitConstantMultiplication(factor))
                     return;
 
@@ -13388,6 +13809,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
 
         if (isDiv || isMod)
         {
+            // Select signed quotient/remainder handling from the operand types before preserving and evaluating the inputs.
             bool signedDiv = ShouldUseSignedArithmetic(left, right);
 
             // DE = dividend, BC = divisor
@@ -13529,6 +13951,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         if (expr.MatchTag(Tag.Call))
         {
             // Hardening: decide intrinsic return width before emitting.
+            // Combine known intrinsic conventions with the call emitter and semantic return type before widening A.
             bool returnsHL = false;
             if (expr.Match(Tag.Call, out Expr callTarget0, out Expr[] callArgs0) &&
                 callTarget0.Match(Tag.Name, out string callName0) &&
@@ -13569,12 +13992,14 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
             return;
         }
 
+        // Reject expression forms with no supported word-emission path instead of inventing a result.
         NYI(expr, "Expression too complex for CompileIntoHL");
     }
 
     // --- Helper Methods ---
 
 
+    // Recognize word-returning intrinsic names after removing leading underscores and normalizing case.
     bool IsIntrinsicReturningHL(string funcName)
     {
         // Intrinsics that conventionally return u16 in HL.
@@ -13609,12 +14034,13 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         }
     }
 
+    // Multiply two unsigned bytes by consuming multiplier bits while doubling the multiplicand.
     void EmitMul8x8ToHL_EC(string labelPrefix)
     {
         EmitAsm("PUSH_BC");
 
         // Input: E=multiplicand (u8), C=multiplier (u8). Output: HL=product (u16).
-        // Clobbers: A,B,C,D,E,HL.
+        // Preserves BC; changes A, DE, HL and flags.
         EmitAsm("LD_D_IMM", new AsmOperand(0, AddressMode.Immediate));
         EmitAsm("LD_HL_IMM", new AsmOperand(0, AddressMode.Immediate16));
         EmitAsm("LD_B_IMM", new AsmOperand(8, AddressMode.Immediate));
@@ -13644,6 +14070,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         EmitAsm("POP_BC");
     }
 
+    // Combine two byte products to compute the high 16 bits of the unsigned 24-bit product.
     void EmitMul16x8Shr8_HL(string labelPrefix)
     {
         // Input: HL=a (u16), C=b (u8). Output: HL=(a*b)>>8 (u16).
@@ -13684,6 +14111,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         EmitAsm("LD_H_A");
     }
 
+    // Negate a word modulo 65536 by complementing both bytes and adding one.
     void EmitNegateHL()
     {
         // HL = -HL (two's complement)
@@ -13696,6 +14124,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         EmitAsm("INC_HL");
     }
 
+    // Fold an expression and interpret its low byte as an unsigned constant.
     bool TryGetU8Const(Expr e, out int u8)
     {
         Expr folded = FoldConstants(e);
@@ -13708,6 +14137,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         return false;
     }
 
+    // Fold an expression and sign-interpret its low byte for coefficient specialization.
     bool TryGetS8Const(Expr e, out int s8)
     {
         Expr folded = FoldConstants(e);
@@ -13722,6 +14152,7 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
     }
 
     
+// Shift a word left, specializing whole-byte displacement and zeroing counts at least 16.
 void EmitShiftLeftLogicalHL(int count)
 {
     if (count <= 0) return;
@@ -13759,6 +14190,7 @@ void EmitShiftLeftLogicalHL(int count)
     for (int i = 0; i < count; i++) EmitAsm("ADD_HL_HL");
 }
 
+// Shift a word right with zero fill, transferring carry from H into L.
 void EmitShiftRightLogicalHL(int count)
     {
         if (count <= 0) return;
@@ -13788,6 +14220,7 @@ void EmitShiftRightLogicalHL(int count)
         }
     }
 
+    // Shift a word right with sign fill, reloading the unchanged high byte after extracting its sign.
     void EmitShiftRightArithmeticHL(int count)
     {
         if (count <= 0) return;
@@ -13821,6 +14254,7 @@ void EmitShiftRightLogicalHL(int count)
         }
     }
 
+    // Negate DE by complementing each byte and propagating the low-byte increment carry.
     void EmitNegateDE()
     {
         EmitAsm("LD_A_E");
@@ -13833,6 +14267,7 @@ void EmitShiftRightLogicalHL(int count)
         EmitAsm("LD_D_A");
     }
 
+    // Negate BC by complementing each byte and propagating the low-byte increment carry.
     void EmitNegateBC()
     {
         EmitAsm("LD_A_C");
@@ -13845,6 +14280,7 @@ void EmitShiftRightLogicalHL(int count)
         EmitAsm("LD_B_A");
     }
 
+    // Perform 16 restoring-division steps; the caller must handle a zero divisor before entering.
     void EmitUnsignedDivMod16Core_DE_BC()
     {
         // Input : DE=dividend, BC=divisor(>0)
@@ -13907,6 +14343,7 @@ void EmitShiftRightLogicalHL(int count)
         EmitAsm("JP_NZ", loop);
     }
 
+    // Select zero, power-of-two or near-unit coefficient expansions; return false when a full multiply is needed.
     bool TryEmitDot2Pow2Term(Expr valueExpr, Expr coefExpr, bool signed, bool q1_7, out bool isZero)
     {
         isZero = false;
@@ -13944,7 +14381,7 @@ void EmitShiftRightLogicalHL(int count)
                 return true;
             }
             // Special-case: Q1.7 near +/-1.0 (0x7F / 0x81) => x*(127/128) without mul.
-            // (x*127)>>7 == x - (x>>7). For negative: negate the term.
+            // Approximate the positive coefficient with x - floor(x/128), then negate for -127.
             if (q1_7 && (cS8 == 127 || cS8 == -127))
             {
                 int signNear = (cS8 < 0) ? -1 : 1;
@@ -13990,6 +14427,7 @@ void EmitShiftRightLogicalHL(int count)
         }
     }
 
+    // Prefer a specialized coefficient term, otherwise preserve the word input while evaluating the byte coefficient.
     void EmitDotTermToHL(Expr valueExpr, Expr coefExpr, bool signed, bool q1_7, string labelPrefix)
     {
         if (TryEmitDot2Pow2Term(valueExpr, coefExpr, signed, q1_7, out bool _))
@@ -14010,9 +14448,10 @@ void EmitShiftRightLogicalHL(int count)
             EmitAsm("ADD_HL_HL");
     }
 
+    // Multiply operand magnitudes, discard eight fractional bits and restore the product sign.
     void EmitSMul16x8Shr8_HL(string labelPrefix)
     {
-        // Signed: HL=a (s16), C=b (s8). Output: HL=(a*b)>>8 (s16).
+        // Signed: HL=a (s16), C=b (s8). Output: (a*b)/256 in HL, truncated toward zero.
         // Strategy: sign = sign(a) XOR sign(b); abs -> unsigned mul -> apply sign.
 
         // Save sign(a) in D
@@ -14061,6 +14500,7 @@ void EmitShiftRightLogicalHL(int count)
         EmitLabel(skipNeg);
     }
 
+    // Use bank one for default or unavailable bank indices; otherwise return the selected WRAM allocator.
     AllocationRegion GetWramXRegion(int bank)
     {
         if (bank <= 0 || bank == 1) return Wram1Region;
@@ -14069,6 +14509,7 @@ void EmitShiftRightLogicalHL(int count)
         return WramXBankRegions[bank];
     }
 
+    // Classify known CPU ranges for allocation metadata, leaving unclassified addresses as generic RAM.
     static MemoryRegion InferRegionFromCpuAddress(int address)
     {
         if (address >= 0xFF80 && address <= 0xFFFE) return MemoryRegion.HighMem;
@@ -14079,6 +14520,7 @@ void EmitShiftRightLogicalHL(int count)
         return MemoryRegion.Ram;
     }
 
+    // Warn once per global symbol when accessing WRAM banks that require caller-managed SVBK selection.
     void MaybeWarnManualSvbkRequired(Expr origin, Symbol sym)
     {
         if (origin == null || sym == null) return;
@@ -14091,6 +14533,7 @@ void EmitShiftRightLogicalHL(int count)
             sym.Name, sym.WramBank);
     }
 
+    // Find a supported allocator containing the entire fixed allocation span.
     AllocationRegion FixedAllocationRegion(int address, int end)
     {
         if (address >= Wram0Region.Bottom && end <= 0xCFFF) return Wram0Region;
@@ -14100,6 +14543,7 @@ void EmitShiftRightLogicalHL(int count)
         return null;
     }
 
+    // Reject overlap with earlier reservations or automatic allocations, then keep fixed spans sorted by address.
     void ReserveFixedAllocation(Expr origin, string name, int address, int size)
     {
         if (size <= 0) return;
@@ -14135,6 +14579,7 @@ void EmitShiftRightLogicalHL(int count)
     }
 
 
+    // Choose aligned global storage, enforce bank/stack constraints and emit the variable placement metadata.
     Symbol DeclareGlobal(Expr origin, MemoryRegion region, CType type, string name, int pragmaAlign = 0)
     {
         int size = SizeOf(origin, type);
@@ -14207,6 +14652,7 @@ void EmitShiftRightLogicalHL(int count)
         Emit(Tag.Variable, name, address, size, actualRegion);
         return DeclareSymbol(origin, new Symbol(SymbolTag.Global, address, type, name, actualRegion.WramBank));
     }
+    // Allocate an aligned static local slot using the hot/cold placement preference for its name.
     Symbol DeclareLocal(Expr origin, CType type, string name)
     {
         int size = SizeOf(origin, type);
@@ -14214,12 +14660,14 @@ void EmitShiftRightLogicalHL(int count)
         int address = AllocatePreferred(size, alignment, IsHotVar(name) ? HotRegions() : ColdRegions());
         return DeclareSymbol(origin, new Symbol(SymbolTag.Local, address, type, name));
     }
+    // Install a binding in the current lexical scope and reject duplicate names in that scope.
     Symbol DeclareSymbol(Expr origin, Symbol s)
     {
         if (CurrentScope.Symbols.ContainsKey(s.Name)) Error(origin, "Symbol redefined: " + s.Name);
         CurrentScope.Symbols.Add(s.Name, s);
         return s;
     }
+    // Accept literal-value and expression initializer forms, normalizing literals to source-tagged AST nodes.
     bool TryMatchReadonlyDataDecl(Expr expr, out CType type, out string name, out Expr[] valueExprs)
     {
         if (expr.Match(Tag.ReadonlyData, out type, out name, out int[] values))
@@ -14240,6 +14688,7 @@ void EmitShiftRightLogicalHL(int count)
         valueExprs = null;
         return false;
     }
+    // Convert the legacy integer initializer array to expressions before using the shared readonly-data path.
     void DeclareReadonlyData(Expr origin, CType type, string name, int[] values, int pragmaAlign = 0, string section = null)
     {
         Expr[] exprValues = new Expr[values == null ? 0 : values.Length];
@@ -14248,6 +14697,7 @@ void EmitShiftRightLogicalHL(int count)
         DeclareReadonlyData(origin, type, name, exprValues, pragmaAlign, section);
     }
 
+    // Emit section/alignment directives, encode readonly bytes and register a forward-address symbol when needed.
     void DeclareReadonlyData(Expr origin, CType type, string name, Expr[] valueExprs, int pragmaAlign = 0, string section = null)
     {
         if (!string.IsNullOrEmpty(section)) Emit(Tag.Section, section);
@@ -14266,6 +14716,7 @@ void EmitShiftRightLogicalHL(int count)
         Emit(Tag.ReadonlyData, name, bytes);
     }
 
+    // Route arrays to element encoding and reject multiple initializers for a nonarray object.
     byte[] EncodeReadonlyDataInitializers(Expr origin, CType type, Expr[] valueExprs)
     {
         if (type != null && type.IsArray)
@@ -14280,6 +14731,7 @@ void EmitShiftRightLogicalHL(int count)
         return EncodeReadonlyInitializer(origin, type, valueExprs[0]);
     }
 
+    // Encode nested arrays/aggregates recursively or serialize a scalar constant in little-endian byte order.
     byte[] EncodeReadonlyInitializer(Expr origin, CType type, Expr init)
     {
         if (type == null) type = CType.UInt8;
@@ -14320,6 +14772,7 @@ void EmitShiftRightLogicalHL(int count)
         return bytes;
     }
 
+    // Allocate the full declared array extent, zero omitted elements and copy each encoded initializer at its stride.
     byte[] EncodeReadonlyArrayInitializer(Expr origin, CType arrayType, Expr[] items)
     {
         CType elemType = arrayType.Subtype ?? CType.UInt8;
@@ -14344,6 +14797,7 @@ void EmitShiftRightLogicalHL(int count)
         return bytes;
     }
 
+    // Place struct fields at their layout offsets; for a union, encode only the first nonempty selected initializer.
     byte[] EncodeReadonlyAggregateInitializer(Expr origin, CType type, Expr init)
     {
         int totalSize = Math.Max(1, SizeOf(origin, type));
@@ -14390,6 +14844,7 @@ void EmitShiftRightLogicalHL(int count)
         return bytes;
     }
 
+    // Resolve either a stored array count or its constant dimension expression.
     int GetReadonlyArrayDimension(Expr origin, CType arrayType)
     {
         if (arrayType == null || !arrayType.IsArray) return 1;
@@ -14399,10 +14854,12 @@ void EmitShiftRightLogicalHL(int count)
         return 1;
     }
 
+    // Treat missing or explicitly empty initializer nodes as zero-filled storage.
     bool IsEmptyReadonlyInitializer(Expr expr)
     {
         return expr == null || expr.Match(Tag.Empty);
     }
+	    // Combine explicit and natural alignment, optionally page-aligning an unannotated 256-byte lookup table.
 	    int ComputeReadonlyDataAlign(Expr origin, CType type, int pragmaAlign)
 	    {
 	        int align = 0;
@@ -14428,6 +14885,7 @@ void EmitShiftRightLogicalHL(int count)
 	        return align;
 	    }
 
+	    // Register readonly symbols and planned bank/alignment metadata before function emission needs their addresses.
 	    void CompileReadonlyData(Expr expr, int pragmaAlign, string pragmaSection, int romBank)
 	    {
 	        // Early-pass hook: register readonly data symbols so functions compiled later
@@ -14459,11 +14917,13 @@ void EmitShiftRightLogicalHL(int count)
 	            }
 	        }
 	    }
+    // Use byte alignment for allocation requests without an explicit alignment.
     int TryAllocate(AllocationRegion region, int size)
     {
         return TryAllocate(region, size, 1);
     }
 
+    // Advance past overlapping reserved spans and commit the allocator cursor only when the request fits.
     int TryAllocate(AllocationRegion region, int size, int alignment)
     {
         int addr = alignment <= 1 ? region.Next : AlignUp(region.Next, alignment);
@@ -14491,6 +14951,7 @@ void EmitShiftRightLogicalHL(int count)
         return addr;
     }
 
+    // Allocate unaligned storage and report exhaustion instead of returning a usable address.
     int Allocate(AllocationRegion region, int size)
     {
         int addr = TryAllocate(region, size);
@@ -14498,6 +14959,7 @@ void EmitShiftRightLogicalHL(int count)
         return addr;
     }
 
+    // Allocate aligned storage and diagnose a region that cannot satisfy the request.
     int Allocate(AllocationRegion region, int size, int alignment)
     {
         int addr = TryAllocate(region, size, alignment);
@@ -14505,24 +14967,29 @@ void EmitShiftRightLogicalHL(int count)
         return addr;
     }
 
+    // Prefer HRAM for hot values, with permitted WRAM regions as fallbacks.
     AllocationRegion[] HotRegions()
     {
         if (EnableWram1Fallback) return new[] { HramRegion, Wram0Region, Wram1Region };
         return new[] { HramRegion, Wram0Region };
     }
+    // Prefer WRAM for cold values and keep HRAM as the final fallback.
     AllocationRegion[] ColdRegions()
     {
         if (EnableWram1Fallback) return new[] { Wram0Region, Wram1Region, HramRegion };
         return new[] { Wram0Region, HramRegion };
     }
+    // Restrict ordinary global placement to the enabled WRAM regions.
     AllocationRegion[] GlobalRegions()
     {
         if (EnableWram1Fallback) return new[] { Wram0Region, Wram1Region };
         return new[] { Wram0Region };
     }
 
+    // Apply byte alignment when trying a caller-specified sequence of allocation regions.
     int AllocatePreferred(int size, params AllocationRegion[] regions) => AllocatePreferred(size, 1, regions);
 
+    // Try each permitted region in order and diagnose failure only after every candidate is exhausted.
     int AllocatePreferred(int size, int alignment, params AllocationRegion[] regions)
     {
         foreach (var r in regions)
@@ -14534,6 +15001,7 @@ void EmitShiftRightLogicalHL(int count)
         return 0;
     }
 
+    // For stack calls, restore the entry SP while preserving the return register, then emit RET.
     void ReturnFromFunction()
     {
         // Stack ABI hardening:
@@ -14576,6 +15044,7 @@ void EmitShiftRightLogicalHL(int count)
 
         EmitAsm("RET");
     }
+    // Resolve immediate values, array addresses and scalar memory operands without treating arrays as stored pointers.
     bool TryGetOperand(Expr expr, out AsmOperand operand)
     {
         if (expr.Match(Tag.Name, out string name))
@@ -14626,6 +15095,7 @@ void EmitShiftRightLogicalHL(int count)
         operand = null; return false;
     }
 
+    // Expose paired memory operands only for named two-byte scalar locals or globals.
     bool TryGetWideOperand(Expr expr, out WideOperand operand)
     {
         if (expr.Match(Tag.Name, out string name))
@@ -14660,6 +15130,7 @@ void EmitShiftRightLogicalHL(int count)
         return false;
     }
 
+    // Resolve pending constant definitions lazily and reject dependency cycles, always clearing the active-resolution marker.
     bool EnsureConstantDeclared(string name, Expr useSite)
     {
         if (string.IsNullOrEmpty(name)) return false;
@@ -14691,6 +15162,7 @@ void EmitShiftRightLogicalHL(int count)
         }
     }
 
+    // Carry the interpreted constant and its type together so promotion and casts remain explicit.
     struct ConstEvalResult
     {
         public int Value;
@@ -14702,6 +15174,7 @@ void EmitShiftRightLogicalHL(int count)
         }
     }
 
+    // Evaluate required constants with target-width promotion, short-circuit selection and diagnostics for invalid forms.
     ConstEvalResult CalculateConstantExpressionTyped(Expr expr)
     {
         if (expr == null) return new ConstEvalResult(0, CType.UInt16);
@@ -14886,11 +15359,13 @@ void EmitShiftRightLogicalHL(int count)
         return new ConstEvalResult(0, CType.UInt16);
     }
 
+    // Return the value portion of the typed constant evaluation result.
     int CalculateConstantExpression(Expr expr)
     {
         return CalculateConstantExpressionTyped(expr).Value;
     }
 
+    // Resolve a function or planned readonly bank and expose its low byte.
     bool TryGetKnownRomBankForSymbol(string name, out int bank)
     {
         bank = -1;
@@ -14911,6 +15386,7 @@ void EmitShiftRightLogicalHL(int count)
         return false;
     }
 
+    // Accept a folded bank byte or a bankof call on a symbol with known placement metadata.
     bool TryResolveBankExprToConstU8(Expr expr, out int bank)
     {
         bank = 0;
@@ -14936,6 +15412,7 @@ void EmitShiftRightLogicalHL(int count)
         return false;
     }
 
+    // Attempt typed folding, including known bank/target intrinsics; unsupported or zero-divisor operations return false.
     bool TryEvaluateConstantExpressionTyped(Expr expr, out ConstEvalResult result)
     {
         result = new ConstEvalResult(0, CType.UInt16);
@@ -15162,6 +15639,7 @@ void EmitShiftRightLogicalHL(int count)
         return false;
     }
 
+    // Sum offsets through embedded aggregate members, rejecting implicit pointer traversal between nested fields.
     int CalculateOffsetOf(Expr origin, CType type, string memberPath)
     {
         if (type == null) { Program.Error(origin.Source, ErrorCode.ParseError, "offsetof requires a type"); return 0; }
@@ -15224,6 +15702,7 @@ void EmitShiftRightLogicalHL(int count)
 
         return offset;
     }
+    // Materialize an expression-sized outer array dimension when the type carries one.
     CType CalculateConstantArrayDimensions(CType type)
     {
         if (type.Tag == CTypeTag.ArrayWithDimensionExpression)
@@ -15232,6 +15711,7 @@ void EmitShiftRightLogicalHL(int count)
         }
         return type;
     }
+    // Resolve a name with diagnostics and issue any required manual-SVBK warning for the selected global.
     Symbol FindSymbol(Expr origin, string name)
     {
         TryFindSymbol(name, out Symbol s);
@@ -15239,13 +15719,16 @@ void EmitShiftRightLogicalHL(int count)
         MaybeWarnManualSvbkRequired(origin, s);
         return s;
     }
+    // Search outward from the current lexical scope so the nearest binding wins.
     bool TryFindSymbol(string name, out Symbol s)
     {
         for (LexicalScope scope = CurrentScope; scope != null; scope = scope.Outer)
             if (scope.Symbols.TryGetValue(name, out s)) return true;
         s = null; return false;
     }
+    // Determine expression storage width through its inferred type.
     int SizeOf(Expr expr) => SizeOf(expr, TypeOf(expr));
+    // Compute scalar, pointer, array or complete aggregate size, diagnosing unsized arrays and incomplete aggregates.
     int SizeOf(Expr origin, CType type)
     {
         if (type.IsSimple && (type.SimpleType == CSimpleType.UInt16 || type.SimpleType == CSimpleType.Int16)) return 2;
@@ -15287,6 +15770,7 @@ void EmitShiftRightLogicalHL(int count)
         return 1;
     }
 
+    // Infer source-level result types, including array decay, intrinsic returns and this compiler's integer promotion rules.
     CType TypeOf(Expr expr)
     {
         if (expr == null) return CType.UInt8;
@@ -15597,6 +16081,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         return CType.UInt8;
     }
 
+    // Fold supported expressions recursively while preserving lvalue identity, source locations and explicit cast widths.
     Expr FoldConstants(Expr expr)
     {
         if (expr == null) return null;
@@ -15788,6 +16273,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         return expr;
     }
 
+    // Recognize an integer after folding and convert nonzero values to true.
     bool TryGetConstantTruthValue(Expr expr, out bool truth)
     {
         Expr folded = FoldConstants(expr);
@@ -15800,26 +16286,35 @@ if (expr.Match(Tag.Add, out left, out right) ||
         truth = false;
         return false;
     }
+    // Produce a compact source label for simple nodes, falling back to the stripped AST tag.
     string ToSourceCode(Expr expr)
     {
         if (expr.Match(Tag.Empty)) return ""; if (expr.Match(Tag.Integer, out int n)) return n.ToString(); if (expr.Match(Tag.Name, out string s)) return s; return expr.GetTag().Replace("$", "");
     }
+    // Create an absolute symbolic label with a generator-local unique suffix.
     AsmOperand MakeUniqueLabel(string p) => new AsmOperand(p + "_" + NextLabelNumber++, AddressMode.Absolute);
+    // Construct an AST output line from its tag and arguments.
     void Emit(params object[] a) => Output.Lines.Add(Expr.Make(a));
+    // Append an already constructed line to the active output transaction.
     void Emit(Expr e) => Output.Lines.Add(e);
+    // Emit the symbolic label represented by an operand.
     void EmitLabel(AsmOperand l) => Emit(Tag.Label, l.Base.Value);
+    // Add a formatted explanatory line to generated output.
     void EmitComment(string format, params object[] args) => Emit(Tag.Comment, string.Format(format, args));
+    // Track stack effects before appending an instruction without an explicit operand.
     void EmitAsm(string m)
     {
         TrackStackInstr(m, null);
         Emit(Expr.MakeAsm(m));
     }
 
+    // Track stack effects before appending an instruction with its operand.
     void EmitAsm(string m, AsmOperand o)
     {
         TrackStackInstr(m, o);
         Emit(Expr.MakeAsm(m, o));
     }
+    // Open a lexical scope and save allocator cursors for temporary local storage.
     void BeginScope()
     {
         CurrentScope = new LexicalScope(CurrentScope);
@@ -15829,6 +16324,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         CurrentScope.SavedWram1Next = Wram1Region.Next;
 
     }
+    // Restore the saved local-storage cursors and return to the outer lexical scope.
     void EndScope()
     {
         HramRegion.Next = CurrentScope.SavedHramNext;
@@ -15836,13 +16332,16 @@ if (expr.Match(Tag.Add, out left, out right) ||
         Wram1Region.Next = CurrentScope.SavedWram1Next;
         CurrentScope = CurrentScope.Outer;
     }
+    // Forward source-located errors and warnings through the compiler diagnostic entry points.
     void Error(Expr e, string m) => Program.Error(e.Source, m);
     void Error(Expr e, ErrorCode code, string m) => Program.Error(e.Source, code, m);
     void Error(Expr e, ErrorCode code, string format, params object[] args) => Program.Error(e.Source, code, format, args);
     void Warning(Expr e, string m) => Program.Warning(e.Source, m);
     void Warning(Expr e, ErrorCode code, string m) => Program.Warning(e.Source, code, m);
     void NYI(Expr e, string m) => Error(e, "Not Implemented: " + m);
+    // Begin a separate output transaction whose lines are committed only if speculation succeeds.
     void Speculate() => OutputStack.Push(new OutputTransaction());
+    // Discard a failed speculative transaction or append its emitted lines to the enclosing output.
     bool Commit()
     {
         OutputTransaction transaction = OutputStack.Pop();
@@ -15850,9 +16349,12 @@ if (expr.Match(Tag.Add, out left, out right) ||
         Output.Lines.AddRange(transaction.Lines);
         return true;
     }
+    // Compatibility hook: this generator does not maintain a register-reservation state here.
     void Reserve(Register r) { }
+    // Compatibility hook paired with Reserve; no register state is changed.
     void Release(Register r) { }
 
+    // Resolve aggregate metadata from an expression, allowing a pointer to an aggregate.
     AggregateInfo GetAggregateInfo(Expr structExpr)
     {
         CType type = TypeOf(structExpr);
@@ -15860,6 +16362,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         if (!type.IsStructOrUnion) Program.Error("struct or union type required");
         return AggregateTypes[type.Name];
     }
+    // Look up a named aggregate and diagnose missing or incomplete definitions.
     AggregateInfo GetAggregateInfo(Expr origin, string name)
     {
         AggregateInfo info;
@@ -15867,6 +16370,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         if (info.TotalSize < 0) Error(origin, ErrorCode.IncompleteType, "incomplete struct/union type: " + name);
         return info;
     }
+    // Locate a field in the resolved aggregate definition or diagnose an invalid member name.
     FieldInfo GetFieldInfo(Expr structExpr, string fieldName)
     {
         AggregateInfo info = GetAggregateInfo(structExpr);
@@ -15876,6 +16380,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
     }
 
 
+    // Count set bits in a positive factor for the constant-multiplication cost heuristic.
     int PopCount(int n)
     {
         int count = 0;
@@ -15887,6 +16392,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         return count;
     }
 
+    // Use a shift/add expansion for positive factors with at most four set bits, retaining the original value in DE.
     bool EmitConstantMultiplication(int factor)
     {
         if (factor <= 0) return false;
@@ -15971,7 +16477,9 @@ if (expr.Match(Tag.Add, out left, out right) ||
         EmitAsm("JP_Z", end);
 
         EmitLabel(top);
+        BreakLabels.Push(end);
         CompileStatement(body);
+        BreakLabels.Pop();
 
         EmitLabel(cont);
         // v-- ; if (v != 0) goto top;
@@ -15986,6 +16494,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         return true;
     }
 
+    // Recognize the limited nonzero-test forms accepted by countdown-loop specialization.
     bool IsSimpleNonZeroTest(Expr test, string varName)
     {
         if (test.Match(Tag.Empty)) return false;
@@ -16015,16 +16524,19 @@ if (expr.Match(Tag.Add, out left, out right) ||
         return false;
     }
 
+    // Match one exact variable-name expression.
     bool IsName(Expr expr, string varName)
     {
         return expr.Match(Tag.Name, out string n) && n == varName;
     }
 
+    // Match one exact integer-literal expression.
     bool IsInt(Expr expr, int value)
     {
         return expr.Match(Tag.Integer, out int v) && v == value;
     }
 
+    // Scan syntax for direct writes and address-taking hazards before countdown-loop specialization.
     bool ContainsWriteToVar(Expr expr, string varName)
     {
         if (expr == null) return false;
@@ -16076,6 +16588,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
         for (int i = 0; i < parameters.Length; i++)
             nameToIndex[parameters[i].Name] = i;
 
+        // Mark a named nonconst parameter for a local copy, peeling explicit casts from the assignment target.
         void MarkWriteLhs(Expr lhs)
         {
             if (lhs == null) return;
@@ -16093,6 +16606,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
             }
         }
 
+        // Find parameter writes through assignments and increments, then recurse into remaining child expressions.
         void Scan(Expr e)
         {
             if (e == null) return;
@@ -16133,6 +16647,7 @@ if (expr.Match(Tag.Add, out left, out right) ||
     }
 
 
+    // Accumulate weighted name occurrences, multiplying loop test, induction and body weights by four.
     void AnalyzeVariableUsage(Expr expr, int weight)
     {
         if (expr == null) return;

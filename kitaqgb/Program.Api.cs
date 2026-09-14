@@ -5,16 +5,19 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 
+// Select invocation behavior for the command-line process or an in-process API caller.
 internal enum CompilerHostMode
 {
     Cli,
     Api,
 }
 
+// Carry an intended compiler exit code across the API boundary without terminating its host process.
 internal sealed class ControlledCompilerExit : Exception
 {
     public int ExitCode { get; private set; }
 
+    // Retain the requested exit code and a diagnostic exception message.
     public ControlledCompilerExit(int exitCode)
         : base("Compiler exited with code " + exitCode)
     {
@@ -24,12 +27,16 @@ internal sealed class ControlledCompilerExit : Exception
 
 static partial class Program
 {
+    // Associate session state with the current asynchronous execution context.
+    // This slot alone does not isolate other static compiler state or process-wide console settings.
     static readonly AsyncLocal<CompilerSession> SessionSlot = new AsyncLocal<CompilerSession>();
     static readonly CompilerSession BootstrapSession = new CompilerSession();
 
+    // Use bootstrap defaults when no invocation session has been installed.
     static CompilerSession CurrentSession => SessionSlot.Value ?? BootstrapSession;
     static CompilerHostMode CurrentHostMode { get { return CurrentSession.HostMode; } set { CurrentSession.HostMode = value; } }
     static Dictionary<string, string> ArtifactPaths => CurrentSession.ArtifactPaths;
+    // Expose the current session's phase reports and replace null assignments with empty reports.
     internal static CodegenAnalysisReport CurrentCodegenLastReport { get { return CurrentSession.CodegenLastReport; } set { CurrentSession.CodegenLastReport = value ?? new CodegenAnalysisReport(); } }
     internal static AssemblerAnalysisReport CurrentAssemblerLastReport { get { return CurrentSession.AssemblerLastReport; } set { CurrentSession.AssemblerLastReport = value ?? new AssemblerAnalysisReport(); } }
     internal static OptimizerAnalysisReport CurrentOptimizerLastReport { get { return CurrentSession.OptimizerLastReport; } set { CurrentSession.OptimizerLastReport = value ?? new OptimizerAnalysisReport(); } }
@@ -39,8 +46,10 @@ static partial class Program
     public static bool EmitPathManifest { get { return CurrentSession.EmitPathManifest; } private set { CurrentSession.EmitPathManifest = value; } }
     public static string PathManifestPath { get { return CurrentSession.PathManifestPath; } private set { CurrentSession.PathManifestPath = value; } }
 
+    // Suppress helper output in either machine-readable mode or API hosting mode.
     static bool SuppressInformationalOutput => MachineReadableOutput || CurrentHostMode == CompilerHostMode.Api;
 
+    // Start with session defaults and retain the provided argument array without cloning it.
     static CompilerSession CreateInvocationSession(CompilerHostMode hostMode, string[] argsArray)
     {
         var session = new CompilerSession();
@@ -49,6 +58,8 @@ static partial class Program
         return session;
     }
 
+    // Reset invocation state while preserving its host mode and configure process-wide UTF-8 console output.
+    // Only CLI invocations append command history; console encoding is not restored here.
     static void PrepareForInvocation(string[] argsArray)
     {
         CompilerHostMode hostMode = CurrentHostMode;
@@ -58,24 +69,29 @@ static partial class Program
             TryAppendCommandHistory(argsArray ?? Array.Empty<string>());
     }
 
+    // Record a nonblank role/path in the current session without requiring the artifact to exist yet.
     internal static void RememberArtifactPath(string key, string path)
     {
         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(path)) return;
         ArtifactPaths[key] = NormalizeArtifactPath(path);
     }
 
+    // Write nonblank informational text only when the current host permits helper output.
     internal static void WriteInfoLine(string text)
     {
         if (SuppressInformationalOutput || string.IsNullOrWhiteSpace(text)) return;
         Console.WriteLine(text);
     }
 
+    // Apply the same host suppression to this stderr helper; structured diagnostics are collected elsewhere.
     internal static void WriteErrorLine(string text)
     {
         if (SuppressInformationalOutput || string.IsNullOrWhiteSpace(text)) return;
         Console.Error.WriteLine(text);
     }
 
+    // Run the shared entry point with an API session, translating controlled exits into results.
+    // Always restore the previous session; unrelated exceptions propagate to the caller.
     internal static kitaqgb.CompileResult InvokeCompileForApi(kitaqgb.CompileRequest request, string[] args)
     {
         if (request == null) throw new ArgumentNullException(nameof(request));
@@ -97,6 +113,8 @@ static partial class Program
         }
     }
 
+    // Copy session diagnostics and artifact metadata into the API result. Success requires a zero exit code,
+    // an existing output path and no error diagnostics; file existence alone does not establish freshness.
     static kitaqgb.CompileResult BuildCompileResult(kitaqgb.CompileRequest request, int exitCode)
     {
         CompilerSession session = CurrentSession;
@@ -146,6 +164,8 @@ static partial class Program
         };
     }
 
+    // Copy remembered paths and supplement them with existing conventional output files and directories.
+    // This can include artifacts from earlier runs; absent files do not remove already remembered entries.
     static Dictionary<string, string> SnapshotArtifactPaths(CompilerSession session, string requestedOutputFilename)
     {
         var artifacts = new Dictionary<string, string>(session.ArtifactPaths, StringComparer.OrdinalIgnoreCase);
@@ -186,6 +206,7 @@ static partial class Program
         return artifacts;
     }
 
+    // Normalize a nonblank file path and add or replace its role only when the file exists.
     static void AddArtifactIfExists(IDictionary<string, string> artifacts, string key, string path)
     {
         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(path)) return;
@@ -193,6 +214,7 @@ static partial class Program
         if (File.Exists(normalized)) artifacts[key] = normalized;
     }
 
+    // Normalize a nonblank directory path and add or replace its role only when the directory exists.
     static void AddDirectoryIfExists(IDictionary<string, string> artifacts, string key, string path)
     {
         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(path)) return;
@@ -200,6 +222,7 @@ static partial class Program
         if (Directory.Exists(normalized)) artifacts[key] = normalized;
     }
 
+    // Resolve relative paths against the process working directory; retain the original text if normalization fails.
     static string NormalizeArtifactPath(string path)
     {
         if (string.IsNullOrWhiteSpace(path)) return path;
@@ -213,6 +236,7 @@ static partial class Program
         }
     }
 
+    // Prefer the explicit manifest filename; otherwise derive it from the current diagnostic output name.
     static string ResolvePathManifestOutputPath()
     {
         if (!string.IsNullOrWhiteSpace(PathManifestPath))
@@ -222,6 +246,8 @@ static partial class Program
         return Path.ChangeExtension(outputFilename, ".artifacts.json");
     }
 
+    // When enabled, write the artifact snapshot and remember the actual fallback path.
+    // A write failure becomes a stderr warning even when ordinary helper output is suppressed.
     static void TryWritePathManifest(int exitCode)
     {
         if (!EmitPathManifest) return;
@@ -240,6 +266,7 @@ static partial class Program
         }
     }
 
+    // Emit the exit code and escaped artifact paths in stable key order, excluding the manifest's own path.
     static string BuildPathManifestJson(IReadOnlyDictionary<string, string> artifacts, int exitCode)
     {
         var sb = new StringBuilder();

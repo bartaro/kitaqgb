@@ -27,3 +27,6 @@
 **/obj/
 !/kitaqgb.exe
 /integration_test/reports/
+
+# Example builds contain regenerable diagnostics and ROMs.
+/examples/out/

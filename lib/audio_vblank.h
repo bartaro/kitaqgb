@@ -9,8 +9,10 @@
 //
 // Notes are 0..67. To stay inside the useful CGB register range, C6..G6
 // (60..67) alias C5..G5 (48..55) in the fixed pitch table. REST leaves a
-// channel unchanged, while STOP silences it. Use LOOP as a delay byte to jump
-// back to the song start and END as a delay byte for a one-shot song end.
+// channel unchanged, while STOP silences it. END stops either playback mode.
+// LOOP jumps to MusicLoopPoint only in direct-pointer mode; a queue producer
+// must expand loops itself. IMMEDIATE is recognized only in queue mode.
+// Direct streams treat 0xFB as an ordinary delay, and queues treat 0xFE as one.
 
 #define AUDIO_VBLANK_REST ((u8)0xFF)
 #define AUDIO_VBLANK_END  ((u8)0xFF)
@@ -59,23 +61,62 @@ extern __wram u8 AudioVBlank_ControlCommand;
 extern __wram u8 AudioVBlank_ControlArg0;
 extern __wram u8 AudioVBlank_ControlArg1;
 extern __wram u8 AudioVBlank_ControlArg2;
+// The library supplies the queue consumer, not a refill routine. An external
+// producer owns WriteIndex and publishes complete five-byte records by increasing
+// Count; the ISR owns ReadIndex and decreases Count. Keep indices in 0..15 and
+// Count in 0..16. Synchronize count updates and mode changes with the ISR.
+// MusicPlaying and all enable/pause gates still apply in queue mode.
 extern __wram u8 AudioVBlank_QueueMode;
 extern __wram u8 AudioVBlank_QueueReadIndex;
 extern __wram u8 AudioVBlank_QueueWriteIndex;
 extern __wram u8 AudioVBlank_QueueCount;
 extern __wram u8 AudioVBlank_QueueUnderruns;
+// Queue bytes reside in WRAM bank 1. A producer must select that bank while
+// writing and restore the caller bank; publish the record only after all bytes
+// are complete. The ISR selects bank 1 itself and restores SVBK before returning.
 extern __wramx_bank(1) u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
+// The ISR invokes this hook even when music processing is gated off. It runs
+// with SVBK=1 using a direct-address call; keep hook code/data accessible in that
+// context and synchronize pointer changes with interrupt execution.
 extern __wram AudioVBlankFrameHook AudioVBlank_FrameHook;
 
+// Reset software playback state, queue counters, instruments and the frame hook.
+// Call before enabling this ISR; the routine does not mask interrupts or
+// initialize the APU registers and cannot synchronize with an active handler.
 void AudioVBlank_Init();
+// Select a directly addressed song and reset its cursors, leaving the playing
+// flag unchanged. Song storage must remain accessible to the fixed-bank ISR;
+// coordinate this multi-field update with interrupt execution.
 void __stackcall AudioVBlank_SetMusic(u8 *song);
+// Restart the selected direct song at its beginning, leaving queue mode.
+// A null song invokes Stop; this does not enable the music or IRQ gates.
 void AudioVBlank_Play();
+// Select and restart a directly addressed song. This is not the banked WRAM-queue path.
 void __stackcall AudioVBlank_PlayMusic(u8 *song);
+// Stop software playback and silence pulse/noise envelopes and the wave DAC.
+// Song pointers and the IRQ enable remain unchanged; the routine writes the
+// physical channels directly, so coordinate ownership with sound effects.
 void AudioVBlank_Stop();
+// Gate music processing and clear pending CH1/CH3 recovery on disable.
+// No audio register is written here: disabling does not itself silence a note
+// already playing or disable the VBlank interrupt.
 void __stackcall AudioVBlank_SetEnabled(u8 on);
+// Enable the VBlank source in IE and execute EI, enabling CPU interrupts globally.
+// Install the correct interrupt vector and initialize driver state first.
 void AudioVBlank_EnableIrq();
+// Clear only the VBlank bit in IE. Other interrupt sources and current sound remain unchanged.
 void AudioVBlank_DisableIrq();
+// Recover the borrowed pulse channel (CH1 or CH2) from its latched music event.
+// Pending value 2, disabled music, or a non-note latch silences it instead.
+// The caller must first establish that the effect has released the channel.
 void AudioVBlank_RestoreCh1();
+// Recover a latched wave-channel music event after effect release, or disable
+// the DAC for a release-only request, disabled music, or a non-note latch.
+// The caller owns effect arbitration and clearing the pending flag.
 void AudioVBlank_RestoreCh3();
+// Request deferred pulse-channel release only when no recovery is pending.
+// Preserve value 1, which records a music event suppressed while an effect owned it.
 void AudioVBlank_RequestRestoreCh1();
+// Request a deferred wave-channel release only if no recovery is pending.
+// Preserve value 1, which records a new music event suppressed by the effect.
 void AudioVBlank_RequestRestoreCh3();

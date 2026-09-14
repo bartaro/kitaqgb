@@ -6,8 +6,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Scan source and process includes, macros and conditional directives before
+// parsing. Each file has its own cursor/conditional stack; a compilation shares
+// macro definitions, include search paths, once guards and dependency tracking.
 class Tokenizer
 {
+    // Store an unexpanded replacement token sequence and its definition location.
     sealed class ObjectMacro
     {
         public string Name;
@@ -15,6 +19,7 @@ class Tokenizer
         public FilePosition DefinedAt;
     }
 
+    // Map parameter names to argument indices for token substitution at each invocation.
     sealed class FunctionMacro
     {
         public string Name;
@@ -24,6 +29,8 @@ class Tokenizer
         public FilePosition DefinedAt;
     }
 
+    // Track enclosing activity, the selected branch and whether else has occurred.
+    // AnyTaken prevents a later elif/else from selecting a second branch.
     sealed class ConditionalFrame
     {
         public bool ParentActive;
@@ -47,6 +54,8 @@ class Tokenizer
 
     const int MacroExpansionDepthLimit = 32;
 
+    // Share preprocessing state across all explicitly supplied files and recursive
+    // includes. File paths are compared without case; macro names remain case-sensitive.
     sealed class IncludeContext
     {
         public readonly HashSet<string> OnceFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -57,6 +66,7 @@ class Tokenizer
         public readonly Dictionary<string, FunctionMacro> FunctionMacros = new Dictionary<string, FunctionMacro>(StringComparer.Ordinal);
     }
 
+    // Tokenize one source using the CLI include directories, discarding EOF/dependency metadata.
     public static List<Token> TokenizeFile(string filename)
     {
         FilePosition end;
@@ -65,12 +75,16 @@ class Tokenizer
     }
 
     // Overload that also returns the end-of-file position.
+    // Tokenize one source and return its final cursor position for parser diagnostics.
     public static List<Token> TokenizeFile(string filename, out FilePosition endPosition)
     {
         List<string> deps;
         return TokenizeFiles(new[] { filename }, Program.IncludeDirectories, out endPosition, out deps);
     }
 
+    // Process input files in order under one shared preprocessor context. Normalize
+    // and deduplicate valid include directories, return sorted unique dependencies,
+    // and report the last input file's EOF position; no inputs leave it Unknown.
     public static List<Token> TokenizeFiles(IEnumerable<string> filenames, IEnumerable<string> includeDirs, out FilePosition eofPosition, out List<string> dependencies)
     {
         eofPosition = FilePosition.Unknown;
@@ -106,6 +120,9 @@ class Tokenizer
         return outTokens;
     }
 
+    // Resolve and read one file, guarding against include cycles and completed
+    // pragma-once files. Register the dependency before scanning; successful scanning
+    // records its once guard and removes it from the active include stack.
     static List<Token> TokenizeFileRecursive(string filename, IncludeContext ctx, out FilePosition endPosition)
     {
         string fullPath;
@@ -152,6 +169,9 @@ class Tokenizer
         return toks;
     }
 
+    // Scan the current input, expanding macros only outside inline assembly and
+    // processing only conditional directives in inactive branches. Inline assembly
+    // retains newline tokens; the parser adds its own EOF token using EndPosition.
     public List<Token> Tokenize()
     {
         List<Token> tokens = new List<Token>();
@@ -355,7 +375,7 @@ class Tokenizer
                         if (emitPragmaToken)
                         {
                             // Emit a real token so the parser can carry the pragma state into declarations.
-                            // The newline has already been consumed by SkipToNextLine().
+                            // SkipToNextLine leaves the newline for the next SkipSpaces call.
                         }
                         else
                         {
@@ -524,11 +544,14 @@ class Tokenizer
         }
     }
 
+    // Accept the shared ASCII identifier/numeric-token alphabet, including dollar
+    // for hexadecimal literals; whether a name may start with a digit is caller-specific.
     static bool IsNameChar(char c)
     {
         return (c == '_') || (c == '$') || (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
+    // Consume whitespace while preserving assembly line breaks as NEWLINE tokens.
     void SkipSpaces()
     {
         string whitespace = InAssembly ? " \t\r" : " \t\r\n";
@@ -540,6 +563,7 @@ class Tokenizer
         }
     }
 
+    // Consume through the last character before newline or EOF, leaving that terminator unread.
     void SkipToNextLine()
     {
         while (true)
@@ -550,6 +574,7 @@ class Tokenizer
         }
     }
 
+    // Consume a non-nesting block comment after its opener, or report an unterminated comment.
     void SkipBlockComment()
     {
         // We enter here immediately after consuming the opening "/*".
@@ -575,6 +600,9 @@ class Tokenizer
         }
     }
 
+    // Recognize decimal, 0x/$ hexadecimal and 0b binary integers. A token not beginning
+    // with a digit or dollar is a name; numeric-looking tokens with invalid digits
+    // are errors. No suffix, octal convention or explicit overflow check is applied.
     static bool TryConvertInt(FilePosition pos, string original, out int integer)
     {
         string decimalDigits = "0123456789";
@@ -625,11 +653,14 @@ class Tokenizer
         return true;
     }
 
+    // Peek at the cursor without advancing; the NUL sentinel marks the end of input.
     char GetNextChar()
     {
         return (Next < Input.Length) ? Input[Next] : '\0';
     }
 
+    // Advance the cursor once, then update the diagnostic position from the newly
+    // exposed character. This preserves the tokenizer's existing location convention.
     void FetchChar()
     {
         if (Next < Input.Length) Next++;
@@ -644,6 +675,7 @@ class Tokenizer
         }
     }
 
+    // Consume one matching character through FetchChar; leave all cursor state unchanged on failure.
     bool TryRead(char c)
     {
         if (GetNextChar() == c)
@@ -657,6 +689,8 @@ class Tokenizer
         }
     }
 
+    // Match a literal substring and advance only the character offset. Unlike
+    // the character overload, this helper does not update the diagnostic position.
     bool TryRead(string s)
     {
         if (SafeSubstring(Input, Next, s.Length) == s)
@@ -667,6 +701,7 @@ class Tokenizer
         return false;
     }
 
+    // Limit a forward substring to available input; callers must provide a valid start offset.
     static string SafeSubstring(string s, int start, int length)
     {
         int maxLength = s.Length - start;
@@ -674,6 +709,7 @@ class Tokenizer
         return s.Substring(start, length);
     }
 
+    // Recognize pragma once after the hash, restoring both cursors if it does not match.
     bool TryReadPragmaOnce()
     {
         int saveNext = Next;
@@ -697,6 +733,8 @@ class Tokenizer
         return true;
     }
 
+    // Read a quoted or angle-bracket include name on the current line. Restore
+    // both cursors on malformed input; path lookup and file loading happen separately.
     bool TryReadInclude(out string includeSpec, out bool isAngleForm)
     {
         includeSpec = null;
@@ -768,6 +806,9 @@ class Tokenizer
         return false;
     }
 
+    // Resolve an existing include. Quoted names search the including file's directory
+    // first; both forms then search configured directories and finally the working
+    // directory. Rooted paths bypass that search; the first existing match wins.
     bool TryResolveIncludePath(string currentFile, string includeSpec, bool isAngleForm, out string includePath)
     {
         includePath = null;
@@ -826,16 +867,20 @@ class Tokenizer
         return false;
     }
 
+    // Accept ASCII letters, underscore or dollar as a directive/macro identifier start.
     static bool IsNameStartChar(char c)
     {
         return (c == '_') || (c == '$') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
     }
 
+    // Skip spaces and tabs only, keeping directive parsing on its current line.
     void SkipHorizontalSpaces()
     {
         while (GetNextChar() == ' ' || GetNextChar() == '\t') FetchChar();
     }
 
+    // Require a valid identifier start, then consume its complete name. Failure
+    // before the first character leaves the input untouched and returns null.
     bool TryReadIdentifierToken(out string ident)
     {
         ident = null;
@@ -851,6 +896,8 @@ class Tokenizer
         return true;
     }
 
+    // Read unique comma-separated parameter names after the opening parenthesis,
+    // including an empty list. Failure may consume input; the directive caller owns recovery.
     bool TryReadParameterList(out string[] parameters)
     {
         var ps = new List<string>();
@@ -891,6 +938,7 @@ class Tokenizer
         }
     }
 
+    // Collect uninterpreted text up to CR, LF or EOF without consuming the terminator.
     string ReadUntilLineEndRaw()
     {
         StringBuilder sb = new StringBuilder();
@@ -904,6 +952,8 @@ class Tokenizer
         return sb.ToString();
     }
 
+    // Tokenize a replacement or argument with automatic expansion disabled, sharing
+    // the current macro/include context. A later expansion pass handles its names.
     List<Token> TokenizeMacroFragment(string fragment, FilePosition pos)
     {
         if (string.IsNullOrWhiteSpace(fragment)) return new List<Token>();
@@ -922,6 +972,7 @@ class Tokenizer
         return t.Tokenize();
     }
 
+    // Copy token payload while assigning the requested diagnostic location, usually the invocation site.
     static Token CloneToken(Token t, FilePosition pos)
     {
         return new Token
@@ -933,17 +984,22 @@ class Tokenizer
         };
     }
 
+    // Treat unguarded input as active; otherwise use the innermost frame's combined activity.
     bool IsCurrentBranchActive()
     {
         return ConditionalStack.Count == 0 || ConditionalStack.Peek().BranchActive;
     }
 
+    // Test either macro table without expanding the replacement text.
     bool IsMacroDefined(string name)
     {
         if (string.IsNullOrEmpty(name) || IncludeState == null) return false;
         return IncludeState.ObjectMacros.ContainsKey(name) || IncludeState.FunctionMacros.ContainsKey(name);
     }
 
+    // Maintain if/ifdef/ifndef/elif/else/endif nesting. Evaluate expressions only
+    // when the parent is active and no earlier branch was taken; diagnose unmatched
+    // or repeated branch directives. Nonconditional names restore the input cursor.
     bool TryHandleConditionalDirective(FilePosition hashPos)
     {
         int saveNext = Next;
@@ -1078,13 +1134,17 @@ class Tokenizer
         return false;
     }
 
+    // Tokenize an if/elif expression and evaluate it with a fresh macro-recursion guard.
     long EvaluateIfDirectiveExpression(string exprText, FilePosition hashPos)
     {
         List<Token> tokens = TokenizeMacroFragment(exprText ?? "", hashPos);
         return EvaluateIfDirectiveExpressionTokens(tokens, hashPos, new HashSet<string>(StringComparer.Ordinal), 0);
     }
 
-    long EvaluateIfDirectiveExpressionTokens(List<Token> tokens, FilePosition hashPos, HashSet<string> activeMacros, int depth)
+    // Evaluate the supported integer-expression subset using precedence-ordered
+    // recursive descent. Expand object macros with a recursion guard; undefined
+    // identifiers evaluate to zero. This is separate from the language expression parser.
+    long EvaluateIfDirectiveExpressionTokens(List<Token> tokens, FilePosition hashPos, HashSet<string> activeMacros, int depth, bool evaluate = true)
     {
         if (tokens == null || tokens.Count == 0) return 0;
 
@@ -1096,12 +1156,14 @@ class Tokenizer
 
         int i = 0;
 
+        // Peek at the expression token kind, returning synthetic EOF without advancing.
         TokenType PeekTag()
         {
             if (i >= tokens.Count) return TokenType.EOF;
             return tokens[i].Tag;
         }
 
+        // Consume one expression token or return a synthetic EOF at the directive location.
         Token Take()
         {
             if (i >= tokens.Count)
@@ -1111,6 +1173,7 @@ class Tokenizer
             return tokens[i++];
         }
 
+        // Consume a matching expression token kind; preserve the index on mismatch.
         bool TryTake(TokenType t)
         {
             if (PeekTag() != t) return false;
@@ -1118,6 +1181,8 @@ class Tokenizer
             return true;
         }
 
+        // Read a literal, parenthesized expression, defined test or object-macro value.
+        // Names without an eligible object replacement contribute zero.
         long ParsePrimary()
         {
             if (TryTake(TokenType.LPAREN))
@@ -1172,7 +1237,7 @@ class Tokenizer
                 {
                     var activeNext = new HashSet<string>(activeMacros, StringComparer.Ordinal);
                     activeNext.Add(t.Name);
-                    return EvaluateIfDirectiveExpressionTokens(macro.Replacement, hashPos, activeNext, depth + 1);
+                    return EvaluateIfDirectiveExpressionTokens(macro.Replacement, hashPos, activeNext, depth + 1, evaluate);
                 }
 
                 return 0;
@@ -1181,6 +1246,7 @@ class Tokenizer
             return 0;
         }
 
+        // Bind unary plus, negation, logical not and bitwise complement before binary operators.
         long ParseUnary()
         {
             if (TryTake(TokenType.PLUS)) return ParseUnary();
@@ -1190,6 +1256,7 @@ class Tokenizer
             return ParsePrimary();
         }
 
+        // Fold multiplication, division and remainder from left to right at unary precedence.
         long ParseMulDivMod()
         {
             long v = ParseUnary();
@@ -1204,12 +1271,12 @@ class Tokenizer
                     long r = ParseUnary();
                     if (r == 0)
                     {
-                        Program.Warning(hashPos, "division by zero in #if expression");
+                        if (evaluate) Program.Warning(hashPos, "division by zero in #if expression");
                         v = 0;
                     }
                     else
                     {
-                        v = v / r;
+                        v = evaluate ? v / r : 0;
                     }
                 }
                 else if (TryTake(TokenType.PERCENT))
@@ -1217,12 +1284,12 @@ class Tokenizer
                     long r = ParseUnary();
                     if (r == 0)
                     {
-                        Program.Warning(hashPos, "modulo by zero in #if expression");
+                        if (evaluate) Program.Warning(hashPos, "modulo by zero in #if expression");
                         v = 0;
                     }
                     else
                     {
-                        v = v % r;
+                        v = evaluate ? v % r : 0;
                     }
                 }
                 else
@@ -1233,6 +1300,7 @@ class Tokenizer
             return v;
         }
 
+        // Fold addition and subtraction over complete multiplicative expressions.
         long ParseAddSub()
         {
             long v = ParseMulDivMod();
@@ -1245,6 +1313,7 @@ class Tokenizer
             return v;
         }
 
+        // Fold shifts after additive expressions, masking each shift count to 0..63.
         long ParseShift()
         {
             long v = ParseAddSub();
@@ -1268,6 +1337,7 @@ class Tokenizer
             return v;
         }
 
+        // Compare shift expressions from left to right, representing each result as zero or one.
         long ParseRelational()
         {
             long v = ParseShift();
@@ -1282,6 +1352,7 @@ class Tokenizer
             return v;
         }
 
+        // Apply equality and inequality after relational operators, producing integer truth values.
         long ParseEquality()
         {
             long v = ParseRelational();
@@ -1294,6 +1365,7 @@ class Tokenizer
             return v;
         }
 
+        // Fold bitwise AND over equality expressions.
         long ParseBitAnd()
         {
             long v = ParseEquality();
@@ -1304,6 +1376,7 @@ class Tokenizer
             return v;
         }
 
+        // Fold bitwise XOR after bitwise AND.
         long ParseBitXor()
         {
             long v = ParseBitAnd();
@@ -1314,6 +1387,7 @@ class Tokenizer
             return v;
         }
 
+        // Fold bitwise OR after bitwise XOR.
         long ParseBitOr()
         {
             long v = ParseBitXor();
@@ -1324,22 +1398,36 @@ class Tokenizer
             return v;
         }
 
+        // Handle logical AND at the precedence level above logical OR.
         long ParseLogicalAnd()
         {
             long v = ParseBitOr();
             while (TryTake(TokenType.LOGICAL_AND))
             {
-                v = (v != 0 && ParseBitOr() != 0) ? 1 : 0;
+                // Always consume the right operand, even when its value cannot affect
+                // the result. Suppress arithmetic diagnostics only within the unevaluated branch.
+                bool previousEvaluation = evaluate;
+                evaluate = evaluate && v != 0;
+                long right = ParseBitOr();
+                evaluate = previousEvaluation;
+                v = (v != 0 && right != 0) ? 1 : 0;
             }
             return v;
         }
 
+        // Handle logical OR as the outermost supported binary-expression level.
         long ParseLogicalOr()
         {
             long v = ParseLogicalAnd();
             while (TryTake(TokenType.LOGICAL_OR))
             {
-                v = (v != 0 || ParseLogicalAnd() != 0) ? 1 : 0;
+                // Parse past a short-circuited operand so later operators and closing
+                // parentheses are still consumed at the correct precedence level.
+                bool previousEvaluation = evaluate;
+                evaluate = evaluate && v == 0;
+                long right = ParseLogicalAnd();
+                evaluate = previousEvaluation;
+                v = (v != 0 || right != 0) ? 1 : 0;
             }
             return v;
         }
@@ -1348,6 +1436,9 @@ class Tokenizer
         return result;
     }
 
+    // Store an object or function macro without expanding its replacement. Function
+    // syntax requires an immediate opening parenthesis; redefining a name removes
+    // its entry from the opposite macro table.
     bool TryReadDefine(FilePosition hashPos)
     {
         int saveNext = Next;
@@ -1416,6 +1507,8 @@ class Tokenizer
         return true;
     }
 
+    // Remove a name from both macro tables; an absent name is harmless.
+    // A malformed recognized directive warns, while a nonmatch restores the cursor.
     bool TryReadUndef(FilePosition hashPos)
     {
         int saveNext = Next;
@@ -1445,6 +1538,8 @@ class Tokenizer
         return true;
     }
 
+    // Emit the rest of a warning/error directive as literal diagnostic text.
+    // Use a fixed format string so braces in the user message are not interpreted.
     bool TryReadDiagnosticDirective(FilePosition hashPos)
     {
         int saveNext = Next;
@@ -1477,6 +1572,9 @@ class Tokenizer
         return true;
     }
 
+    // Split raw macro arguments after the opening parenthesis, respecting nested
+    // parentheses and quoted text with escapes. The closing parenthesis is consumed;
+    // EOF reports failure and lets the caller restore its saved cursor.
     bool TryReadInvocationArgumentsRaw(out List<string> args)
     {
         args = new List<string>();
@@ -1578,6 +1676,8 @@ class Tokenizer
         }
     }
 
+    // Split a tokenized invocation at outer-level commas, retaining nested parentheses.
+    // Return the closing-token index without modifying the input token list.
     bool TryParseInvocationFromTokens(List<Token> tokens, int lparenIndex, out List<List<Token>> args, out int endIndex)
     {
         args = new List<List<Token>>();
@@ -1623,6 +1723,9 @@ class Tokenizer
         return false;
     }
 
+    // Recursively substitute eligible function and object macros into a fresh list.
+    // Expand arguments before substitution, suppress active macro names to stop cycles,
+    // and retain unexpanded token copies when the depth limit is exceeded.
     List<Token> ExpandMacrosInTokenList(List<Token> input, FilePosition callPos, HashSet<string> active, int depth)
     {
         if (input == null || input.Count == 0) return new List<Token>();
@@ -1700,6 +1803,9 @@ class Tokenizer
         return outTokens;
     }
 
+    // Recognize a raw function-macro invocation following its name, tokenize and
+    // expand its arguments, substitute parameters and rescan the replacement.
+    // A missing/malformed argument list restores the input cursor and returns false.
     bool TryExpandFunctionMacroInvocation(FilePosition callPos, string macroName, List<Token> outputTokens, HashSet<string> active, int depth)
     {
         if (IncludeState == null) return false;
@@ -1762,6 +1868,8 @@ class Tokenizer
         return true;
     }
 
+    // Expand one object macro at the call location, carrying its active-name guard
+    // into recursive replacement scanning. Return false for unavailable or suppressed names.
     bool TryExpandObjectMacroToken(FilePosition callPos, string macroName, List<Token> outputTokens, HashSet<string> active, int depth)
     {
         if (IncludeState == null) return false;
@@ -1780,6 +1888,8 @@ class Tokenizer
         return true;
     }
 
+    // Read a signed decimal bank directive and restore both cursors on a nonmatch.
+    // Validation of the bank range belongs to the later compilation stages.
     bool TryReadPragmaBank(out int bank)
     {
         // Called immediately after reading '#'. Parses: pragma bank N
@@ -1835,6 +1945,8 @@ class Tokenizer
         return true;
     }
 
+    // Read a signed decimal fixed-bank directive, preserving negative sentinel values
+    // for later interpretation; restore both cursors when recognition fails.
     bool TryReadPragmaFixedBank(out int bank)
     {
         // Called immediately after reading '#'. Parses: pragma fixed_bank N
@@ -1888,6 +2000,7 @@ class Tokenizer
         return true;
     }
 
+    // Read signed decimal fixed-bank placement order; leave semantic validation to the parser.
     bool TryReadPragmaFixedOrder(out int order)
     {
         // Called immediately after reading '#'. Parses: pragma fixed_order N
@@ -1941,6 +2054,8 @@ class Tokenizer
         return true;
     }
 
+    // Read a named four-color palette, allowing commas or whitespace between colors.
+    // Each color becomes a packed 15-bit value; restore the full directive on failure.
     bool TryReadPragmaCgbPalette(out string name, out int[] colors)
     {
         name = null;
@@ -2011,6 +2126,8 @@ class Tokenizer
         return true;
     }
 
+    // Consume any run of name characters, including a leading digit. This permissive
+    // helper differs from TryReadIdentifierToken and may return an empty string.
     string ReadIdentifier()
     {
         StringBuilder sb = new StringBuilder();
@@ -2022,6 +2139,8 @@ class Tokenizer
         return sb.ToString();
     }
 
+    // Convert #RRGGBB to rounded five-bit RGB components, or accept an integer in
+    // 0..0x7FFF. This helper can consume a failed token; its directive caller restores state.
     bool TryReadPaletteColorToken(out int color)
     {
         color = 0;
@@ -2067,6 +2186,8 @@ class Tokenizer
         return true;
     }
 
+    // Read a recognized header option and one quoted or bare value. Restore
+    // cursor state for unknown/malformed options so other pragma readers can try them.
     bool TryReadPragmaRomHeader(out string key, out string value)
     {
         // Called immediately after reading '#'. Parses:
@@ -2183,13 +2304,16 @@ class Tokenizer
         return false;
     }
 
-    // Placement shortcuts (for vibe-coding iteration speed):
+    // Placement directives converted into parser-visible tokens:
     // #pragma hram
     // #pragma wram0
     // #pragma wramx
     // #pragma align N
     // #pragma section "NAME"
     // These are converted into dedicated tokens so the parser can update its current placement state.
+    // Translate region, WRAM bank, alignment and quoted section directives to
+    // parser-visible placement tokens. Numeric bank/alignment values accept decimal
+    // or 0x hexadecimal; address and alignment validity are checked downstream.
     bool TryReadPragmaPlacement(out TokenType tag, out int intValue, out string strValue)
     {
         tag = TokenType.INVALID;
@@ -2357,6 +2481,7 @@ class Tokenizer
         return false;
     }
 
+    // Peek relative to the input cursor, returning NUL for either out-of-range direction.
     char PeekAhead(int n)
     {
         int i = Next + n;
@@ -2364,20 +2489,24 @@ class Tokenizer
         return Input[i];
     }
 
+    // Recognize only ASCII hexadecimal digits, independent of locale.
     static bool IsHexDigit(char c)
     {
         return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
     }
 
+    // Convert a previously validated ASCII hexadecimal digit to its numeric value.
     static int HexVal(char c)
     {
         if (c >= '0' && c <= '9') return c - '0';
         if (c >= 'a' && c <= 'f') return 10 + (c - 'a');
         return 10 + (c - 'A');
     }
+    // Accept one non-NUL ASCII character other than a quote or line break.
+    // Escape sequences are not decoded by this character-literal reader.
     static bool IsValidCharacterConstant(char c)
     {
-        return c <= 127 && c != '\'' || c != '\n' || c != '\0';
+        return c <= 127 && c != '\'' && c != '\r' && c != '\n' && c != '\0';
     }
 }
 
@@ -2389,6 +2518,7 @@ struct Token
     public string Name;
     public FilePosition Position;
 
+    // Render a token payload for debugger display, quoting strings and naming other token kinds.
     public string Show()
     {
         if (Tag == TokenType.INT) return Int.ToString();
@@ -2465,6 +2595,7 @@ enum TokenType
 
 static class TokenInfo
 {
+    // Keep spelling entries in exactly the same order as TokenType for indexed diagnostics.
     public static string[] TokenNames = new string[]
     {
         "(invalid)",
@@ -2531,11 +2662,13 @@ static class TokenInfo
     };
 }
 
+// Store diagnostic coordinates internally as zero-based line and column values.
 struct FilePosition
 {
     public readonly string Filename;
     public readonly int Line, Column;
 
+    // Capture a source location without path normalization or coordinate conversion.
     public FilePosition(string filename, int line, int column)
     {
         Filename = filename;
@@ -2545,6 +2678,7 @@ struct FilePosition
 
     public static readonly FilePosition Unknown = new FilePosition("<unknown>", 0, 0);
 
+    // Format stored coordinates as one-based line and column numbers for readers.
     public override string ToString()
     {
         return string.Format("{0} (line {1}, column {2})", Filename, Line + 1, Column + 1);

@@ -5,10 +5,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
+// Provide the untyped Nothing sentinel and a type-inferred non-null Just factory.
 public struct Maybe
 {
     public static readonly Maybe Nothing = new Maybe();
 
+    // Reject null before constructing a populated optional value.
     public static Maybe<T> Just<T>(T value)
     {
         if (value == null)
@@ -20,11 +22,13 @@ public struct Maybe
 }
 
 [DebuggerDisplay("{DebuggerDisplay,nq}")]
+// Store zero or one value and expose it as an enumerable. Default construction is empty.
 public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
 {
     public bool HasValue { get; private set; }
     private T InternalValue;
 
+    // Return the stored value only when populated; reading an empty optional throws.
     public T Value
     {
         [DebuggerStepThrough]
@@ -38,12 +42,14 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
         }
     }
 
+    // Store the supplied flag/value directly. Unlike Just, this public constructor does not reject a populated null.
     public Maybe(bool hasValue, T value)
     {
         HasValue = hasValue;
         InternalValue = value;
     }
 
+    // Use the ordinary diagnostic representation in debugger variable views.
     private string DebuggerDisplay
     {
         get
@@ -52,6 +58,7 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
         }
     }
 
+    // Construct a populated optional after rejecting null references.
     public static Maybe<T> Just(T value)
     {
         if (value == null)
@@ -63,11 +70,13 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
 
     public static readonly Maybe<T> Nothing = new Maybe<T>(false, default(T));
 
+    // Promote a non-null value through Just, preserving its null rejection.
     public static implicit operator Maybe<T>(T value)
     {
         return Just(value);
     }
 
+    // Convert the untyped sentinel to this element type's empty optional.
     public static implicit operator Maybe<T>(Maybe value)
     {
         return Nothing;
@@ -104,12 +113,14 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
 
     // Given Nothing, return Nothing.
     // Given Just(x), return Just(function(x)).
+    // Invoke the selector only when populated; a null selector result is rejected by Just.
     public Maybe<TResult> Select<TResult>(Func<T, TResult> function)
     {
         return HasValue ? Maybe.Just(function(InternalValue)) : Maybe.Nothing;
     }
 
     // Return all the elements that satisfy the predicate.
+    // Keep a populated value only when its predicate succeeds. TResult is unused by this signature.
     public Maybe<T> Where<TResult>(Func<T, bool> predicate)
     {
         return (HasValue && predicate(InternalValue)) ? this : Maybe.Nothing;
@@ -125,6 +136,7 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
         }
     }
 
+    // Render Nothing or the contained value's text; a populated null bypassing Just is not supported here.
     public override string ToString()
     {
         return HasValue
@@ -132,11 +144,13 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
             : "Nothing";
     }
 
+    // Use zero for empty and delegate to the populated value's hash code.
     public override int GetHashCode()
     {
         return HasValue ? InternalValue.GetHashCode() : 0;
     }
 
+    // Accept only an optional with the same element type, then compare its state/value.
     public override bool Equals(object obj)
     {
         if (obj is Maybe<T>)
@@ -149,6 +163,7 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
         }
     }
 
+    // Empty values compare equal; populated values use the contained type's equality.
     public bool Equals(Maybe<T> other)
     {
         if (!HasValue && !other.HasValue)
@@ -168,21 +183,25 @@ public struct Maybe<T> : IEquatable<Maybe<T>>, IEnumerable<T>
         }
     }
 
+    // Delegate equality to the optional state/value comparison.
     public static bool operator ==(Maybe<T> left, Maybe<T> right)
     {
         return left.Equals(right);
     }
 
+    // Negate optional state/value equality.
     public static bool operator !=(Maybe<T> left, Maybe<T> right)
     {
         return !left.Equals(right);
     }
 
+    // Lazily enumerate the stored value once when populated, otherwise yield no elements.
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         if (HasValue) yield return InternalValue;
     }
 
+    // Provide the same zero-or-one sequence through the non-generic enumeration interface.
     IEnumerator IEnumerable.GetEnumerator()
     {
         if (HasValue) yield return InternalValue;
@@ -193,6 +212,7 @@ public static class MaybeExtensions
 {
     // Return the value corresponding to the specified key.
     // Return Nothing if the key is not in the dictionary.
+    // Return a found dictionary value through the implicit Just conversion; stored null values are rejected.
     public static Maybe<V> Get<K, V>(this IDictionary<K, V> dictionary, K key)
     {
         V value;
@@ -208,6 +228,7 @@ public static class MaybeExtensions
 
     // Return the value at the specified index.
     // Return Nothing if the index is out of bounds.
+    // Return Nothing for an out-of-range index; an in-range null value is rejected by implicit conversion.
     public static Maybe<T> Get<T>(this IList<T> list, int index)
     {
         if (index >= 0 && index < list.Count)
@@ -220,6 +241,7 @@ public static class MaybeExtensions
         }
     }
 
+    // Lazily filter out empty optionals while preserving the order of populated values.
     public static IEnumerable<T> Values<T>(this IEnumerable<Maybe<T>> source)
     {
         foreach (Maybe<T> maybe in source)

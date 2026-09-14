@@ -1,5 +1,6 @@
 #pragma once
 
+// A bank byte accompanies the CPU-visible ROM address; the pointer alone is not a far address.
 typedef __packed struct {
     u8 bank;
     const u8* ptr;
@@ -12,13 +13,25 @@ u16 __farpeek16(u8 bank, const void* addr);
 void __farmemcpy(void* dst, u8 bank, const void* src, u16 len);
 void __farcall_ptr(u8 bank, const void* func);
 
+// Write the requested bank to the cartridge register and update this library
+// shadow. The shadow reflects calls to this wrapper, not arbitrary mapper writes.
 void bank_switch(u8 bank);
+// Return the last bank recorded by bank_switch; this does not read cartridge hardware.
 u8 bank_get_current();
+// Read one byte through the compiler intrinsic that accepts an explicit ROM bank.
 u8 far_data_read8(u8 bank, const void* addr);
+// Read a 16-bit value from the supplied bank and address through the far-read intrinsic.
 u16 far_data_read16(u8 bank, const void* addr);
+// Copy len bytes from banked ROM into caller-owned writable storage.
 void far_data_read(u8 bank, const void* addr, void* dst, u16 len);
+// Forward to __farcall_ptr. The current GB backend evaluates its arguments but
+// emits no indirect call; this wrapper must not be used to invoke a callback.
 void far_call(u8 bank, const void* func);
+// Store a bank/address pair without accessing ROM; a null output pointer is ignored.
 void farptr_make(BankPtr* out, u8 bank, const u8* ptr);
+// Read one byte using both components of the bank-qualified pointer.
 u8 farptr_read8(BankPtr ptr);
+// Read a 16-bit value using both components of the bank-qualified pointer.
 u16 farptr_read16(BankPtr ptr);
+// Copy len bytes from a bank-qualified pointer; dst must have room for the full copy.
 void farptr_read(BankPtr ptr, void* dst, u16 len);

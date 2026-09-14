@@ -4,8 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Opcode metadata used by the GB assembler/disassembler. Mnemonics encode
+// register combinations; operand formats describe any additional encoded bytes.
 public static class AsmInfo
 {
+    // Tables are publicly mutable; operand sizes count bytes following the base opcode, not total instruction length.
     public static string[] Mnemonics = new string[256];
     public static int[] OperandFormats = new int[256];
     public static int[] OperandSizes = new int[10];
@@ -20,6 +23,8 @@ public static class AsmInfo
     public const int IND = 6;
     public const int LDH = 7;
 
+    // Retain compatibility aliases for shared consumers; unsupported addressing
+    // forms below map to INV rather than becoming valid GB instruction modes.
     public const int IMM = IMM8;
     public const int ZPG = LDH;
 
@@ -30,6 +35,8 @@ public static class AsmInfo
     public const int ZXI = INV;
     public const int ZYI = INV;
 
+    // Initialize all opcodes as unknown, then install explicit GB definitions and
+    // operand formatting. Unknown slots remain distinguishable from valid opcodes.
     static AsmInfo()
     {
         for (int i = 0; i < 256; i++) { Mnemonics[i] = "???"; OperandFormats[i] = INV; }
@@ -52,6 +59,7 @@ public static class AsmInfo
         OperandFormatStrings[IND] = " [HL]";
         OperandFormatStrings[LDH] = " [$FF00+${0:X2}]";
 
+        // Control, interrupt and branch instructions use separate condition-specific mnemonics.
         Def(0x00, "NOP", IMP);
         Def(0xF3, "DI", IMP);
         Def(0xFB, "EI", IMP);
@@ -93,6 +101,8 @@ public static class AsmInfo
         Def(0xF7, "RST_30", IMP);
         Def(0xFF, "RST_38", IMP);
 
+        // Register loads carry an immediate byte only when the opcode requires one;
+        // register-to-register forms encode both operands in the opcode itself.
         Def(0x3E, "LD_A_IMM", IMM8);
         Def(0x06, "LD_B_IMM", IMM8);
         Def(0x0E, "LD_C_IMM", IMM8);
@@ -109,6 +119,7 @@ public static class AsmInfo
         Def(0x67, "LD_H_A", IMP); Def(0x60, "LD_H_B", IMP); Def(0x61, "LD_H_C", IMP); Def(0x62, "LD_H_D", IMP); Def(0x63, "LD_H_E", IMP); Def(0x64, "LD_H_H", IMP); Def(0x65, "LD_H_L", IMP);
         Def(0x6F, "LD_L_A", IMP); Def(0x68, "LD_L_B", IMP); Def(0x69, "LD_L_C", IMP); Def(0x6A, "LD_L_D", IMP); Def(0x6B, "LD_L_E", IMP); Def(0x6C, "LD_L_H", IMP); Def(0x6D, "LD_L_L", IMP);
 
+        // Absolute, high-memory and indirect load forms differ in how addresses are encoded.
         Def(0xEA, "LD_MEM_A", ABS);
         Def(0xFA, "LD_A_MEM", ABS);
 
@@ -141,10 +152,12 @@ public static class AsmInfo
 
         Def(0x31, "LD_SP_IMM", IMM16);
         Def(0xF9, "LD_SP_HL", IMP);
+        // REL also tags signed SP-offset operands here; consumers must distinguish those from JR branch destinations.
         Def(0xF8, "LD_HL_SP_IMM", REL);
         Def(0xE8, "ADD_SP_IMM", REL);
         Def(0x08, "LD_MEM_SP", IMM16);
 
+        // Stack and arithmetic families below encode their register selections in the mnemonic.
         Def(0xC5, "PUSH_BC", IMP); Def(0xC1, "POP_BC", IMP);
         Def(0xD5, "PUSH_DE", IMP); Def(0xD1, "POP_DE", IMP);
         Def(0xE5, "PUSH_HL", IMP); Def(0xE1, "POP_HL", IMP);
@@ -228,6 +241,8 @@ public static class AsmInfo
         Def(0x29, "ADD_HL_HL", IMP);
         Def(0x39, "ADD_HL_SP", IMP);
 
+        // Accumulator rotates and the CB prefix use this base-opcode table; the prefix
+        // marks an extended instruction whose second byte is interpreted by its consumer.
         Def(0x07, "RLCA", IMP); Def(0x17, "RLA", IMP);
         Def(0x0F, "RRCA", IMP); Def(0x1F, "RRA", IMP);
         Def(0xCB, "PREFIX_CB", IMP);
@@ -238,12 +253,14 @@ public static class AsmInfo
         Def(0x27, "DAA", IMP);
     }
 
+    // Install the mnemonic and operand-format index for one opcode slot.
     static void Def(int opcode, string mnemonic, int format)
     {
         Mnemonics[opcode] = mnemonic;
         OperandFormats[opcode] = format;
     }
 
+    // Identify relative branches for consumers that need signed short-displacement handling.
     public static readonly string[] ShortJumpInstructions = new string[]
     {
         "JR", "JR_NZ", "JR_Z", "JR_NC", "JR_C"

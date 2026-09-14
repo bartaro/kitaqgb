@@ -1,5 +1,8 @@
 #include "wire3d_cgb.h"
 
+// CGB-only renderer with shared non-reentrant state. Pixel, sparse, full-screen
+// and fast-map modes reuse storage and require matching initialization/frame APIs.
+// Do not call renderer routines concurrently from interrupt handlers.
 #pragma rom_cgb cgb_only
 #pragma bank 1
 
@@ -47,28 +50,32 @@ __wramx_bank(2) w3dcgb_u8 w3dcgb_stage[WIRE3DCGB_STAGE_BYTES];
 __location(WIRE3DCGB_STAGE_BASE) w3dcgb_u8 w3dcgb_stage[WIRE3DCGB_STAGE_BYTES];
 #endif
 
+// MSB-first pixel masks: local X zero addresses the leftmost bit of a tile row.
 __prg_rom w3dcgb_u8 w3dcgb_bit_mask[8] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01
 };
 
+// HUD glyphs 0123456789, space, S, L and V come from DAISUKE OBA
+// original ASCII font under MIT, using the supplied GB tile conversion.
 __prg_rom w3dcgb_u8 w3dcgb_hud_tiles[224] = {
-    0x3C, 0x3C, 0x66, 0x66, 0x6E, 0x6E, 0x76, 0x76, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x00, 0x00,
-    0x18, 0x18, 0x38, 0x38, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x3C, 0x3C, 0x00, 0x00,
-    0x3C, 0x3C, 0x66, 0x66, 0x06, 0x06, 0x1C, 0x1C, 0x30, 0x30, 0x60, 0x60, 0x7E, 0x7E, 0x00, 0x00,
-    0x7C, 0x7C, 0x06, 0x06, 0x06, 0x06, 0x3C, 0x3C, 0x06, 0x06, 0x06, 0x06, 0x7C, 0x7C, 0x00, 0x00,
-    0x0C, 0x0C, 0x1C, 0x1C, 0x3C, 0x3C, 0x6C, 0x6C, 0x7E, 0x7E, 0x0C, 0x0C, 0x0C, 0x0C, 0x00, 0x00,
-    0x7E, 0x7E, 0x60, 0x60, 0x7C, 0x7C, 0x06, 0x06, 0x06, 0x06, 0x66, 0x66, 0x3C, 0x3C, 0x00, 0x00,
-    0x1C, 0x1C, 0x30, 0x30, 0x60, 0x60, 0x7C, 0x7C, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x00, 0x00,
-    0x7E, 0x7E, 0x06, 0x06, 0x0C, 0x0C, 0x18, 0x18, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x00, 0x00,
-    0x3C, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x00, 0x00,
-    0x3C, 0x3C, 0x66, 0x66, 0x66, 0x66, 0x3E, 0x3E, 0x06, 0x06, 0x0C, 0x0C, 0x38, 0x38, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0xDC, 0xDC, 0xEC, 0xEC, 0xCC, 0xCC, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0x70, 0x70, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x78, 0x78, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0x0C, 0x0C, 0x18, 0x18, 0x30, 0x30, 0x60, 0x60, 0xFC, 0xFC, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0x0C, 0x0C, 0x38, 0x38, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0x18, 0x18, 0x38, 0x38, 0x78, 0x78, 0xD8, 0xD8, 0xFC, 0xFC, 0x18, 0x18, 0x18, 0x18, 0x00, 0x00,
+    0xFC, 0xFC, 0xC0, 0xC0, 0xC0, 0xC0, 0xF8, 0xF8, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0xC0, 0xC0, 0xF8, 0xF8, 0xCC, 0xCC, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0xFC, 0xFC, 0x0C, 0x0C, 0x0C, 0x0C, 0x18, 0x18, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0xCC, 0xCC, 0x78, 0x78, 0xCC, 0xCC, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0x78, 0x78, 0xCC, 0xCC, 0xCC, 0xCC, 0x7C, 0x7C, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x3E, 0x3E, 0x60, 0x60, 0x60, 0x60, 0x3C, 0x3C, 0x06, 0x06, 0x06, 0x06, 0x7C, 0x7C, 0x00, 0x00,
-    0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x60, 0x7E, 0x7E, 0x00, 0x00,
-    0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x3C, 0x3C, 0x3C, 0x3C, 0x18, 0x18, 0x00, 0x00
+    0x78, 0x78, 0xCC, 0xCC, 0xC0, 0xC0, 0x78, 0x78, 0x0C, 0x0C, 0xCC, 0xCC, 0x78, 0x78, 0x00, 0x00,
+    0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xFC, 0xFC, 0x00, 0x00,
+    0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x48, 0x48, 0x48, 0x48, 0x30, 0x30, 0x00, 0x00
 };
 
 #pragma bank 4
+// Sixteen evenly spaced orientations, with signed Q6 coefficients (64 is unity).
 __prg_rom w3dcgb_i8 w3dcgb_sin_q6[16] = {
      0,  24,  45,  59,  64,  59,  45,  24,
      0, -24, -45, -59, -64, -59, -45, -24
@@ -79,6 +86,8 @@ __prg_rom w3dcgb_i8 w3dcgb_cos_q6[16] = {
     -64, -59, -45, -24,   0,  24,  45,  59
 };
 
+// Reciprocal-depth lookup: min(255, 1536/Z), with entry zero set to zero.
+// The public 128x96 projector accepts only Z=8..255.
 __prg_rom w3dcgb_u8 w3dcgb_inv_depth[256] = {
     0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xDB, 0xC0, 0xAA, 0x99, 0x8B, 0x80, 0x76, 0x6D, 0x66,
     0x60, 0x5A, 0x55, 0x50, 0x4C, 0x49, 0x45, 0x42, 0x40, 0x3D, 0x3B, 0x38, 0x36, 0x34, 0x33, 0x31,
@@ -98,6 +107,8 @@ __prg_rom w3dcgb_u8 w3dcgb_inv_depth[256] = {
     0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06, 0x06
 };
 
+// Camera, line rasterization and projection scratch are shared across calls.
+// Transforming another model replaces the cached projected vertices.
 w3dcgb_i16 w3dcgb_cam_x;
 w3dcgb_i16 w3dcgb_cam_y;
 w3dcgb_i16 w3dcgb_cam_z;
@@ -250,6 +261,7 @@ void w3dcgb_full_present_asm();
 
 static void w3dcgb_fast_map_prepare();
 
+// Clamp a signed value to the inclusive interval; callers supply lo <= hi.
 static w3dcgb_i16 w3dcgb_clamp_i16(w3dcgb_i16 v, w3dcgb_i16 lo, w3dcgb_i16 hi)
 {
     if (v < lo) return lo;
@@ -257,6 +269,7 @@ static w3dcgb_i16 w3dcgb_clamp_i16(w3dcgb_i16 v, w3dcgb_i16 lo, w3dcgb_i16 hi)
     return v;
 }
 
+// Clamp a signed screen coordinate to 0..max before narrowing it to a byte.
 static w3dcgb_u8 w3dcgb_clamp_screen(w3dcgb_i16 v, w3dcgb_u8 max)
 {
     if (v < 0) return 0;
@@ -264,11 +277,15 @@ static w3dcgb_u8 w3dcgb_clamp_screen(w3dcgb_i16 v, w3dcgb_u8 max)
     return (w3dcgb_u8)v;
 }
 
+// Negate a stored angle; rotation helpers subsequently wrap it to 16 steps.
 static w3dcgb_i8 w3dcgb_neg_angle(w3dcgb_i8 v)
 {
     return (w3dcgb_i8)(0 - v);
 }
 
+// Rotate X/Z using the low four angle bits and Q6 sine/cosine coefficients.
+// Clamp both inputs to +/-220 before multiplication; valid distinct pointers
+// receive the rotated components. This is a bounded fixed-point transform.
 static void w3dcgb_rotate_y(w3dcgb_i16* px, w3dcgb_i16* pz, w3dcgb_i8 angle)
 {
     w3dcgb_u8 ai;
@@ -293,6 +310,8 @@ static void w3dcgb_rotate_y(w3dcgb_i16* px, w3dcgb_i16* pz, w3dcgb_i8 angle)
     *pz = out_z;
 }
 
+// Rotate Y/Z using 16 angles per revolution and Q6 coefficients. Clamp inputs
+// to +/-220 and write through valid distinct pointers; other components are unchanged.
 static void w3dcgb_rotate_x(w3dcgb_i16* py, w3dcgb_i16* pz, w3dcgb_i8 angle)
 {
     w3dcgb_u8 ai;
@@ -317,6 +336,8 @@ static void w3dcgb_rotate_x(w3dcgb_i16* py, w3dcgb_i16* pz, w3dcgb_i8 angle)
     *pz = out_z;
 }
 
+// Rotate X/Y using the low four angle bits and Q6 coefficients. Clamp inputs
+// to +/-220 and update both pointed-to components; pointers must be valid and distinct.
 static void w3dcgb_rotate_z(w3dcgb_i16* px, w3dcgb_i16* py, w3dcgb_i8 angle)
 {
     w3dcgb_u8 ai;
@@ -341,6 +362,10 @@ static void w3dcgb_rotate_z(w3dcgb_i16* px, w3dcgb_i16* py, w3dcgb_i8 angle)
     *py = out_y;
 }
 
+// Reject depth outside 8..255 without writing outputs. Otherwise clamp X/Y to
+// +/-120, project with the reciprocal-depth table, and clamp pixels to 128x96.
+// This pins off-screen points to the border rather than geometrically clipping
+// their edges. Both output pointers must be writable; success returns one.
 static w3dcgb_u8 w3dcgb_project_camera_space(w3dcgb_i16 vx, w3dcgb_i16 vy, w3dcgb_i16 vz, w3dcgb_u8* sx, w3dcgb_u8* sy)
 {
     w3dcgb_u8 iz;
@@ -367,6 +392,9 @@ static w3dcgb_u8 w3dcgb_project_camera_space(w3dcgb_i16 vx, w3dcgb_i16 vy, w3dcg
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Subtract camera position, then apply negative yaw, pitch and roll before
+// projection. Keep differences representable as s16. Rotation input clamps
+// apply at every axis; the projection result remains a 128x96 coordinate.
 static w3dcgb_u8 w3dcgb_project_world(w3dcgb_i16 wx, w3dcgb_i16 wy, w3dcgb_i16 wz, w3dcgb_u8* sx, w3dcgb_u8* sy)
 {
     w3dcgb_i16 vx;
@@ -384,11 +412,19 @@ static w3dcgb_u8 w3dcgb_project_world(w3dcgb_i16 wx, w3dcgb_i16 wy, w3dcgb_i16 w
     return w3dcgb_project_camera_space(vx, vy, vz, sx, sy);
 }
 
+// Project a world-space point through the current camera to the 128x96 viewport.
+// Return zero for rejected depth and leave outputs unchanged; otherwise write
+// clamped byte coordinates. Valid writable pointers are required. This is not
+// the 160x144 full-screen projector. Absent from MINIMAL_RUNTIME builds.
 w3dcgb_u8 Wire3DCGB_ProjectPoint(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_u8* sx, w3dcgb_u8* sy)
 {
     return w3dcgb_project_world(x, y, z, sx, sy);
 }
 
+// Subtract camera position and project to 128x96 while ignoring all camera angles.
+// Use when camera pitch, yaw and roll are zero. Reject invalid depth without
+// changing output pointers; successful coordinates are clamped to the viewport.
+// Absent from MINIMAL_RUNTIME builds.
 w3dcgb_u8 Wire3DCGB_ProjectPointNoRotation(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z,
                                             w3dcgb_u8* sx, w3dcgb_u8* sy)
 {
@@ -451,6 +487,9 @@ __prg_rom w3dcgb_u8 w3dcgb_fast_map_tile_patterns[768] = {
     0xFF, 0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF, 0xFF
 };
 
+// Select VRAM bank zero and copy the 768-byte precomputed tile table to 0x9400.
+// The LCD must be off and the ROM table readable. VBK is left at zero; no STAT
+// checks or previous-bank restoration occur in this startup-only path.
 static void w3dcgb_load_fast_map_tiles_lite_asm()
 {
     __asm {
@@ -474,6 +513,8 @@ w3dfm_lite_loop:
 }
 
 #pragma bank 2
+// Copy 14 two-bitplane HUD tiles to 0x8800 in the currently selected VRAM bank.
+// Call during LCD-off initialization; this helper neither selects VBK nor polls STAT.
 static void w3dcgb_load_hud_tiles()
 {
     w3dcgb_u16 src;
@@ -490,6 +531,9 @@ static void w3dcgb_load_hud_tiles()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Generate one row of an outline tile: mask bits 1/2/4/8 select top/bottom/left/right.
+// Color bits select the two bitplanes. Call with color 1..3, mask 0..15 and
+// row 0..7 while VRAM is writable; this stores directly in the 0x9400 tile region.
 static void w3dcgb_load_fast_map_row(w3dcgb_u8 color, w3dcgb_u8 mask, w3dcgb_u8 row)
 {
     w3dcgb_u16 dst;
@@ -513,6 +557,8 @@ static void w3dcgb_load_fast_map_row(w3dcgb_u8 color, w3dcgb_u8 mask, w3dcgb_u8 
     w3dcgb_vram_tiles[(__safe_index w3dcgb_u16)(dst + 1)] = hi;
 }
 
+// Generate all eight rows for one border mask and color. Inherit the row
+// helper contract: color 1..3, mask 0..15 and unrestricted VRAM access.
 static void w3dcgb_load_fast_map_mask(w3dcgb_u8 color, w3dcgb_u8 mask)
 {
     w3dcgb_load_fast_map_row(color, mask, 0);
@@ -525,6 +571,10 @@ static void w3dcgb_load_fast_map_mask(w3dcgb_u8 color, w3dcgb_u8 mask)
     w3dcgb_load_fast_map_row(color, mask, 7);
 }
 
+// Generate a border row plus a rising two-pixel diagonal, then write its
+// bitplanes directly. Supply row 0..7 and a four-bit border mask. Only color 1
+// stays in tile VRAM: the current address formula places colors 2/3 in BG-map
+// space. The normal tile loader does not use this helper.
 static void w3dcgb_load_fast_diag_row(w3dcgb_u8 color, w3dcgb_u8 mask, w3dcgb_u8 row)
 {
     w3dcgb_u16 dst;
@@ -557,6 +607,8 @@ static void w3dcgb_load_fast_diag_row(w3dcgb_u8 color, w3dcgb_u8 mask, w3dcgb_u8
     w3dcgb_vram_tiles[(__safe_index w3dcgb_u16)(dst + 1)] = hi;
 }
 
+// Generate eight diagonal rows using the helper above. Only color 1 keeps
+// its computed destination inside tile VRAM; this path is not used by normal setup.
 static void w3dcgb_load_fast_diag(w3dcgb_u8 color, w3dcgb_u8 mask)
 {
     w3dcgb_load_fast_diag_row(color, mask, 0);
@@ -569,6 +621,8 @@ static void w3dcgb_load_fast_diag(w3dcgb_u8 color, w3dcgb_u8 mask)
     w3dcgb_load_fast_diag_row(color, mask, 7);
 }
 
+// Generate all 16 border masks for one color, with the LCD off and VBK already
+// selected. The caller supplies color 1..3.
 static void w3dcgb_load_fast_map_color(w3dcgb_u8 color)
 {
     w3dcgb_u8 mask;
@@ -581,6 +635,8 @@ static void w3dcgb_load_fast_map_color(w3dcgb_u8 color)
     }
 }
 
+// Generate 48 outline tiles for colors 1, 2 and 3. VRAM and its bank must
+// be prepared by the caller; no diagonal or cube-stamp tiles are loaded here.
 static void w3dcgb_load_fast_map_tiles()
 {
     w3dcgb_load_fast_map_color(1);
@@ -589,6 +645,9 @@ static void w3dcgb_load_fast_map_tiles()
 }
 
 #pragma bank 4
+// Map four cube orientations, two visibility modes and cell 0..15 to signed
+// BG tile IDs. Skip IDs 0x40..0x8F, reserving the outline and HUD tile ranges.
+// Only the low two variant bits and low show_all bit participate.
 static w3dcgb_u8 w3dcgb_fast_stamp_tile_id_init(w3dcgb_u8 variant, w3dcgb_u8 show_all, w3dcgb_u8 cell)
 {
     w3dcgb_u8 index;
@@ -598,12 +657,16 @@ static w3dcgb_u8 w3dcgb_fast_stamp_tile_id_init(w3dcgb_u8 variant, w3dcgb_u8 sho
     return (w3dcgb_u8)(0x90 + (index - 64));
 }
 
+// Convert an 8-bit signed-addressing BG tile ID to its offset from 0x8000.
+// IDs below 0x80 address 0x9000 upward; IDs 0x80..0xFF address 0x8800..0x8FFF.
 static w3dcgb_u16 w3dcgb_tile_pattern_offset(w3dcgb_u8 tile)
 {
     if (tile < 0x80) return (w3dcgb_u16)(0x1000 + ((w3dcgb_u16)tile << 4));
     return (w3dcgb_u16)((w3dcgb_u16)tile << 4);
 }
 
+// OR a global stamp X coordinate into one tile row only when it lies within
+// that tile. tile_x is a column of the 4x4 stamp, so it must be 0..3.
 static w3dcgb_u8 w3dcgb_stamp_row_or_x(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3dcgb_u8 gx)
 {
     w3dcgb_u8 base_x;
@@ -614,6 +677,8 @@ static w3dcgb_u8 w3dcgb_stamp_row_or_x(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3dcgb_
     return (w3dcgb_u8)(bits | w3dcgb_bit_mask[(__safe_index w3dcgb_u8)(gx & 7)]);
 }
 
+// OR the inclusive global X range into the eight pixels of stamp column
+// tile_x (0..3). Bits outside the range are preserved; inputs are not reordered.
 static w3dcgb_u8 w3dcgb_stamp_row_or_range(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3dcgb_u8 min_x, w3dcgb_u8 max_x)
 {
     w3dcgb_u8 base_x;
@@ -634,6 +699,9 @@ static w3dcgb_u8 w3dcgb_stamp_row_or_range(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3d
     return bits;
 }
 
+// Accumulate one scanline of a horizontal, vertical or 45-degree stamp edge.
+// This specialized helper assumes diagonal |dx| equals |dy|; it is not a
+// general line rasterizer. Stamp coordinates lie in 0..31 and tile_x in 0..3.
 static w3dcgb_u8 w3dcgb_stamp_row_or_line(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3dcgb_u8 gy, w3dcgb_u8 x0, w3dcgb_u8 y0, w3dcgb_u8 x1, w3dcgb_u8 y1)
 {
     w3dcgb_u8 min_v;
@@ -684,6 +752,10 @@ static w3dcgb_u8 w3dcgb_stamp_row_or_line(w3dcgb_u8 bits, w3dcgb_u8 tile_x, w3dc
     return w3dcgb_stamp_row_or_x(bits, tile_x, (w3dcgb_u8)gx);
 }
 
+// Construct one row of a 32x32 cube stamp from front/back squares separated
+// by six pixels. The low two variant bits choose the offset directions. A zero
+// show_all omits selected rear edges and one connector; otherwise all are drawn.
+// Supply tile_x/tile_y in 0..3 and local_y in 0..7.
 static w3dcgb_u8 w3dcgb_fast_stamp_row_bits(w3dcgb_u8 tile_x, w3dcgb_u8 tile_y, w3dcgb_u8 local_y, w3dcgb_u8 variant, w3dcgb_u8 show_all)
 {
     w3dcgb_u8 gy;
@@ -758,6 +830,9 @@ static w3dcgb_u8 w3dcgb_fast_stamp_row_bits(w3dcgb_u8 tile_x, w3dcgb_u8 tile_y, 
     return bits;
 }
 
+// Generate eight rows of one cube-stamp tile and write pixels into its low
+// bitplane, clearing the high bitplane. Supply consistent cell/tile coordinates
+// and unrestricted VRAM access; palette attributes provide the displayed color.
 static void w3dcgb_load_fast_stamp_tile(w3dcgb_u8 variant, w3dcgb_u8 show_all, w3dcgb_u8 cell, w3dcgb_u8 tile_x, w3dcgb_u8 tile_y)
 {
     w3dcgb_u16 dst;
@@ -777,6 +852,9 @@ static void w3dcgb_load_fast_stamp_tile(w3dcgb_u8 variant, w3dcgb_u8 show_all, w
     }
 }
 
+// Generate 128 tiles: four orientations times two visibility modes times
+// 16 cells. Use the current VRAM bank with the LCD off; reserved tile IDs
+// are skipped by the ID mapping helper.
 static void w3dcgb_load_fast_stamp_tiles()
 {
     w3dcgb_u8 variant;
@@ -812,6 +890,9 @@ static void w3dcgb_load_fast_stamp_tiles()
 #endif
 
 #pragma bank 1
+// Queue a tile-number write for a 32x32 BG map. Ignore invalid coordinates
+// and submissions after 48 pending writes. EndFrame flushes this private queue;
+// atomic-map mode mirrors writes to both BG maps. Attributes are not queued.
 void Wire3DCGB_PutBgTile(w3dcgb_u8 x, w3dcgb_u8 y, w3dcgb_u8 tile)
 {
     if (x >= 32) return;
@@ -823,6 +904,9 @@ void Wire3DCGB_PutBgTile(w3dcgb_u8 x, w3dcgb_u8 y, w3dcgb_u8 tile)
     w3dcgb_bgq_count = (w3dcgb_u8)(w3dcgb_bgq_count + 1);
 }
 
+// On CGB, return if KEY1 already reports double speed; otherwise request
+// the speed switch and call the STOP helper. This API assumes CGB hardware
+// and does not provide a monochrome fallback.
 void Wire3DCGB_EnableDoubleSpeed()
 {
     if ((w3dcgb_reg_key1 & 0x80) != 0) return;
@@ -831,6 +915,8 @@ void Wire3DCGB_EnableDoubleSpeed()
 }
 
 #pragma fixed_bank 2
+// Write SCX/SCY immediately, without waiting for VBlank or changing projected
+// coordinates. The caller chooses when a visible scroll change is acceptable.
 void Wire3DCGB_SetScreenOffset(w3dcgb_u8 scx, w3dcgb_u8 scy)
 {
     w3dcgb_reg_scx = scx;
@@ -838,6 +924,9 @@ void Wire3DCGB_SetScreenOffset(w3dcgb_u8 scx, w3dcgb_u8 scy)
 }
 #pragma fixed_bank -1
 
+// Write one RGB15 entry through the auto-increment BG palette port. The
+// slot wraps to 0..31. The caller provides a valid palette-access window;
+// there is no STAT polling and the RGB15 argument is not masked.
 static void w3dcgb_write_bg_color(w3dcgb_u8 slot, w3dcgb_u16 rgb15)
 {
     w3dcgb_reg_bcps = (w3dcgb_u8)(((slot & 31) << 1) | 0x80);
@@ -845,6 +934,10 @@ static void w3dcgb_write_bg_color(w3dcgb_u8 slot, w3dcgb_u16 rgb15)
     w3dcgb_reg_bcpd = (w3dcgb_u8)(rgb15 >> 8);
 }
 
+// Set BG palette zero to the four supplied RGB15 colors. Palettes 1..3
+// share color0 and repeat their respective nonzero color in entries 1..3,
+// allowing monochrome stamp tiles to be recolored by attributes. Supply a
+// valid palette-access window, normally LCD-off setup or VBlank.
 void Wire3DCGB_SetPaletteRGB15(w3dcgb_u16 color0, w3dcgb_u16 color1, w3dcgb_u16 color2, w3dcgb_u16 color3)
 {
     w3dcgb_write_bg_color(0, color0);
@@ -869,12 +962,17 @@ void Wire3DCGB_SetPaletteRGB15(w3dcgb_u16 color0, w3dcgb_u16 color1, w3dcgb_u16 
 }
 
 #pragma fixed_bank 4
+// Store color & 3. Use the named line colors 1..3: normal lines OR their
+// bitplanes, so intersecting colors combine; full-screen fast lines replace
+// the pixel color. Line color zero is treated as 3, not as an eraser.
+// Normal-mode point drawing separately supports color zero for erasure.
 void Wire3DCGB_SetLineColor(w3dcgb_u8 color)
 {
     w3dcgb_line_color = (w3dcgb_u8)(color & 3);
 }
 #pragma fixed_bank -1
 
+// Return the currently stored two-bit line color without changing drawing state.
 w3dcgb_u8 Wire3DCGB_GetLineColor()
 {
     return w3dcgb_line_color;
@@ -882,6 +980,9 @@ w3dcgb_u8 Wire3DCGB_GetLineColor()
 
 w3dcgb_u8 w3dcgb_atomic_maps;
 
+// Write queued tile numbers to 0x9800 through the STAT-safe byte helper.
+// When atomic maps are enabled, mirror each write to 0x9C00. Clear the queue
+// afterward. The caller selects tile-number VRAM bank zero before flushing.
 static void w3dcgb_flush_bg_queue()
 {
     w3dcgb_u8 i;
@@ -908,6 +1009,8 @@ static void w3dcgb_flush_bg_queue()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Transform only an object origin into camera space and return its Z for
+// ordering. This estimate ignores the model extent and scale. obj must be valid.
 static w3dcgb_i16 w3dcgb_scene_object_depth(const Wire3DCGB_Object* obj)
 {
     w3dcgb_i16 vx;
@@ -926,12 +1029,15 @@ static w3dcgb_i16 w3dcgb_scene_object_depth(const Wire3DCGB_Object* obj)
 }
 #endif
 
+// Return signed magnitude. The value -32768 has no positive s16 representation.
 static w3dcgb_i16 w3dcgb_abs_i16(w3dcgb_i16 v)
 {
     if (v < 0) return (w3dcgb_i16)(0 - v);
     return v;
 }
 
+// Clear the 1536-byte mask and reset its bounding rectangle to an empty
+// range. Staged pixels and the occlusion-enabled flag are not changed here.
 static void w3dcgb_clear_occlusion_mask()
 {
     w3dcgb_clear_occlusion_mask_asm();
@@ -941,6 +1047,9 @@ static void w3dcgb_clear_occlusion_mask()
     w3dcgb_occ_max_y = 0;
 }
 
+// Ignore indices outside the 192 column-major tiles. Sparse transfer tracks
+// only min/max tile IDs; the full-transfer path records each ID once in a
+// bounded flag/list pair. No pixels or VRAM are modified.
 static void w3dcgb_mark_dirty_tile(w3dcgb_u8 tile)
 {
     if (tile >= W3DCGB_DIRTY_TILE_LIMIT) return;
@@ -957,6 +1066,9 @@ static void w3dcgb_mark_dirty_tile(w3dcgb_u8 tile)
     w3dcgb_dirty_count = (w3dcgb_u8)(w3dcgb_dirty_count + 1);
 }
 
+// Clamp endpoints to 128x96 and mark their inclusive tile rectangle. Supply
+// ordered minima/maxima. Sparse mode expands a single column-major ID range;
+// the other path visits every tile in the rectangle.
 static void w3dcgb_mark_dirty_rect(w3dcgb_u8 min_x, w3dcgb_u8 min_y, w3dcgb_u8 max_x, w3dcgb_u8 max_y)
 {
     w3dcgb_u8 tx;
@@ -999,11 +1111,16 @@ static void w3dcgb_mark_dirty_rect(w3dcgb_u8 min_x, w3dcgb_u8 min_y, w3dcgb_u8 m
     }
 }
 
+// Mark an inclusive pixel rectangle for later transfer without drawing it.
+// Supply ordered endpoints; values beyond 127/95 are clamped to the border.
+// This tracks 128x96 tiles, not the full-screen tile allocator.
 void Wire3DCGB_MarkDirtyRect2D(w3dcgb_u8 min_x, w3dcgb_u8 min_y, w3dcgb_u8 max_x, w3dcgb_u8 max_y)
 {
     w3dcgb_mark_dirty_rect(min_x, min_y, max_x, max_y);
 }
 
+// Order both axes, then mark the endpoint bounding rectangle. No extra
+// tile-wide margin is added around a line.
 static void w3dcgb_mark_dirty_line(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by)
 {
     w3dcgb_u8 min_x;
@@ -1038,9 +1155,18 @@ static void w3dcgb_mark_dirty_line(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3d
 }
 
 /* Sparse frames alternate VRAM banks. The back bank contains frame N-2. */
+// Sparse uploads need current and two-frame-old bounds because the destination
+// VRAM bank alternates. Previous-frame bounds rotate into this history after upload.
 w3dcgb_u8 w3dcgb_older_dirty_min_tile;
 w3dcgb_u8 w3dcgb_older_dirty_max_tile;
 
+// Save SVBK and select WRAM bank 2. Transfer dma_len 16-byte tiles from
+// D300 + tile*16 to 8900 + tile*16 in the caller-selected VRAM bank. Early
+// VBlank uses GDMA for up to 96 blocks; other starts wait for mode 2 and use
+// HBlank DMA. Wait for completion, then restore SVBK. Valid runs must fit
+// 192 tiles and require an enabled LCD for the mode-2 path. The routine
+// re-enables interrupts after starting DMA rather than preserving IME; handlers
+// must keep SVBK/VBK stable until completion. Tile IDs >=192 return untouched.
 void w3dcgb_transfer_dirty_tile_gdma_asm()
 {
     __asm {
@@ -1132,6 +1258,9 @@ w3dgma_ret:
     }
 }
 
+// Ignore invalid starting tile or zero length, cap length at 96, and invoke
+// the DMA helper. The caller ensures tile + length <=192, an enabled LCD,
+// a suitable destination VBK and handlers compatible with the DMA bank window.
 static void w3dcgb_transfer_dirty_run(w3dcgb_u8 tile, w3dcgb_u8 len)
 {
     if (tile >= W3DCGB_DIRTY_TILE_LIMIT) return;
@@ -1142,6 +1271,10 @@ static void w3dcgb_transfer_dirty_run(w3dcgb_u8 tile, w3dcgb_u8 len)
     w3dcgb_transfer_dirty_tile_gdma_asm();
 }
 
+// Upload to the opposite VRAM tile bank using the union of current and
+// N-2 dirty ranges: the back bank still contains frame N-2. Split the inclusive
+// range into runs of at most 96 tiles, advance history, clear the current range
+// and leave VBK zero. Presentation is separate; this does not expose the bank.
 static void w3dcgb_transfer_dirty_tiles()
 {
     w3dcgb_u8 tile;
@@ -1188,11 +1321,14 @@ __prg_rom w3dcgb_u8 w3dcgb_span_end_mask[8] = {
 };
 
 #pragma bank 4
+// Map a validated 128x96 coordinate to its row-major 1bpp mask byte: y*16+x/8.
 static w3dcgb_u16 w3dcgb_mask_offset(w3dcgb_u8 x, w3dcgb_u8 y)
 {
     return (w3dcgb_u16)(((w3dcgb_u16)y << 4) + (w3dcgb_u16)(x >> 3));
 }
 
+// Return one for covered or out-of-bounds pixels, zero for an uncovered
+// 128x96 pixel. This reads the mask only; it does not inspect staged color.
 static w3dcgb_u8 w3dcgb_mask_get(w3dcgb_u8 x, w3dcgb_u8 y)
 {
     w3dcgb_u16 ofs;
@@ -1207,6 +1343,9 @@ static w3dcgb_u8 w3dcgb_mask_get(w3dcgb_u8 x, w3dcgb_u8 y)
     return 0;
 }
 
+// Clear both bitplanes of one 128x96 staged pixel and mark its tile dirty.
+// Invalid coordinates are ignored. This C path does not select SVBK; the
+// caller or bank-aware allocation must provide the correct stage mapping.
 static void w3dcgb_stage_clear_pixel(w3dcgb_u8 x, w3dcgb_u8 y)
 {
     w3dcgb_u16 ofs;
@@ -1225,6 +1364,9 @@ static void w3dcgb_stage_clear_pixel(w3dcgb_u8 x, w3dcgb_u8 y)
     w3dcgb_stage[(__safe_index w3dcgb_u16)ofs] = (w3dcgb_u8)(w3dcgb_stage[(__safe_index w3dcgb_u16)ofs] & clear_mask);
 }
 
+// Erase an inclusive staged span, using individual edge pixels and whole
+// bitplane bytes in the middle. Supply ordered X endpoints in 0..127; only
+// Y is checked here. Mark touched tiles dirty and retain the caller's WRAM mapping.
 static void w3dcgb_stage_clear_span(w3dcgb_u8 y, w3dcgb_u8 min_x, w3dcgb_u8 max_x)
 {
     w3dcgb_u8 x;
@@ -1257,6 +1399,9 @@ static void w3dcgb_stage_clear_span(w3dcgb_u8 y, w3dcgb_u8 min_x, w3dcgb_u8 max_
     }
 }
 
+// Replace one 128x96 staged pixel with the current two-bit color, so color
+// zero erases it. Ignore invalid coordinates. This helper neither selects
+// SVBK, marks tiles dirty nor tests occlusion; the caller handles those steps.
 static void w3dcgb_plot_stage_pixel_c(w3dcgb_u8 x, w3dcgb_u8 y)
 {
     w3dcgb_u16 ofs;
@@ -1283,6 +1428,9 @@ static void w3dcgb_plot_stage_pixel_c(w3dcgb_u8 x, w3dcgb_u8 y)
     }
 }
 
+// Pass a row and inclusive span through shared globals to the mask writer.
+// Reject Y outside 0..95; callers must supply ordered X endpoints in 0..127.
+// Pixels, dirty flags and the occlusion-enabled flag are not changed.
 static void w3dcgb_mask_set_span(w3dcgb_u8 y, w3dcgb_u8 min_x, w3dcgb_u8 max_x)
 {
     if (y >= WIRE3DCGB_SCREEN_H) return;
@@ -1292,16 +1440,22 @@ static void w3dcgb_mask_set_span(w3dcgb_u8 y, w3dcgb_u8 min_x, w3dcgb_u8 max_x)
     w3dcgb_mask_set_span_asm();
 }
 
+// Widen byte coordinates before subtraction to retain a signed screen delta.
 static w3dcgb_i16 w3dcgb_screen_delta(w3dcgb_u8 a, w3dcgb_u8 b)
 {
     return (w3dcgb_i16)((w3dcgb_i16)a - (w3dcgb_i16)b);
 }
 
+// Return the signed 2D cross product. Keep inputs small enough that both
+// products and their difference fit s16; this is not a general wide-coordinate test.
 static w3dcgb_i16 w3dcgb_edge_area(w3dcgb_i16 ax, w3dcgb_i16 ay, w3dcgb_i16 bx, w3dcgb_i16 by, w3dcgb_i16 px, w3dcgb_i16 py)
 {
     return (w3dcgb_i16)(((bx - ax) * (py - ay)) - ((by - ay) * (px - ax)));
 }
 
+// Order two Q8 X intersections, round down to pixel columns, add a two-pixel
+// guard on each side, clamp to 0..127 and mark the inclusive span. Invalid
+// rows are ignored by the span wrapper. This helper is not the active ASM triangle path.
 static void w3dcgb_mask_set_span_q8(w3dcgb_u8 y, w3dcgb_i16 left_q8, w3dcgb_i16 right_q8)
 {
     w3dcgb_i16 span_min;
@@ -1329,6 +1483,11 @@ static void w3dcgb_mask_set_span_q8(w3dcgb_u8 y, w3dcgb_i16 left_q8, w3dcgb_i16 
 }
 
 #pragma bank 2
+// Copy vertices into shared scratch and invoke the active ASM scan converter.
+// The disabled C reference below uses different guard widths and is not executed.
+// The ASM path selects a 128x96 mask or full-screen span list by full_mode.
+// Its one-pixel X guard stops at the selected viewport edge. Supply vertices
+// inside that viewport; this wrapper does not clip arbitrary triangles.
 static void w3dcgb_mark_triangle(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by, w3dcgb_u8 cx, w3dcgb_u8 cy)
 {
     w3dcgb_tri_x0 = ax;
@@ -1533,24 +1692,38 @@ static void w3dcgb_mark_triangle(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcg
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Clear full-screen span history when full_mode is set; otherwise clear the
+// 128x96 bitmap mask and its bounds. This does not erase displayed/staged
+// pixels or change whether occlusion testing is enabled.
 void Wire3DCGB_ClearOcclusionMask()
 {
     if (w3dcgb_full_mode != 0) w3dcgb_full_clear_spans_asm();
     else w3dcgb_clear_occlusion_mask();
 }
 
+// Normalize active to zero or one and store it as the occlusion switch.
+// No mask clearing or geometry marking occurs.
 void Wire3DCGB_SetOcclusionActive(w3dcgb_u8 active)
 {
     if (active == 0) w3dcgb_occlusion_active = 0;
     else w3dcgb_occlusion_active = 1;
 }
 
+// Mark a screen-space triangle without drawing pixels or enabling occlusion.
+// Supply vertices inside the selected viewport. The active ASM adds a one-pixel
+// X guard, limited to 0..127 in 128x96 mode or 0..159 in 160x144 mode.
+// This function does not clip arbitrary out-of-bounds triangles.
 void Wire3DCGB_MarkTriangle2D(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by, w3dcgb_u8 cx, w3dcgb_u8 cy)
 {
     w3dcgb_mark_triangle(ax, ay, bx, by, cx, cy);
 }
 #endif
 
+// Mark up to 29 silhouette rows in the 128x96 bitmap mask. Each packed byte
+// uses its high nibble for center offset (nibble-7), low nibble for half-width;
+// 0xFF skips a row. Place rows at y+y0+i, expand spans by two pixels, and clip
+// to the viewport. profile must contain count readable bytes; null is ignored.
+// This does not update full-screen spans or enable occlusion.
 void Wire3DCGB_MarkPackedSilhouette2D(const w3dcgb_u8* profile, w3dcgb_u8 count,
                                      w3dcgb_i8 y0, w3dcgb_u8 x, w3dcgb_u8 y)
 {
@@ -1593,6 +1766,11 @@ void Wire3DCGB_MarkPackedSilhouette2D(const w3dcgb_u8* profile, w3dcgb_u8 count,
     }
 }
 
+// Erase up to 29 packed silhouette rows from both staged bitplanes. Format,
+// placement, two-pixel guard and clipping match MarkPackedSilhouette2D; null
+// is ignored. The ASM span writer selects/restores WRAM bank 2 but does not
+// mark dirty tiles. In sparse mode the caller must ensure erased tiles are
+// included in the upload range. This API targets the 128x96 stage.
 void Wire3DCGB_ErasePackedSilhouette2D(const w3dcgb_u8* profile, w3dcgb_u8 count,
                                       w3dcgb_i8 y0, w3dcgb_u8 x, w3dcgb_u8 y)
 {
@@ -1635,6 +1813,10 @@ void Wire3DCGB_ErasePackedSilhouette2D(const w3dcgb_u8* profile, w3dcgb_u8 count
 }
 
 #pragma bank 1
+// Erase integer-intersection spans of a nondegenerate triangle, ignoring
+// horizontal edges while finding intersections. X spans are clamped to 0..127
+// and out-of-range rows are ignored by the stage helper. Touched tiles become
+// dirty; caller/allocation must provide the correct WRAM mapping for this C path.
 static void w3dcgb_clear_triangle(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by, w3dcgb_u8 cx, w3dcgb_u8 cy)
 {
     w3dcgb_u8 min_x;
@@ -1731,6 +1913,9 @@ static void w3dcgb_clear_triangle(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dc
 
 #pragma bank 4
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Build front-face flags from positive projected signed area. Faces with
+// invalid vertex IDs or a depth-rejected vertex remain invisible. Supply a
+// valid face array and counts within 24 projected vertices and 16 faces.
 static void w3dcgb_build_face_visibility(const Wire3DCGB_Model* model, w3dcgb_u8 count, w3dcgb_u8 face_count)
 {
     w3dcgb_u8 i;
@@ -1769,6 +1954,9 @@ static void w3dcgb_build_face_visibility(const Wire3DCGB_Model* model, w3dcgb_u8
     }
 }
 
+// Keep an edge when hidden-line filtering is off or either adjacent face is
+// visible. Missing adjacency, absent faces, no adjacent face IDs, and IDs beyond
+// face_count fail open. A valid model and edge adjacency entry are required.
 static w3dcgb_u8 w3dcgb_is_edge_visible(const Wire3DCGB_Model* model, w3dcgb_u8 edge_index, w3dcgb_u8 face_count)
 {
     const Wire3DCGB_EdgeFaces* ef;
@@ -1799,6 +1987,11 @@ static w3dcgb_u8 w3dcgb_is_edge_visible(const Wire3DCGB_Model* model, w3dcgb_u8 
     return 0;
 }
 
+// Use the most recent projection cache to mark faces of a hidden-line model.
+// At most 24 vertices and 16 faces are considered. This marks every face whose
+// vertices passed depth, including back faces; it does not consult the rebuilt
+// front-face flags. Face indices must already be valid: this loop indexes
+// projection arrays without repeating the visibility builder's bounds checks.
 static void w3dcgb_mark_model_occluder(const Wire3DCGB_Model* model)
 {
     w3dcgb_u8 count;
@@ -1839,6 +2032,8 @@ static void w3dcgb_mark_model_occluder(const Wire3DCGB_Model* model)
 #endif
 
 #pragma bank 1
+// Return if the LCD is off; otherwise wait out any current VBlank and then
+// wait for the next one. This is a busy wait and does not change interrupt state.
 void w3dcgb_wait_vblank_start()
 {
     if ((w3dcgb_reg_lcdc & 0x80) == 0) return;
@@ -1848,6 +2043,8 @@ void w3dcgb_wait_vblank_start()
 
 #pragma fixed_bank 2
 #pragma fixed_order 92
+// Zero 0x8000..0x97FF in both VRAM banks and leave VBK zero. The LCD
+// must be off; no STAT checks or interrupt protection occur.
 void w3dcgb_clear_vram_asm()
 {
     __asm {
@@ -1889,6 +2086,8 @@ w3dcv_loop_b1:
 }
 
 #pragma fixed_order 93
+// Clear the 3072 frame-tile bytes at 0x8900..0x94FF in both VRAM banks.
+// Require the LCD off and leave VBK zero; tile data outside this range is retained.
 void w3dcgb_clear_frame_tiles_vram_asm()
 {
     __asm {
@@ -1930,6 +2129,8 @@ w3dcf_loop_b1:
 }
 
 #pragma fixed_order 94
+// Fill 0x9800..0x9BFF with signed HUD blank tile ID 0x8A. The caller
+// selects VBK zero and disables the LCD before entering this unchecked writer.
 void w3dcgb_fill_bg_map_asm()
 {
     __asm {
@@ -1952,6 +2153,8 @@ w3dfb_loop:
 }
 
 #pragma fixed_order 95
+// Select VBK one, clear 1024 attributes for BG map 0x9800, and leave VBK
+// zero. The LCD must be off; the other BG map is not changed.
 void w3dcgb_fill_attr_map_asm()
 {
     __asm {
@@ -1979,6 +2182,8 @@ w3dfa_loop:
 }
 
 #pragma fixed_order 96
+// Zero the 1536-byte bitmap mask in 96 groups of 16 stores. No bounding
+// metadata, pixel stage or occlusion-enabled flag is changed here.
 void w3dcgb_clear_occlusion_mask_asm()
 {
     __asm {
@@ -2011,6 +2216,10 @@ w3dco_loop:
 }
 
 #pragma fixed_order 97
+// OR an inclusive row span into the 1536-byte row-major mask. Preserve bits
+// outside the first/last partial bytes and fill complete middle bytes with FF.
+// Shared endpoints must be ordered in 0..127 and Y in 0..95; this low-level
+// writer performs no bounds checks and does not update mask bounding metadata.
 void w3dcgb_mask_set_span_asm()
 {
     __asm {
@@ -2121,6 +2330,7 @@ w3dmss_enter:
         OR_A
         JP_Z w3dmss_last
 
+// Interior mask bytes are wholly covered; preserve only the partial boundary bytes.
 w3dmss_middle:
         LD_A_IMM 0xFF
         LDI_HL_A
@@ -2170,6 +2380,10 @@ w3dmss_single:
     }
 }
 
+// Save SVBK, select bank 2, and clear an inclusive span in both bitplanes of
+// the D300 column-major stage. Adjacent tile columns are 0xC0 bytes apart.
+// Restore SVBK on return. Shared inputs must be ordered within 128x96; no
+// clipping, dirty marking, mask update or interrupt protection occurs here.
 void w3dcgb_stage_clear_span_asm()
 {
     __asm {
@@ -2367,6 +2581,12 @@ w3dscs_ret:
 }
 
 #pragma fixed_order 98
+// Sort the shared vertices by Y, walk the long edge and each short edge with
+// 16-bit error accumulators, and emit inclusive scanline spans with a one-pixel
+// X guard. Flat triangles emit one span. Select the bitmap-mask or full-screen
+// span writer through full_mode; all scratch is shared. Keep vertices within
+// the selected viewport. Padding stops at X=127 or X=159 respectively, but
+// general triangle clipping is not performed.
 void w3dcgb_mark_triangle_asm()
 {
     __asm {
@@ -2441,6 +2661,8 @@ w3dmt_flat_max2_done:
         CALL w3dmt_emit_span
         RET
 
+// Keep the top-to-bottom edge across both halves; replace only the short edge
+// when reaching the middle vertex.
 w3dmt_setup_long:
         LD_A_MEM w3dcgb_tri_x0
         LD_MEM_A w3dcgb_tri_long_x
@@ -2572,6 +2794,8 @@ w3dmt_lower_loop:
 w3dmt_done:
         RET
 
+// Accumulate horizontal distance in a two-byte error so wide shallow edges
+// do not overflow an eight-bit accumulator before the next scanline.
 w3dmt_step_long:
         LD_A_MEM w3dcgb_tri_long_dx
         LD_C_A
@@ -2646,6 +2870,8 @@ w3dmt_step_short_x:
         LD_MEM_A w3dcgb_tri_short_x
         JP w3dmt_step_short_test
 
+// Order the two intersections and add the active ASM path's one-pixel guard.
+// Each mode limits right padding before dispatching to its own span writer.
 w3dmt_emit_span:
         LD_A_MEM w3dcgb_tri_long_x
         LD_B_A
@@ -2668,21 +2894,27 @@ w3dmt_span_pad:
         DEC_A
         LD_MEM_A w3dcgb_mask_span_min_x
 w3dmt_span_min_done:
-        LD_A_MEM w3dcgb_mask_span_max_x
-        CP_IMM 159
-        JP_NC w3dmt_span_max_done
-        INC_A
-        LD_MEM_A w3dcgb_mask_span_max_x
-w3dmt_span_max_done:
         LD_A_MEM w3dcgb_tri_y
         LD_MEM_A w3dcgb_mask_span_y
         LD_A_MEM w3dcgb_full_mode
         OR_A
         JP_NZ w3dmt_emit_full_span
+        LD_A_MEM w3dcgb_mask_span_max_x
+        CP_IMM 127
+        JP_NC w3dmt_span_max_done
+        INC_A
+        LD_MEM_A w3dcgb_mask_span_max_x
+w3dmt_span_max_done:
         CALL w3dcgb_mask_set_span_asm
         RET
 
 w3dmt_emit_full_span:
+        LD_A_MEM w3dcgb_mask_span_max_x
+        CP_IMM 159
+        JP_NC w3dmt_full_span_max_done
+        INC_A
+        LD_MEM_A w3dcgb_mask_span_max_x
+w3dmt_full_span_max_done:
         CALL w3dcgb_full_span_insert_asm
         RET
 
@@ -2719,6 +2951,9 @@ w3dmt_swap12:
 }
 
 #pragma fixed_order 99
+// Wait until STAT mode bit 1 is clear, then write the shared address/value
+// once. The caller selects VBK and prevents interrupts from disrupting the
+// access window; neither VBK nor interrupt state is managed here.
 void w3dcgb_put_bg_tile_safe_asm()
 {
     __asm {
@@ -2737,6 +2972,9 @@ w3dbg_enter:
 }
 
 #pragma fixed_order 100
+// Save SVBK, select WRAM bank 2, clear all 192 two-bitplane tiles (3072
+// bytes) starting at stage, and restore SVBK. No dirty flags or history are
+// updated. Interrupt handlers must not change the active stage mapping.
 void w3dcgb_clear_stage_asm()
 {
     __asm {
@@ -2775,6 +3013,9 @@ w3dcs_inner:
 }
 
 #pragma fixed_order 101
+// Save/select/restore WRAM bank 2 while clearing dma_len consecutive tiles
+// starting at D300 + dma_tile*16. Zero length is a no-op. The caller must
+// validate the entire range; no dirty flags or bounds are checked.
 void w3dcgb_clear_sparse_stage_asm()
 {
     __asm {
@@ -2826,6 +3067,9 @@ w3dcss_ret:
 }
 
 #pragma fixed_order 102
+// Wait for current-or-next VBlank when the LCD is on, then clear the blank
+// HUD tile at 0x88A0 in VRAM bank zero. Leave VBK zero; this does not wait
+// for a fresh VBlank when already inside one.
 void w3dcgb_restore_hud_blank_tile_asm()
 {
     __asm {
@@ -2850,6 +3094,8 @@ w3drhb_loop:
 }
 
 #pragma fixed_order 104
+// Save SVBK, select bank 2, clear 384 bytes for the leftmost two tile
+// columns and restore SVBK. No dirty flags are updated.
 void w3dcgb_erase_left_guard16_asm()
 {
     __asm {
@@ -2886,6 +3132,8 @@ w3deg_loop2:
 }
 
 #pragma fixed_order 106
+// Save SVBK, select bank 2, clear 576 bytes for the leftmost three tile
+// columns in unrolled groups and restore SVBK. No dirty flags are updated.
 void w3dcgb_erase_left_guard24_asm()
 {
     __asm {
@@ -2925,6 +3173,10 @@ w3deh_loop:
 
 #pragma fixed_bank 1
 #pragma fixed_order 110
+// Save/select/restore WRAM bank 2 while replacing one validated 128x96
+// pixel in both bitplanes. Active mask bits suppress writes; color zero
+// erases. Sparse mode sets the tile flag, but this helper does not expand
+// the sparse min/max range; the public point wrapper handles that range.
 void w3dcgb_plot_stage_asm()
 {
     __asm {
@@ -3130,6 +3382,12 @@ w3dps_ret:
 #pragma fixed_bank -1
 #pragma bank 4
 #pragma fixed_order 120
+// Draw inclusive byte endpoints through the normal 128x96 stage in WRAM
+// bank 2, restoring SVBK afterward. The active fast path has no coordinate
+// checks or dirty-range updates; callers must provide in-bounds geometry
+// and arrange sparse uploads. It ORs color 1/2 into their respective planes;
+// other values, including zero, set both planes. Overlapping colors combine.
+// Masked and unmasked shallow/steep loops share address and bit-mask stepping.
 void w3dcgb_line_stage_asm()
 {
     __asm {
@@ -3181,6 +3439,8 @@ w3dls_y_reverse:
 w3dls_branch:
         JP w3dls_fast_start
 
+// Maintain HL at the stage byte, DE at its row-major mask byte and B as
+// the current pixel bit; stepping avoids recomputing addresses per pixel.
 w3dls_fast_start:
         LD_A_MEM w3dcgb_line_x0
         LD_MEM_A w3dcgb_line_x
@@ -3373,6 +3633,8 @@ w3dls_fast_steep_no_x:
         CALL w3dls_fast_step_y
         JP w3dls_fast_steep_loop
 
+// Skip mask reads when occlusion is disabled; color 3 also bypasses
+// per-pixel color selection in its dedicated loop.
 w3dls_fast_unmasked_branch:
         LD_A_MEM w3dcgb_line_color
         CP_IMM 3
@@ -3606,6 +3868,8 @@ w3dls_fast_plot:
         JP_Z w3dls_plot_hl
         RET
 
+// These retained generic/axis loops are not selected by the active entry,
+// which jumps directly to w3dls_fast_start. They are not the active bounds checks.
 w3dls_shallow:
         LD_A_MEM w3dcgb_line_x0
         LD_MEM_A w3dcgb_line_x
@@ -3945,6 +4209,8 @@ w3dls_done:
         LDH_MEM_A 112
         RET
 
+// The normal line path accumulates coverage with OR. It does not clear the
+// other color plane, unlike the point and full-screen fast plotters.
 w3dls_plot_hl:
         LD_A_MEM w3dcgb_line_color
         CP_IMM 1
@@ -3992,6 +4258,8 @@ w3dls_plot_both:
 #pragma fixed_bank 2
 #pragma bank 2
 #pragma fixed_order 129
+// During LCD-off setup, set the 16x12 viewport attributes to tile bank 1,
+// palette zero. Leave other attributes unchanged and VBK zero on return.
 void w3dcgb_select_blank_render_bank_asm()
 {
     __asm {
@@ -4031,6 +4299,12 @@ w3dsb_row:
 }
 
 #pragma fixed_order 130
+// Copy the complete 3072-byte bank-2 stage into the opposite VRAM tile bank.
+// Wait for a fresh VBlank, then arm HBlank DMA in mode 2 for 128 blocks
+// D300->8900 and 64 blocks DB00->9100. Wait for both transfers. Restore
+// SVBK and leave VBK zero; pixels are not consumed. The LCD must remain
+// enabled. Each DMA start executes EI, so entry IME is not preserved and
+// handlers must retain the source/destination bank mapping during DMA.
 void w3dcgb_transfer_stage_asm()
 {
     __asm {
@@ -4111,6 +4385,10 @@ w3dtf_wait_second:
 }
 
 #pragma fixed_order 131
+// Expose pending tile data during VBlank. Atomic-map mode can use the
+// current VBlank and flips LCDC map selection; normal mode waits for a fresh
+// VBlank and rewrites all 16x12 attributes to the pending bank with palette
+// zero. Record the displayed bank and leave VBK zero. The LCD must be enabled.
 void w3dcgb_present_stage_asm()
 {
     __asm {
@@ -4187,6 +4465,8 @@ w3dpr_attr_row:
 }
 
 #pragma fixed_order 132
+// Execute STOP after the caller has prepared KEY1, then return at the new
+// CGB speed. This helper does not validate hardware or configure interrupts.
 void w3dcgb_cgb_speed_switch_asm()
 {
     __asm {
@@ -4196,6 +4476,8 @@ void w3dcgb_cgb_speed_switch_asm()
 }
 
 #pragma fixed_order 133
+// Clear tile numbers and attributes for map 0x9800, using both VRAM banks.
+// Require the LCD off and leave VBK zero; map 0x9C00 is untouched.
 void w3dcgb_full_clear_map_asm()
 {
     __asm {
@@ -4232,6 +4514,9 @@ w3dfcm_loop1:
 }
 
 #pragma fixed_order 134
+// Mark both full-screen span slots empty on each of 144 rows by setting
+// their minimum-X arrays to FF. Maximum-X arrays are retained but ignored
+// while the corresponding minimum is FF. Other mask storage is untouched.
 void w3dcgb_full_clear_spans_asm()
 {
     __asm {
@@ -4254,6 +4539,10 @@ w3dfcs_min1:
 }
 
 #pragma fixed_order 135
+// Reset the 360-byte full-screen tile lookup to FF, empty both row-span
+// lists, zero allocated-tile count/overflow/occlusion, and invalidate the
+// last-tile cache. Pixel payload is not bulk-cleared here. This path does
+// not select SVBK; retain a consistent WRAM mapping across full-screen calls.
 void w3dcgb_full_begin_asm()
 {
     __asm {
@@ -4298,6 +4587,11 @@ w3dfb_lookup8:
 }
 
 #pragma fixed_order 136
+// Insert an ordered inclusive span for Y=0..143 and X=0..159. Empty minima
+// are FF. Merge touching/overlapping coverage into slot zero; otherwise use
+// slot one, expanding that second slot even for disjoint later spans. This
+// conservative two-span representation can cover gaps. No clipping, WRAM
+// bank selection, mask clearing or occlusion-enable update occurs here.
 void w3dcgb_full_span_insert_asm()
 {
     __asm {
@@ -4366,6 +4660,8 @@ w3dfsi_store0:
         LD_HL_A
         RET
 
+// A row has only two span slots. Later disjoint coverage expands slot one
+// to its bounding interval, intentionally accepting conservative over-occlusion.
 w3dfsi_try1:
         LD_HL_IMM w3dcgb_occlusion_mask+288
         ADD_HL_DE
@@ -4431,6 +4727,11 @@ w3dfsi_store1:
 }
 
 #pragma fixed_order 137
+// Retained scalar 160x144 rasterizer: test pixel bounds/occlusion, cache
+// a tile lookup, allocate and clear payload on first use, then replace both
+// color planes. It uses the caller WRAM mapping. Keep allocation within
+// 127 tiles: a failed allocation updates cache coordinates without replacing
+// the cached slot. Public full-screen line drawing uses the fast variant.
 void w3dcgb_full_line_asm()
 {
     __asm {
@@ -4815,6 +5116,11 @@ w3dfl_skip_low:
 }
 
 #pragma fixed_order 138
+// Transfer allocated full-screen tiles from D500 to the alternate tile-ID
+// range in VRAM bank zero: 8010 or 8800. pending_tile_bank selects these
+// address ranges, not VBK. Empty frames skip DMA. Otherwise wait for a fresh
+// VBlank and finish HBlank DMA with stable WRAM mapping and an enabled LCD.
+// The allocator must keep the count within 127; SVBK/IME are not managed.
 void w3dcgb_full_transfer_asm()
 {
     /* Pending selects the two tile-address ranges, not the CGB VBK register. */
@@ -4873,6 +5179,11 @@ w3dft_done:
 }
 
 #pragma fixed_order 139
+// At a fresh VBlank, clear previous map positions from DE00, then write
+// current positions from DD00 with sequential IDs starting at 1 or 128.
+// Update the displayed range and copy current addresses into the previous
+// list. Require a stable WRAM mapping, enabled LCD and counts <=127.
+// Direct map stores rely on the VBlank window; VBK is left zero.
 void w3dcgb_full_present_asm()
 {
     __asm {
@@ -4958,6 +5269,13 @@ w3dfp_copy_list:
 }
 
 #pragma fixed_order 140
+// Walk a full-screen line with incremental pixel pointers and bit masks,
+// reselecting/allocating tiles at boundaries. Tile lookup is D300, payload
+// D500 and map-address list DD00 in the caller WRAM mapping. Allocate at
+// most 127 tiles, including tiles reached before an occlusion test. Invalid
+// coordinates or allocation exhaustion set overflow, suppressing subsequent
+// plots until frame reset. Colors 1/2 replace both planes; other values,
+// including zero, draw color 3. No ordinary sparse dirty bookkeeping is used.
 void w3dcgb_full_line_fast_asm()
 {
     __asm {
@@ -5228,6 +5546,8 @@ w3dff_draw_main:
         DEC_L
         RET
 
+// Resolve the 20-column tile lookup only at a tile boundary; allocate and
+// zero a tile before testing visibility of its individual pixels.
 w3dff_select_pixel:
         LD_A_MEM w3dcgb_line_x
         CP_IMM 160
@@ -5383,6 +5703,8 @@ w3dff_select_address:
         POP_HL
         RET
 
+// Latch the frame fault. The plot helper suppresses writes after this point;
+// BeginFrame clears the flag for the next frame.
 w3dff_select_overflow:
         LD_A_IMM 1
         LD_MEM_A w3dcgb_full_overflow
@@ -5393,6 +5715,11 @@ w3dff_select_overflow:
 #pragma fixed_bank -1
 #pragma bank 1
 
+// Enable map flipping once during 128x96 startup; ignore full-screen mode
+// or an already-enabled setting. With LCD on, wait for VBlank, disable it,
+// copy both banks of 9800 to 9C00, and assign viewport attributes to tile
+// banks 0/1 respectively. Restore LCDC with map 9C00 selected and VBK zero.
+// Both BG maps become reserved. Queued HUD tile numbers are mirrored.
 void Wire3DCGB_EnableAtomicMaps()
 {
     if ((w3dcgb_full_mode != 0) || (w3dcgb_atomic_maps != 0)) return;
@@ -5468,6 +5795,12 @@ w3dam_de_ready:
     }
 }
 
+// Initialize the CGB-only 128x96 renderer: enable double speed, turn the
+// LCD off at VBlank, clear both tile banks, load HUD/generated tiles, and
+// install a 16x12 column-major viewport. Start with blank tile bank 1, scroll
+// zero, default BG palettes, color 2 and a zero camera. Reset queues and
+// clear the bank-2 stage. Call BeginFrame before drawing to initialize
+// occlusion state. Initialization replaces LCD/tile/map state globally.
 void Wire3DCGB_Init()
 {
     w3dcgb_u8 row;
@@ -5535,6 +5868,11 @@ void Wire3DCGB_Init()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Initialize the CGB-only 160x144 tile allocator. Clear both tile banks
+// and map 9800, set scroll/palettes/color/camera, reset tile counts and
+// lookup/span state, then enable unsigned BG tile addressing. HUD tiles
+// are not loaded. Reserve its fixed WRAM lookup, payload and address lists
+// and keep the same WRAM bank mapped through full-screen rendering.
 void Wire3DCGB_InitFullScreen()
 {
     w3dcgb_atomic_maps = 0;
@@ -5568,6 +5906,11 @@ void Wire3DCGB_InitFullScreen()
     w3dcgb_reg_lcdc = 0x91;
 }
 
+// Initialize a CGB tile-map renderer with HUD and 48 precomputed outline
+// tiles. Clear tile VRAM/maps, reset scroll/palettes/camera and select normal
+// mode. This omits normal pixel-viewport map layout and generated cube stamps;
+// use the FastMap APIs for this mode. Clear the bank-2 stage and mark fast
+// map preparation pending. Full-runtime build required.
 void Wire3DCGB_InitFastMapLite()
 {
     w3dcgb_atomic_maps = 0;
@@ -5610,6 +5953,10 @@ void Wire3DCGB_InitFastMapLite()
 
 #pragma bank 2
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// In normal mode, select full-stage transfer, clear all staged pixels and
+// the bitmap mask, reset mask bounds, and disable occlusion. In full-screen
+// mode, reset that mode's allocator/spans instead. Pending BG writes remain queued.
+// Full-runtime build required.
 void Wire3DCGB_BeginFrame()
 {
     if (w3dcgb_full_mode != 0)
@@ -5628,6 +5975,9 @@ void Wire3DCGB_BeginFrame()
 }
 #endif
 
+// Perform the same normal/full-screen frame reset as BeginFrame, while
+// first marking both previous sparse-history ranges as the entire 192-tile
+// viewport. This prevents a subsequent sparse upload from trusting stale banks.
 void Wire3DCGB_BeginFrameFast()
 {
     w3dcgb_older_dirty_min_tile = 0;
@@ -5649,6 +5999,10 @@ void Wire3DCGB_BeginFrameFast()
     w3dcgb_occlusion_active = 0;
 }
 
+// Select sparse transfer and clear the entire 128x96 stage, avoiding stale
+// pixels when the dirty range expands. Reset mask bounds and disable
+// occlusion; PAINTER_ONLY builds skip clearing the unused bitmap mask.
+// Full-screen mode delegates to its own allocator reset.
 void Wire3DCGB_BeginFrameSparse()
 {
     if (w3dcgb_full_mode != 0)
@@ -5673,6 +6027,9 @@ void Wire3DCGB_BeginFrameSparse()
     w3dcgb_occlusion_active = 0;
 }
 
+// Clear the entire bank-2 stage and mark the full 128x96 viewport dirty.
+// Despite its name this is not a partial clear and does not preserve staged
+// pixels. It neither clears occlusion nor selects a transfer mode.
 void Wire3DCGB_ClearSparseStageFast()
 {
     w3dcgb_clear_stage_asm();
@@ -5682,6 +6039,10 @@ void Wire3DCGB_ClearSparseStageFast()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// For the 128x96 renderer, wait for VBlank, disable the LCD, clear the stage
+// and frame tile ranges in both banks, reset map attributes, then enable LCDC
+// 0x81. Clear dirty flags/counts but not sparse min/max history. This does
+// not reset full_mode and is not a full-screen reinitializer.
 void Wire3DCGB_ClearFrameTiles()
 {
     w3dcgb_u8 i;
@@ -5705,6 +6066,9 @@ void Wire3DCGB_ClearFrameTiles()
 }
 #endif
 
+// Store camera position and angles without changing existing pixels. Rotation
+// helpers use the low four angle bits (16 steps per turn). Screen offsets are
+// separate LCD registers and are not changed by this call.
 void Wire3DCGB_SetCamera(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 pitch, w3dcgb_i8 yaw, w3dcgb_i8 roll)
 {
     w3dcgb_cam_x = x;
@@ -5717,6 +6081,11 @@ void Wire3DCGB_SetCamera(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 pit
 
 #pragma bank 4
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// In normal mode, reject coordinates outside 128x96, mark sparse bounds
+// and replace the staged pixel using the current color, including zero.
+// Full-screen mode draws a coincident-endpoint fast line instead, so zero
+// means color 3 and invalid coordinates latch that frame's overflow flag.
+// Display transfer occurs later.
 void Wire3DCGB_DrawPoint2D(w3dcgb_u8 x, w3dcgb_u8 y)
 {
     w3dcgb_u8 tile;
@@ -5743,6 +6112,10 @@ void Wire3DCGB_DrawPoint2D(w3dcgb_u8 x, w3dcgb_u8 y)
 }
 #endif
 
+// Draw a six-pixel marker through the 128x96 plotter while preserving line
+// color. Centers outside X=3..124 or Y=3..92 are ignored. The low five turn
+// bits select left/straight/right nose and tail offsets; this is not a general
+// 3D transform and does not dispatch to the full-screen renderer.
 void Wire3DCGB_DrawTinyModel2D(w3dcgb_u8 x, w3dcgb_u8 y,
                                w3dcgb_u8 turn, w3dcgb_u8 color)
 {
@@ -5787,6 +6160,12 @@ void Wire3DCGB_DrawTinyModel2D(w3dcgb_u8 x, w3dcgb_u8 y,
     w3dcgb_line_color = old_color;
 }
 
+// Store byte endpoints and invoke the normal or full-screen line rasterizer.
+// Provide coordinates inside the selected viewport; use DrawLineClipped2D
+// for signed/off-screen geometry. Normal lines OR color planes and do not
+// mark sparse bounds; use the clipped API or InvalidateFrameHistory before
+// a sparse upload. Full-screen lines replace colors and use tile allocation.
+// Both active line paths treat color zero as 3, not as an eraser.
 void Wire3DCGB_DrawLine2D(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by)
 {
     w3dcgb_line_x0 = ax;
@@ -5797,6 +6176,9 @@ void Wire3DCGB_DrawLine2D(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by
     else w3dcgb_line_stage_asm();
 }
 
+// Set color & 3 around DrawLine2D and restore the previous color. Follow
+// that function's coordinate, color-combination and sparse-range contracts;
+// zero does not erase a line in either active renderer.
 void Wire3DCGB_DrawLine2DColor(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by, w3dcgb_u8 color)
 {
     w3dcgb_u8 old_color;
@@ -5807,6 +6189,12 @@ void Wire3DCGB_DrawLine2DColor(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Draw enabled model edges using signed-byte preprojected offsets around
+// (x,y). Mask bits are least-significant-first, eight edges per byte. All
+// pointers and vertex indices must be valid; edge_mask[0] is read even for
+// zero edges. No counts are capped. Keep translated endpoints within the
+// viewport before their byte conversion; negative values would wrap.
+// Preserve the previous line color and dispatch by the active mode.
 void Wire3DCGB_DrawMaskedModel2D(const Wire3DCGB_Model* model,
                                  const w3dcgb_i8* vertex_x, const w3dcgb_i8* vertex_y,
                                  const w3dcgb_u8* edge_mask,
@@ -5860,6 +6248,10 @@ w3dcgb_u8 w3dcgb_edge_center_x;
 w3dcgb_u8 w3dcgb_edge_center_y;
 w3dcgb_u8 w3dcgb_edge_second;
 
+// Consume the shared edge pointer/count, add byte centers to indexed byte
+// offsets modulo 256, and call the normal rasterizer. Zero count is a no-op.
+// The caller supplies readable arrays and valid indices/translated endpoints;
+// this loop does not validate bounds or manage source-bank mapping.
 void w3dcgb_edge_list_asm()
 {
     __asm {
@@ -5931,6 +6323,10 @@ w3dedge_next:
     }
 }
 
+// Draw up to 64 indexed edges from signed-byte offsets around (cx,cy).
+// Null arrays are ignored; indices must address readable vertices. Keep the
+// translated endpoints in the viewport before byte conversion, which wraps.
+// Dispatch by mode and preserve the old color; no vertex-count check occurs.
 void Wire3DCGB_DrawEdgeList2D(const Wire3DCGB_Edge* edges, w3dcgb_u8 edge_count,
                              const w3dcgb_i8* vertex_x, const w3dcgb_i8* vertex_y,
                              w3dcgb_u8 x, w3dcgb_u8 y, w3dcgb_u8 color)
@@ -5975,6 +6371,9 @@ void Wire3DCGB_DrawEdgeList2D(const Wire3DCGB_Edge* edges, w3dcgb_u8 edge_count,
     w3dcgb_line_color = old_color;
 }
 
+// Draw up to 64 records of four bytes (x0,y0,x1,y1), ignoring a null list.
+// Endpoints must lie in the selected viewport. Preserve the previous color
+// and dispatch each line to the normal or full-screen rasterizer.
 void Wire3DCGB_DrawLineList2DColor(const w3dcgb_u8* line_xy,
                                   w3dcgb_u8 line_count, w3dcgb_u8 color)
 {
@@ -6006,6 +6405,8 @@ void Wire3DCGB_DrawLineList2DColor(const w3dcgb_u8* line_xy,
 }
 
 #pragma bank 2
+// Submit shared byte endpoints to the normal 128x96 rasterizer only.
+// This helper does not dispatch to the full-screen path.
 static void w3dcgb_draw_line_raw(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by)
 {
     w3dcgb_line_x0 = ax;
@@ -6015,6 +6416,7 @@ static void w3dcgb_draw_line_raw(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcg
     w3dcgb_line_stage_asm();
 }
 
+// Clamp a signed X coordinate to the normal viewport, 0..127.
 static w3dcgb_u8 w3dcgb_fast_screen_x(w3dcgb_i16 v)
 {
     if (v < 0) return 0;
@@ -6022,6 +6424,7 @@ static w3dcgb_u8 w3dcgb_fast_screen_x(w3dcgb_i16 v)
     return (w3dcgb_u8)v;
 }
 
+// Clamp a signed Y coordinate to the normal viewport, 0..95.
 static w3dcgb_u8 w3dcgb_fast_screen_y(w3dcgb_i16 v)
 {
     if (v < 0) return 0;
@@ -6029,6 +6432,7 @@ static w3dcgb_u8 w3dcgb_fast_screen_y(w3dcgb_i16 v)
     return (w3dcgb_u8)v;
 }
 
+// Mark the bounding rectangle of the eight precomputed cube corners dirty.
 static void w3dcgb_fast_mark_cube(w3dcgb_u8 x0, w3dcgb_u8 y0, w3dcgb_u8 x1, w3dcgb_u8 y1,
                                   w3dcgb_u8 bx0, w3dcgb_u8 by0, w3dcgb_u8 bx1, w3dcgb_u8 by1)
 {
@@ -6058,6 +6462,11 @@ static void w3dcgb_fast_mark_cube(w3dcgb_u8 x0, w3dcgb_u8 y0, w3dcgb_u8 x1, w3dc
     w3dcgb_mark_dirty_rect(min_x, min_y, max_x, max_y);
 }
 
+// Draw a 2D cube approximation around (64+x,48-y); camera and rotation
+// angles are ignored. Three depth bands select size/offset, and each corner
+// is clamped independently. Hidden mode uses a fixed nine-edge outline;
+// otherwise draw all twelve edges. Mark its bounds and optionally draw a
+// selection cross. This normal-mode helper leaves the line color changed.
 static void w3dcgb_draw_fast_cube_one(const Wire3DCGB_FastCube* cube, w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected)
 {
     w3dcgb_i16 cx16;
@@ -6156,6 +6565,9 @@ static void w3dcgb_draw_fast_cube_one(const Wire3DCGB_FastCube* cube, w3dcgb_u8 
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Draw at most three 2D cube approximations, sorted far-to-near by raw Z
+// without reordering the caller array. Null/empty input is ignored. selected
+// is an original array index. Camera/rotation are unused and color is not restored.
 void Wire3DCGB_DrawFastCubes(Wire3DCGB_FastCube* cubes, w3dcgb_u8 count, w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected)
 {
     w3dcgb_u8 scene_count;
@@ -6220,6 +6632,10 @@ void Wire3DCGB_DrawFastCubes(Wire3DCGB_FastCube* cubes, w3dcgb_u8 count, w3dcgb_
     w3dcgb_draw_fast_cube_one(&cubes[c], hidden_enabled, (w3dcgb_u8)(selected == c));
 }
 
+// Draw a six-edge projectile at an already-projected center using four
+// depth size bands and four phase orientations. Reject centers outside
+// X=10..117 or Y=10..85, mark the bounds dirty and leave the requested color
+// selected. This uses the normal rasterizer and does not apply the camera.
 void Wire3DCGB_DrawFastProjectile(w3dcgb_u8 x, w3dcgb_u8 y, w3dcgb_i16 z,
                                   w3dcgb_u8 phase, w3dcgb_u8 color)
 {
@@ -6272,6 +6688,9 @@ void Wire3DCGB_DrawFastProjectile(w3dcgb_u8 x, w3dcgb_u8 y, w3dcgb_i16 z,
     w3dcgb_draw_line_raw(cx, cy, dx, dy);
 }
 
+// Draw small selection/hidden-mode indicators in color 3 and mark their
+// normal-mode bounds dirty. selected is expected in 0..2; it is not checked.
+// These indicators use lines, not font tiles, and the old color is not restored.
 void Wire3DCGB_DrawFastStatus(w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected)
 {
     w3dcgb_u8 x;
@@ -6296,6 +6715,12 @@ void Wire3DCGB_DrawFastStatus(w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected)
 }
 
 #pragma bank 2
+// Sort at most eight objects near-to-far by camera-space origin depth,
+// without changing the caller array. Clear the mask, draw visible models
+// against earlier coverage, then add their faces as occluders. Model arrays
+// and face indices must be valid. Color zero inherits the current color,
+// possibly from the preceding object. Restore entry color and disable
+// occlusion at the end. This model path targets the normal 128x96 stage.
 void Wire3DCGB_DrawScene(Wire3DCGB_Object* objects, w3dcgb_u8 count)
 {
     w3dcgb_u8 scene_count;
@@ -6365,6 +6790,11 @@ void Wire3DCGB_DrawScene(Wire3DCGB_Object* objects, w3dcgb_u8 count)
 
 #pragma bank 4
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Project both endpoints through the camera into the 128x96 viewport.
+// Reject the whole line if either endpoint fails the depth test; do not clip
+// near-plane crossings. DrawLine2D dispatches by mode, but projection remains
+// 128x96. Normal lines accumulate color planes and do not mark sparse bounds;
+// use a full upload or explicitly invalidate frame history for sparse upload.
 void Wire3DCGB_DrawLine3D(w3dcgb_i16 ax, w3dcgb_i16 ay, w3dcgb_i16 az, w3dcgb_i16 bx, w3dcgb_i16 by, w3dcgb_i16 bz)
 {
     w3dcgb_u8 sx0;
@@ -6377,6 +6807,7 @@ void Wire3DCGB_DrawLine3D(w3dcgb_i16 ax, w3dcgb_i16 ay, w3dcgb_i16 az, w3dcgb_i1
     Wire3DCGB_DrawLine2D(sx0, sy0, sx1, sy1);
 }
 
+// Temporarily select color & 3 for DrawLine3D, then restore the old color.
 void Wire3DCGB_DrawLine3DColor(w3dcgb_i16 ax, w3dcgb_i16 ay, w3dcgb_i16 az, w3dcgb_i16 bx, w3dcgb_i16 by, w3dcgb_i16 bz, w3dcgb_u8 color)
 {
     w3dcgb_u8 old_color;
@@ -6386,17 +6817,25 @@ void Wire3DCGB_DrawLine3DColor(w3dcgb_i16 ax, w3dcgb_i16 ay, w3dcgb_i16 az, w3dc
     w3dcgb_line_color = old_color;
 }
 
+// Draw a model at unity Q8 scale (256), using DrawModelScaled contracts.
 void Wire3DCGB_DrawModel(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 rx, w3dcgb_i8 ry, w3dcgb_i8 rz)
 {
     Wire3DCGB_DrawModelScaled(model, x, y, z, rx, ry, rz, 256);
 }
 
+// Draw a model at unity Q8 scale with a temporary color, restoring it afterward.
 void Wire3DCGB_DrawModelColor(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 rx, w3dcgb_i8 ry, w3dcgb_i8 rz, w3dcgb_u8 color)
 {
     Wire3DCGB_DrawModelScaledColor(model, x, y, z, rx, ry, rz, 256, color);
 }
 
 #pragma bank 1
+// For a hidden-line model with vertices/faces, transform at most 24 vertices
+// and erase front-facing triangles among at most 16 faces. Nonpositive scale
+// means unity; this path still multiplies at unity and runs all three rotation
+// helpers at zero angles. Reject invalid/depth-failed faces. Replace the shared
+// projection cache and use the normal C stage clearer, which requires the
+// caller or allocation to provide the correct WRAM mapping.
 void Wire3DCGB_EraseModelFaces(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 rx, w3dcgb_i8 ry, w3dcgb_i8 rz, w3dcgb_i16 scale_q8)
 {
     w3dcgb_u8 i;
@@ -6475,6 +6914,8 @@ void Wire3DCGB_EraseModelFaces(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcg
 }
 
 #pragma bank 4
+// Erase a triangle through the normal C stage clearer. Its clipped spans
+// mark touched tiles dirty; caller/allocation must provide the stage WRAM mapping.
 void Wire3DCGB_EraseTriangle2D(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by, w3dcgb_u8 cx, w3dcgb_u8 cy)
 {
     w3dcgb_clear_triangle(ax, ay, bx, by, cx, cy);
@@ -6482,6 +6923,9 @@ void Wire3DCGB_EraseTriangle2D(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_
 
 #endif
 
+// Order X endpoints, reject an off-screen row or left edge, and clamp the
+// right edge to 127. Mark the range dirty and use the ASM span clearer, which
+// selects and restores WRAM bank 2.
 void Wire3DCGB_EraseSpan2D(w3dcgb_u8 y, w3dcgb_u8 x0, w3dcgb_u8 x1)
 {
     w3dcgb_u8 tx;
@@ -6502,6 +6946,9 @@ void Wire3DCGB_EraseSpan2D(w3dcgb_u8 y, w3dcgb_u8 x0, w3dcgb_u8 x1)
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Order and clip the rectangle to 128x96. Full-height left strips of 16 or
+// 24 pixels use bank-preserving ASM clears and dirty marking. Other rectangles
+// use C row clears and require the correct stage WRAM mapping from the caller.
 void Wire3DCGB_EraseRect2D(w3dcgb_u8 x0, w3dcgb_u8 y0, w3dcgb_u8 x1, w3dcgb_u8 y1)
 {
     w3dcgb_u8 t;
@@ -6554,11 +7001,16 @@ void Wire3DCGB_EraseRect2D(w3dcgb_u8 x0, w3dcgb_u8 y0, w3dcgb_u8 x1, w3dcgb_u8 y
 #endif
 
 #pragma fixed_bank 2
+// Clear the leftmost 24 stage columns through bank-preserving ASM. No dirty
+// range is marked; sparse-transfer callers must include the cleared tiles.
 void Wire3DCGB_EraseLeftGuard24Fast()
 {
     w3dcgb_erase_left_guard24_asm();
 }
 
+// Save/select/restore WRAM bank 2 while replacing the outermost stage
+// pixels with two-bit color 2. Masked writes preserve interior pixels.
+// This does not change the palette or dirty history.
 void w3dcgb_draw_white_border_asm()
 {
     __asm {
@@ -6637,6 +7089,9 @@ w3dbw_bottom_tile:
     }
 }
 
+// Write a one-pixel color-2 border around the normal stage, preserving
+// interior pixels and WRAM bank selection. Its visible color depends on the
+// palette. No dirty range is marked; sparse callers must arrange its upload.
 void Wire3DCGB_DrawWhiteBorderFast()
 {
     w3dcgb_draw_white_border_asm();
@@ -6645,6 +7100,8 @@ void Wire3DCGB_DrawWhiteBorderFast()
 
 #pragma bank 4
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Submit projected byte endpoints directly to the normal 128x96 rasterizer.
+// Model drawing does not dispatch to the full-screen rasterizer here.
 static void w3dcgb_draw_model_line(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3dcgb_u8 by)
 {
     w3dcgb_line_x0 = ax;
@@ -6654,6 +7111,14 @@ static void w3dcgb_draw_model_line(w3dcgb_u8 ax, w3dcgb_u8 ay, w3dcgb_u8 bx, w3d
     w3dcgb_line_stage_asm();
 }
 
+// Project up to 24 vertices with positive Q8 scale; nonpositive scale means
+// unity. Skip unity multiplication and zero-angle rotations. Intermediates
+// must fit s16. Build up to 16 front-face flags when adjacency filtering is
+// available, then draw depth-valid edges with valid vertex indices. The model
+// edge count is not capped at 64. There is no near-plane clipping. Replace
+// the shared projection cache and OR line colors into the normal 128x96 stage.
+// This path does not mark sparse bounds; arrange a full upload or explicitly
+// invalidate frame history before a sparse upload.
 void Wire3DCGB_DrawModelScaled(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 rx, w3dcgb_i8 ry, w3dcgb_i8 rz, w3dcgb_i16 scale_q8)
 {
     w3dcgb_u8 i;
@@ -6767,6 +7232,7 @@ void Wire3DCGB_DrawModelScaled(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcg
 }
 
 #pragma bank 4
+// Select color & 3 around DrawModelScaled and restore entry color afterward.
 void Wire3DCGB_DrawModelScaledColor(const Wire3DCGB_Model* model, w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_i8 rx, w3dcgb_i8 ry, w3dcgb_i8 rz, w3dcgb_i16 scale_q8, w3dcgb_u8 color)
 {
     w3dcgb_u8 old_color;
@@ -6780,6 +7246,11 @@ void Wire3DCGB_DrawModelScaledColor(const Wire3DCGB_Model* model, w3dcgb_i16 x, 
 #pragma bank 4
 /* Exact signed a*b/c without an overflowing 16-bit intermediate. Clip
    intersections always have abs(b) <= abs(c). Endpoints are limited to 2047. */
+// Compute signed a*b/c with truncation toward zero; return zero for c=0.
+// Small operands use direct multiplication; larger ones use a 16-step
+// quotient/remainder loop without forming the full product. This helper is
+// for the bounded clipping coordinates, not arbitrary s16 arithmetic: the
+// absolute values, intermediate remainders and signed result must fit.
 static w3dcgb_i16 w3dcgb_clip_muldiv(w3dcgb_i16 a, w3dcgb_i16 b, w3dcgb_i16 c)
 {
     w3dcgb_u16 quotient;
@@ -6822,6 +7293,9 @@ w3dcgb_i16 w3dcgb_projection_result;
 w3dcgb_i16 w3dcgb_projection_value;
 w3dcgb_i16 w3dcgb_projection_z;
 
+// Multiply the shared unsigned byte magnitude by 48, then divide the
+// 16-bit product by the nonzero byte depth with 16 shift/subtract steps.
+// Store an unsigned quotient; the caller applies its sign.
 void w3dcgb_project48_asm()
 {
     __asm {
@@ -6860,6 +7334,10 @@ w3dproj_next:
     }
 }
 
+// Convert signed value to unsigned magnitude, clamp negative/Z<4 depth
+// to 4, and jointly shift magnitude/depth until depth fits a byte. Clamp
+// magnitude to 160, divide magnitude*48 by depth, then restore the sign.
+// The result is an offset, with no camera, viewport or near/far rejection.
 void w3dcgb_project_axis48_asm()
 {
     __asm {
@@ -6943,6 +7421,10 @@ w3dpax_magnitude:
     }
 }
 
+// Approximate value*48/z without a camera or screen-center offset. Negative
+// or very small Z becomes 4. For Z above 255, shift depth and magnitude
+// right together until depth fits a byte, then cap magnitude at 160.
+// Return a signed offset; this helper does not reject near/far depths.
 w3dcgb_i16 Wire3DCGB_ProjectAxis48(w3dcgb_i16 value, w3dcgb_i16 z)
 {
     w3dcgb_projection_value = value;
@@ -6951,6 +7433,8 @@ w3dcgb_i16 Wire3DCGB_ProjectAxis48(w3dcgb_i16 value, w3dcgb_i16 z)
     return w3dcgb_projection_result;
 }
 
+// Mark current and both previous sparse ranges as all 192 normal-mode
+// tiles. Pixel data is not cleared; subsequent uploads cannot trust old ranges.
 void Wire3DCGB_InvalidateFrameHistory()
 {
     w3dcgb_dirty_min_tile = 0;
@@ -6961,6 +7445,8 @@ void Wire3DCGB_InvalidateFrameHistory()
     w3dcgb_older_dirty_max_tile = 191;
 }
 
+// Return left/right/top/bottom bits (1/2/4/8) for signed coordinates,
+// using 128x96 or 160x144 bounds according to the active mode.
 static w3dcgb_u8 w3dcgb_clip_outcode(w3dcgb_i16 x, w3dcgb_i16 y)
 {
     w3dcgb_u8 code;
@@ -6977,6 +7463,11 @@ static w3dcgb_u8 w3dcgb_clip_outcode(w3dcgb_i16 x, w3dcgb_i16 y)
     return code;
 }
 
+// Clip a signed 2D line to the selected viewport, then draw with temporary
+// color. Inputs outside +/-2047 are rejected. Fully in-bounds 128x96 lines
+// use a fast path; other lines use outcodes and bounded integer intersections
+// with an eight-iteration guard. Accepted normal-mode lines mark dirty bounds.
+// This is screen clipping only, with no 3D projection or depth clipping.
 void Wire3DCGB_DrawLineClipped2D(w3dcgb_i16 x0, w3dcgb_i16 y0,
                                w3dcgb_i16 x1, w3dcgb_i16 y1, w3dcgb_u8 color)
 {
@@ -7032,6 +7523,12 @@ void Wire3DCGB_DrawLineClipped2D(w3dcgb_i16 x0, w3dcgb_i16 y0,
     }
 }
 
+// Validate pointers, 1..24 vertices, at most 64 edges, every index and
+// input coordinates/centers in +/-2047 before drawing. Fully visible geometry
+// uses signed-byte scratch and the fast indexed path; other edges use the
+// signed line clipper. That clipper may reject translated endpoints beyond
+// +/-2047 even when individual inputs passed. Replace shared screen scratch
+// and preserve the previous color through the called line APIs.
 void Wire3DCGB_DrawEdgeListClipped2D(const Wire3DCGB_Edge* edges, w3dcgb_u8 edge_count,
     const w3dcgb_i16* vx, const w3dcgb_i16* vy, w3dcgb_u8 vertex_count,
     w3dcgb_i16 cx, w3dcgb_i16 cy, w3dcgb_u8 color)
@@ -7103,6 +7600,10 @@ void Wire3DCGB_DrawEdgeListClipped2D(const Wire3DCGB_Edge* edges, w3dcgb_u8 edge
 }
 
 #pragma bank 1
+// Normal mode flushes queued BG writes, transfers the full stage and
+// presents the completed tile bank. Full-screen mode transfers/presents its
+// allocated tiles and does not flush the HUD queue. Requires an enabled LCD
+// and the transfer helpers' bank/interrupt contracts; may span multiple frames.
 void Wire3DCGB_EndFrame()
 {
     if (w3dcgb_full_mode != 0)
@@ -7121,6 +7622,9 @@ void Wire3DCGB_EndFrame()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Transfer and present the complete selected-mode frame without flushing
+// the BG queue. It does not consume queued HUD writes. Requires the same
+// LCD/bank/interrupt conditions as EndFrame; full-runtime build required.
 void Wire3DCGB_EndFrameFast()
 {
     if (w3dcgb_full_mode != 0)
@@ -7133,6 +7637,9 @@ void Wire3DCGB_EndFrameFast()
     w3dcgb_present_stage_asm();
 }
 
+// In normal mode, wait for a fresh VBlank and invoke EndFrameSparseNow.
+// Full-screen mode uses its full transfer/presentation instead. Requires the
+// full runtime and an enabled LCD; it is not guaranteed to complete in one frame.
 void Wire3DCGB_EndFrameSparse()
 {
     if (w3dcgb_full_mode != 0)
@@ -7146,6 +7653,11 @@ void Wire3DCGB_EndFrameSparse()
 }
 #endif
 
+// Flush queued BG writes, upload the sparse current/N-2 tile range to the
+// back bank and present it. Skip the initial fresh-VBlank wait, but normal
+// map mode still waits when restoring its blank HUD tile; DMA/presentation
+// may also wait. Full-runtime full-screen mode delegates to its own path.
+// Require an enabled LCD and keep SVBK/VBK stable while DMA is active.
 void Wire3DCGB_EndFrameSparseNow()
 {
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
@@ -7165,11 +7677,17 @@ void Wire3DCGB_EndFrameSparseNow()
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
+// Return the current full-screen allocation count (up to 127). This is
+// not a byte count or the number of visible/nonzero pixels. Full runtime only.
 w3dcgb_u8 Wire3DCGB_GetFullScreenTileCount()
 {
     return w3dcgb_full_tile_count;
 }
 
+// Return the full-screen frame fault flag: the fast line path sets it for
+// tile allocation exhaustion or an invalid coordinate. Once set, further
+// fast-path plots are suppressed until BeginFrame resets it. This is not a
+// general hardware status flag; the getter requires the full runtime.
 w3dcgb_u8 Wire3DCGB_GetFullScreenOverflow()
 {
     return w3dcgb_full_overflow;
@@ -7178,6 +7696,10 @@ w3dcgb_u8 Wire3DCGB_GetFullScreenOverflow()
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
 #pragma bank 1
+// Use two immediate 24-block GDMA transfers to copy 384 tile numbers
+// D300->9800 in VBK zero and 384 attributes D500->9800 in VBK one. Leave
+// VBK zero. No LCD wait, SVBK selection or interrupt protection occurs here;
+// the caller supplies a safe transfer interval and stable source-bank mapping.
 void w3dcgb_fast_map_flush_gdma_asm()
 {
     __asm {
@@ -7212,6 +7734,9 @@ void w3dcgb_fast_map_flush_gdma_asm()
     }
 }
 
+// Copy 384 tile numbers D300->9800 with immediate GDMA in VBK zero, leaving
+// attributes unchanged. The caller supplies a safe transfer interval and
+// WRAM mapping; this helper neither waits for VBlank nor selects SVBK.
 void w3dcgb_fast_map_flush_tiles_gdma_asm()
 {
     __asm {
@@ -7231,6 +7756,9 @@ void w3dcgb_fast_map_flush_tiles_gdma_asm()
     }
 }
 
+// Set all 384 tile-shadow bytes to blank ID 8A and the corresponding
+// attributes at offset 512 to zero. This includes all 32 columns in twelve
+// map rows. C accesses use the caller/allocation WRAM mapping; no upload occurs.
 static void w3dcgb_fast_map_clear_shadow()
 {
     w3dcgb_u16 i;
@@ -7243,6 +7771,9 @@ static void w3dcgb_fast_map_clear_shadow()
     }
 }
 
+// Replace one tile/attribute pair inside the 16x12 FastMap viewport, using
+// a 32-byte row stride and attribute offset 512. Reset the attribute to zero;
+// ignore off-screen cells. Retain the caller/allocation WRAM mapping.
 static void w3dcgb_fast_map_put(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tile)
 {
     w3dcgb_u16 off;
@@ -7253,6 +7784,8 @@ static void w3dcgb_fast_map_put(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tile)
     w3dcgb_stage[(__safe_index w3dcgb_u16)(W3DCGB_FAST_ATTR_OFFSET + off)] = 0;
 }
 
+// Replace one in-bounds FastMap tile and its attribute byte in the shadow.
+// Ignore cells outside 16x12; no upload or explicit SVBK selection occurs.
 static void w3dcgb_fast_map_put_attr(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tile, w3dcgb_u8 attr)
 {
     w3dcgb_u16 off;
@@ -7263,6 +7796,10 @@ static void w3dcgb_fast_map_put_attr(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tile,
     w3dcgb_stage[(__safe_index w3dcgb_u16)(W3DCGB_FAST_ATTR_OFFSET + off)] = attr;
 }
 
+// Clear a nonempty tile rectangle and its attributes, clipping its far
+// edges to 16x12. Callers keep width/height small enough that byte endpoint
+// sums do not wrap. Reset shared Y before the second ASM pass because each
+// clearer advances it. Both ASM writers require the intended WRAM mapping.
 static void w3dcgb_fast_map_clear_rect(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tw, w3dcgb_u8 th)
 {
     if (tx >= 16) return;
@@ -7284,6 +7821,10 @@ static void w3dcgb_fast_map_clear_rect(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 tw,
     w3dcgb_fast_map_clear_attr_rect_asm();
 }
 
+// OR side bits into an existing outline tile only when it has the same
+// color; otherwise replace its mask. Reject off-screen cells or a zero mask.
+// Color zero selects MAIN and values above 3 clamp to 3. Only four mask bits
+// are stored and the attribute becomes zero. C access retains the WRAM mapping.
 static void w3dcgb_fast_map_or_cell(w3dcgb_i16 tx, w3dcgb_i16 ty, w3dcgb_u8 color, w3dcgb_u8 mask)
 {
     w3dcgb_u16 off;
@@ -7315,12 +7856,19 @@ static void w3dcgb_fast_map_or_cell(w3dcgb_i16 tx, w3dcgb_i16 ty, w3dcgb_u8 colo
     w3dcgb_stage[(__safe_index w3dcgb_u16)(W3DCGB_FAST_ATTR_OFFSET + off)] = 0;
 }
 
+// Mark FastMap prepared and clear tile numbers/attributes in its 16x12
+// viewport. Shadow columns 16..31 are retained even though flush copies
+// 32 columns per row. Requires the full runtime and a stable FastMap WRAM
+// mapping; this does not initialize hardware or upload the map.
 void Wire3DCGB_FastMapBegin()
 {
     w3dcgb_fast_map_ready = 1;
     w3dcgb_fast_map_clear_rect(0, 0, 16, 12);
 }
 
+// Mark FastMap prepared and clear only its 16x12 tile-number viewport.
+// Keep attributes and columns 16..31. Requires the full runtime and the
+// intended WRAM mapping; hardware initialization/upload is separate.
 void Wire3DCGB_FastMapBeginTilesOnly()
 {
     w3dcgb_fast_map_ready = 1;
@@ -7331,11 +7879,20 @@ void Wire3DCGB_FastMapBeginTilesOnly()
     w3dcgb_fast_map_clear_rect_asm();
 }
 
+// Add outline sides to a cell: bits 1/2/4/8 mean top/bottom/left/right.
+// Same-color masks combine; another color replaces the old mask. Zero mask
+// is ignored, zero color means MAIN, and color above 3 clamps to 3. Target
+// the 16x12 shadow with stable WRAM mapping; full runtime required.
 void Wire3DCGB_FastMapCell(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 color, w3dcgb_u8 mask)
 {
     w3dcgb_fast_map_or_cell((w3dcgb_i16)tx, (w3dcgb_i16)ty, color, mask);
 }
 
+// Order and clip byte tile coordinates to 16x12, then replace selected
+// border cells. Side bits 1/2/4/8 mean top/bottom/left/right. Zero color
+// means MAIN; values above 3 clamp to 3. Attributes and interior cells remain.
+// Use at least two rows/columns for distinct corners; coincident corners
+// are overwritten in sequence. Requires full runtime and stable WRAM mapping.
 void Wire3DCGB_FastMapRect(w3dcgb_u8 tx0, w3dcgb_u8 ty0, w3dcgb_u8 tx1, w3dcgb_u8 ty1, w3dcgb_u8 color, w3dcgb_u8 sides)
 {
     w3dcgb_u8 t;
@@ -7370,18 +7927,29 @@ void Wire3DCGB_FastMapRect(w3dcgb_u8 tx0, w3dcgb_u8 ty0, w3dcgb_u8 tx1, w3dcgb_u
     w3dcgb_fast_map_rect_asm();
 }
 
+// Wait for a fresh VBlank when LCD is enabled, then upload the first
+// twelve complete map rows of tile numbers and attributes to map 9800.
+// LCD-off callers proceed immediately. Requires the full runtime, stable
+// WRAM mapping and enough safe time for both immediate GDMA transfers.
 void Wire3DCGB_FastMapFlush()
 {
     w3dcgb_wait_vblank_start();
     w3dcgb_fast_map_flush_gdma_asm();
 }
 
+// Wait for a fresh VBlank when LCD is enabled and upload only the first
+// twelve complete rows of tile numbers to map 9800. Attributes remain.
+// Requires the full runtime, stable WRAM mapping and a safe GDMA interval.
 void Wire3DCGB_FastMapFlushTilesOnly()
 {
     w3dcgb_wait_vblank_start();
     w3dcgb_fast_map_flush_tiles_gdma_asm();
 }
 
+// Retained, currently unused diagonal-tile selector; kind is ignored.
+// Keep same-color mask bits from an outline/diagonal tile, then select its
+// diagonal variant and attribute zero. This assumes those tile patterns
+// were loaded; the normal FastMap initializer does not establish that contract.
 static void w3dcgb_fast_map_diag_cell(w3dcgb_i16 tx, w3dcgb_i16 ty, w3dcgb_u8 color, w3dcgb_u8 kind)
 {
     w3dcgb_u16 off;
@@ -7417,6 +7985,10 @@ static void w3dcgb_fast_map_diag_cell(w3dcgb_i16 tx, w3dcgb_i16 ty, w3dcgb_u8 co
     w3dcgb_stage[(__safe_index w3dcgb_u16)(W3DCGB_FAST_ATTR_OFFSET + off)] = 0;
 }
 
+// Replace requested border cells in the D300 shadow, then write corner
+// combinations in top-left/top-right/bottom-left/bottom-right order. Shared
+// counts must be nonzero and coordinates valid. Do not merge existing masks
+// or write attributes. Coincident corners use the last write. No SVBK switch.
 void w3dcgb_fast_map_rect_asm()
 {
     __asm {
@@ -7520,6 +8092,8 @@ w3dfm_addr_x1:
         ADD_HL_DE
         RET
 
+// Patch corner combinations after straight edges; later corners overwrite
+// earlier ones when the requested width or height is one cell.
 w3dfm_done:
         LD_A_MEM w3dcgb_fm_sides
         AND_IMM 5
@@ -7569,6 +8143,9 @@ w3dfm_rect_ret:
     }
 }
 
+// Fill a validated nonempty rectangle with blank tile 8A at D300, using
+// a 32-byte row stride. Advance shared fm_y0 by the row count. Zero counts
+// would wrap the decrement loops; no clipping or SVBK selection occurs.
 void w3dcgb_fast_map_clear_rect_asm()
 {
     __asm {
@@ -7610,6 +8187,9 @@ w3dfm_clr_addr_x0:
     }
 }
 
+// Zero a validated nonempty attribute rectangle at D500 with 32-byte rows.
+// Advance shared fm_y0 by the row count; zero counts are invalid. The caller
+// handles bounds and WRAM mapping. Tile numbers are untouched.
 void w3dcgb_fast_map_clear_attr_rect_asm()
 {
     __asm {
@@ -7647,6 +8227,9 @@ w3dfm_aclr_col:
     }
 }
 
+// Write sixteen consecutive tile IDs as a 4x4 stamp at D300 and the same
+// attribute byte to all sixteen cells at D500. Rows have stride 32. Require
+// the entire stamp inside the viewport and a stable WRAM mapping; no clipping.
 void w3dcgb_fast_map_stamp_4x4_asm()
 {
     __asm {
@@ -7764,6 +8347,10 @@ void w3dcgb_fast_map_stamp_4x4_asm()
     }
 }
 
+// Order signed tile coordinates, reject fully off-screen rectangles and
+// clip to 16x12 before the ASM border writer. Normalize color and ignore
+// zero sides. Clipped endpoints become the border; this does not geometrically
+// clip the original outline. Attributes remain and WRAM mapping is caller-owned.
 static void w3dcgb_fast_map_draw_rect(w3dcgb_i16 x0, w3dcgb_i16 y0, w3dcgb_i16 x1, w3dcgb_i16 y1, w3dcgb_u8 color, w3dcgb_u8 sides)
 {
     w3dcgb_i16 x;
@@ -7805,6 +8392,7 @@ static void w3dcgb_fast_map_draw_rect(w3dcgb_i16 x0, w3dcgb_i16 y0, w3dcgb_i16 x
     w3dcgb_fast_map_rect_asm();
 }
 
+// Clamp a signed tile coordinate to the inclusive range 0..max.
 static w3dcgb_u8 w3dcgb_fast_tile_clamp(w3dcgb_i16 v, w3dcgb_u8 max)
 {
     if (v < 0) return 0;
@@ -7812,6 +8400,8 @@ static w3dcgb_u8 w3dcgb_fast_tile_clamp(w3dcgb_i16 v, w3dcgb_u8 max)
     return (w3dcgb_u8)v;
 }
 
+// Select one of four precomputed orientations from coarse rx/ry/rz bits.
+// This is a stamp choice, not a matrix rotation or continuous projection.
 static w3dcgb_u8 w3dcgb_fast_cube_variant(const Wire3DCGB_FastCube* cube)
 {
     w3dcgb_u8 variant;
@@ -7821,6 +8411,8 @@ static w3dcgb_u8 w3dcgb_fast_cube_variant(const Wire3DCGB_FastCube* cube)
     return (w3dcgb_u8)(variant & 3);
 }
 
+// Select one of eight sixteen-tile stamp sets from a two-bit variant and
+// one-bit all-edges flag. Remap offsets >=64 to ID 90 to avoid reserved IDs.
 static w3dcgb_u8 w3dcgb_fast_stamp_tile_base(w3dcgb_u8 variant, w3dcgb_u8 show_all)
 {
     w3dcgb_u8 index;
@@ -7830,6 +8422,11 @@ static w3dcgb_u8 w3dcgb_fast_stamp_tile_base(w3dcgb_u8 variant, w3dcgb_u8 show_a
     return (w3dcgb_u8)(0x90 + (index - 64));
 }
 
+// Place a fixed 4x4 cube stamp at the quantized 2D center; depth does not
+// scale it and selected is ignored. Choose orientation/hidden-line pattern
+// and color palette 1..3, recording clipped prior bounds for indices <3.
+// Use an unrolled writer for fully visible stamps, otherwise clip cells
+// individually while advancing their original tile IDs. Keep WRAM mapping stable.
 static void w3dcgb_fast_map_draw_cube_one(const Wire3DCGB_FastCube* cube, w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected, w3dcgb_u8 index)
 {
     w3dcgb_i16 tx;
@@ -7910,6 +8507,8 @@ static void w3dcgb_fast_map_draw_cube_one(const Wire3DCGB_FastCube* cube, w3dcgb
     }
 }
 
+// On first use, clear all twelve shadow rows and reset prior-cube count,
+// then mark FastMap ready. An already-ready map and its history are retained.
 static void w3dcgb_fast_map_prepare()
 {
     if (w3dcgb_fast_map_ready != 0) return;
@@ -7918,6 +8517,12 @@ static void w3dcgb_fast_map_prepare()
     w3dcgb_fast_prev_count = 0;
 }
 
+// Prepare the map, erase prior bounds/status cells, sort up to three cube
+// stamps far-to-near by raw Z, then draw and upload numbers/attributes at
+// VBlank. The caller array is not reordered. Non-null count zero clears
+// old stamps; a null array is a complete no-op. selected & 3 chooses the
+// status cell only, not a cube highlight. Requires loaded cube stamps, the
+// full runtime and consistent FastMap WRAM mapping; it does not initialize them.
 void Wire3DCGB_DrawFastCubeFrame(Wire3DCGB_FastCube* cubes, w3dcgb_u8 count, w3dcgb_u8 hidden_enabled, w3dcgb_u8 selected)
 {
     w3dcgb_u8 i;

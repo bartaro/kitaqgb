@@ -1,5 +1,0 @@
-stack.bank = fixed
-stack.top = $CFFF
-stack.reserve = 512
-stack.auto_limit = $CDFF
-stack.reserved_range = $CE00-$CFFF

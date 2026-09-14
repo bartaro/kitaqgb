@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 
+// Mutable state for one compiler invocation: options, diagnostics, caches and reports.
+// Default values here define the starting configuration before CLI/profile processing.
 internal sealed class CompilerSession
 {
     public bool EnableDebugOutput;
@@ -13,6 +15,7 @@ internal sealed class CompilerSession
     public bool EmitDependenciesList;
     public string DependenciesListPath = "";
     public Program.DiagnosticMode DiagnosticsMode = Program.DiagnosticMode.Permissive;
+    // Preserve include search order separately from the dependency list collected during compilation.
     public readonly List<string> IncludeDirectories = new List<string>();
     public readonly List<string> LastCompilationDependencies = new List<string>();
     public string CacheKey = "";
@@ -21,6 +24,8 @@ internal sealed class CompilerSession
     public bool AutoMinimizeTriggered;
     public bool ReproPackageWritten;
     public string OutputFilenameForDiag = "out.gb";
+    // RST optimization policy and exclusions are stored with the invocation so later
+    // code generation and reporting use the same resolved settings.
     public bool RstUse38;
     public bool RstDisable = true;
     public bool ConstScalarInRom;
@@ -30,6 +35,7 @@ internal sealed class CompilerSession
     public bool RstSpeedSafe;
     public bool RstUnsafe;
     public bool AttachDebuggerOnError;
+    // Collect structured diagnostics alongside severity counters and cached source lines.
     public readonly List<Program.DiagnosticEntry> Diagnostics = new List<Program.DiagnosticEntry>();
     public bool SuppressConsoleDiagnostics;
     public int ErrorCount;
@@ -52,6 +58,8 @@ internal sealed class CompilerSession
     public bool CheckStack;
     public bool CheckBankCalls;
     public bool CheckSliceBounds;
+    // Keep requested stack settings separate from the effective addresses computed
+    // after memory-layout validation; a nullable top means no explicit override.
     public Program.StackBankMode StackBank = Program.StackBankMode.WramX1;
     public int? StackTop;
     public int StackReserve;
@@ -85,15 +93,18 @@ internal sealed class CompilerSession
     public string CgbSymbolVerifyReportPath = "";
     public bool EmitReproPackageOnFail;
     public string ReproPackagePath = "";
+    // Retain command-line and source-pragma header options separately for precedence resolution.
     public readonly RomHeaderOptions RomHeader = new RomHeaderOptions();
     public readonly RomHeaderOptions RomHeaderPragma = new RomHeaderOptions();
     public readonly List<Program.CgbPaletteDefinition> CgbPalettePragmas = new List<Program.CgbPaletteDefinition>();
     public CompilerHostMode HostMode = CompilerHostMode.Cli;
+    // Record artifact roles and paths for API results and machine-readable manifests.
     public readonly Dictionary<string, string> ArtifactPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     public bool MachineReadableOutput;
     public bool NoBanner;
     public bool EmitPathManifest;
     public string PathManifestPath = "";
+    // Hold the latest phase reports so output generation can summarize the same compilation.
     public CodegenAnalysisReport CodegenLastReport = new CodegenAnalysisReport();
     public AssemblerAnalysisReport AssemblerLastReport = new AssemblerAnalysisReport();
     public OptimizerAnalysisReport OptimizerLastReport = new OptimizerAnalysisReport();

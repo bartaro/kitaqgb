@@ -1,8 +1,10 @@
-// 盤面の読み書き
+// Read and write cells in a game board.
 // Expected: 042
 #include "gb_common.h"
 #include "slg.h"
 SLGBoard board; u8 cells[16];
+// Create a cleared 4-by-4 board in caller-owned storage, write 42 at (2,1),
+// and display the value read back from the same cell.
 void main() {
     m_init();
     m_text(2,3,"BOARD");

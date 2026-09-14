@@ -1,5 +1,8 @@
 #pragma fixed_bank 1
 
+// Reset software playback state, queue counters, instruments and the frame hook.
+// Call before enabling this ISR; the routine does not mask interrupts or
+// initialize the APU registers and cannot synchronize with an active handler.
 void AudioVBlank_Init()
 {
     AudioVBlank_MusicEnabled = 1;
@@ -37,6 +40,9 @@ void AudioVBlank_Init()
     AudioVBlank_FrameHook = 0;
 }
 
+// Select a directly addressed song and reset its cursors, leaving the playing
+// flag unchanged. Song storage must remain accessible to the fixed-bank ISR;
+// coordinate this multi-field update with interrupt execution.
 void __stackcall AudioVBlank_SetMusic(u8 *song)
 {
     AudioVBlank_MusicStart = song;
@@ -47,6 +53,8 @@ void __stackcall AudioVBlank_SetMusic(u8 *song)
     AudioVBlank_QueueMode = 0;
 }
 
+// Restart the selected direct song at its beginning, leaving queue mode.
+// A null song invokes Stop; this does not enable the music or IRQ gates.
 void AudioVBlank_Play()
 {
     if (AudioVBlank_MusicStart == 0) {
@@ -61,12 +69,16 @@ void AudioVBlank_Play()
     AudioVBlank_MusicPlaying = 1;
 }
 
+// Select and restart a directly addressed song. This is not the banked WRAM-queue path.
 void __stackcall AudioVBlank_PlayMusic(u8 *song)
 {
     AudioVBlank_SetMusic(song);
     AudioVBlank_Play();
 }
 
+// Stop software playback and silence pulse/noise envelopes and the wave DAC.
+// Song pointers and the IRQ enable remain unchanged; the routine writes the
+// physical channels directly, so coordinate ownership with sound effects.
 void AudioVBlank_Stop()
 {
     AudioVBlank_MusicPlaying = 0;
@@ -91,6 +103,9 @@ void AudioVBlank_Stop()
     }
 }
 
+// Gate music processing and clear pending CH1/CH3 recovery on disable.
+// No audio register is written here: disabling does not itself silence a note
+// already playing or disable the VBlank interrupt.
 void __stackcall AudioVBlank_SetEnabled(u8 on)
 {
     if (on != 0) AudioVBlank_MusicEnabled = 1;
@@ -102,12 +117,15 @@ void __stackcall AudioVBlank_SetEnabled(u8 on)
     }
 }
 
+// Enable the VBlank source in IE and execute EI, enabling CPU interrupts globally.
+// Install the correct interrupt vector and initialize driver state first.
 void AudioVBlank_EnableIrq()
 {
     AudioVBlank_IE = (u8)(AudioVBlank_IE | 0x01);
     __asm { EI }
 }
 
+// Clear only the VBlank bit in IE. Other interrupt sources and current sound remain unchanged.
 void AudioVBlank_DisableIrq()
 {
     AudioVBlank_IE = (u8)(AudioVBlank_IE & 0xFE);

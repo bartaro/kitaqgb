@@ -6,8 +6,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Lay out a flat banked GB ROM, emit instructions and data, resolve symbols, and publish debug/report artifacts.
 class Assembler
 {
+    // Expose the report through the current compiler session rather than a separate process-wide assembler field.
     public static AssemblerAnalysisReport LastReport
     {
         get { return Program.CurrentAssemblerLastReport; }
@@ -25,11 +27,13 @@ class Assembler
     const int MinRomSize = 0x8000; // at least bank0+bank1
     const int MaxRomSize = 0x800000; // 8MB (512 banks), max on real hardware with MBC5
 
+    // Use ROM-only for the minimum two-bank image and MBC5 for larger provisional images.
     static byte GuessDefaultCartType(int romSize)
     {
         return (byte)(romSize > MinRomSize ? 0x19 : 0x00);
     }
 
+    // Choose the smallest standard capacity code that can contain the image, saturating at the 8 MiB code.
     static byte GuessRomSizeCode(int romSize)
     {
         int[] sizes = new int[]
@@ -52,6 +56,7 @@ class Assembler
         return 0x08;
     }
 
+    // Keep bank-zero offsets unchanged and map later file banks into the CPU's $4000-$7FFF window.
     static int CpuAddrFromFileOffset(int fileOffset)
     {
         if (fileOffset < 0) return fileOffset;
@@ -65,6 +70,7 @@ class Assembler
         return CpuAddrFromFileOffset(pc);
     }
 
+    // Infer the explicitly modeled ROM/WRAM/OAM/HRAM regions; other addresses retain the generic RAM tag.
     static MemoryRegion InferRegionFromCpuAddress(int address)
     {
         if (address >= 0xFF80 && address <= 0xFFFE) return MemoryRegion.HighMem;
@@ -75,6 +81,7 @@ class Assembler
         return MemoryRegion.Ram;
     }
 
+    // Prefer explicit region tags, then derive a display region from the CPU address before using a generic fallback.
     static string RegionBaseName(MemoryRegion region, int address)
     {
         if (region.Tag == MemoryRegionTag.ProgramRom) return "ROM";
@@ -96,6 +103,7 @@ class Assembler
         return region.ToString().ToUpperInvariant();
     }
 
+    // Include an explicit WRAMX bank in the display name; otherwise use the ordinary region label.
     static string RegionName(MemoryRegion region, int address)
     {
         if (region.Tag == MemoryRegionTag.WramX && region.WramBank > 0)
@@ -103,6 +111,7 @@ class Assembler
         return RegionBaseName(region, address);
     }
 
+    // Derive ROM banks from file offsets and WRAMX banks from metadata, defaulting an unqualified $D000 window to bank 1.
     static int? LogicalBank(MemoryRegion region, int value)
     {
         if (region.Tag == MemoryRegionTag.ProgramRom)
@@ -120,6 +129,7 @@ class Assembler
         return null;
     }
 
+    // Convert an address to a region-relative report offset; ROM symbols use their low 14 file-offset bits.
     static int RegionOffset(MemoryRegion region, int value)
     {
         if (region.Tag == MemoryRegionTag.ProgramRom) return value & 0x3FFF;
@@ -134,6 +144,7 @@ class Assembler
         return value & 0xFFFF;
     }
 
+    // Resolve a symbol's CPU-visible address while preserving the ROM-file-offset distinction.
     static int CpuAddressOf(AsmSymbol symbol)
     {
         if (symbol == null) return 0;
@@ -141,26 +152,31 @@ class Assembler
         return symbol.Value & 0xFFFF;
     }
 
+    // Recognize nonzero skips that lie exactly on a 16 KiB file-bank boundary.
     static bool IsBankBoundarySkip(int skipTarget)
     {
         return skipTarget != 0 && (skipTarget & (BankSize - 1)) == 0;
     }
 
+    // Allow a bank-boundary marker already reached by automatic placement to remain in the stream without moving PC backward.
     static bool ShouldIgnoreBackwardBankBoundarySkip(int pc, int skipTarget)
     {
         if (!IsBankBoundarySkip(skipTarget)) return false;
         return pc >= skipTarget;
     }
+    // Use fresh symbol, fixup and debug state for each assembly run and return the actual ROM output path.
     public static string Assemble(IReadOnlyList<Expr> assembly, string outputFilename)
     {
         Assembler assembler = new Assembler();
         return assembler.Run(assembly, outputFilename);
     }
 
+    // Relax branches, group sections and insert bank padding before sizing and emitting the image.
+    // Final fixups, checksums and reports use the resulting emission layout.
     string Run(IReadOnlyList<Expr> assembly, string outputFilename)
     {
         // Jump relaxation (JP -> JR) to reduce code size.
-        // Monotonic transform: once a JP is proven in-range for JR, it stays in-range.
+        // Conversions use the current estimated layout; final layout and fixup checks happen later.
         var relaxedAssembly = RelaxJumps(assembly);
 
         // Reorder by $section markers so that same-named sections are emitted together.
@@ -169,8 +185,7 @@ class Assembler
         // - Within each ROM bank, code/data in named sections are buffered and emitted at the end of the bank.
         // - The default (unnamed) section is emitted first.
         // - The order of named sections is the order of first appearance.
-        // This is intentionally conservative: we keep $skip_to/$align in-place (they remain in the default section)
-        // so bank layout barriers aren't reordered.
+        // $skip_to/$align remain in the unnamed buckets, which are emitted before named-section contents.
         var sectionedAssembly = ReorderSections(relaxedAssembly);
         sectionedAssembly = InsertAutoBankBoundarySkips(sectionedAssembly);
         var functionBodySizesForPlacement = EstimateFunctionBodySizes(sectionedAssembly);
@@ -245,9 +260,7 @@ class Assembler
         }
 
         // Interrupt vectors (0x40..0x60)
-        // Default to RETI so that enabling IE/IME won't crash even if the program
-        // doesn't install handlers yet. Users can still jump to their own handlers
-        // manually if they want full control.
+        // Initialize each slot with RETI; available handlers and the default VBlank flag writer replace selected slots below.
         for (int v = 0x40; v <= 0x60; v += 0x08)
         {
             rom[v] = 0xD9; // RETI
@@ -272,7 +285,7 @@ class Assembler
         }
         else
         {
-            // VBlank vector (0x0040): X-style frame flag set for HALT wait loops.
+            // VBlank vector (0x0040): set the default frame-ready flag for HALT wait loops.
             // 0x0040: PUSH AF; LD A,1; LD [$C29C],A; POP AF; RETI
             rom[0x40] = 0xF5; // PUSH AF
             rom[0x41] = 0x3E; // LD A,imm8
@@ -338,8 +351,8 @@ class Assembler
         rom[0x14E] = 0x00;
         rom[0x14F] = 0x00;
 
-        // Minimal startup (A6): always initialize SP, then select the ROM bank that contains 'main', then CALL it.
-        // This makes the generated ROM robust even if 'main' spills into bank2+.
+        // Initialize SP, write the low eight bits of BANK(main) to the mapper and HRAM mirror, then CALL main.
+        // This stub does not write the ninth MBC5 bank-select bit.
         // 0x0150:
         // DI
         // LD SP,<effective stack top>
@@ -394,6 +407,7 @@ class Assembler
         int currentFunctionStart = 0;
         int currentFunctionBytes = 0;
 
+        // Record the current PC in the bank selected by integer division; callers pass the cursor after each emitted item.
         void UpdateBankMax(int newPc)
         {
             if (newPc < 0) return;
@@ -403,6 +417,8 @@ class Assembler
             if (newPc > bankMaxPc[bank]) bankMaxPc[bank] = newPc;
         }
 
+        // Publish the tracked function byte count and report a bank crossing before clearing function state.
+        // The count is accumulated from instructions and word directives rather than the complete cursor distance.
         void FinalizeCurrentFunction()
         {
             if (string.IsNullOrEmpty(currentFunctionName)) return;
@@ -428,6 +444,7 @@ class Assembler
             currentFunctionBytes = 0;
         }
 
+        // Add a one-address symbol entry with CPU address, bank and region; this metadata is separate from the resolver dictionary.
         void TrackSymbolMetadata(string name, int address, bool isLabel, MemoryRegion region, string section)
         {
             int cpuAddress = region.Tag == MemoryRegionTag.ProgramRom ? CpuAddrFromFileOffset(address) : (address & 0xFFFF);
@@ -444,6 +461,7 @@ class Assembler
             });
         }
 
+        // Record a variable's CPU address, extent and region/bank metadata for analysis exports.
         void TrackVariableMetadata(string name, int address, int size, MemoryRegion region)
         {
             variableMetadata.Add(new VariableMetadataInfo
@@ -456,6 +474,7 @@ class Assembler
             });
         }
 
+        // Ignore unknown source positions and convert zero-based source coordinates to one-based report coordinates.
         void TrackSourceLocation(Expr expr, int address, string symbol, string section)
         {
             if (expr == null) return;
@@ -474,6 +493,7 @@ class Assembler
             });
         }
 
+        // Report an item whose nonempty byte span crosses a 16 KiB bank; this helper does not itself stop emission.
         void EnsureSpanFitsRomBank(int startPc, int size, string description)
         {
             if (size <= 0) return;
@@ -490,6 +510,7 @@ class Assembler
             {
                 EnsureSpanFitsRomBank(pc, rdBytes.Length, "readonly data '" + rdName + "'");
                 DefineSymbol(rom, rdName, pc, isLabel: false, MemoryRegion.ProgramRom, currentSectionName);
+                // Preserve the full ROM bank for debugger variables before translating the address into the CPU window.
                 Debug.AddVariable(rdName, CpuOfFileOffset(pc), rdBytes.Length, MemoryRegion.ProgramRom, pc >> 14);
                 TrackSymbolMetadata(rdName, pc, false, MemoryRegion.ProgramRom, currentSectionName);
                 TrackVariableMetadata(rdName, CpuOfFileOffset(pc), rdBytes.Length, MemoryRegion.ProgramRom);
@@ -514,6 +535,8 @@ class Assembler
                 // Already handled before ROM init.
                 continue;
             }
+            // Finish the previous function, pad a known-size function into one bank, and define its global entry.
+            // Then remove previous function-local labels from the active resolver dictionary.
             else if (e.Match(Tag.Function, out label))
             {
                 FinalizeCurrentFunction();
@@ -537,6 +560,7 @@ class Assembler
                 currentFunctionStart = pc;
                 currentFunctionBytes = 0;
                 // clean up local labels
+                // Resolved fixups have already been written; unresolved references remain pending when local names are removed.
                 string[] labels = Symbols.Where(x => x.Value.IsLabel).Select(x => x.Key).ToArray();
                 foreach (string key in labels) Symbols.Remove(key);
             }
@@ -589,9 +613,7 @@ class Assembler
             }
             else if (e.Match(Tag.Section, out string sectName))
             {
-                // Section markers are primarily for trace readability / organization.
-                // The assembler itself is single-pass over a flat ROM image, so this is a no-op.
-                // (We still accept it so codegen can emit $section and traces remain self-contained.)
+                // Sections were grouped before emission; this marker now updates metadata without writing ROM bytes.
                 currentSectionName = sectName ?? "";
                 continue;
             }
@@ -681,6 +703,7 @@ class Assembler
                     // actualMode = AddressMode.HighMemX;
                 }
 
+                // Find a unique opcode matching the mnemonic and accepted operand-format aliases, then emit its declared operand width.
                 int formalSize = 0;
                 List<byte> candidates = new List<byte>();
                 int operandFormat = ParseAddressMode(actualMode);
@@ -724,6 +747,7 @@ class Assembler
                 else Program.Panic("ambiguous instruction: {0} {1}", mnemonic, operand.Show());
 
                 int operandValue;
+                // Store unresolved operands at the operand-byte cursor so later symbol definitions can patch them in place.
                 if (!TryGetOperandValue(operand, actualMode, pc, isRelative, out operandValue))
                 {
                     Fixups.Add(new Fixup { Operand = operand, Location = pc, Mode = actualMode, IsRelativeBranch = isRelative, Size = formalSize });
@@ -739,6 +763,7 @@ class Assembler
         FinalizeCurrentFunction();
         DoFixups(rom);
 
+        // Report all unresolved symbolic operands after the final pass; the outer compiler must honor the recorded errors.
         if (Fixups.Count > 0)
         {
             Console.Error.WriteLine("Error: Unresolved symbols remaining:");
@@ -753,6 +778,7 @@ class Assembler
         if (pc > rom.Length) Program.Error("Program size exceeds ROM size");
         Program.WriteInfoLine(string.Format("Assembly complete. Size: {0} bytes used (ROM={1} bytes).", pc, rom.Length));
 
+        // Capture final placement metadata; source-location rows are sorted and deduplicated below.
         var buildReport = new AssemblerAnalysisReport
         {
             BankMaxPc = bankMaxPc.ToArray(),
@@ -781,6 +807,7 @@ class Assembler
         }
         LastReport = buildReport;
 
+        // Compute the final whole-ROM additive checksum after every vector and symbolic operand has been patched.
         int globalChecksum = 0;
         for (int i = 0; i < rom.Length; i++)
         {
@@ -789,11 +816,12 @@ class Assembler
         rom[0x14E] = (byte)((globalChecksum >> 8) & 0xFF);
         rom[0x14F] = (byte)(globalChecksum & 0xFF);
 
+        // Retain the actual fallback output path so companion files are named beside the ROM that was written.
         outputFilename = IoUtil.WriteAllBytesRobust(outputFilename, rom, allowAlternatePath: true);
         Program.RememberArtifactPath("output_rom", outputFilename);
         Debug.Save(Path.ChangeExtension(outputFilename, ".dbg"));
 
-        // Always emit a symbol map and bank size report (vibe-friendly).
+        // Emit companion maps and size reports; report failures below are nonfatal warnings.
         try
         {
             WriteSymbolMap(Path.ChangeExtension(outputFilename, ".map"));
@@ -818,6 +846,7 @@ class Assembler
         return outputFilename;
     }
 
+    // Sort debugger variables by name/address and write their region, optional bank and byte extent.
     void WriteVarList(string filename)
     {
         var vars = Debug.GetVariables();
@@ -838,6 +867,8 @@ class Assembler
         Program.RememberArtifactPath("vlist", filename);
     }
 
+    // Export the resolver dictionary sorted by region/bank/address/name.
+    // Previous function-local labels removed during emission are absent from this dictionary export.
     void WriteSymbolMap(string filename)
     {
         var items = Symbols
@@ -869,6 +900,7 @@ class Assembler
         Program.RememberArtifactPath("map", filename);
     }
 
+    // Derive used/free bytes from each stored bank cursor, clamping usage to the bank's bounds.
     static void WriteBankSizeReport(string filename, int[] bankMaxPc, int bankSize)
     {
         var sb = new StringBuilder();
@@ -890,6 +922,7 @@ class Assembler
         Program.RememberArtifactPath("source_map", filename);
     }
 
+    // List functions by descending recorded byte size with stable name ordering for ties.
     static void WriteFunctionSizeReport(string filename, List<FunctionSizeInfo> functionSizes)
     {
         var sb = new StringBuilder();
@@ -906,6 +939,7 @@ class Assembler
         Program.RememberArtifactPath("banks_txt", filename);
     }
 
+    // Write the supplied source locations in order, omitting missing paths and nonpositive source lines.
     static void WriteSourceMap(string filename, IReadOnlyList<SourceLocationMetadataInfo> sourceLocations)
     {
         var sb = new StringBuilder();
@@ -934,6 +968,7 @@ class Assembler
         Program.RememberArtifactPath("funcsizes_txt", filename);
     }
 
+    // Round up using a power-of-two alignment mask; a nonpositive alignment leaves the value unchanged.
     static int RoundUp(int value, int align)
     {
         if (align <= 0) return value;
@@ -941,6 +976,7 @@ class Assembler
         return (value + mask) & ~mask;
     }
 
+    // Simulate readonly data, skips, alignment, words and estimated instructions to size the ROM buffer.
     static int EstimateMaxPcForOutput(IReadOnlyList<Expr> assembly)
     {
         int pc = CodeStart;
@@ -1014,6 +1050,7 @@ class Assembler
         return maxPc;
     }
 
+    // Insert file-offset skips before functions or readonly objects that would straddle a bank under the estimated layout.
     static IReadOnlyList<Expr> InsertAutoBankBoundarySkips(IReadOnlyList<Expr> assembly)
     {
         if (assembly == null || assembly.Count == 0) return assembly;
@@ -1022,6 +1059,7 @@ class Assembler
         var output = new List<Expr>(assembly.Count + 16);
         int pc = CodeStart;
 
+        // Report objects larger than one bank; otherwise move a crossing object to the next boundary and retain its source position.
         void PadToNextBankIfNeeded(int size, Expr origin)
         {
             if (size <= 0) return;
@@ -1107,12 +1145,15 @@ class Assembler
         return output;
     }
 
+    // Sum data, words and estimated instructions between a function marker and the next function or skip.
+    // Alignment padding is not included in these body sizes.
     static Dictionary<string, int> EstimateFunctionBodySizes(IReadOnlyList<Expr> assembly)
     {
         var sizes = new Dictionary<string, int>(StringComparer.Ordinal);
         string current = null;
         int bytes = 0;
 
+        // Store the current function estimate by name and reset accumulation; later same-name entries replace earlier ones.
         void Finish()
         {
             if (string.IsNullOrEmpty(current)) return;
@@ -1168,6 +1209,8 @@ class Assembler
 
     // Jump relaxation
 
+    // Estimate global entries and function-local labels, then shorten supported JP forms whose current displacement fits.
+    // This runs before section regrouping and automatic bank-padding insertion.
     static IReadOnlyList<Expr> RelaxJumps(IReadOnlyList<Expr> assembly)
     {
         // Code starts immediately after the entry stub (see Assembler.CodeStart).
@@ -1176,7 +1219,7 @@ class Assembler
         // Work on a mutable copy.
         var cur = assembly.ToList();
 
-        // Apply until no more conversions are possible.
+        // Stop when no conversion occurs or after the 16-iteration limit.
         for (int iter = 0; iter < 16; iter++)
         {
             // Function names are global, but codegen restarts local label names
@@ -1300,7 +1343,7 @@ class Assembler
     // CodeGen can emit ($section "NAME") markers. We buffer subsequent expressions
     // into per-bank section buckets and emit named sections together at the end of the bank.
     // Notes/constraints:
-    // - $skip_to and $align are kept in the default (unnamed) stream and are not moved.
+    // - $skip_to and $align stay in the unnamed bucket, emitted before named buckets.
     // - Bank boundaries are inferred from $skip_to targets (multiples of 0x4000).
     // - Section markers themselves are re-emitted once per section (for trace readability).
     static IReadOnlyList<Expr> ReorderSections(IReadOnlyList<Expr> assembly)
@@ -1320,6 +1363,7 @@ class Assembler
         int bank = 0;
         string sect = ""; // default/unnamed
 
+        // Create a per-bank section list lazily, normalizing null section names to the unnamed bucket.
         Func<int, string, List<Expr>> getBucket = (b, s) =>
         {
             var key = (b, s ?? "");
@@ -1406,6 +1450,7 @@ class Assembler
         return output;
     }
 
+    // Map only unconditional and Z/C-condition absolute jumps to their relative equivalents.
     static bool TryMapJPToJR(string mnemonic, out string jrMnemonic)
     {
         jrMnemonic = null;
@@ -1417,6 +1462,7 @@ class Assembler
         return false;
     }
 
+    // Resolve a numeric target or a symbol plus addend, preferring the current function's local label over global entries.
     static bool TryResolveAbsoluteTarget(AsmOperand operand, Dictionary<string, int> addr,
         Dictionary<(string Function, string Label), int> localAddr, string function, out int target)
     {
@@ -1436,6 +1482,8 @@ class Assembler
         return true;
     }
 
+    // Estimate size from the operand mode, relative-branch classification and numeric high-memory special case.
+    // This helper does not search opcode candidates or resolve symbol addresses as the emitter does.
     static int GetAsmSizeForLayout(string mnemonic, AsmOperand operand)
     {
         bool isRelative = AsmInfo.ShortJumpInstructions.Contains(mnemonic);
@@ -1443,8 +1491,7 @@ class Assembler
         if (isRelative && (actualMode == AddressMode.Absolute || actualMode == AddressMode.Immediate))
             actualMode = AddressMode.Relative;
 
-        // Some patterns can be encoded in smaller forms (e.g., LDH for 0xFF00-0xFFFF).
-        // Keep the layout pass consistent with the emitter to avoid PC drift.
+        // Account for numeric $FFxx operands here. Symbol-based LDH selection also depends on emission-time resolution.
         if ((mnemonic == "LD_A_MEM" || mnemonic == "LD_MEM_A")
             && actualMode == AddressMode.Absolute
             && !operand.Base.HasValue
@@ -1457,6 +1504,7 @@ class Assembler
         return 1 + AsmInfo.OperandSizes[format];
     }
 
+    // Map modeled address modes to size-table formats, defaulting unhandled modes to implicit.
     static int ParseAddressModeForLayout(AddressMode mode)
     {
         if (mode == AddressMode.Implicit) return AsmInfo.IMP;
@@ -1469,6 +1517,7 @@ class Assembler
         return AsmInfo.IMP;
     }
 
+    // Register only the first active definition, then retry all pending operands against the current symbol dictionary.
     void DefineSymbol(byte[] rom, string symbol, int address, bool isLabel, MemoryRegion region, string section)
     {
         if (!Symbols.ContainsKey(symbol))
@@ -1478,6 +1527,8 @@ class Assembler
         DoFixups(rom);
     }
 
+    // Visit pending operands backward, write each newly resolved value at its recorded width, and remove completed entries.
+    // Deferred relative branches receive a signed-byte range diagnostic before their byte is written.
     void DoFixups(byte[] rom)
     {
         for (int i = Fixups.Count - 1; i >= 0; i--)
@@ -1523,6 +1574,8 @@ class Assembler
         }
     }
 
+    // Resolve symbol plus addend, then extract a bank/byte or convert ROM offsets to CPU addresses as requested.
+    // Relative displacements use the operand-byte file location; BANK results are masked to eight bits.
     bool TryGetOperandValue(AsmOperand operand, AddressMode mode, int operandLocation, bool isRelativeBranch, out int value)
     {
         value = 0;
@@ -1565,11 +1618,13 @@ class Assembler
         return true;
     }
 
+    // Use the opcode metadata's short-jump set to select displacement handling.
     bool IsRelativeBranch(string mnemonic)
     {
         return AsmInfo.ShortJumpInstructions.Contains(mnemonic);
     }
 
+    // Map an operand mode to the opcode table format; unhandled modes fall back to implicit.
     static int ParseAddressMode(AddressMode mode)
     {
         if (mode == AddressMode.Implicit) return AsmInfo.IMP;
@@ -1582,14 +1637,18 @@ class Assembler
         return AsmInfo.IMP;
     }
 
+    // Look up the operand byte count for the mapped address mode.
     static int GetFormalOperandSize(AddressMode mode)
     {
         return AsmInfo.OperandSizes[ParseAddressMode(mode)];
     }
+    // Extract the low eight bits for little-endian operand emission.
     static byte LowByte(int n) => (byte)(n & 0xFF);
+    // Extract bits 8..15 for the high byte of a word operand.
     static byte HighByte(int n) => (byte)((n >> 8) & 0xFF);
 }
 
+// Retain an unresolved operand, its destination cursor and emitted width until its base symbol is available.
 class Fixup
 {
     public AsmOperand Operand;
@@ -1601,6 +1660,7 @@ class Fixup
 }
 
 [DebuggerDisplay("{Show(),nq}")]
+// Immutable symbolic base/addend plus addressing and extraction modes, with an optional diagnostic comment.
 class AsmOperand
 {
     public readonly Maybe<string> Base = Maybe.Nothing;
@@ -1610,26 +1670,31 @@ class AsmOperand
     public readonly string Comment;
     public static readonly AsmOperand Implicit = new AsmOperand(0, AddressMode.Implicit);
 
+    // Convenience constructors choose a symbolic or numeric base and default the unspecified offset/modifier.
     public AsmOperand(string actualBase, AddressMode mode) : this(actualBase, 0, mode, ImmediateModifier.None) { }
     public AsmOperand(string actualBase, ImmediateModifier modifier) : this(actualBase, 0, AddressMode.Immediate, modifier) { }
     public AsmOperand(int value, AddressMode mode) : this(Maybe.Nothing, value, mode, ImmediateModifier.None) { }
     public AsmOperand(int value, ImmediateModifier modifier) : this(Maybe.Nothing, value, AddressMode.Immediate, modifier) { }
 
+    // Capture the operand components; symbol resolution and width checks happen during assembly.
     public AsmOperand(Maybe<string> optionalBase, int offset, AddressMode mode, ImmediateModifier modifier, string comment = null)
     {
         Base = optionalBase; Offset = offset; Mode = mode; Modifier = modifier; Comment = comment;
     }
 
+    // Create operand variants without mutating the original or dropping its other fields.
     public AsmOperand WithMode(AddressMode newMode) => new AsmOperand(Base, Offset, newMode, Modifier, Comment);
     public AsmOperand WithModifier(ImmediateModifier newModifier) => new AsmOperand(Base, Offset, Mode, newModifier, Comment);
     public AsmOperand WithComment(string newComment) => new AsmOperand(Base, Offset, Mode, Modifier, newComment);
     public AsmOperand WithComment(string newCommentFormat, params object[] args) => WithComment(string.Format(newCommentFormat, args));
+    // Substitute a concrete base value while preserving the addend and modifiers; reject already numeric operands.
     public AsmOperand ReplaceBase(int baseValue)
     {
         if (!Base.HasValue) throw new Exception("this operand has no base symbol");
         return new AsmOperand(Maybe.Nothing, baseValue + Offset, Mode, Modifier, Comment);
     }
 
+    // Format a trace/diagnostic operand with symbolic extraction wrappers and selected addressing syntax.
     public string Show()
     {
         string s;
@@ -1650,11 +1715,14 @@ class AsmOperand
     }
 }
 
+// Shared addressing vocabulary; the GB assembler implements only the subset mapped by its format helpers.
 enum AddressMode
 {
     Implicit, Immediate, Immediate16, HighMem, HighMemX, Absolute, AbsoluteX, AbsoluteY, Indirect, IndirectX, IndirectY, Relative,
 }
+// Select ordinary, low-byte, high-byte or bank-byte interpretation of an operand value.
 enum ImmediateModifier { None, LowByte, HighByte, Bank }
+// Store ROM symbols as file offsets and other symbols as CPU addresses, with local-label and section metadata.
 class AsmSymbol { public int Value; public bool IsLabel; public MemoryRegion Region; public string Section; }
 
 

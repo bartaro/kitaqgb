@@ -1,3 +1,0 @@
-# KITAQGB source map
-# bank:addr path:line:column symbol=... section=...
-01:42AF C:\kitaqgb_project\publish\github_20260912\kitaqgb\examples\gb_hello.c:6 symbol=main

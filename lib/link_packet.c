@@ -57,11 +57,14 @@ u8 __stackcall Link4_SelectPeer(u8 peer_slot);
 #define LINK_PKT_STATE_SEND_ACK      ((u8)12)
 #define LINK_PKT_STATE_ERROR         ((u8)13)
 
+// Read the one-packet mailbox flag only for a valid remote slot.
 u8 Link4_PacketPeerReady(u8 peer_slot) {
     if (Link4_IsValidRemoteSlotInternal(peer_slot) == 0) return 0;
     return Link4_ReceivedPacketReady[(__safe_index u8)peer_slot];
 }
 
+// Copy the completed packet into a valid peer mailbox and record its origin.
+// The receive state machine checks mailbox availability before accepting a packet.
 void Link4_StoreReceivedPacketForPeer(u8 peer_slot) {
     u8 i;
     u8 offset;
@@ -78,6 +81,8 @@ void Link4_StoreReceivedPacketForPeer(u8 peer_slot) {
     Link4_LastPacketPeer = peer_slot;
 }
 
+// Decide whether the current receive phase needs another exchange. An idle
+// slave listens only while its packet mailbox and pending ACK are both empty.
 u8 Link_PacketNeedsReceiveTransfer() {
     if (Link_IsBusy() != 0) return 0;
 
@@ -93,6 +98,7 @@ u8 Link_PacketNeedsReceiveTransfer() {
     return 0;
 }
 
+// Arm a filler-byte exchange for reception while retaining the current packet phase.
 u8 Link_PacketStartReceiveTransfer() {
     u8 keep_state;
 
@@ -104,6 +110,7 @@ u8 Link_PacketStartReceiveTransfer() {
     return 1;
 }
 
+// Classify outgoing packet phases, including the wait for acknowledgement.
 u8 Link_PacketIsSendState() {
     if (Link_PacketState == LINK_PKT_STATE_SEND_SYNC) return 1;
     if (Link_PacketState == LINK_PKT_STATE_SEND_CMD) return 1;
@@ -114,6 +121,7 @@ u8 Link_PacketIsSendState() {
     return 0;
 }
 
+// Classify incoming packet phases, including transmission of the acknowledgement.
 u8 Link_PacketIsRecvState() {
     if (Link_PacketState == LINK_PKT_STATE_RECV_SYNC) return 1;
     if (Link_PacketState == LINK_PKT_STATE_RECV_CMD) return 1;
@@ -124,6 +132,7 @@ u8 Link_PacketIsRecvState() {
     return 0;
 }
 
+// Reset the incoming cursor, command, length and checksum, preserving payload storage.
 void Link_PacketResetReceiveState() {
     Link_RxSeq = 0;
     Link_ReceivedPacketCmd = 0;
@@ -131,11 +140,13 @@ void Link_PacketResetReceiveState() {
     Link_ReceivedPacketChecksum = 0;
 }
 
+// Reset the outgoing cursor and retry count without erasing the saved packet.
 void Link_PacketResetSendState() {
     Link_TxSeq = 0;
     Link_PacketRetryCount = 0;
 }
 
+// Return to idle and reset timing/cursors without clearing mailboxes or pending ACK.
 void Link_PacketGoIdle() {
     Link_PacketState = LINK_PKT_STATE_IDLE;
     Link_PacketTimer = 0;
@@ -143,6 +154,8 @@ void Link_PacketGoIdle() {
     Link_RxSeq = 0;
 }
 
+// Restart from SYNC until three total attempts have been used. Exhaustion
+// latches the supplied error and leaves cleanup to the next packet poll.
 void Link_PacketRetryOrFail(u8 error_code) {
     if ((u8)(Link_PacketRetryCount + 1) >= LINK_PKT_RETRY_MAX) {
         Link_SetErrorInternal(error_code);
@@ -156,6 +169,8 @@ void Link_PacketRetryOrFail(u8 error_code) {
     Link_PacketTimer = LINK_PKT_TIMEOUT_TICKS;
 }
 
+// Start one byte only while hardware is idle, then advance the packet phase.
+// The next phase describes the in-flight byte, not confirmed receipt by the peer.
 u8 Link_PacketBeginTransferByte(u8 out, u8 next_state) {
     if (Link_IsBusy() != 0) return 0;
     if (Link_BeginTransfer(out) != LINK_ERR_NONE) return 0;
@@ -163,6 +178,8 @@ u8 Link_PacketBeginTransferByte(u8 out, u8 next_state) {
     return 1;
 }
 
+// Start the pending ACK/NAK and immediately return packet state to idle.
+// The hardware busy flag continues to track completion of that byte.
 u8 Link_PacketStartAckTransfer() {
     if (Link_PendingAck == 0) return 0;
     if (Link_IsBusy() != 0) return 0;
@@ -173,6 +190,8 @@ u8 Link_PacketStartAckTransfer() {
     return 1;
 }
 
+// Emit the next SYNC, command, length, payload or XOR-checksum byte.
+// While awaiting ACK, clock filler exchanges so the peer can return its response.
 u8 Link_PacketStartNextTransfer() {
     u8 next_state;
     u8 payload_index;
@@ -213,6 +232,9 @@ u8 Link_PacketStartNextTransfer() {
     return 0;
 }
 
+// Advance the packet state machine with one received byte. The checksum is
+// XOR of command, length and payload, not a CRC or authentication mechanism.
+// A full mailbox, invalid length or bad checksum schedules a NAK.
 u8 Link_PacketConsumeByte(u8 value) {
     if (Link_PacketState == LINK_PKT_STATE_WAIT_ACK) {
         if (value == LINK_PKT_ACK) {
@@ -312,6 +334,8 @@ u8 Link_PacketConsumeByte(u8 value) {
     return 0;
 }
 
+// Classify stalled acknowledgement, send and receive phases. A filler byte
+// while awaiting ACK is treated as a disconnect hint, not hardware detection.
 void Link_PacketHandleTimeout() {
     if (Link_PacketState == LINK_PKT_STATE_WAIT_ACK) {
         if (Link_LastRx == LINK_PKT_FILLER) Link_PacketRetryOrFail(LINK_ERR_DISCONNECT);
@@ -331,6 +355,9 @@ void Link_PacketHandleTimeout() {
     }
 }
 
+// Validate payload size and idle packet state, copy payload bytes into owned
+// storage and schedule transmission. Return success means queued, not acknowledged;
+// keep polling to progress the exchange and inspect the error latch.
 u8 __stackcall Link_SendPacket(const u8 *data, u8 len, u8 cmd) {
     u8 i;
     u8 checksum = (u8)(cmd ^ len);
@@ -367,6 +394,9 @@ u8 __stackcall Link_SendPacket(const u8 *data, u8 len, u8 cmd) {
     return LINK_ERR_NONE;
 }
 
+// Drain received bytes, advance one outgoing exchange and update the retry
+// timer. Timeout ticks count calls without progress, not hardware frames; call
+// with a controlled cadence and avoid mixing raw reads with packet consumption.
 void Link_PollPacket() {
     u8 progress = 0;
     u8 value = 0;
@@ -404,10 +434,14 @@ void Link_PollPacket() {
     if (Link_PacketTimer == 0) Link_PacketHandleTimeout();
 }
 
+// Inspect the shared completed-packet flag without advancing the protocol.
 u8 Link_HasPacket() {
     return Link_ReceivedPacketReady;
 }
 
+// Consume the shared packet mailbox and its matching peer flag. Any output
+// may be null; a nonnull destination needs room for the received payload because
+// there is no destination-capacity argument.
 u8 __stackcall Link_ReadPacket(u8 *cmd, u8 *len, u8 *dst) {
     u8 i;
     u8 peer_slot = Link4_LastPacketPeer;
@@ -431,20 +465,26 @@ u8 __stackcall Link_ReadPacket(u8 *cmd, u8 *len, u8 *dst) {
     return 1;
 }
 
+// Select a logical peer, then copy and schedule a packet; return the first error.
 u8 __stackcall Link4_SendPacketTo(u8 peer_slot, const u8 *data, u8 len, u8 cmd) {
     u8 err = Link4_SelectPeer(peer_slot);
     if (err != LINK_ERR_NONE) return err;
     return Link_SendPacket(data, len, cmd);
 }
 
+// Advance the shared packet engine; this does not poll every logical peer in turn.
 void Link4_PollPacket() {
     Link_PollPacket();
 }
 
+// Inspect the one-packet mailbox for a valid remote slot without consuming it.
 u8 __stackcall Link4_HasPacketFrom(u8 peer_slot) {
     return Link4_PacketPeerReady(peer_slot);
 }
 
+// Consume a peer mailbox, copying to optional outputs. A nonnull destination
+// needs room for the entire payload. Clear the shared mailbox only when it
+// refers to this same peer.
 u8 __stackcall Link4_ReadPacketFrom(u8 peer_slot, u8 *cmd, u8 *len, u8 *dst) {
     u8 i;
     u8 offset;

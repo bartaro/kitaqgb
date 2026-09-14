@@ -1,5 +1,7 @@
-// Derived without glyph changes from samples/assets/ascii.c (user-specified).
-// ASCII-indexed GB 2bpp tiles; see verification/font_conversion.json.
+// Derived without glyph changes from examples/assets/ascii.c (author-supplied).
+// Conversion details are published in the kitaq-docs repository: verification/font_conversion.json.
+// 128 ASCII-indexed GB tiles (2048 bytes). Unmapped control characters, space, backslash and vertical bar are blank.
+// For FC upload, use font.chr with separate eight-byte planes; this array remains in GB interleaved format.
 __prg_rom u8 manual_font[] = {
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

@@ -1,5 +1,8 @@
 #include "physics3d.h"
 
+// Place this implementation in ROM bank 2. Callers must arrange compatible
+// banked calls; these functions also share scratch and must not be interrupted
+// by another invocation of the same physics helpers.
 #pragma bank 2
 
 s16 kq3d_asm_value;
@@ -7,6 +10,8 @@ s16 kq3d_asm_operand;
 s16 kq3d_asm_limit;
 s16 kq3d_asm_tmp;
 
+// Add the shared operand to the shared value using low-byte carry.
+// The 16-bit result wraps; this is not saturating addition.
 void kq3d_add_s16_asm()
 {
     __asm {
@@ -35,6 +40,8 @@ void kq3d_add_s16_asm()
     }
 }
 
+// Negate a negative shared value in place. The minimum signed value remains
+// 0x8000 and cannot be used as a positive s16 magnitude.
 void kq3d_abs_s16_asm()
 {
     __asm {
@@ -60,6 +67,8 @@ kq3dabs_ret:
     }
 }
 
+// Clamp the shared value to +/- the shared nonnegative limit by comparing
+// magnitudes high-byte first. The negative path uses shared temporary storage.
 void kq3d_clamp_abs_s16_asm()
 {
     __asm {
@@ -189,6 +198,8 @@ kq3dcl_done:
     }
 }
 
+// Return a magnitude through shared assembly scratch. Exclude -32768 when
+// a positive result is required; this helper is not reentrant.
 s16 kq3d__abs_s16(s16 v)
 {
     kq3d_asm_value = v;
@@ -196,11 +207,17 @@ s16 kq3d__abs_s16(s16 v)
     return kq3d_asm_value;
 }
 
+// Keep the largest incoming impact seen since the caller last cleared it.
+// This does not inspect break_speed, change flags, or deactivate the body.
 void kq3d__record_impact(KQBody3D* body, s16 impact)
 {
     if (impact > body->last_impact_speed) body->last_impact_speed = impact;
 }
 
+// For closing motion on the selected axis, record impact on both bodies,
+// then apply an inverse-mass-weighted impulse using averaged restitution clamped
+// to 0..256. Axis 0 is X, 1 is Y, all others are Z; normal must be +/-1.
+// Intermediate products are signed 16-bit and must remain representable.
 void kq3d__bounce_axis(KQBody3D* a, KQBody3D* b, u8 axis, s16 normal)
 {
     s16 va;
@@ -271,6 +288,9 @@ void kq3d__bounce_axis(KQBody3D* a, KQBody3D* b, u8 axis, s16 normal)
     }
 }
 
+// Borrow the body array without initializing it. Set gravity (0,24,0), four
+// contact passes and a per-axis speed limit of 512. Null world is ignored;
+// the caller retains ownership and must keep the array alive.
 void kq3d_world_init(KQWorld3D* world, KQBody3D* bodies, u8 body_count)
 {
     if (world == 0) return;
@@ -284,6 +304,10 @@ void kq3d_world_init(KQWorld3D* world, KQBody3D* bodies, u8 body_count)
     world->max_speed = 512;
 }
 
+// Store the requested mass; nonpositive mass makes the body static.
+// For positive mass compute inverse weight as max(1,32767/max(mass,64)).
+// The stored mass retains the original input; this is a relative solver weight,
+// not an exact Q8 reciprocal. Null body is ignored.
 void kq3d_body_set_mass(KQBody3D* body, s16 mass_q8)
 {
     if (body == 0) return;
@@ -300,6 +324,9 @@ void kq3d_body_set_mass(KQBody3D* body, s16 mass_q8)
     if (body->inv_mass_q8 <= 0) body->inv_mass_q8 = 1;
 }
 
+// Initialize an active centered box with zero velocity/acceleration,
+// restitution 224, cleared impact/flags and mass set through the weight helper.
+// The caller supplies valid half extents. Null body is ignored.
 void kq3d_body_init(KQBody3D* body, s16 x, s16 y, s16 z, s16 half_x, s16 half_y, s16 half_z, s16 mass_q8)
 {
     if (body == 0) return;
@@ -324,6 +351,9 @@ void kq3d_body_init(KQBody3D* body, s16 x, s16 y, s16 z, s16 half_x, s16 half_y,
     kq3d_body_set_mass(body, mass_q8);
 }
 
+// Test strict overlap on all three axes; face-only contact returns false.
+// Valid pointers are required and flags are ignored. Center differences and
+// extent sums must fit the signed 16-bit magnitude calculations.
 u8 kq3d_overlap_aabb(const KQBody3D* a, const KQBody3D* b)
 {
     s16 dx = kq3d__abs_s16((s16)(b->x - a->x));
@@ -341,6 +371,10 @@ u8 kq3d_overlap_aabb(const KQBody3D* a, const KQBody3D* b)
 }
 
 // Resolve one pair with axis-aligned positional correction and mass-weighted bounce.
+// Separate overlapping boxes on the least-penetrating axis, preferring X
+// then Y then Z on ties, and apply an axis impulse for closing velocity.
+// Position correction uses inverse-mass weights; two static bodies are skipped.
+// Intermediate products must fit 16 bits; break flags are not set here.
 void kq3d__resolve_pair(KQBody3D* a, KQBody3D* b)
 {
     if (kq3d_overlap_aabb(a, b) == 0) return;
@@ -395,6 +429,10 @@ void kq3d__resolve_pair(KQBody3D* a, KQBody3D* b)
     }
 }
 
+// Reset impact for one active dynamic body, add gravity and persistent body
+// acceleration, clamp velocity per axis and advance position. Static/inactive
+// bodies retain impact state. Null inputs are ignored; no contacts are solved.
+// Use a nonnegative speed limit and avoid overflow before clamping.
 void kq3d_integrate_body(KQWorld3D* world, KQBody3D* body)
 {
     if (world == 0) return;
@@ -446,6 +484,11 @@ void kq3d_integrate_body(KQWorld3D* world, KQBody3D* body)
     body->z = kq3d_asm_value;
 }
 
+// Integrate active dynamic bodies and reset their impact values, then solve
+// each active unordered pair for the configured passes (zero means one).
+// Static bodies retain previous impact maxima until the game clears them.
+// Acceleration persists; flags and break thresholds remain game-owned.
+// This discrete solver shares non-reentrant ASM scratch and can miss fast crossings.
 void kq3d_step(KQWorld3D* world)
 {
     if (world == 0) return;
@@ -527,6 +570,9 @@ void kq3d_step(KQWorld3D* world)
     }
 }
 
+// Sum three signed intrinsic products, each shifted by eight bits before
+// addition. Coefficients are signed bytes scaled by 1/256. The 16-bit sum is
+// not saturated, so keep products and their sum within the intended range.
 s16 kq3d_dot_q8_8(s16 x, s16 y, s16 z, s8 ax, s8 ay, s8 az)
 {
     return __sdot3_q8_8(x, y, z, ax, ay, az);

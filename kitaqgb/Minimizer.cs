@@ -19,6 +19,7 @@ using System.Text.RegularExpressions;
 // - Only the chosen target file is minimized; other source files remain unchanged.
 internal static class Minimizer
 {
+    // Select the minimizer driver only for --minimize or --minimize=target, not its subordinate options.
     public static bool IsMinimizeRequested(string[] args)
     {
         foreach (var a in args)
@@ -28,6 +29,8 @@ internal static class Minimizer
         return false;
     }
 
+    // Reproduce the baseline failure in a child compiler, then shrink one selected source by deleting line groups.
+    // Write the smallest retained candidate and optionally collect a final trace bundle.
     public static void Run(string[] originalArgs)
     {
         try
@@ -87,6 +90,8 @@ internal static class Minimizer
 
             int bestLen = current.Count;
             int iter = 0;
+            // Try complements of progressively smaller line chunks; never test an empty candidate.
+            // A failed reduction increases the partition count, so the result is deletion-minimal for this predicate, not globally shortest.
             while (current.Count >= 2)
             {
                 iter++;
@@ -199,6 +204,7 @@ Program.Exit(0);
         }
     }
 
+    // Keep source selection, forwarded compiler arguments and trace policy separate from candidate output paths.
     private sealed class Options
     {
         public List<string> SourceFiles = new List<string>();
@@ -219,6 +225,8 @@ Program.Exit(0);
         public int CandidateSerial = 0;
     }
 
+    // Remove driver-only flags and capture output/trace destinations before forwarding ordinary compiler arguments.
+    // Treat every remaining non-option argument as an input filename.
     private static Options ParseOptions(string[] args)
     {
         var opt = new Options();
@@ -232,7 +240,8 @@ Program.Exit(0);
                 if (i + 1 < args.Length) { opt.OutputFilename = args[i + 1]; i++; }
                 continue;
             }
-            if (a.StartsWith("--minimize", StringComparison.Ordinal))
+            // Match only the main option so --minimize-out, --minimize-work and --minimize-trace reach their own handlers.
+            if (a == "--minimize" || a.StartsWith("--minimize=", StringComparison.Ordinal))
             {
                 if (a.StartsWith("--minimize=", StringComparison.Ordinal)) opt.TargetFile = a.Substring(a.IndexOf('=') + 1);
                 continue;
@@ -284,6 +293,8 @@ Program.Exit(0);
         return opt;
     }
 
+    // Run a nonempty candidate and require failure plus a case-insensitive baseline fingerprint match when available.
+    // The all-traces policy retains only reproducing candidate directories.
     private static bool TestCandidate(string exePath, Options opts, string originalTargetPath, List<string> candidateLines, string workDir, string fingerprint)
     {
         // Default (fast) mode: re-use a single candidate file and do not generate trace for intermediates.
@@ -334,6 +345,7 @@ Program.Exit(0);
         return ok;
     }
 
+    // Replace the selected source argument and isolate ROM/debug outputs; enable intermediate trace only for the all policy.
     private static string[] BuildChildArgs(Options opts, string originalTarget, string replacementTarget, string runDir)
     {
         // Replace the target file in the argument list.
@@ -364,6 +376,7 @@ Program.Exit(0);
         return list.ToArray();
     }
 
+    // Capture the child process exit status and both diagnostic streams for the failure predicate and reports.
     private sealed class RunResult
     {
         public int ExitCode;
@@ -371,6 +384,8 @@ Program.Exit(0);
         public string Stderr;
     }
 
+    // Launch without a window from the caller's current directory; output paths are already encoded in the arguments.
+    // Read stdout and then stderr synchronously and wait for process exit; this helper has no timeout.
     private static RunResult RunChild(string exePath, string[] args, string workDir)
     {
         var psi = new ProcessStartInfo(exePath)
@@ -394,6 +409,7 @@ Program.Exit(0);
         }
     }
 
+    // Build a minimally quoted Windows argument; this helper escapes quotes but does not implement general backslash doubling.
     private static string QuoteArg(string a)
     {
         if (a == null) return "";
@@ -404,6 +420,8 @@ Program.Exit(0);
         return "\"" + a.Replace("\"", "\\\"") + "\"";
     }
 
+    // Prefer the first KQ diagnostic code, then a System exception type, then a truncated non-banner output line.
+    // The fingerprint is a best-effort textual identity, not a structured comparison of compiler failures.
     private static string ExtractFingerprint(string output)
     {
         if (string.IsNullOrEmpty(output)) return "";
@@ -430,6 +448,7 @@ Program.Exit(0);
         return "";
     }
 
+    // Split after each LF while retaining the original terminators, including CRLF. Empty input becomes one newline.
     private static List<string> SplitLinesPreserveNewlines(string text)
     {
         // Keep original newlines so we can reconstruct with minimal formatting changes.
@@ -447,6 +466,7 @@ Program.Exit(0);
         return lines;
     }
 
+// Compile the retained source into the final bundle with the originally requested trace selection.
 private static string[] BuildChildArgsForFinal(Options opts, string originalTarget, string replacementTarget, string finalDir, string traceDir, string debugDir)
 {
     var list = new List<string>();
@@ -476,6 +496,7 @@ private static string[] BuildChildArgsForFinal(Options opts, string originalTarg
     return list.ToArray();
 }
 
+// Copy all descendant directories and files into the destination, overwriting matching files without removing extras.
 private static void CopyDirectory(string srcDir, string dstDir)
 {
     if (!Directory.Exists(srcDir)) return;
@@ -493,6 +514,7 @@ private static void CopyDirectory(string srcDir, string dstDir)
     }
 }
 
+    // Resolve the current process executable, falling back to argv[0] only if process-module lookup throws.
     private static string GetExePath()
     {
         try

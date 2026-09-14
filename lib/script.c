@@ -1,15 +1,28 @@
 #include "rpg.h"
 
+// Compact banked script opcodes. Multi-byte operands use the compiler far-read
+// helpers; the stream must be valid and terminated because no length is stored.
+// 00: no operands; finish the script or resume the one saved caller.
 #define SCRIPT_OP_END        ((u8)0x00)
+// 01: bank:u8, address:u16 little-endian; print the banked text stream, then yield.
 #define SCRIPT_OP_TEXT       ((u8)0x01)
+// 02: flag ID:u16 little-endian; IDs must be below 2048.
 #define SCRIPT_OP_SET_FLAG   ((u8)0x02)
+// 03: flag ID:u16 little-endian; clear the selected flag and continue.
 #define SCRIPT_OP_CLEAR_FLAG ((u8)0x03)
+// 04: bank:u8, address:u16; see the handler caveat: the address is read after switching the script bank.
 #define SCRIPT_OP_JUMP       ((u8)0x04)
+// 05: flag ID:u16, bank:u8, address:u16; read all operands before an optional branch.
 #define SCRIPT_OP_IF_FLAG    ((u8)0x05)
+// 06: count:u8, table address:u16; pointers and strings use the current script bank. Count must be nonzero.
 #define SCRIPT_OP_CHOICE     ((u8)0x06)
+// 07: count:u8; yield now, then spend count subsequent script_step calls waiting.
 #define SCRIPT_OP_WAIT       ((u8)0x07)
+// 08: bank:u8, address:u16; transfer with one shared return slot, not a nesting stack.
 #define SCRIPT_OP_CALL_EVENT ((u8)0x08)
 
+// Single shared interpreter state with one saved return location, not a call
+// stack. Script execution and blocking choice dialogs are not reentrant.
 static u8 script_active;
 static u8 script_bank;
 static const u8* script_pc;
@@ -19,6 +32,8 @@ static u8 script_return_active;
 static u8 script_return_bank;
 static const u8* script_return_pc;
 
+// Read one byte from the current script bank/address and advance the address.
+// Address increments do not select the next ROM bank automatically; keep operands within the mapped source.
 static u8 script_read8()
 {
     u8 v = __farpeek8(script_bank, script_pc);
@@ -26,6 +41,7 @@ static u8 script_read8()
     return v;
 }
 
+// Read a 16-bit operand from the current bank and advance past both bytes.
 static u16 script_read16()
 {
     u16 v = __farpeek16(script_bank, script_pc);
@@ -33,6 +49,8 @@ static u16 script_read16()
     return v;
 }
 
+// Render a zero-terminated banked string along one tile row. The caller must
+// provide a terminator and keep text within the intended visible row.
 static void script_draw_far_string(u8 bank, const u8* str, u8 x, u8 y)
 {
     const u8* p = str;
@@ -46,6 +64,8 @@ static void script_draw_far_string(u8 bank, const u8* str, u8 x, u8 y)
     }
 }
 
+// Run a blocking choice loop over a banked table of 16-bit string pointers.
+// A accepts the cursor and B returns 0xFF; callers must provide at least one item.
 static u8 script_choice(u8 bank, const u8* table_ptr, u8 count)
 {
     u8 cursor = 0;
@@ -81,6 +101,7 @@ static u8 script_choice(u8 bank, const u8* table_ptr, u8 count)
     }
 }
 
+// Replace the active script and clear wait, choice and saved-return state.
 void script_run(u8 bank, const u8* script)
 {
     script_active = 1;
@@ -91,11 +112,16 @@ void script_run(u8 bank, const u8* script)
     script_return_active = 0;
 }
 
+// Set the number of subsequent script_step calls to spend waiting. Frame-based
+// timing requires the application to call script_step once per frame.
 void script_wait_frames(u8 n)
 {
     script_wait = n;
 }
 
+// Execute commands until an output/choice yields (0), a wait yields (1), or
+// execution ends (2). Control/flag commands continue within the same call, so
+// a script loop without a yielding command can block the game loop indefinitely.
 u8 script_step()
 {
     if (script_active == 0) return 2;
@@ -107,6 +133,7 @@ u8 script_step()
     while (script_active != 0) {
         u8 op = script_read8();
 
+        // An END returns to the one saved caller when present; otherwise it ends the script.
         if (op == SCRIPT_OP_END) {
             if (script_return_active != 0) {
                 script_bank = script_return_bank;
@@ -137,12 +164,17 @@ u8 script_step()
             continue;
         }
 
+        // This implementation installs the destination bank before reading the address
+        // operand. That read therefore uses the new bank at the current operand address;
+        // cross-bank script authors must account for this ordering.
         if (op == SCRIPT_OP_JUMP) {
             script_bank = script_read8();
             script_pc = (const u8*)script_read16();
             continue;
         }
 
+        // Read all branch operands before switching bank/address so an untaken branch
+        // still consumes the full instruction.
         if (op == SCRIPT_OP_IF_FLAG) {
             u16 id = script_read16();
             u8 bank = script_read8();
@@ -166,6 +198,8 @@ u8 script_step()
             return 1;
         }
 
+        // Save the continuation only when the single return slot is empty. Nested
+        // calls replace the current script but do not push another return address.
         if (op == SCRIPT_OP_CALL_EVENT) {
             u8 bank = script_read8();
             u16 ptr = script_read16();
@@ -179,6 +213,7 @@ u8 script_step()
             continue;
         }
 
+        // Unknown opcodes terminate with the same return code as END; there is no distinct malformed-stream error.
         script_active = 0;
         return 2;
     }

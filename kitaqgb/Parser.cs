@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+// Consume a mutable token list into declaration and expression IR, retaining source positions and parser-local name/type state.
 partial class Parser
 {
     List<Token> Input;
@@ -76,6 +77,7 @@ partial class Parser
     // those constant declarations here so ParseGlobalDecl can emit them before the main decl.
     List<Expr> PendingTopDecls = new List<Expr>();
 
+    // Retain aggregate fields and layout attributes needed while parsing initializers.
     sealed class AggregateDeclInfo
     {
         public bool IsUnion;
@@ -91,12 +93,14 @@ partial class Parser
     // We throw this to unwind to a recovery point after emitting a diagnostic.
     sealed class RecoverableParseException : Exception { }
 
+    // Create a fresh parser for the supplied files and parse their combined token stream.
     public static Expr ParseFiles(IEnumerable<string> filenames)
     {
         Parser p = new Parser(filenames);
         return p.ParseAll();
     }
 
+    // Install built-in aliases, tokenize the input/dependencies, predeclare discoverable typedefs and append the true EOF position.
     Parser(IEnumerable<string> filenames)
     {
         // Built-in signed aliases (storage-width compatible with existing u8/u16 core).
@@ -121,6 +125,8 @@ partial class Parser
         });
     }
 
+    // Construct a speculative parser using the supplied token list and metadata maps by reference.
+    // Callers preparing a typedef probe supply cloned maps and their own EOF token.
     Parser(
         List<Token> input,
         Dictionary<string, CType> typedefs,
@@ -135,16 +141,19 @@ partial class Parser
         AggregateDecls = aggregateDecls ?? new Dictionary<string, AggregateDeclInfo>();
     }
 
+    // Build a tuple expression and attach the most recently consumed token position.
     Expr Make(params object[] args)
     {
         return Make(Expr.Make(args));
     }
 
+    // Return an expression sharing its arguments with the parser's current source position.
     Expr Make(Expr e)
     {
         return e.WithSource(SourcePosition);
     }
 
+    // Build a sequence from the supplied nodes without flattening nested sequences.
     Expr MakeSequence(IEnumerable<Expr> items)
     {
         List<object> list = new List<object>();
@@ -162,6 +171,7 @@ partial class Parser
         return value ?? "";
     }
 
+    // Derive a deterministic anonymous tag from a sanitized filename and one-based source coordinates.
     string MakeAnonymousTypeName(string prefix)
     {
         string file = SourcePosition.Filename ?? "unknown";
@@ -174,6 +184,8 @@ partial class Parser
         return string.Format("{0}_{1}_{2}_{3}", prefix, sb, SourcePosition.Line + 1, SourcePosition.Column + 1);
     }
 
+    // Retry top-level typedef slices until no more can be parsed using the currently known aliases.
+    // Successful slices are remembered by their source span; unresolved slices remain for normal parsing.
     void PredeclareTypedefs()
     {
         List<List<Token>> typedefDecls = ExtractTopLevelTypedefDeclarations();
@@ -195,6 +207,7 @@ partial class Parser
         } while (progressed);
     }
 
+    // Collect balanced semicolon-terminated typedef slices outside braces, tracking nested braces/parentheses/brackets within each slice.
     List<List<Token>> ExtractTopLevelTypedefDeclarations()
     {
         var result = new List<List<Token>>();
@@ -244,6 +257,8 @@ partial class Parser
         return result;
     }
 
+    // Parse one typedef slice against cloned metadata with diagnostics suppressed, committing the maps only after EOF.
+    // Recoverable parse failures restore diagnostics and discard the probe; other exceptions propagate outside this recovery path.
     bool TryPredeclareTypedef(List<Token> stmt)
     {
         if (stmt == null || stmt.Count == 0) return false;
@@ -283,6 +298,7 @@ partial class Parser
         }
     }
 
+    // Identify a typedef slice by its first filename and endpoint coordinates, not by its token text.
     static string BuildTokenSliceIdentity(List<Token> stmt)
     {
         if (stmt == null || stmt.Count == 0) return "";
@@ -296,6 +312,7 @@ partial class Parser
             last.Position.Column);
     }
 
+    // Preserve dictionary comparison rules while recursively copying each stored type.
     static Dictionary<string, CType> CloneTypeMap(Dictionary<string, CType> src)
     {
         var dst = new Dictionary<string, CType>(src.Comparer);
@@ -303,6 +320,7 @@ partial class Parser
         return dst;
     }
 
+    // Copy aggregate records and field types for speculative parsing while preserving their recorded layout attributes.
     static Dictionary<string, AggregateDeclInfo> CloneAggregateDeclMap(Dictionary<string, AggregateDeclInfo> src)
     {
         var dst = new Dictionary<string, AggregateDeclInfo>(src.Comparer);
@@ -320,6 +338,7 @@ partial class Parser
         return dst;
     }
 
+    // Create new field descriptors with cloned types and the same names/offsets; null arrays become empty.
     static FieldInfo[] CloneFields(FieldInfo[] src)
     {
         if (src == null) return Array.Empty<FieldInfo>();
@@ -332,6 +351,8 @@ partial class Parser
         return dst;
     }
 
+    // Recursively clone subtype and parameter type nodes plus annotations.
+    // Dimension expressions are shared references rather than cloned ASTs.
     static CType DeepCloneType(CType src)
     {
         if (src == null) return null;
@@ -354,6 +375,8 @@ partial class Parser
         };
     }
 
+    // Consume persistent placement pragmas and declarations until EOF, recovering at top-level boundaries after parse failures.
+    // Emit pending type-related declarations before their owner, then append pooled strings after ordinary declarations.
     Expr ParseAll()
     {
         List<Expr> declarations = new List<Expr>();
@@ -431,6 +454,7 @@ partial class Parser
         return MakeSequence(declarations);
     }
 
+    // Flatten nested top-level sequences recursively and ignore null/empty declarations.
     void AppendTopLevelDeclaration(List<Expr> outDecls, Expr decl)
     {
         if (decl == null || decl.Match(Tag.Empty)) return;
@@ -448,6 +472,8 @@ partial class Parser
 
     // Recovery strategy: skip tokens until we reach a reasonable top-level boundary.
     // This prevents infinite loops when we report an error but the current token cannot be consumed.
+    // Consume through the next semicolon or closing brace; leave a pragma/EOF token for the outer loop.
+    // This recovery scan does not track nesting depth.
     void SynchronizeTopLevel()
     {
         while (true)
@@ -476,6 +502,7 @@ partial class Parser
     // - '}' (not consumed; caller decides scope close)
     // - EOF
     // - (optional) switch case boundaries: 'case' / 'default' (not consumed)
+    // Track braces to preserve an outer closing brace or switch label, while any semicolon ends recovery even inside nested braces.
     void SynchronizeStatementBoundary(bool stopAtSwitchCaseBoundary)
     {
         int nestedBraceDepth = 0;
@@ -522,6 +549,8 @@ partial class Parser
     }
 
 
+    // Wrap eligible original declaration tags with bank/fixed placement, then section and alignment metadata.
+    // Already wrapped tags are not recursively reclassified by this helper.
     Expr WrapPragmasIfNeeded(Expr decl)
     {
         if (decl == null) return null;
@@ -553,6 +582,7 @@ partial class Parser
         return decl;
     }
 
+    // Prefer the next input token's filename, falling back to the last consumed position.
     string CurrentFilename()
     {
         if (Input != null && Input.Count > 0)
@@ -563,6 +593,7 @@ partial class Parser
         return SourcePosition.Filename ?? "";
     }
 
+    // Reuse a per-file source-name mapping or allocate a new internal symbol with a parser-wide numeric suffix.
     string GetOrCreateStaticSymbolName(string filename, string original)
     {
         if (string.IsNullOrEmpty(original)) return original;
@@ -582,6 +613,7 @@ partial class Parser
         return mangled;
     }
 
+    // Allocate a fresh hidden symbol for a function-local static using the shared parser counter.
     string GetFunctionLocalStaticSymbolName(string functionName, string original)
     {
         string fn = string.IsNullOrEmpty(functionName) ? "fn" : functionName;
@@ -589,6 +621,7 @@ partial class Parser
         return "__kq_fstatic_" + (NextStaticSymbolId++).ToString() + "_" + fn + "_" + nm;
     }
 
+    // Search lexical scopes from inner to outer; on failure leave the original name in the output.
     bool TryResolveLocalScopedName(string name, out string resolved)
     {
         if (string.IsNullOrEmpty(name))
@@ -607,6 +640,7 @@ partial class Parser
         return false;
     }
 
+    // Resolve a local alias first, then an existing file-static mapping, otherwise retain the source name.
     string ResolveStaticSymbolReference(string filename, string name)
     {
         if (string.IsNullOrEmpty(name)) return name;
@@ -620,16 +654,19 @@ partial class Parser
         return name;
     }
 
+    // Start an empty case-sensitive lexical name map.
     void PushLocalScope()
     {
         LocalNameScopes.Push(new Dictionary<string, string>(StringComparer.Ordinal));
     }
 
+    // Discard the innermost name map if one exists.
     void PopLocalScope()
     {
         if (LocalNameScopes.Count > 0) LocalNameScopes.Pop();
     }
 
+    // Bind a normal local to its own spelling in the active scope, replacing an existing same-scope entry.
     void RegisterLocalName(string name)
     {
         if (LocalNameScopes.Count == 0) return;
@@ -637,6 +674,7 @@ partial class Parser
         LocalNameScopes.Peek()[name] = name;
     }
 
+    // Bind a source name to hidden storage in the active scope, defaulting an empty replacement to the source name.
     void RegisterLocalAlias(string sourceName, string resolvedName)
     {
         if (LocalNameScopes.Count == 0) return;
@@ -645,10 +683,13 @@ partial class Parser
         LocalNameScopes.Peek()[sourceName] = resolvedName;
     }
 
+// Parse file-scope prefixes, attributes, type aliases, constants, functions or storage declarations.
+// Prefixes are consumed in the order implemented below; this is the supported grammar rather than arbitrary C declaration-specifier ordering.
 Expr ParseDeclaration()
     {
         string declFile = CurrentFilename();
 
+        // Consume repeated static before extern; when both are present, retain static semantics and issue a warning.
         bool isStatic = false;
         while (TryParseName("static"))
         {
@@ -716,6 +757,7 @@ Expr ParseDeclaration()
         // typedef <type> <name>;
         // typedef <type> <name>[N];
         // (Enough for the Wire3D demo aliases like Vec3/Mat3.)
+        // Register aliases without runtime declarations, but return any aggregate definition required by later type-registration passes.
         if (TryParseName("typedef"))
         {
             if (isStatic)
@@ -820,6 +862,7 @@ Expr ParseDeclaration()
             // Notes:
             // - Parameter names are optional.
             // - We support multiple pointer stars: (**Name)(...)
+            // Recognize the restricted parenthesized function-pointer typedef declarator and its optional parameter names.
             if (PeekToken().Tag == TokenType.LPAREN)
             {
                 // Parse: ( *... Name ) ( ... )
@@ -906,6 +949,7 @@ Expr ParseDeclaration()
             return cexpr;
         }
 
+        // Parse a typed compile-time constant and apply an optional file-static name mapping.
         if (TryParseName("define"))
         {
             CType type = ExpectType();
@@ -964,6 +1008,7 @@ Expr ParseDeclaration()
         }
         else
         {
+            // Choose explicit storage placement when supplied, otherwise inherit the current region and bank pragma.
             MemoryRegion explicitRegion;
             bool hadRegion = TryParseMemoryRegionQualifier(out explicitRegion);
             MemoryRegion region = hadRegion ? ApplyPragmaWramXBank(explicitRegion) : ApplyPragmaWramXBank(CurrentPragmaRegion);
@@ -1037,6 +1082,7 @@ Expr ParseDeclaration()
                 if (isStatic) name = GetOrCreateStaticSymbolName(declFile, name);
 
                 // __stackcall function attribute (must appear before the function name)
+                // Recognize the special stack-call spelling in the parsed name position and require a function declaration.
                 bool isStackCallDecl = false;
                 if (name == "__stackcall")
                 {
@@ -1090,6 +1136,8 @@ Expr ParseDeclaration()
                         if (isUnsafeDecl) d = Make(Tag.Unsafe, d);
                         return d;
                     }
+                    // Parse the function body with local name scope and function-static state restored in finally blocks.
+                    // Hoisted static declarations are emitted before the resulting function definition.
                     List<Expr> statements = new List<Expr>();
                     Expect(TokenType.LBRACE);
 
@@ -1177,6 +1225,7 @@ Expr ParseDeclaration()
                         // - const globals (new behavior):
                         // * scalar const => compile-time constant symbol ($constant)
                         // * array const => ROM data ($readonly_data) in current bank
+                        // Represent a const non-array declaration as a compile-time constant expression in this path.
                         if (type.IsConst && !type.IsArray)
                         {
                             // const scalar: treat as a compile-time constant, like `define`.
@@ -1243,6 +1292,8 @@ Expr ParseDeclaration()
         }
     }
 
+    // Parse one supported storage qualifier, including literal fixed addresses or bank numbers.
+    // Return false with the default RAM descriptor when no qualifier is present.
     bool TryParseMemoryRegionQualifier(out MemoryRegion region)
     {
         if (TryParseName("__hram"))
@@ -1295,6 +1346,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Resolve an explicit or inherited region through the current bank pragma policy.
     MemoryRegion ParseMemoryRegionQualifier()
     {
         MemoryRegion region;
@@ -1303,6 +1355,8 @@ Expr ParseDeclaration()
         return ApplyPragmaWramXBank(CurrentPragmaRegion);
     }
 
+    // Parse at most one array suffix and carry the original type's annotations onto the new array node.
+    // An omitted dimension remains an Empty expression for initializer inference.
     void ParseArrayDeclaration(ref CType type)
     {
         if (TryParse(TokenType.LBRACKET))
@@ -1346,6 +1400,7 @@ Expr ParseDeclaration()
         return Make(Tag.StaticAssert, cond, msg);
     }
 
+    // Make a shallow annotated type copy, sharing subtype, dimension-expression and parameter-array references.
     CType CloneType(CType type)
     {
         if (type == null) return null;
@@ -1368,6 +1423,7 @@ Expr ParseDeclaration()
         };
     }
 
+    // Apply declaration alignment only when the parsed type has no explicit alignment already.
     CType ApplyDeclarationAlignIfNeeded(CType type, int declAlign)
     {
         if (type == null) return null;
@@ -1377,6 +1433,8 @@ Expr ParseDeclaration()
         return t;
     }
 
+    // Parse a file-scope constant expression declaration, rejecting arrays/aggregates/functions and adding const if needed.
+    // Expression evaluation and constant validity are deferred to later compiler processing.
     Expr ParseConstexprDeclaration(int declAlign, bool isUnsafeDecl, bool isStaticDecl, string declFile)
     {
         CType type = ExpectType();
@@ -1408,6 +1466,8 @@ Expr ParseDeclaration()
 
 
     // If false, only allow statements that would fit in a "for" initializer.
+    // Dispatch statement forms after optional local qualifiers. Most control-flow forms reject a for-initializer context;
+    // goto, labels and the unsafe wrapper do not consult allowLong in their own branches.
     Expr ParseStatement(bool allowLong)
     {
         MemoryRegion __localRegion;
@@ -1468,6 +1528,7 @@ Expr ParseDeclaration()
             ParserError("expected a local declaration after 'static'");
             return null;
         }
+        // Store an if/else-if chain as alternating conditions and bodies, using literal one for an unconditional final else.
         else if (TryParseName("if"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1502,6 +1563,7 @@ Expr ParseDeclaration()
 
             return Make(parts.ToArray());
         }
+        // Parse the initializer as a restricted statement, then the condition/update expressions and loop body.
         else if (TryParseName("for"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1515,6 +1577,7 @@ Expr ParseDeclaration()
             Expr body = ParseStatementBlock();
             return Make(Tag.For, init, test, induct, body);
         }
+        // Represent while as a For node with empty initializer and update.
         else if (TryParseName("while"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1525,6 +1588,7 @@ Expr ParseDeclaration()
             Expr body = ParseStatementBlock();
             return Make(Tag.For, Make(Tag.Empty), test, Make(Tag.Empty), body);
         }
+        // Keep the body-first loop as a distinct DoWhile node and require the trailing semicolon.
         else if (TryParseName("do"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1540,6 +1604,7 @@ Expr ParseDeclaration()
             return Make(Tag.DoWhile, body, test);
         }
 
+        // Create the control-flow marker; enclosing loop validity is handled outside this branch.
         else if (TryParseName("continue"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1552,6 +1617,7 @@ Expr ParseDeclaration()
             Expect(TokenType.SEMICOLON);
             return Make(Tag.Break);
         }
+        // Require switch nesting before creating the explicit case-fallthrough marker.
         else if (TryParseName("fallthrough") || TryParseName("__fallthrough"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1577,12 +1643,15 @@ Expr ParseDeclaration()
                 return Make(Tag.Return, result);
             }
         }
+        // Store the named jump target directly; this branch does not resolve a target definition.
         else if (TryParseName("goto"))
         {
             string label = ExpectAnyName();
             Expect(TokenType.SEMICOLON);
             return Make(Tag.Jump, label);
         }
+        // Parse newline/semicolon-separated assembly and labels into a sequence.
+        // Individual nodes use Expr factories directly; only the enclosing sequence receives the current parser position here.
         else if (TryParseName("__asm"))
         {
             if (!allowLong) Error_NotAllowedInFor();
@@ -1604,6 +1673,7 @@ Expr ParseDeclaration()
                 {
                     parts.Add(Expr.Make(Tag.Label, symbol));
                 }
+                // Use the leading operand syntax to select immediate, relative, indirect or implicit addressing.
                 else if (TryParse(TokenType.NUMBER_SIGN))
                 {
                     AsmOperand operand = ParseAssemblyOperand(AddressMode.Immediate);
@@ -1694,6 +1764,8 @@ Expr ParseDeclaration()
         }
     }
 
+    // Parse each comma-separated declarator from the shared base type, with its own array suffix and initializer.
+    // Normal locals emit declarations plus assignments; local statics emit hidden top-level storage and optional guards.
     Expr ParseRestOfLocalDeclaration(CType type, Expr range, bool isStaticLocal = false)
     {
         // Support comma-separated local declarations, e.g.
@@ -1755,6 +1827,8 @@ Expr ParseDeclaration()
                 if (initStatements != null && initStatements.Count != 0)
                 {
                     // C-like one-time initialization for function-local static variables.
+                    // Guard initialization with a hidden RAM byte and set it after the initializer statements complete.
+                    // The generated test expects this byte to start at zero.
                     string guardName = resolvedName + "__init";
                     if (CurrentFunctionStaticDecls != null)
                         CurrentFunctionStaticDecls.Add(Make(Tag.Static, Make(Tag.Variable, MemoryRegion.Ram, CType.UInt8, guardName)));
@@ -1777,6 +1851,7 @@ Expr ParseDeclaration()
         return MakeSequence(decls);
     }
 
+    // Dispatch to array, aggregate or scalar initializer expansion, allowing array-size inference to replace the type.
     void ParseLocalInitializerInto(ref CType type, Expr target, List<Expr> outStmts)
     {
         if (type != null && type.IsArray)
@@ -1794,12 +1869,15 @@ Expr ParseDeclaration()
         ParseLocalScalarInitializerInto(target, outStmts);
     }
 
+    // Translate the scalar initializer value into one assignment to the chosen target.
     void ParseLocalScalarInitializerInto(Expr target, List<Expr> outStmts)
     {
         Expr value = ParseScalarInitializerValue();
         outStmts.Add(Make(Tag.Assign, target, value));
     }
 
+    // Accept a plain expression or recursively braced scalar; empty braces mean zero and a trailing comma is allowed.
+    // A second initializer value produces a parse error.
     Expr ParseScalarInitializerValue()
     {
         if (!TryParse(TokenType.LBRACE))
@@ -1818,11 +1896,13 @@ Expr ParseDeclaration()
         return value;
     }
 
+    // Allow explicit newline tokens between parts of a readonly aggregate initializer.
     void SkipInitializerNewlines()
     {
         while (TryParse(TokenType.NEWLINE)) { }
     }
 
+    // Preserve nested array and aggregate initializer trees for later ROM-data emission instead of generating assignments.
     Expr ParseReadonlyInitializerValue(ref CType type)
     {
         if (type != null && type.IsArray)
@@ -1838,6 +1918,8 @@ Expr ParseDeclaration()
         return ParseScalarInitializerValue();
     }
 
+    // Collect positional values or an ASCII string with its terminator, inferring an omitted outer dimension.
+    // Keep nested elements as sequences; padding and byte emission are handled outside this parser helper.
     void ParseReadonlyArrayInitializerInto(ref CType arrayType, List<Expr> values, bool requireBraces)
     {
         CType elemType = arrayType.Subtype ?? CType.UInt8;
@@ -1918,11 +2000,14 @@ Expr ParseDeclaration()
         }
     }
 
+    // Store each value at its declared field index, leaving omitted fields as Empty nodes for later emission.
+    // Readonly designators select one direct member; unions accept at most one explicit value.
     Expr ParseReadonlyStructOrUnionInitializerValue(CType aggType)
     {
         if (!TryGetAggregateDecl(aggType, out AggregateDeclInfo info) || info.Fields == null || info.Fields.Length == 0)
             ParserError(ErrorCode.IncompleteType, "initializer requires a complete struct/union type: {0}", aggType.Show());
 
+        // Use a fixed field-indexed shape so designated initializers do not change the aggregate's declaration order.
         Expr[] fieldValues = new Expr[info.Fields.Length];
         for (int i = 0; i < fieldValues.Length; i++) fieldValues[i] = Make(Tag.Empty);
 
@@ -2018,6 +2103,8 @@ Expr ParseDeclaration()
         return MakeSequence(fieldValues);
     }
 
+    // Collect explicit element assignments while inferring an omitted outer dimension.
+    // For a known length, emit recursive zero initialization before applying those assignments in source order.
     void ParseLocalArrayInitializerInto(ref CType arrayType, Expr target, List<Expr> outStmts)
     {
         CType elemType = arrayType.Subtype ?? CType.UInt8;
@@ -2106,6 +2193,8 @@ Expr ParseDeclaration()
         outStmts.AddRange(explicitInits);
     }
 
+    // Collect positional or dotted field assignments, then prepend initialization of unspecified storage.
+    // A union accepts one explicit initializer; its zero-initialization path visits only the first declared member.
     void ParseLocalStructOrUnionInitializerInto(CType aggType, Expr target, List<Expr> outStmts)
     {
         if (!TryGetAggregateDecl(aggType, out AggregateDeclInfo info) || info.Fields == null || info.Fields.Length == 0)
@@ -2175,6 +2264,7 @@ Expr ParseDeclaration()
         }
         else
         {
+            // Treat an unbraced name followed by a call as a whole-aggregate initializer; skip member-by-member zeroing.
             if (PeekToken().Tag == TokenType.NAME && PeekToken(1).Tag == TokenType.LPAREN)
             {
                 Expr value = ParseExpr();
@@ -2207,7 +2297,7 @@ Expr ParseDeclaration()
             else nextField = Math.Max(nextField, topFieldIndex + 1);
         }
 
-        // C aggregate initializer semantics: unspecified members are zero-initialized.
+        // Zero all struct fields, or only the first union member, before applying explicit assignments.
         if (info.IsUnion)
         {
             if (info.Fields.Length > 0)
@@ -2228,6 +2318,8 @@ Expr ParseDeclaration()
         outStmts.AddRange(explicitInits);
     }
 
+    // Resolve a dotted member path to a typed lvalue and consume its equals sign.
+    // Return the outer field index so the next positional initializer can advance past that field.
     void ParseDesignatedFieldPath(CType rootType, Expr rootTarget, out Expr dst, out CType dstType, out int topFieldIndex)
     {
         if (!TryGetAggregateDecl(rootType, out AggregateDeclInfo info) || info.Fields == null || info.Fields.Length == 0)
@@ -2256,6 +2348,8 @@ Expr ParseDeclaration()
         Expect(TokenType.EQUAL);
     }
 
+    // Recursively emit zero assignments for known array elements and struct fields; visit only a union's first member.
+    // An array whose length is not a literal here produces no assignments in this helper.
     void AppendZeroInitializerForType(CType type, Expr target, List<Expr> outStmts)
     {
         if (type == null)
@@ -2299,6 +2393,8 @@ Expr ParseDeclaration()
         outStmts.Add(Make(Tag.Assign, target, Make(Tag.Integer, 0)));
     }
 
+    // Return a stored or literal dimension without evaluating arbitrary expressions.
+    // Only a missing/empty dimension expression sets isUnsized; other unknown dimensions also return -1.
     int GetDeclaredArrayLength(CType arrayType, out bool isUnsized)
     {
         isUnsized = false;
@@ -2317,6 +2413,7 @@ Expr ParseDeclaration()
         return -1;
     }
 
+    // Replace an inferred array dimension while preserving the outer type's qualifiers and layout annotations.
     CType BuildArrayTypeWithDimension(CType src, int dim)
     {
         CType t = CType.MakeArray(src.Subtype ?? CType.UInt8, dim);
@@ -2330,6 +2427,7 @@ Expr ParseDeclaration()
         return t;
     }
 
+    // Record aggregate fields and layout annotations for later lookup; this GB registry does not compute byte offsets.
     void RegisterAggregateDecl(string name, bool isUnion, FieldInfo[] fields, bool isPacked, int forcedAlign)
     {
         if (string.IsNullOrEmpty(name)) return;
@@ -2342,6 +2440,7 @@ Expr ParseDeclaration()
         };
     }
 
+    // Find the registered field description by aggregate tag name; reject non-aggregate or unnamed types.
     bool TryGetAggregateDecl(CType type, out AggregateDeclInfo info)
     {
         if (type == null || !type.IsStructOrUnion || string.IsNullOrEmpty(type.Name))
@@ -2352,6 +2451,7 @@ Expr ParseDeclaration()
         return AggregateDecls.TryGetValue(type.Name, out info);
     }
 
+    // Find the first exactly matching field name and return its declaration-order index.
     bool TryFindField(FieldInfo[] fields, string name, out FieldInfo field, out int index)
     {
         for (int i = 0; i < fields.Length; i++)
@@ -2368,12 +2468,15 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Parse an integer or symbol with an optional + integer addend, plus an optional low/high-byte modifier.
+    // This operand grammar does not parse general arithmetic expressions.
     AsmOperand ParseAssemblyOperand(AddressMode mode)
     {
         ImmediateModifier modifier = ImmediateModifier.None;
         if (TryParse(TokenType.LESS_THAN)) modifier = ImmediateModifier.LowByte;
         else if (TryParse(TokenType.GREATER_THAN)) modifier = ImmediateModifier.HighByte;
 
+        // Permit brackets around an absolute operand and require the matching closing bracket after its value.
         bool bracketedAbsolute = false;
         if (mode == AddressMode.Absolute && TryParse(TokenType.LBRACKET))
         {
@@ -2410,11 +2513,14 @@ Expr ParseDeclaration()
         return operand;
     }
 
+    // Report a statement form that cannot serve as this parser's for-loop initializer.
     void Error_NotAllowedInFor()
     {
         ParserError("complex statements are not allowed in for initializers");
     }
 
+    // Give braced statements a local-name scope, restore it even after errors, and recover at statement boundaries.
+    // An unbraced body parses one statement without pushing an extra scope.
     Expr ParseStatementBlock()
     {
         // A block can be a single statement, or a series of statements surrounded by braces:
@@ -2449,18 +2555,21 @@ Expr ParseDeclaration()
         }
     }
 
+    // Enter the expression precedence chain; commas remain delimiters for the surrounding declaration or call.
     Expr ParseExpr()
     {
         return ParseCommaExpr();
     }
 
-    // ,
+    // Commas are separators in this grammar; no comma-operator node is parsed here.
     Expr ParseCommaExpr()
     {
         return ParseAssignExpr();
     }
 
     // = *= /= %= += -= <<= >>= &= ^= |=
+    // Recurse at the same precedence on the right so chained assignments associate right-to-left.
+    // Keep compound assignment distinct so later lowering can handle its read/modify/write behavior.
     Expr ParseAssignExpr()
     {
         Dictionary<TokenType, string> modifyAssignOperators = new Dictionary<TokenType, string>
@@ -2495,6 +2604,7 @@ Expr ParseDeclaration()
     }
 
     // ? :
+    // Parse the true arm as an expression and the false arm recursively, making nested conditionals right-associative.
     Expr ParseConditionalExpr()
     {
         Expr e = ParseLogicalOrExpr();
@@ -2509,6 +2619,7 @@ Expr ParseDeclaration()
     }
 
     // ||
+    // Build a left-associated logical-OR tree; this parser records both operands without executing them.
     Expr ParseLogicalOrExpr()
     {
         Expr e = ParseLogicalAndExpr();
@@ -2521,6 +2632,7 @@ Expr ParseDeclaration()
     }
 
     // &&
+    // Build a left-associated logical-AND tree, leaving short-circuit execution to subsequent compiler phases.
     Expr ParseLogicalAndExpr()
     {
         Expr e = ParseBitwiseOrExpr();
@@ -2533,6 +2645,7 @@ Expr ParseDeclaration()
     }
 
     // |
+    // Fold bitwise OR left-to-right over the more tightly binding XOR expressions.
     Expr ParseBitwiseOrExpr()
     {
         Expr e = ParseBitwiseXorExpr();
@@ -2545,6 +2658,7 @@ Expr ParseDeclaration()
     }
 
     // ^
+    // Fold bitwise XOR left-to-right over the more tightly binding AND expressions.
     Expr ParseBitwiseXorExpr()
     {
         Expr e = ParseBitwiseAndExpr();
@@ -2557,6 +2671,7 @@ Expr ParseDeclaration()
     }
 
     // &
+    // Fold bitwise AND left-to-right over equality expressions, preserving the C precedence ordering.
     Expr ParseBitwiseAndExpr()
     {
         Expr e = ParseEqualityExpr();
@@ -2569,6 +2684,7 @@ Expr ParseDeclaration()
     }
 
     // == !=
+    // Parse equality and inequality at one left-associative precedence level.
     Expr ParseEqualityExpr()
     {
         Dictionary<TokenType, string> operators = new Dictionary<TokenType, string>
@@ -2581,6 +2697,7 @@ Expr ParseDeclaration()
     }
 
     // < > <= >=
+    // Parse relational comparisons below shifts and above equality.
     Expr ParseCompareExpr()
     {
         Dictionary<TokenType, string> operators = new Dictionary<TokenType, string>
@@ -2595,6 +2712,7 @@ Expr ParseDeclaration()
     }
 
     // << >>
+    // Parse left/right shifts below addition; signedness and target-width behavior are decided later.
     Expr ParseShiftExpr()
     {
         Dictionary<TokenType, string> operators = new Dictionary<TokenType, string>
@@ -2607,6 +2725,7 @@ Expr ParseDeclaration()
     }
 
     // + -
+    // Parse addition and subtraction left-to-right over multiplicative operands.
     Expr ParseAddExpr()
     {
         Dictionary<TokenType, string> operators = new Dictionary<TokenType, string>
@@ -2619,6 +2738,7 @@ Expr ParseDeclaration()
     }
 
     // * / %
+    // Parse multiplication, division and remainder left-to-right over unary operands.
     Expr ParseMultiplyExpr()
     {
         Dictionary<TokenType, string> operators = new Dictionary<TokenType, string>
@@ -2632,6 +2752,8 @@ Expr ParseDeclaration()
     }
 
     // Unary prefix operators
+    // Recognize sizeof/offsetof and the supported recursive unary operators.
+    // Unary plus/minus are accepted only as signs on integer literals by the primary-expression helper.
     Expr ParseUnaryPrefixExpr()
     {
         // offsetof(type, member)
@@ -2726,6 +2848,8 @@ Expr ParseDeclaration()
     }
 
     // Suffix operators
+    // Repeatedly attach calls, field selection, indexing and postfix updates to the preceding expression.
+    // An arrow becomes field selection on an explicit dereference node.
     Expr ParseSuffixExpr()
     {
         Expr e = ParsePrimaryExpr();
@@ -2783,6 +2907,8 @@ Expr ParseDeclaration()
     }
 
     // "Primary" expressions
+    // Parse literals, resolved names, casts or parenthesized expressions.
+    // A successful type probe after an opening parenthesis selects the cast grammar.
     Expr ParsePrimaryExpr()
     {
         int n;
@@ -2851,6 +2977,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Fold one precedence level left-to-right, delegating each operand to the next tighter parser.
     Expr ParseInfixOperators(Func<Expr> parseSubexpression, Dictionary<TokenType, string> operators)
     {
         Expr e = parseSubexpression();
@@ -2864,11 +2991,13 @@ Expr ParseDeclaration()
         return e;
     }
 
+    // Read the current token without consuming it; the input retains a terminal EOF token.
     Token PeekToken()
     {
         return Input[0];
     }
 
+    // Clamp backward lookahead to the current token and forward lookahead to the terminal token.
     Token PeekToken(int offset)
     {
         int idx = offset;
@@ -2955,6 +3084,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Consume exactly one matching token; leave input unchanged on a mismatch.
     bool TryParse(TokenType expected)
     {
         Token token = PeekToken();
@@ -2969,6 +3099,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Require a token kind and include the actual token in a recoverable parse diagnostic.
     void Expect(TokenType expected)
     {
         if (!TryParse(expected))
@@ -3011,6 +3142,7 @@ Expr ParseDeclaration()
 
     }
 
+    // Consume a pre-tokenized ROM-bank directive; its value is applied by the declaration parser.
     bool TryParsePragmaBank(out int bank)
     {
         bank = 0;
@@ -3023,6 +3155,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Consume a pre-tokenized fixed-bank directive without interpreting placement here.
     bool TryParsePragmaFixedBank(out int bank)
     {
         bank = 0;
@@ -3035,6 +3168,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Read the fixed-order placement value from its directive token.
     bool TryParsePragmaFixedOrder(out int order)
     {
         order = 0;
@@ -3047,6 +3181,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Map a directive payload to the supported memory regions; unrecognized tags fall back to ordinary RAM.
     bool TryParsePragmaRegion(out MemoryRegion region)
     {
         region = MemoryRegion.Ram;
@@ -3066,6 +3201,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Read the WRAMX-bank directive payload; range validation is a separate step.
     bool TryParsePragmaWramXBank(out int bank)
     {
         bank = 0;
@@ -3078,6 +3214,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Read the alignment directive payload without validating it in this token helper.
     bool TryParsePragmaAlign(out int align)
     {
         align = 0;
@@ -3090,6 +3227,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Consume the section name carried by a directive token.
     bool TryParsePragmaSection(out string name)
     {
         name = null;
@@ -3102,6 +3240,7 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Fill an unspecified WRAMX bank from a valid current pragma, preserving any explicitly selected bank.
     MemoryRegion ApplyPragmaWramXBank(MemoryRegion region)
     {
         if (region.Tag == MemoryRegionTag.WramX && region.WramBank == 0 && CurrentPragmaWramXBank >= 1 && CurrentPragmaWramXBank <= 7)
@@ -3109,6 +3248,7 @@ Expr ParseDeclaration()
         return region;
     }
 
+    // Require a switchable WRAM bank in the inclusive range 1..7 and report the declaration context on error.
     bool ValidateWramXBankLiteral(int bank, string context)
     {
         if (bank < 1 || bank > 7)
@@ -3119,6 +3259,7 @@ Expr ParseDeclaration()
         return true;
     }
 
+    // Require an integer literal, including the signed-literal form accepted by TryParseInt.
     int ExpectInt()
     {
         int n;
@@ -3126,6 +3267,7 @@ Expr ParseDeclaration()
         return n;
     }
 
+    // Consume one string token and return its decoded contents; adjacent strings are not joined here.
     bool TryParseString(out string s)
     {
         Token token = PeekToken();
@@ -3142,6 +3284,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Consume any NAME token; keyword-specific callers impose their own spelling checks.
     bool TryParseAnyName(out string name)
     {
         Token token = PeekToken();
@@ -3158,6 +3301,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Require an identifier token and issue a recoverable diagnostic if it is absent.
     string ExpectAnyName()
     {
         string name;
@@ -3165,6 +3309,7 @@ Expr ParseDeclaration()
         return name;
     }
 
+    // Consume a NAME token only when its spelling matches exactly.
     bool TryParseName(string name)
     {
         Token token = PeekToken();
@@ -3179,6 +3324,7 @@ Expr ParseDeclaration()
         }
     }
 
+    // Require the requested keyword spelling and report the actual token on failure.
     void ExpectKeyword(string name)
     {
         if (!TryParseName(name))
@@ -3188,6 +3334,8 @@ Expr ParseDeclaration()
         }
     }
 
+    // Parse a base type or typedef followed by qualified pointer levels.
+    // This is a consuming probe: leading annotations may already be consumed when no base type is found.
     bool TryParseType(out CType type)
     {
         // C qualifier (subset): 'const' can appear before or after the base type, and
@@ -3500,6 +3648,7 @@ Expr ParseDeclaration()
         return true;
     }
 
+    // Turn an unsuccessful type probe into an expected-type diagnostic.
     CType ExpectType()
     {
         CType type;
@@ -3523,6 +3672,7 @@ Expr ParseDeclaration()
         throw new RecoverableParseException();
     }
 
+    // Expose only the outer statement sequence for case validation; do not flatten nested blocks.
     Expr[] UnwrapSwitchBodyStatements(Expr body)
     {
         if (body == null || body.Match(Tag.Empty)) return Array.Empty<Expr>();
@@ -3531,6 +3681,8 @@ Expr ParseDeclaration()
         return new[] { body };
     }
 
+    // Recognize explicit exits, a sequence's final statement, or an if chain with a terminating final else.
+    // This syntax-based check does not attempt general reachability or loop analysis.
     bool IsSwitchTerminatingStatement(Expr stmt)
     {
         if (stmt == null || stmt.Match(Tag.Empty)) return false;
@@ -3571,6 +3723,8 @@ Expr ParseDeclaration()
         return false;
     }
 
+    // Check outer case statements for explicit fallthrough placement and warn about implicit transitions.
+    // The separately stored default body is treated as the final target, and an empty body supplies no target here.
     void ValidateSwitchFallthrough(List<Expr> cases, Expr defaultBody)
     {
         bool hasDefault = defaultBody != null && !defaultBody.Match(Tag.Empty);
@@ -3632,6 +3786,8 @@ Expr ParseDeclaration()
     }
 
     // Switch statement parser.
+    // Collect case bodies and a separate default body while tracking switch nesting for fallthrough statements.
+    // Recover inside each body at a statement or case boundary, then validate the assembled case list.
     Expr ParseSwitch()
     {
         Expect(TokenType.LPAREN);

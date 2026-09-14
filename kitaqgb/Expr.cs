@@ -12,12 +12,15 @@ class Expr
     private readonly object[] Args;
     public readonly FilePosition Source = FilePosition.Unknown;
 
+    // Share an existing argument array while replacing its source position; this constructor skips tuple validation.
     Expr(object[] args, FilePosition source)
     {
         Args = args;
         Source = source;
     }
 
+    // Check allowed non-null tuple element types and retain the supplied array.
+    // This does not enforce a tag string at index zero or validate each tag's argument shape.
     Expr(object[] args)
     {
         foreach (object arg in args)
@@ -33,32 +36,40 @@ class Expr
         Args = args;
     }
 
+    // Construct a validated-element tuple without cloning the argument array.
     public static Expr Make(params object[] args) => new Expr(args);
 
+    // Create an assembly tuple with the shared implicit operand.
     public static Expr MakeAsm(string mnemonic) => MakeAsm(mnemonic, AsmOperand.Implicit);
 
+    // Store an assembly tag, mnemonic and operand for later lowering/assembly.
     public static Expr MakeAsm(string mnemonic, AsmOperand operand)
     {
         return Make(global::Tag.Asm, mnemonic, operand);
     }
 
+    // Return a new node sharing all arguments, with a different source coordinate.
     public Expr WithSource(FilePosition newSource)
     {
         return new Expr(Args, newSource);
     }
 
+    // Read the assumed first string element; malformed or empty tuples throw rather than returning no tag.
     public string GetTag() => (string)Args[0];
 
     // Convenience accessor used by newer lowering/codegen paths.
     public string Tag => (string)Args[0];
 
+    // Expose the backing argument array directly; callers can mutate shared nodes through this reference.
     public object[] GetArgs() => Args;
 
+    // Compare the assumed first string element only, without enforcing an argument count.
     public bool MatchTag(string tag)
     {
         return (string)Args[0] == tag;
     }
 
+    // Accept any tuple beginning with a string and return that tag; extra arguments are allowed.
     public bool MatchAnyTag(out string tag)
     {
         if (Args.Length >= 1 && Args[0] is string)
@@ -73,6 +84,7 @@ class Expr
         }
     }
 
+    // Match exactly one typed argument after any string tag; reset outputs on failure.
     public bool MatchAnyTag<T1>(out string tag, out T1 var1)
     {
         if (Args.Length == 2 &&
@@ -89,6 +101,7 @@ class Expr
         return false;
     }
 
+    // Match exactly two typed arguments after any string tag; reset outputs on failure.
     public bool MatchAnyTag<T1, T2>(out string tag, out T1 var1, out T2 var2)
     {
         if (Args.Length == 3 &&
@@ -108,6 +121,7 @@ class Expr
         return false;
     }
 
+    // Match a tag-only tuple with no payload.
     public bool Match(string tag)
     {
         if (Args.Length == 1 &&
@@ -119,6 +133,7 @@ class Expr
         return false;
     }
 
+    // Match a single typed element without requiring a string tag.
     public bool Match<T0>(out T0 var0)
     {
         if (Args.Length == 1 &&
@@ -132,6 +147,7 @@ class Expr
         return false;
     }
 
+    // Match the exact tag and one typed payload, resetting the output on mismatch.
     public bool Match<T1>(string tag, out T1 var1)
     {
         if (Args.Length == 2 &&
@@ -146,6 +162,7 @@ class Expr
         return false;
     }
 
+    // Match the exact tag and two typed payloads, resetting outputs on mismatch.
     public bool Match<T1, T2>(string tag, out T1 var1, out T2 var2)
     {
         if (Args.Length == 3 &&
@@ -163,6 +180,7 @@ class Expr
         return false;
     }
 
+    // Match the exact tag and three typed payloads, resetting outputs on mismatch.
     public bool Match<T1, T2, T3>(string tag, out T1 var1, out T2 var2, out T3 var3)
     {
         if (Args.Length == 4 &&
@@ -183,6 +201,7 @@ class Expr
         return false;
     }
 
+    // Match the exact tag and four typed payloads, resetting outputs on mismatch.
     public bool Match<T1, T2, T3, T4>(string tag, out T1 var1, out T2 var2, out T3 var3, out T4 var4)
     {
         if (Args.Length == 5 &&
@@ -206,6 +225,7 @@ class Expr
         return false;
     }
 
+    // Match the exact tag and five typed payloads, resetting outputs on mismatch.
     public bool Match<T1, T2, T3, T4, T5>(string tag, out T1 var1, out T2 var2, out T3 var3, out T4 var4, out T5 var5)
     {
         if (Args.Length == 6 &&
@@ -231,6 +251,7 @@ class Expr
         var5 = default(T5);
         return false;
     }
+    // Match a tag followed by zero or more uniform typed elements; return a new payload array.
     public bool MatchAny<T>(string tag, out T[] vars)
     {
         if (Args.Length >= 1 &&
@@ -245,6 +266,7 @@ class Expr
         return false;
     }
 
+    // Match a tag and one leading value plus zero or more uniform trailing values.
     public bool MatchAny<T1, T2>(string tag, out T1 var1, out T2[] vars)
     {
         if (Args.Length >= 2 &&
@@ -262,6 +284,7 @@ class Expr
         return false;
     }
 
+    // Return any string tag and a new array of its uniformly typed payload, including an empty payload.
     public bool MatchAny<T>(out string tag, out T[] vars)
     {
         if (Args.Length >= 1 &&
@@ -278,6 +301,7 @@ class Expr
         return false;
     }
 
+    // Render a compact diagnostic tuple rather than executable source code.
     public string Show() => ShowWithOptions(false);
 
     
@@ -324,8 +348,10 @@ class Expr
         }
         return false;
     }
+// Allow indentation for compound tuple trees; small nodes remain on one line.
 public string ShowMultiline() => ShowWithOptions(true);
 
+    // Convert tuple values to a display tree, then choose compact or multiline formatting.
     string ShowWithOptions(bool multiline)
     {
         return ShowStringTree(multiline, ToStringTree());
@@ -358,6 +384,7 @@ public string ShowMultiline() => ShowWithOptions(true);
             {
                 tree[i] = "{ " + string.Join(", ", ints.Select(FormatInt)) + " }";
             }
+            // This diagnostic byte list prefixes only separators with 0x; it is not a canonical source initializer.
             else if (bytes != null)
             {
                 tree[i] = "{ " + string.Join(", 0x", bytes.Select(x => x.ToString("X2"))) + " }";
@@ -399,6 +426,7 @@ public string ShowMultiline() => ShowWithOptions(true);
         return tree;
     }
 
+    // Display values below 128 in decimal, including negatives; larger values use dollar-prefixed hex.
     static string FormatInt(int n) => (n < 128) ? n.ToString() : "$" + n.ToString("X");
 
     // Format a "string tree" into a multi-line, indented string.

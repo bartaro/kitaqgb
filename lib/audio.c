@@ -110,6 +110,8 @@ void Audio_ReleaseCh1AfterSfx();
 void __stackcall Audio_Ch2NoteOn(u8 note, u8 vol_env, u8 duty2);
 
 #pragma fixed_bank 0
+// Clamp the note index, program the raw NR32 output level, and trigger CH3.
+// Wave RAM must already contain the desired waveform; this does not load one.
 void __stackcall Audio_Ch3NoteOn(u8 note, u8 level) {
     u16 freq;
     u8 hi;
@@ -125,6 +127,8 @@ void __stackcall Audio_Ch3NoteOn(u8 note, u8 level) {
     NR34 = (u8)(hi | 128);
 }
 
+// Trigger CH1 with the cached sweep and the supplied raw envelope. Clamp the
+// note index; duty values 0, 1 and 3 select their encodings, and all others use 2.
 void __stackcall Audio_Ch1NoteOn(u8 note, u8 vol_env, u8 duty2) {
     u16 freq;
     u8 duty_reg;
@@ -146,6 +150,9 @@ void __stackcall Audio_Ch1NoteOn(u8 note, u8 vol_env, u8 duty2) {
     NR14 = (u8)(hi | 0x80);
 }
 
+// Consume one note/value pair from each active effect stream per call; note zero
+// ends that stream. Switch banks only while reading, then restore the caller bank
+// before touching the channel or requesting music recovery.
 void Audio_ServiceSfx() {
     u8 __saved_bank;
     u8 n;
@@ -210,6 +217,7 @@ void Audio_ServiceSfx() {
     }
 }
 
+// Fill the custom-wave cache with 32 packed triangle samples without writing wave RAM.
 void Audio_SetCustomWaveTriangle() {
     Audio_CustomWave[0] = 0x01; Audio_CustomWave[1] = 0x23;
     Audio_CustomWave[2] = 0x45; Audio_CustomWave[3] = 0x67;
@@ -221,6 +229,8 @@ void Audio_SetCustomWaveTriangle() {
     Audio_CustomWave[14] = 0x32; Audio_CustomWave[15] = 0x10;
 }
 
+// Copy 16 readable bytes into wave RAM with the CH3 DAC disabled, then enable
+// the DAC. This neither triggers a note nor preserves a previously disabled DAC.
 void Audio_ApplyWaveBytes(const u8 *wave16) {
     NR30 = 0;
     WAVE0 = wave16[0];   WAVE1 = wave16[1];   WAVE2 = wave16[2];   WAVE3 = wave16[3];
@@ -231,11 +241,13 @@ void Audio_ApplyWaveBytes(const u8 *wave16) {
 }
 
 #ifndef AUDIO_EXCLUDE_WAVE_LOAD_API
+// Reset the custom cache to the triangle preset and immediately install it in wave RAM.
 void Audio_LoadWave0() {
     Audio_SetCustomWaveTriangle();
     Audio_ApplyWaveBytes(Audio_CustomWave);
 }
 
+// Install the saw preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave1() {
     NR30 = 0;
     WAVE0  = 0x11; WAVE1  = 0x22; WAVE2  = 0x33; WAVE3  = 0x44;
@@ -245,6 +257,7 @@ void Audio_LoadWave1() {
     NR30 = 128;
 }
 
+// Install the vowel A preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave2() {
     NR30 = 0;
     WAVE0 = 0x86; WAVE1 = 0x42; WAVE2 = 0x10; WAVE3 = 0x01;
@@ -254,6 +267,7 @@ void Audio_LoadWave2() {
     NR30 = 128;
 }
 
+// Install the vowel I preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave3() {
     NR30 = 0;
     WAVE0 = 0x01; WAVE1 = 0x23; WAVE2 = 0x45; WAVE3 = 0x67;
@@ -263,6 +277,7 @@ void Audio_LoadWave3() {
     NR30 = 128;
 }
 
+// Install the vowel U preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave4() {
     NR30 = 0;
     WAVE0 = 0x78; WAVE1 = 0x9A; WAVE2 = 0xB9; WAVE3 = 0x87;
@@ -272,6 +287,7 @@ void Audio_LoadWave4() {
     NR30 = 128;
 }
 
+// Install the vowel E preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave5() {
     NR30 = 0;
     WAVE0 = 0x8A; WAVE1 = 0xCF; WAVE2 = 0xD9; WAVE3 = 0x84;
@@ -281,6 +297,7 @@ void Audio_LoadWave5() {
     NR30 = 128;
 }
 
+// Install the vowel O preset with the CH3 DAC disabled during writes, then enable the DAC.
 void Audio_LoadWave6() {
     NR30 = 0;
     WAVE0 = 0x45; WAVE1 = 0x67; WAVE2 = 0x89; WAVE3 = 0x98;
@@ -291,30 +308,39 @@ void Audio_LoadWave6() {
 }
 #endif
 
+// Silence the physical CH1 envelope without changing music or effect stream state.
 void Audio_SilenceCh1() {
     NR12 = 0;
     NR14 = 0x80;
 }
 
+// Silence the physical CH2 envelope without changing music or effect stream state.
 void Audio_SilenceCh2() {
     NR22 = 0;
     NR24 = 0x80;
 }
 
+// Mute CH3 and disable its DAC; retain the cached waveform and playback state.
 void Audio_Ch3Off() {
     NR32 = 0;
     NR30 = 0;
 }
 
+// Silence the physical noise envelope without changing playback state.
 void Audio_SilenceCh4() {
     NR42 = 0;
     NR44 = 0x80;
 }
 
+// Combine cached left/right volume encodings and write NR50. Both cache values
+// must already be in the 0..7 range accepted by the lookup tables.
 void Audio_UpdateNR50() {
     NR50 = (u8)(AUDIO_NR50_LEFT_TABLE[Audio_MasterLeft] | AUDIO_NR50_RIGHT_TABLE[Audio_MasterRight]);
 }
 
+// Replace one physical channel's two routing bits in a supplied mix. Unknown
+// channel IDs select CH4; pan values other than center/left/right mute that channel.
+// The caller must handle INHERIT before calling this helper.
 u8 __stackcall Audio_ApplyPanOverride(u8 mix, u8 ch, u8 pan) {
     u8 r_bit;
     u8 l_bit;
@@ -344,6 +370,8 @@ u8 __stackcall Audio_ApplyPanOverride(u8 mix, u8 ch, u8 pan) {
     return mix;
 }
 
+// Overlay active effects' explicit pan settings on the base music mix, then
+// write NR51. The pulse override follows CH2 when the effect has borrowed it.
 void Audio_UpdateNR51() {
     u8 mix = Audio_Pan;
     if (Audio_EffectPointer != 0 && Audio_EffectPan != AUDIO_PAN_INHERIT) {
@@ -358,6 +386,7 @@ void Audio_UpdateNR51() {
     NR51 = mix;
 }
 
+// Silence all four physical channels without clearing stream cursors or enable flags.
 void Audio_SilenceAll() {
     Audio_SilenceCh1();
     Audio_SilenceCh2();
@@ -365,12 +394,15 @@ void Audio_SilenceAll() {
     Audio_Ch3Off();
 }
 
+// Clamp an unsigned master-volume request to the hardware level range 0..7.
 u8 Audio_ClampVolume(u8 value) {
     if (value > AUDIO_VOLUME_MAX) return AUDIO_VOLUME_MAX;
     return value;
 }
 
 #ifndef AUDIO_EXCLUDE_SFX_START_API
+// Read the first byte in the specified bank to detect the CH3 marker, then
+// restore the original bank. A null pointer returns false; no cursor is advanced.
 u8 Audio_SfxStartsOnCh3Banked(u8 bank, u8 *sfx) {
     u8 __saved_bank;
     u8 first;
@@ -387,6 +419,8 @@ u8 Audio_SfxStartsOnCh3Banked(u8 bank, u8 *sfx) {
 }
 #endif
 
+// Retrigger the cached legacy CH1 music note when enabled and resumable;
+// otherwise silence CH1. This helper does not check current effect ownership.
 void Audio_RestoreCh1FromMusic() {
     if (Audio_PlayingMusic != 0 && Audio_MusicEnabled != 0 && (Audio_LastChMask & AUDIO_RESUME_CH1) != 0) {
         Audio_Ch1NoteOn(Audio_LastCh1Note, Audio_Ch1Env, Audio_Ch1Duty);
@@ -395,6 +429,8 @@ void Audio_RestoreCh1FromMusic() {
     }
 }
 
+// With VBlank recovery enabled, defer pulse-channel release to the ISR.
+// The legacy path only silences CH1 when music is stopped; it does not replay a note.
 void Audio_ReleaseCh1AfterSfx() {
 #ifdef AUDIO_VBLANK_SFX_RESTORE
     AudioVBlank_RequestRestoreCh1();
@@ -403,6 +439,8 @@ void Audio_ReleaseCh1AfterSfx() {
 #endif
 }
 
+// Request deferred VBlank wave-channel recovery when configured; otherwise
+// turn CH3 off. The legacy path does not retrigger a cached music note.
 void Audio_RestoreCh3FromMusic() {
 #ifdef AUDIO_VBLANK_SFX_RESTORE
     AudioVBlank_RequestRestoreCh3();
@@ -411,6 +449,8 @@ void Audio_RestoreCh3FromMusic() {
 #endif
 }
 
+// Clear the resume bit using STREAM channel IDs (CH1, CH2, CH4, CH3).
+// Silence CH1/CH3 only if their effect stream is absent; CH2/CH4 are silenced directly.
 void __stackcall Audio_StopMusicChannelOnly(u8 ch) {
     if (ch == AUDIO_STREAM_CHANNEL_CH1) {
         Audio_LastChMask = (u8)(Audio_LastChMask & (u8)~AUDIO_RESUME_CH1);
@@ -427,6 +467,8 @@ void __stackcall Audio_StopMusicChannelOnly(u8 ch) {
     }
 }
 
+// Count service calls and move each master level by one step toward its target.
+// Reload the interval until both targets are reached; this also runs while paused.
 void Audio_UpdateFade() {
     if (Audio_FadeActive == 0) return;
 
@@ -451,11 +493,15 @@ void Audio_UpdateFade() {
     }
 }
 
+// Set the music-processing gate. This does not silence notes already playing
+// or stop the legacy stream cursor from consuming commands.
 void __stackcall Audio_SetMusicEnabled(u8 on) {
     if (on != 0) Audio_MusicEnabled = 1;
     else Audio_MusicEnabled = 0;
 }
 
+// Enable effect note writes, or disable them and release both effect streams.
+// Disabling follows Audio_StopSfx recovery rules rather than silencing all channels.
 void __stackcall Audio_SetSfxEnabled(u8 on) {
     if (on != 0) {
         Audio_SfxEnabled = 1;
@@ -465,6 +511,7 @@ void __stackcall Audio_SetSfxEnabled(u8 on) {
     }
 }
 
+// Clamp both output levels to 0..7, cancel any fade, and write NR50 immediately.
 void __stackcall Audio_SetMasterVolume(u8 left, u8 right) {
     Audio_MasterLeft = Audio_ClampVolume(left);
     Audio_MasterRight = Audio_ClampVolume(right);
@@ -476,6 +523,8 @@ void __stackcall Audio_SetMasterVolume(u8 left, u8 right) {
     Audio_UpdateNR50();
 }
 
+// Move left/right volume toward clamped targets at the requested Audio_Update
+// call interval. An interval of zero applies the levels immediately.
 void __stackcall Audio_FadeToMasterVolume(u8 left, u8 right, u8 step_frames) {
     Audio_FadeTargetLeft = Audio_ClampVolume(left);
     Audio_FadeTargetRight = Audio_ClampVolume(right);
@@ -495,6 +544,7 @@ void __stackcall Audio_FadeToMasterVolume(u8 left, u8 right, u8 step_frames) {
     }
 }
 
+// Cancel further volume steps, retaining the current cached levels and hardware output.
 void Audio_CancelMasterVolumeFade() {
     Audio_FadeTargetLeft = Audio_MasterLeft;
     Audio_FadeTargetRight = Audio_MasterRight;
@@ -503,6 +553,8 @@ void Audio_CancelMasterVolumeFade() {
     Audio_FadeActive = 0;
 }
 
+// Update the base pan for a physical channel and reapply active effect overrides.
+// Unknown channel IDs select CH4; unsupported pan values mute the selected channel.
 void __stackcall Audio_SetPan(u8 ch, u8 pan) {
     u8 r_bit;
     u8 l_bit;
@@ -532,6 +584,8 @@ void __stackcall Audio_SetPan(u8 ch, u8 pan) {
     Audio_UpdateNR51();
 }
 
+// Decode two bits per physical channel, from CH1 in the low pair to CH4 in the
+// high pair, and apply the complete base mix with one effect-aware NR51 update.
 void __stackcall Audio_SetPanPacked(u8 packed) {
     u8 mix = 0;
     u8 pan = (u8)(packed & 3);
@@ -555,6 +609,8 @@ void __stackcall Audio_SetPanPacked(u8 packed) {
 }
 
 #ifndef AUDIO_EXCLUDE_WAVE_LOAD_API
+// Copy 16 packed sample bytes into the persistent custom cache and wave RAM.
+// A null pointer is ignored; the source is needed only for this call.
 void __stackcall Audio_LoadCustomWave(const u8 *wave16) {
     if (wave16 == 0) return;
 
@@ -570,6 +626,8 @@ void __stackcall Audio_LoadCustomWave(const u8 *wave16) {
     Audio_ApplyWaveBytes(Audio_CustomWave);
 }
 
+// Install a named preset or the cached custom wave. Unknown IDs are ignored.
+// This does not update Audio_Ch3Wave or trigger a new note.
 void __stackcall Audio_LoadWave(u8 wave_id) {
     if (wave_id == AUDIO_WAVE_TRIANGLE) Audio_LoadWave0();
     else if (wave_id == AUDIO_WAVE_SAW) Audio_LoadWave1();
@@ -582,23 +640,29 @@ void __stackcall Audio_LoadWave(u8 wave_id) {
 }
 #endif
 
+// Cache the low two duty bits for the next CH1 note; do not change the active register.
 void __stackcall Audio_SetCh1Duty(u8 duty) {
     Audio_Ch1Duty = (u8)(duty & 3);
 }
 
+// Cache the low two duty bits for the next CH2 note; do not change the active register.
 void __stackcall Audio_SetCh2Duty(u8 duty) {
     Audio_Ch2Duty = (u8)(duty & 3);
 }
 
+// Cache the raw NR32 level encoding for the next CH3 note without writing hardware.
 void __stackcall Audio_SetCh3Level(u8 level) {
     Audio_Ch3Level = level;
 }
 
+// Cache the raw noise polynomial encoding for the next CH4 note without writing hardware.
 void __stackcall Audio_SetCh4Param(u8 param) {
     Audio_Ch4Param = param;
 }
 
 #ifndef AUDIO_EXCLUDE_CH2_CH4_NOTE_API
+// Trigger CH2 with the supplied raw envelope and a clamped note index. Duty
+// values 0, 1 and 3 select their encodings; all other values use duty 2.
 void __stackcall Audio_Ch2NoteOn(u8 note, u8 vol_env, u8 duty2) {
     u16 freq;
     u8 duty_reg;
@@ -619,6 +683,8 @@ void __stackcall Audio_Ch2NoteOn(u8 note, u8 vol_env, u8 duty2) {
     NR24 = (u8)(hi | 0x80);
 }
 
+// Cache the supplied noise parameter, program the raw envelope and polynomial
+// registers, then trigger CH4 with the length-enable bit clear.
 void __stackcall Audio_Ch4NoteOn(u8 param, u8 vol_env) {
     Audio_SetCh4Param(param);
     NR41 = 0x20;
@@ -629,6 +695,9 @@ void __stackcall Audio_Ch4NoteOn(u8 param, u8 vol_env) {
 #endif
 
 #ifndef AUDIO_EXCLUDE_LEGACY_MUSIC_SERVICE
+// Interpret the banked legacy stream until WAIT or STOP, restoring the caller
+// bank on exit. There is no length bound: provide a valid stream whose command
+// chain reaches a wait or stop. A stored delay of N skips the next N service calls.
 void Audio_ServiceMusic() {
     u8 __saved_bank;
     u8 inst;
@@ -653,6 +722,8 @@ void Audio_ServiceMusic() {
             aud_cmd = *Audio_MusicPointer;
             Audio_MusicPointer++;
 
+            // Each opcode consumes its own payload. WAIT yields after storing its count;
+            // all other recognized controls may be applied in this same service call.
             if (aud_cmd == AUDIO_CMD_WAIT) {
                 Audio_Delay = *Audio_MusicPointer;
                 Audio_MusicPointer++;
@@ -663,6 +734,8 @@ void Audio_ServiceMusic() {
                 aud_note = *Audio_MusicPointer;
                 Audio_MusicPointer++;
 
+                // Suppress new music note writes while disabled. The stream itself continues
+                // to advance, and instrument/mix control commands below still update state.
                 if (Audio_MusicEnabled != 0) {
                     if (aud_inst == AUDIO_STREAM_CHANNEL_CH1) {
                         if (Audio_EffectPointer == 0) Audio_Ch1NoteOn(aud_note, Audio_Ch1Env, Audio_Ch1Duty);
@@ -771,6 +844,8 @@ void Audio_ServiceMusic() {
 #endif
 
 #pragma fixed_bank 1
+// Advance the master fade first. Unless paused, service both effect streams
+// then the optional legacy music decoder. Call once per frame for frame-based timing.
 void Audio_Update() {
     Audio_UpdateFade();
     if (Audio_Paused != 0) return;
@@ -783,6 +858,9 @@ void Audio_Update() {
 #pragma fixed_bank -1
 
 #pragma fixed_bank 1
+// Enable the APU and reset software streams, instruments, mix and fade state.
+// Load the initial triangle wave, then leave every channel silent. Call at startup
+// before concurrent interrupt-driven audio service can access these shared fields.
 void Audio_Init() {
     NR52 = 0x80;
     NR51 = 0xFF;
@@ -840,6 +918,9 @@ void Audio_Init() {
 #pragma fixed_bank -1
 
 #ifndef AUDIO_EXCLUDE_MUSIC_START_API
+// Retain the bank and song pointer, reset legacy instruments/cursors, and arm
+// playback from the beginning. Supply a valid, persistent song; no bytes are copied
+// and null is not checked. Existing effect streams remain active.
 void __stackcall Audio_PlayMusic(u8 bank, u8 *song) {
     Audio_PlayingMusic = 0;
     Audio_MusicBank = bank;
@@ -866,12 +947,16 @@ void __stackcall Audio_PlayMusic(u8 bank, u8 *song) {
 #endif
 
 #pragma fixed_bank 1
+// Stop legacy music and clear its resume mask, then silence all physical channels.
+// Effect pointers remain active and may produce sound on a later update.
 void Audio_StopMusic() {
     Audio_PlayingMusic = 0;
     Audio_LastChMask = 0;
     Audio_SilenceAll();
 }
 
+// Clear both effect streams and their pan overrides. When not paused, release
+// borrowed channels through the configured legacy or VBlank recovery path.
 void Audio_StopSfx() {
     Audio_EffectPointer = 0;
     Audio_EffectPriority = 0;
@@ -890,6 +975,9 @@ void Audio_StopSfx() {
 #pragma fixed_bank -1
 
 #ifndef AUDIO_EXCLUDE_CHANNEL_PAUSE_API
+// Stop a physical channel and clear its legacy resume bit. CH1 also clears the
+// pulse effect stream; CH3 clears the wave effect stream. This is the legacy
+// channel API and does not clear a VBlank driver's independently latched notes.
 void __stackcall Audio_StopChannel(u8 ch) {
     if (ch == AUDIO_CHANNEL_CH1) {
         Audio_EffectPointer = 0;
@@ -916,6 +1004,9 @@ void __stackcall Audio_StopChannel(u8 ch) {
     }
 }
 
+// On pause entry, silence hardware while retaining cursors. On resume, retrigger
+// eligible legacy CH1, CH2 and CH4 notes; CH3 is not retriggered here. Updates still
+// advance master fades while paused, and effect playback resumes on a later update.
 void __stackcall Audio_SetPaused(u8 on) {
     if (on != 0) {
         if (Audio_Paused == 0) {
@@ -943,6 +1034,10 @@ void __stackcall Audio_SetPaused(u8 on) {
 
 #ifndef AUDIO_EXCLUDE_SFX_START_API
 #pragma fixed_bank 0
+// Retain a banked effect stream if its priority equals or exceeds the current
+// owner's priority, or that slot is empty. A leading CH3 marker selects the wave
+// slot and is skipped; other streams use the pulse slot. Paused requests are ignored.
+// Keep stream storage valid until completion; acceptance does not trigger a note.
 void __stackcall Audio_PlaySFXPannedBanked(u8 bank, u8 *sfx, u8 priority, u8 pan) {
     u8 sfx_pan = pan;
     u8 use_ch3 = 0;
@@ -964,6 +1059,8 @@ void __stackcall Audio_PlaySFXPannedBanked(u8 bank, u8 *sfx, u8 priority, u8 pan
     }
     if (Audio_EffectPointer == 0 || priority >= Audio_EffectPriority) {
 #ifdef AUDIO_VBLANK_SFX_AUTO_CH2
+        // Choose pulse-channel ownership when accepting the effect, so its later
+        // updates and deferred recovery agree on which physical channel was borrowed.
         Audio_EffectUsesCh2 = (u8)(AudioVBlank_MusicPlaying != 0 &&
                                    AudioVBlank_MusicEnabled != 0);
 #else
@@ -977,15 +1074,20 @@ void __stackcall Audio_PlaySFXPannedBanked(u8 bank, u8 *sfx, u8 priority, u8 pan
     }
 }
 
+// Start a banked effect with the channel's base pan, subject to priority arbitration.
 void __stackcall Audio_PlaySFXBanked(u8 bank, u8 *sfx, u8 priority) {
     Audio_PlaySFXPannedBanked(bank, sfx, priority, AUDIO_PAN_INHERIT);
 }
 
 #ifndef AUDIO_EXCLUDE_IMPLICIT_BANK_SFX
+// Capture the currently mapped ROM bank and start an effect with inherited pan.
+// Use the explicit-bank API when the pointer belongs to another bank.
 void __stackcall Audio_PlaySFX(u8 *sfx, u8 priority) {
     Audio_PlaySFXBanked(__rom_bank, sfx, priority);
 }
 
+// Capture the currently mapped ROM bank and request an effect with a pan override.
+// Use the explicit-bank API when the pointer belongs to another bank.
 void __stackcall Audio_PlaySFXPanned(u8 *sfx, u8 priority, u8 pan) {
     Audio_PlaySFXPannedBanked(__rom_bank, sfx, priority, pan);
 }

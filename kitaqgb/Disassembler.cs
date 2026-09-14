@@ -3,12 +3,15 @@ using System;
 using System.IO;
 using System.Text;
 
+// Produce a linear SM83 byte listing in independent 16 KiB bank windows.
+// No code/data discovery, symbol recovery or runtime bank mapping is performed.
 static class Disassembler
 {
     // GB-compatible ROM banks are 16KB.
     const int BankSize = 0x4000;
     static readonly string[] CbRegs = new string[] { "B", "C", "D", "E", "H", "L", "[HL]", "A" };
 
+    // Split the extended opcode into operation group, bit/rotate selector and register index.
     static string DecodeCbMnemonic(byte cbOpcode)
     {
         int group = (cbOpcode >> 6) & 0x03;
@@ -36,6 +39,8 @@ static class Disassembler
         return string.Format("SET {0},{1}", y, r);
     }
 
+    // Read the ROM into memory and stream the listing to dis.s in the configured debug directory.
+    // I/O failures propagate to the caller; existing output is replaced.
     public static void Disassemble(string programPath)
     {
         byte[] rom = File.ReadAllBytes(programPath);
@@ -59,6 +64,7 @@ static class Disassembler
                 int bankStart = bank * BankSize;
                 int bankEnd = Math.Min(bankStart + BankSize, rom.Length);
 
+                // Bank zero starts at CPU address zero; every later file bank is displayed at 0x4000 independently.
                 int cpuBase = (bank == 0) ? 0x0000 : 0x4000;
                 int cpuAddr = cpuBase;
 
@@ -81,6 +87,7 @@ static class Disassembler
 
                     if (opcode == 0xCB)
                     {
+                        // A missing extended opcode is displayed as FF, so the listing can include a padded byte absent from the input.
                         byte cbOpcode = 0xFF;
                         if (off < bankEnd)
                             cbOpcode = rom[off++];
@@ -144,6 +151,8 @@ static class Disassembler
                     }
                     else
                     {
+                        // The current formatter treats every REL entry as PC-relative, including the table's signed SP-offset forms.
+                        // For those forms this display is not a faithful operand; assembly is handled separately.
                         if (format == AsmInfo.REL)
                         {
                             // JR target: PC after instruction (opcode+imm) + rel

@@ -22,6 +22,7 @@
 #define LINK_DMG07_MAX_PLAYERS  ((u8)4)
 #define LINK_DMG07_PACKET_BYTES ((u8)4)
 #define LINK_DMG07_SIZE         ((u8)1)
+// Physical slots here are one-based; do not substitute the zero-based Link4 cooperative slot identifiers.
 #define LINK_DMG07_NO_SLOT      ((u8)0)
 
 // RATE $10 gives the shortest documented packet period for SIZE=1 while
@@ -55,13 +56,18 @@ void LinkDmg07_Poll();
 // Advances saturating frame-based silence and handshake timeout counters.
 void LinkDmg07_TickFrame();
 
+// Return the discovery, start-handshake or transfer phase without polling.
 u8 LinkDmg07_GetPhase();
+// Return the one-based player slot, or LINK_DMG07_NO_SLOT before discovery.
 u8 LinkDmg07_GetLocalSlot();
 
 // Normalized mask: bit 0 is player 1, ..., bit 3 is player 4.
 u8 LinkDmg07_GetConnectedMask();
+// Return the last validated raw adapter status byte.
 u8 LinkDmg07_GetLastStatus();
+// Read the completed-discovery status flag without clearing it.
 u8 LinkDmg07_HasPingStatus();
+// Clear and report the completed-discovery flag; return zero if no new status exists.
 u8 LinkDmg07_ConsumePingStatus();
 
 // Only physical player 1 may request AA AA AA AA.  The bytes are aligned to
@@ -75,6 +81,7 @@ u8 LinkDmg07_RequestTransmission();
 // returns to PING.  A transfer-phase silence timeout schedules the same recovery
 // automatically and preserves the current byte position for clocks that resume.
 u8 LinkDmg07_RequestRestart();
+// Return whether aligned recovery is absent, pending or sending control traffic.
 u8 LinkDmg07_GetRestartState();
 
 // Sets the byte sampled when byte 0 of the next adapter packet is armed.
@@ -85,22 +92,34 @@ void __stackcall LinkDmg07_SetLocalByte(u8 value);
 // The first incoming adapter data packet is discarded.  Thereafter ReadPacket
 // copies four bytes in physical slot order (players 1..4).
 u8 LinkDmg07_IsPipelinePrimed();
+// Inspect the one-packet receive mailbox without consuming it.
 u8 LinkDmg07_HasPacket();
+// Consume the latest four-byte packet. A nonnull destination must hold four
+// bytes; null discards the packet. Packet storage remains after the flag clears.
 u8 __stackcall LinkDmg07_ReadPacket(u8 *dst);
+// Read one cached player byte using a one-based slot. Invalid slots return
+// zero; the function neither requires readiness nor consumes the packet.
 u8 __stackcall LinkDmg07_GetPacketSlot(u8 player_slot);
 
 // SentSequence increments when this console's packet byte is clocked out.
 // PacketSequence labels the returned four-byte packet.  For a valid packet it
 // is one less than SentSequence, making the DMG-07 one-packet delay explicit.
 u8 LinkDmg07_GetSentSequence();
+// Return the modulo-256 sequence associated with the most recently published packet.
 u8 LinkDmg07_GetPacketSequence();
 
 // SilenceFrames is reset by every completed serial byte.  TimeoutCount counts
 // distinct serial-silence or AA/CC/restart handshake timeouts. DisconnectCount counts
 // adapter-silence outages and ping-status membership drops.  All saturate.
 u8 LinkDmg07_GetSilenceFrames();
+// Return the saturating lifetime timeout count, preserved across protocol restarts.
 u8 LinkDmg07_GetTimeoutCount();
+// Return the saturating count of removed-player and previously-seen-adapter timeout events.
 u8 LinkDmg07_GetDisconnectCount();
+// Return the saturating protocol/overflow error count. Timeout and request
+// validation paths use separate counters or latches and do not increment this value.
 u8 LinkDmg07_GetErrorCount();
+// Return the latest error latch without clearing counters or restarting the protocol.
 u8 LinkDmg07_LastError();
+// Clear only the latest error code, preserving counters and protocol state.
 void LinkDmg07_ClearError();

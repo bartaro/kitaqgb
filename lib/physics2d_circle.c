@@ -2,12 +2,15 @@
 
 u16 __mul16x8(u16 a, u8 b);
 
+// Return the signed magnitude; -32768 cannot be represented positively and
+// must be excluded by callers using the result for comparisons.
 s16 kq2dc__abs_s16(s16 v)
 {
     if (v < 0) return (s16)(0 - v);
     return v;
 }
 
+// Clamp one signed component symmetrically. The caller supplies a nonnegative limit.
 s16 kq2dc__clamp_abs(s16 v, s16 limit)
 {
     if (v > limit) return limit;
@@ -15,6 +18,8 @@ s16 kq2dc__clamp_abs(s16 v, s16 limit)
     return v;
 }
 
+// Halve magnitude with rounding away from zero so a nonzero direction
+// component survives reduction. Keep the magnitude below 32767 to avoid +1 overflow.
 s16 kq2dc__halve_keep_sign(s16 v)
 {
     if (v > 0) return (s16)((v + 1) >> 1);
@@ -22,6 +27,8 @@ s16 kq2dc__halve_keep_sign(s16 v)
     return 0;
 }
 
+// Compute floor(sqrt(value)) with a restoring base-four integer algorithm.
+// Consume the remainder in place; no floating point or lookup table is needed.
 u16 kq2dc__isqrt_u16(u16 value)
 {
     u16 result = 0;
@@ -47,6 +54,9 @@ u16 kq2dc__isqrt_u16(u16 value)
     return result;
 }
 
+// Repeatedly halve both components until each magnitude is at most 255,
+// returning the number of reductions. Both writable pointers are required.
+// This component bound alone does not guarantee that x*x + y*y fits u16.
 u8 kq2dc__reduce_vector(s16* x, s16* y)
 {
     u8 shift = 0;
@@ -61,6 +71,8 @@ u8 kq2dc__reduce_vector(s16* x, s16* y)
     return shift;
 }
 
+// Apply repeated ceiling-halves to a positive radius sum, returning zero for
+// a final nonpositive value. The signed +1 intermediates must remain representable.
 u16 kq2dc__scale_down_positive(s16 value, u8 shift)
 {
     s16 v = value;
@@ -75,6 +87,8 @@ u16 kq2dc__scale_down_positive(s16 value, u8 shift)
     return (u16)v;
 }
 
+// Approximate one normal component as 127*num/den and clamp to -127..127.
+// A zero denominator returns zero; numerator products must fit signed 16 bits.
 s8 kq2dc__unit_q1_7(s16 num, u16 den)
 {
     s16 scaled;
@@ -87,6 +101,9 @@ s8 kq2dc__unit_q1_7(s16 num, u16 den)
     return (s8)scaled;
 }
 
+// Encode a positive part/total weight on 0..255, returning zero for invalid
+// nonpositive inputs and 255 for part >= total. Keep part*255 representable
+// in signed 16-bit arithmetic; this helper does not widen the multiplication.
 u8 kq2dc__ratio_q8(s16 part, s16 total)
 {
     s16 ratio;
@@ -100,33 +117,45 @@ u8 kq2dc__ratio_q8(s16 part, s16 total)
     return (u8)ratio;
 }
 
+// Average two byte coefficients using a widened sum, rounding down.
 u8 kq2dc__avg_u8(u8 a, u8 b)
 {
     return (u8)(((u16)a + (u16)b) >> 1);
 }
 
+// Scale the unsigned magnitude by coeff/256 and restore the original sign.
+// The magnitude product is truncated, so coefficient 255 still introduces damping.
 s16 kq2dc__mul_q8(s16 value, u8 coeff_q8)
 {
     if (value < 0) return (s16)(0 - (s16)__mul16x8((u16)(0 - value), coeff_q8));
     return (s16)__mul16x8((u16)value, coeff_q8);
 }
 
+// Use the signed Q1.7 intrinsic: shift the product by eight bits, then double.
+// This approximation discards a fractional bit instead of a direct seven-bit shift.
 s16 kq2dc__mul_q1_7(s16 value, s8 coeff_q1_7)
 {
     return (s16)__smul16x8_q1_7(value, coeff_q1_7);
 }
 
+// Project a two-component vector through the signed Q1.7 dot intrinsic.
+// Each term is quantized before addition; the final sum is not saturated.
 s16 kq2dc__dot_q1_7(s16 x, s16 y, s8 ax, s8 ay)
 {
     return (s16)__sdot2_q1_7(x, y, ax, ay);
 }
 
+// Add a quantized displacement along an encoded axis to two writable
+// components. Inputs must keep the resulting signed 16-bit sums representable.
 void kq2dc__add_along(s16* x, s16* y, s16 amount, s8 ax, s8 ay)
 {
     *x = (s16)(*x + kq2dc__mul_q1_7(amount, ax));
     *y = (s16)(*y + kq2dc__mul_q1_7(amount, ay));
 }
 
+// Clamp a positive-radius body center inside enabled radius-adjusted bounds.
+// Only velocity moving into a wall bounces; tangential velocity is damped then.
+// Bounds must fit the diameter. This helper also moves static bodies when called.
 void kq2dc__resolve_bounds(KQCircleWorld2D* world, KQCircleBody2D* body)
 {
     s16 left;
@@ -183,6 +212,10 @@ void kq2dc__resolve_bounds(KQCircleWorld2D* world, KQCircleBody2D* body)
     }
 }
 
+// For active positive-radius circles, estimate overlap using a reduced
+// integer distance, separate by inverse-mass weights, then apply normal bounce
+// and tangential friction. This is a quantized solver with 16-bit intermediates;
+// the vector reduction is not an overflow guarantee for squared distance or weights.
 void kq2dc__resolve_pair(KQCircleBody2D* a, KQCircleBody2D* b)
 {
     s16 dx;
@@ -235,6 +268,8 @@ void kq2dc__resolve_pair(KQCircleBody2D* a, KQCircleBody2D* b)
     ady = (u16)kq2dc__abs_s16(sdy);
     dist_sq = (u16)((adx * adx) + (ady * ady));
 
+    // Choose a reproducible +X direction for coincident centers; use distance one
+    // to avoid division by zero in the subsequent normal calculation.
     if (dist_sq == 0)
     {
         dist_scaled = 1;
@@ -319,6 +354,9 @@ void kq2dc__resolve_pair(KQCircleBody2D* a, KQCircleBody2D* b)
     }
 }
 
+// Retain a caller-owned array without initializing bodies. Set zero gravity,
+// four contact passes, per-axis limit 768 and damping 252/256; bounds start disabled.
+// A null world is ignored. Keep the array alive for subsequent steps.
 void kq2dc_world_init(KQCircleWorld2D* world, KQCircleBody2D* bodies, u8 body_count)
 {
     if (world == 0) return;
@@ -339,6 +377,8 @@ void kq2dc_world_init(KQCircleWorld2D* world, KQCircleBody2D* bodies, u8 body_co
     world->wall_friction_q8 = 16;
 }
 
+// Store and enable bounds without validating their order or fitting bodies
+// immediately. Supply extents large enough for body diameters. Null is ignored.
 void kq2dc_set_bounds(KQCircleWorld2D* world, s16 min_x, s16 min_y, s16 max_x, s16 max_y)
 {
     if (world == 0) return;
@@ -350,6 +390,10 @@ void kq2dc_set_bounds(KQCircleWorld2D* world, s16 min_x, s16 min_y, s16 max_x, s
     world->max_y = max_y;
 }
 
+// Compare a reduced integer center distance with the reduced radius sum.
+// Valid pointers and positive radii are required; activity and mass are ignored.
+// This approximate test requires representable differences, radius sums and
+// squared-distance sum. Touching at the computed distance returns false.
 u8 kq2dc_overlap_circle(const KQCircleBody2D* a, const KQCircleBody2D* b)
 {
     s16 dx;
@@ -382,6 +426,10 @@ u8 kq2dc_overlap_circle(const KQCircleBody2D* a, const KQCircleBody2D* b)
     return 1;
 }
 
+// Integrate active dynamic bodies, apply bounds, solve contacts, then damp
+// velocity and snap components in -1..1 to zero. Zero solver iterations means one.
+// Pairs with both velocities zero are skipped, so resting overlaps can remain.
+// Bounds can reposition static bodies; null world/array inputs are ignored.
 void kq2dc_step(KQCircleWorld2D* world)
 {
     KQCircleBody2D* bodies;
@@ -438,6 +486,9 @@ void kq2dc_step(KQCircleWorld2D* world)
                     s16 radius_sum;
                     if (j == i) continue;
                     if (b->active == 0) continue;
+                    // Avoid revisiting an earlier moving body, but still allow a moving body
+                    // to resolve against a stationary slot with a lower index. Velocities are live
+                    // solver state, so contact ordering can change which later pairs are visited.
                     if (j < i && (b->vx != 0 || b->vy != 0)) continue;
                     radius_sum = (s16)(a->radius + b->radius);
                     if (kq2dc__abs_s16((s16)(b->x - a->x)) >= radius_sum) continue;

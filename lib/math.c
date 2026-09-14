@@ -1,5 +1,7 @@
 // Math.c
 
+// Unsigned sine lookup values centered near 128. This table contains 254 bytes.
+// Valid indices are 0..253; an unchecked wrapping byte phase can read beyond it.
 __prg_rom u8 MATH_SIN[] = {
     128, 131, 134, 137, 140, 143, 146, 149, 152, 156, 159, 162, 165, 168, 171, 174,
     176, 179, 182, 185, 188, 191, 193, 196, 199, 201, 204, 206, 209, 211, 213, 216,

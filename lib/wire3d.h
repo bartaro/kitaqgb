@@ -1,86 +1,189 @@
+// Compatibility names for the shared wire3d_dmg renderer.
+// Select the same profile in every translation unit; compile one renderer entry.
 #pragma once
-
-#ifndef KITAQGB_WIRE3D_H
-#define KITAQGB_WIRE3D_H
-
-#define WIRE3D_SCREEN_W 128
-#define WIRE3D_SCREEN_H 96
-#define WIRE3D_MODEL_VERTEX_LIMIT 24
-#define WIRE3D_MODEL_EDGE_LIMIT 16
-#define WIRE3D_MODEL_FACE_LIMIT 16
-#define WIRE3D_SCENE_OBJECT_LIMIT 8
-#define WIRE3D_FACE_NONE 255
-#define WIRE3D_MODEL_HIDDEN_LINES 1
-#define WIRE3D_EDGE_MASK_BINS_16 16
-
-typedef s8 w3d_i8;
-typedef s16 w3d_i16;
-typedef u8 w3d_u8;
-typedef u16 w3d_u16;
-
-typedef struct {
-    w3d_i16 x;
-    w3d_i16 y;
-    w3d_i16 z;
-} Wire3D_Vec3;
-
-typedef struct {
-    w3d_u8 a;
-    w3d_u8 b;
-} Wire3D_Edge;
-
-typedef struct {
-    w3d_u8 a;
-    w3d_u8 b;
-    w3d_u8 c;
-} Wire3D_Face;
-
-typedef struct {
-    w3d_u8 f0;
-    w3d_u8 f1;
-} Wire3D_EdgeFaces;
-
-typedef struct {
-    const Wire3D_Vec3* vertices;
-    const Wire3D_Edge* edges;
-    const Wire3D_Face* faces;
-    const Wire3D_EdgeFaces* edge_faces;
-    /* Keep edge mask tables in RAM for pointer-indirect access on current KITAQGB. */
-    const w3d_u16* edge_masks;
-    w3d_u8 vertex_count;
-    w3d_u8 edge_count;
-    w3d_u8 face_count;
-    w3d_u8 edge_mask_count;
-    w3d_u8 flags;
-} Wire3D_Model;
-
-typedef struct {
-    const Wire3D_Model* model;
-    w3d_i16 x;
-    w3d_i16 y;
-    w3d_i16 z;
-    w3d_i8 rx;
-    w3d_i8 ry;
-    w3d_i8 rz;
-    w3d_i16 scale_q8;
-    w3d_u8 visible;
-} Wire3D_Object;
-
-void Wire3D_Init();
-void Wire3D_BeginFrame();
-void Wire3D_SetCamera(w3d_i16 x, w3d_i16 y, w3d_i16 z, w3d_i8 pitch, w3d_i8 yaw, w3d_i8 roll);
-void Wire3D_DrawModel(const Wire3D_Model* model, w3d_i16 x, w3d_i16 y, w3d_i16 z, w3d_i8 rx, w3d_i8 ry, w3d_i8 rz);
-void Wire3D_DrawModelScaled(const Wire3D_Model* model, w3d_i16 x, w3d_i16 y, w3d_i16 z, w3d_i8 rx, w3d_i8 ry, w3d_i8 rz, w3d_i16 scale_q8);
-void Wire3D_EraseModelFaces(const Wire3D_Model* model, w3d_i16 x, w3d_i16 y, w3d_i16 z, w3d_i8 rx, w3d_i8 ry, w3d_i8 rz, w3d_i16 scale_q8);
-void Wire3D_EraseTriangle2D(w3d_u8 ax, w3d_u8 ay, w3d_u8 bx, w3d_u8 by, w3d_u8 cx, w3d_u8 cy);
-void Wire3D_EraseSpan2D(w3d_u8 y, w3d_u8 x0, w3d_u8 x1);
-void Wire3D_DrawScene(Wire3D_Object* objects, w3d_u8 count);
-w3d_u16 Wire3D_SelectEdgeMask(const Wire3D_Model* model, w3d_i8 rx, w3d_i8 ry, w3d_i8 rz);
-w3d_u8 Wire3D_ProjectPoint(w3d_i16 x, w3d_i16 y, w3d_i16 z, w3d_u8* sx, w3d_u8* sy);
-void Wire3D_DrawLine3D(w3d_i16 ax, w3d_i16 ay, w3d_i16 az, w3d_i16 bx, w3d_i16 by, w3d_i16 bz);
-void Wire3D_DrawLine2D(w3d_u8 ax, w3d_u8 ay, w3d_u8 bx, w3d_u8 by);
-void Wire3D_PutBgTile(w3d_u8 x, w3d_u8 y, w3d_u8 tile);
-void Wire3D_SetPalette(w3d_u8 bgp);
-void Wire3D_EndFrame();
-
+#ifndef WIRE3D_DMG_HEIGHT
+#define WIRE3D_DMG_HEIGHT 96
 #endif
+#if WIRE3D_DMG_HEIGHT != 96
+#error Incompatible wire3d_dmg profile
+#endif
+#include "wire3d_dmg.h"
+
+#define W3D_BG_QUEUE_LIMIT WIRE3D_DMG_BG_QUEUE_LIMIT
+#define W3D_CENTER_X WIRE3D_DMG_CENTER_X
+#define W3D_CENTER_Y WIRE3D_DMG_CENTER_Y
+#define W3D_FAR_Z WIRE3D_DMG_FAR_Z
+#define W3D_HUD_TILE_BASE WIRE3D_DMG_HUD_TILE_BASE
+#define W3D_HUD_TILE_BLANK WIRE3D_DMG_HUD_TILE_BLANK
+#define W3D_HUD_TILE_COUNT WIRE3D_DMG_HUD_TILE_COUNT
+#define W3D_NEAR_Z WIRE3D_DMG_NEAR_Z
+#define W3D_PROJECT_LIMIT WIRE3D_DMG_PROJECT_LIMIT
+#define W3D_ROW_BYTES WIRE3D_DMG_ROW_BYTES
+#define W3D_TILE_H WIRE3D_DMG_TILE_H
+#define W3D_TILE_W WIRE3D_DMG_TILE_W
+#define W3D_TRANSFORM_LIMIT WIRE3D_DMG_TRANSFORM_LIMIT
+#define WIRE3D_EDGE_MASK_BINS_16 WIRE3D_DMG_EDGE_MASK_BINS_16
+#define WIRE3D_FACE_NONE WIRE3D_DMG_FACE_NONE
+#define WIRE3D_MODEL_EDGE_LIMIT WIRE3D_DMG_MODEL_EDGE_LIMIT
+#define WIRE3D_MODEL_FACE_LIMIT WIRE3D_DMG_MODEL_FACE_LIMIT
+#define WIRE3D_MODEL_HIDDEN_LINES WIRE3D_DMG_MODEL_HIDDEN_LINES
+#define WIRE3D_MODEL_VERTEX_LIMIT WIRE3D_DMG_MODEL_VERTEX_LIMIT
+#define WIRE3D_SCENE_OBJECT_LIMIT WIRE3D_DMG_SCENE_OBJECT_LIMIT
+#define WIRE3D_SCREEN_H WIRE3D_DMG_SCREEN_H
+#define WIRE3D_SCREEN_W WIRE3D_DMG_SCREEN_W
+#define Wire3D_BeginFrame Wire3DDMG_BeginFrame
+#define Wire3D_DrawLine2D Wire3DDMG_DrawLine2D
+#define Wire3D_DrawLine3D Wire3DDMG_DrawLine3D
+#define Wire3D_DrawModel Wire3DDMG_DrawModel
+#define Wire3D_DrawModelScaled Wire3DDMG_DrawModelScaled
+#define Wire3D_DrawScene Wire3DDMG_DrawScene
+#define Wire3D_Edge Wire3DDMG_Edge
+#define Wire3D_EdgeFaces Wire3DDMG_EdgeFaces
+#define Wire3D_EndFrame Wire3DDMG_EndFrame
+#define Wire3D_EraseModelFaces Wire3DDMG_EraseModelFaces
+#define Wire3D_EraseSpan2D Wire3DDMG_EraseSpan2D
+#define Wire3D_EraseTriangle2D Wire3DDMG_EraseTriangle2D
+#define Wire3D_Face Wire3DDMG_Face
+#define Wire3D_Init Wire3DDMG_Init
+#define Wire3D_Model Wire3DDMG_Model
+#define Wire3D_Object Wire3DDMG_Object
+#define Wire3D_ProjectPoint Wire3DDMG_ProjectPoint
+#define Wire3D_PutBgTile Wire3DDMG_PutBgTile
+#define Wire3D_SelectEdgeMask Wire3DDMG_SelectEdgeMask
+#define Wire3D_SetCamera Wire3DDMG_SetCamera
+#define Wire3D_SetPalette Wire3DDMG_SetPalette
+#define Wire3D_Vec3 Wire3DDMG_Vec3
+#define w3d_abs_i16 w3ddmg_abs_i16
+#define w3d_bg_map_9800 w3ddmg_bg_map_9800
+#define w3d_bgq_addr_hi w3ddmg_bgq_addr_hi
+#define w3d_bgq_addr_lo w3ddmg_bgq_addr_lo
+#define w3d_bgq_count w3ddmg_bgq_count
+#define w3d_bgq_tile w3ddmg_bgq_tile
+#define w3d_bgq_value w3ddmg_bgq_value
+#define w3d_bgq_x w3ddmg_bgq_x
+#define w3d_bgq_y w3ddmg_bgq_y
+#define w3d_bit_mask w3ddmg_bit_mask
+#define w3d_build_edge_flags w3ddmg_build_edge_flags
+#define w3d_build_face_visibility w3ddmg_build_face_visibility
+#define w3d_cam_pitch w3ddmg_cam_pitch
+#define w3d_cam_roll w3ddmg_cam_roll
+#define w3d_cam_x w3ddmg_cam_x
+#define w3d_cam_y w3ddmg_cam_y
+#define w3d_cam_yaw w3ddmg_cam_yaw
+#define w3d_cam_z w3ddmg_cam_z
+#define w3d_clamp_i16 w3ddmg_clamp_i16
+#define w3d_clamp_screen w3ddmg_clamp_screen
+#define w3d_clear_occlusion_mask w3ddmg_clear_occlusion_mask
+#define w3d_clear_occlusion_mask_asm w3ddmg_clear_occlusion_mask_asm
+#define w3d_clear_stage_asm w3ddmg_clear_stage_asm
+#define w3d_clear_triangle w3ddmg_clear_triangle
+#define w3d_clear_vram_asm w3ddmg_clear_vram_asm
+#define w3d_cos_q6 w3ddmg_cos_q6
+#define w3d_edge_area w3ddmg_edge_area
+#define w3d_edge_flags w3ddmg_edge_flags
+#define w3d_face_visible w3ddmg_face_visible
+#define w3d_fill_bg_map_asm w3ddmg_fill_bg_map_asm
+#define w3d_flush_bg_queue w3ddmg_flush_bg_queue
+#define w3d_hud_tiles w3ddmg_hud_tiles
+#define w3d_i16 w3ddmg_i16
+#define w3d_i8 w3ddmg_i8
+#define w3d_inv_depth w3ddmg_inv_depth
+#define w3d_is_edge_visible w3ddmg_is_edge_visible
+#define w3d_line_dx w3ddmg_line_dx
+#define w3d_line_dy w3ddmg_line_dy
+#define w3d_line_err w3ddmg_line_err
+#define w3d_line_stage_asm w3ddmg_line_stage_asm
+#define w3d_line_stage_masked_c w3ddmg_line_stage_masked_c
+#define w3d_line_sx w3ddmg_line_sx
+#define w3d_line_sy w3ddmg_line_sy
+#define w3d_line_x w3ddmg_line_x
+#define w3d_line_x0 w3ddmg_line_x0
+#define w3d_line_x1 w3ddmg_line_x1
+#define w3d_line_y w3ddmg_line_y
+#define w3d_line_y0 w3ddmg_line_y0
+#define w3d_line_y1 w3ddmg_line_y1
+#define w3d_load_hud_tiles w3ddmg_load_hud_tiles
+#define w3d_mark_model_occluder w3ddmg_mark_model_occluder
+#define w3d_mark_triangle w3ddmg_mark_triangle
+#define w3d_mask_get w3ddmg_mask_get
+#define w3d_mask_offset w3ddmg_mask_offset
+#define w3d_mask_set w3ddmg_mask_set
+#define w3d_mask_set_span w3ddmg_mask_set_span
+#define w3d_neg_angle w3ddmg_neg_angle
+#define w3d_occlusion_active w3ddmg_occlusion_active
+#define w3d_occlusion_mask w3ddmg_occlusion_mask
+#define w3d_pair_block w3ddmg_pair_block
+#define w3d_pair_wait_0 w3ddmg_pair_wait_0
+#define w3d_pair_wait_1 w3ddmg_pair_wait_1
+#define w3d_pair_wait_10 w3ddmg_pair_wait_10
+#define w3d_pair_wait_11 w3ddmg_pair_wait_11
+#define w3d_pair_wait_12 w3ddmg_pair_wait_12
+#define w3d_pair_wait_13 w3ddmg_pair_wait_13
+#define w3d_pair_wait_14 w3ddmg_pair_wait_14
+#define w3d_pair_wait_15 w3ddmg_pair_wait_15
+#define w3d_pair_wait_2 w3ddmg_pair_wait_2
+#define w3d_pair_wait_3 w3ddmg_pair_wait_3
+#define w3d_pair_wait_4 w3ddmg_pair_wait_4
+#define w3d_pair_wait_5 w3ddmg_pair_wait_5
+#define w3d_pair_wait_6 w3ddmg_pair_wait_6
+#define w3d_pair_wait_7 w3ddmg_pair_wait_7
+#define w3d_pair_wait_8 w3ddmg_pair_wait_8
+#define w3d_pair_wait_9 w3ddmg_pair_wait_9
+#define w3d_plot_stage_asm w3ddmg_plot_stage_asm
+#define w3d_plot_tx w3ddmg_plot_tx
+#define w3d_plot_x w3ddmg_plot_x
+#define w3d_plot_y w3ddmg_plot_y
+#define w3d_project_camera_space w3ddmg_project_camera_space
+#define w3d_project_world w3ddmg_project_world
+#define w3d_put_bg_tile_safe_asm w3ddmg_put_bg_tile_safe_asm
+#define w3d_reg_bgp w3ddmg_reg_bgp
+#define w3d_reg_lcdc w3ddmg_reg_lcdc
+#define w3d_reg_ly w3ddmg_reg_ly
+#define w3d_reg_scx w3ddmg_reg_scx
+#define w3d_reg_scy w3ddmg_reg_scy
+#define w3d_rotate_x w3ddmg_rotate_x
+#define w3d_rotate_y w3ddmg_rotate_y
+#define w3d_rotate_z w3ddmg_rotate_z
+#define w3d_scene_depth w3ddmg_scene_depth
+#define w3d_scene_object_depth w3ddmg_scene_object_depth
+#define w3d_scene_order w3ddmg_scene_order
+#define w3d_screen_delta w3ddmg_screen_delta
+#define w3d_screen_visible w3ddmg_screen_visible
+#define w3d_screen_x w3ddmg_screen_x
+#define w3d_screen_y w3ddmg_screen_y
+#define w3d_sin_q6 w3ddmg_sin_q6
+#define w3d_stage w3ddmg_stage
+#define w3d_stage_clear_pixel w3ddmg_stage_clear_pixel
+#define w3d_stage_clear_span w3ddmg_stage_clear_span
+#define w3d_transfer_stage_asm w3ddmg_transfer_stage_asm
+#define w3d_u16 w3ddmg_u16
+#define w3d_u8 w3ddmg_u8
+#define w3d_vram_tiles w3ddmg_vram_tiles
+#define w3d_wait_vblank_start w3ddmg_wait_vblank_start
+#define w3dbg_enter w3ddmgbg_enter
+#define w3dco_enter w3ddmgco_enter
+#define w3dco_loop w3ddmgco_loop
+#define w3dco_page w3ddmgco_page
+#define w3dcs_enter w3ddmgcs_enter
+#define w3dcs_inner w3ddmgcs_inner
+#define w3dcs_outer w3ddmgcs_outer
+#define w3dcv_enter w3ddmgcv_enter
+#define w3dcv_loop w3ddmgcv_loop
+#define w3dcv_page w3ddmgcv_page
+#define w3dfb_enter w3ddmgfb_enter
+#define w3dfb_loop w3ddmgfb_loop
+#define w3dfb_page w3ddmgfb_page
+#define w3dls_branch w3ddmgls_branch
+#define w3dls_done w3ddmgls_done
+#define w3dls_enter w3ddmgls_enter
+#define w3dls_shallow w3ddmgls_shallow
+#define w3dls_shallow_loop w3ddmgls_shallow_loop
+#define w3dls_shallow_skip_bridge w3ddmgls_shallow_skip_bridge
+#define w3dls_steep w3ddmgls_steep
+#define w3dls_steep_loop w3ddmgls_steep_loop
+#define w3dls_steep_skip_bridge w3ddmgls_steep_skip_bridge
+#define w3dls_x_reverse w3ddmgls_x_reverse
+#define w3dls_y_reverse w3ddmgls_y_reverse
+#define w3dls_y_start w3ddmgls_y_start
+#define w3dps_enter w3ddmgps_enter
+#define w3dps_ret w3ddmgps_ret
