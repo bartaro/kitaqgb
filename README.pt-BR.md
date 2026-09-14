@@ -8,14 +8,11 @@
 
 A KITAQGB começou como um fork do NORCAL, o compilador C para NES associado à Zachtronics. O aviso de direitos autorais de Keith Holman, autor original do NORCAL, é mantido.
 
-**O nome NORCAL vem do norte da Califórnia (Northern California).** Inspirado nessa ideia de usar uma referência geográfica, DAISUKE OBA, autor da KITAQGB, escolheu **Kitakyushu**, a cidade onde nasceu e cresceu, como base para o nome KITAQGB.
+O nome NORCAL vem do norte da Califórnia (Northern California). Inspirado nessa referência geográfica, o autor escolheu o nome KITAQGB com base em Kitakyushu, a cidade onde nasceu e cresceu. KITAQ + GB combina Game Boy com **北九 (キタキュー, Kitakyū)**, o apelido de Kitakyushu, na província de Fukuoka, no Japão. KITAQ se pronuncia como o japonês “キタキュー”; a orientação de pronúncia em inglês é **kee-tah-KYOO**, com transcrição fonética **/ˌkiːtɑːˈkjuː/**. O Q final tem o som do nome da letra Q em inglês. KITAQGB se lê **kee-tah-KYOO jee bee**, pronunciando G e B separadamente, também em inglês.
 
-O nome **KITAQGB** reúne dois sentidos:
+O nome KITAQGB tem dois sentidos. **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expressa o objetivo de um conjunto de ferramentas que entende a máquina de destino e apoia tanto quem programa quanto a IA generativa.
 
-- **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expressa a proposta de ferramentas que conhecem a máquina de destino e apoiam tanto programadores quanto fluxos de trabalho com IA generativa.
-- **KITAQ + GB** combina um nome local de **Kitakyushu**, cidade da **província de Fukuoka, no Japão**, com **Game Boy**. **KITAQ** representa o apelido **北九 (キタキュー, Kitakyū)**.
-
-Como orientação de pronúncia em inglês, leia **KITAQ** como **“kee-tah-KYOO”**, IPA **/ˌkiːtɑːˈkjuː/**, uma aproximação do japonês **キタキュー**. O **Q** final tem o som do nome da letra **Q** em inglês. **KITAQGB** se lê **“kee-tah-KYOO jee bee”**, com **G** e **B** pronunciados separadamente, também em inglês.
+O outro sentido é **Kids' Imagination Transformed into Actual Quests in Game Boy Forests**: uma ferramenta que transforma a imaginação das crianças em aventuras de verdade nas florestas do Game Boy. Ele expressa o desejo de transformar pequenas ideias, rabiscos e protótipos criados com ajuda de IA em aventuras que as pessoas possam realmente jogar.
 
 ## Estado do projeto: prévia pública
 

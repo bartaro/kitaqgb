@@ -8,14 +8,11 @@
 
 KITAQGB est issu d'un fork de NORCAL, le compilateur C pour NES associé à Zachtronics. Il conserve la mention de droit d'auteur de Keith Holman, auteur de NORCAL.
 
-**NORCAL tire son nom du nord de la Californie (Northern California).** S’inspirant de cette référence géographique, DAISUKE OBA, l’auteur de KITAQGB, a choisi **Kitakyushu**, la ville où il est né et a grandi, pour former le nom KITAQGB.
+NORCAL tire son nom du nord de la Californie (Northern California). S’inspirant de cette référence géographique, l’auteur a choisi le nom KITAQGB d’après Kitakyushu, la ville où il est né et a grandi. KITAQ + GB associe Game Boy à **北九 (キタキュー, Kitakyū)**, le surnom de Kitakyushu, dans la préfecture de Fukuoka, au Japon. KITAQ se prononce comme le japonais « キタキュー » ; la notation indicative en anglais est **kee-tah-KYOO**, soit **/ˌkiːtɑːˈkjuː/** en alphabet phonétique international. Le Q final se prononce comme le nom anglais de la lettre Q. En anglais, KITAQGB se lit **kee-tah-KYOO jee bee**, en prononçant G et B séparément.
 
-Le nom **KITAQGB** a deux sens qui se superposent :
+Le nom KITAQGB a deux sens. **Kernel-Informed Toolchain for AI-Quality Game Boy Development** exprime l’objectif d’une chaîne de développement qui comprend la machine cible et accompagne aussi bien les personnes qui programment que l’IA générative.
 
-- **Kernel-Informed Toolchain for AI-Quality Game Boy Development** exprime l'objectif d'une chaîne de développement qui connaît la machine cible et accompagne aussi bien les programmeurs que les démarches utilisant l'IA générative.
-- **KITAQ + GB** associe un nom local de **Kitakyushu**, ville de la **préfecture de Fukuoka, au Japon**, à **Game Boy**. **KITAQ** représente le surnom **北九 (キタキュー, Kitakyū)** de Kitakyushu.
-
-En anglais, **KITAQ** se prononce **« kee-tah-KYOO »**, soit **/ˌkiːtɑːˈkjuː/** en alphabet phonétique international, pour approcher le japonais **キタキュー**. Le **Q** final se prononce comme le nom anglais de la lettre **Q**, « cue ». En anglais, lisez **KITAQGB** « kee-tah-KYOO jee bee », en prononçant **G** et **B** séparément.
+L’autre sens est **Kids' Imagination Transformed into Actual Quests in Game Boy Forests** : un outil qui transforme l’imagination des enfants en véritables aventures dans les forêts du Game Boy. Il traduit le souhait de faire de petites idées, de croquis et de prototypes créés avec l’aide de l’IA des aventures auxquelles on peut réellement jouer.
 
 ## État du projet : version publique préliminaire
 

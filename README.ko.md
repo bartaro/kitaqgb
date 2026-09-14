@@ -8,14 +8,11 @@
 
 KITAQGB는 Zachtronics와 관련된 NES용 C 컴파일러 NORCAL의 포크로 시작했습니다. NORCAL의 원저작자 Keith Holman의 저작권 고지를 유지하고 있습니다.
 
-**NORCAL이라는 이름은 북부 캘리포니아(Northern California)에서 따왔습니다.** 지역의 이름을 사용하는 이 발상에서 영감을 받아, KITAQGB의 제작자 DAISUKE OBA는 자신이 태어나 자란 도시인 **기타큐슈**를 바탕으로 KITAQGB라는 이름을 지었습니다.
+NORCAL이라는 이름은 북부 캘리포니아(Northern California)에서 따왔습니다. 지역의 이름을 사용하는 이 발상에서 영감을 받아, 제작자는 자신이 태어나 자란 기타큐슈시를 바탕으로 KITAQGB라는 이름을 지었습니다. KITAQ + GB는 일본 후쿠오카현 기타큐슈시의 애칭인 **北九(キタキュー, Kitakyū)**와 Game Boy를 합친 이름입니다. KITAQ는 일본어 ‘キタキュー’로 읽습니다. 영어 발음 안내는 **kee-tah-KYOO**, IPA는 **/ˌkiːtɑːˈkjuː/**입니다. 끝의 Q는 영어 알파벳 Q의 이름처럼 발음합니다. KITAQGB는 G와 B를 각각 읽어 **kee-tah-KYOO jee bee**라고 부릅니다.
 
-**KITAQGB**라는 이름에는 두 가지 뜻이 겹쳐 있습니다.
+KITAQGB라는 이름에는 두 가지 뜻이 있습니다. **Kernel-Informed Toolchain for AI-Quality Game Boy Development**는 대상 하드웨어를 이해하고, 사람이 직접 프로그래밍하는 과정과 생성형 AI를 활용하는 과정을 모두 지원하는 도구 모음을 지향한다는 뜻입니다.
 
-- **Kernel-Informed Toolchain for AI-Quality Game Boy Development**는 대상 하드웨어를 이해하고, 사람이 직접 개발하는 과정과 생성형 AI를 활용하는 과정을 모두 지원하는 도구 모음을 지향한다는 뜻입니다.
-- **KITAQ + GB**는 **일본 후쿠오카현 기타큐슈시**의 애칭과 **Game Boy**를 합친 이름입니다. **KITAQ**는 기타큐슈의 애칭인 **北九(キタキュー, Kitakyū)**를 나타냅니다.
-
-영어 발음 안내로는 **KITAQ**를 **“kee-tah-KYOO”**, IPA **/ˌkiːtɑːˈkjuː/**로 읽으면 일본어 **キタキュー**에 가깝습니다. 끝의 **Q**는 영어 알파벳 **Q**의 이름처럼 발음합니다. **KITAQGB**는 **“kee-tah-KYOO jee bee”**로, **G**와 **B**를 각각 영어 글자 이름으로 읽습니다.
+또 다른 뜻은 **Kids' Imagination Transformed into Actual Quests in Game Boy Forests**입니다. ‘아이들의 상상을 게임보이의 숲에서 진짜 모험으로 바꾸는 도구’라는 의미를 담았습니다. 작은 아이디어나 낙서, AI의 도움으로 만든 시제품을 실제로 즐길 수 있는 모험으로 바꾸는 도구를 만들고 싶다는 창작의 바람을 나타냅니다.
 
 ## 프로젝트 상태: 공개 미리 보기
 

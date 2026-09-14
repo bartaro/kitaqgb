@@ -8,14 +8,11 @@
 
 KITAQGB nació como una bifurcación de NORCAL, el compilador de C para NES vinculado a Zachtronics. Conserva el aviso de derechos de autor de Keith Holman, autor original de NORCAL.
 
-**NORCAL toma su nombre del norte de California (Northern California).** Inspirándose en esa forma de vincular el nombre a un lugar, DAISUKE OBA, autor de KITAQGB, eligió **Kitakyushu**, la ciudad donde nació y creció, como base para el nombre KITAQGB.
+NORCAL toma su nombre del norte de California (Northern California). Inspirándose en esa referencia geográfica, el autor eligió el nombre KITAQGB a partir de Kitakyushu, la ciudad donde nació y creció. KITAQ + GB combina Game Boy con **北九 (キタキュー, Kitakyū)**, el apodo de Kitakyushu, en la prefectura de Fukuoka, Japón. KITAQ se pronuncia como el japonés «キタキュー»; la guía de pronunciación en inglés es **kee-tah-KYOO**, con transcripción fonética **/ˌkiːtɑːˈkjuː/**. La Q final suena como el nombre de la letra Q en inglés. KITAQGB se lee **kee-tah-KYOO jee bee**, pronunciando G y B por separado en inglés.
 
-El nombre **KITAQGB** tiene dos significados que se complementan:
+El nombre KITAQGB tiene dos significados. **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expresa el objetivo de una cadena de herramientas que entiende la máquina de destino y apoya tanto a quienes programan como a la IA generativa.
 
-- **Kernel-Informed Toolchain for AI-Quality Game Boy Development** expresa la idea de una cadena de herramientas que conoce la máquina de destino y sirve tanto a quienes programan como a los flujos de trabajo con IA generativa.
-- **KITAQ + GB** combina un nombre local de **Kitakyushu**, ciudad de la **prefectura de Fukuoka, Japón**, con **Game Boy**. **KITAQ** representa el apodo de Kitakyushu, **北九 (キタキュー, Kitakyū)**.
-
-Como guía basada en la pronunciación inglesa, **KITAQ** se lee **«kee-tah-KYOO»**, con transcripción AFI **/ˌkiːtɑːˈkjuː/**, próxima al japonés **キタキュー**. La **Q** final suena como el nombre inglés de esa letra. **KITAQGB** se lee **«kee-tah-KYOO jee bee»**, pronunciando G y B por separado con sus nombres en inglés.
+El otro significado es **Kids' Imagination Transformed into Actual Quests in Game Boy Forests**: una herramienta que convierte la imaginación infantil en aventuras reales en los bosques de Game Boy. Expresa el deseo de transformar pequeñas ideas, garabatos y prototipos creados con ayuda de la IA en aventuras que se puedan jugar de verdad.
 
 ## Estado del proyecto: versión preliminar pública
 

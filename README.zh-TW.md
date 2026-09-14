@@ -8,14 +8,11 @@
 
 KITAQGB 以 NORCAL 為起點，分支開發而成。NORCAL 是與 Zachtronics 相關的 NES C 編譯器；本專案保留原作者 Keith Holman 的著作權聲明。
 
-**NORCAL的名稱源自北加利福尼亞（Northern California）。** 受到這種以地名命名的方式啟發，KITAQGB的作者DAISUKE OBA選擇了自己出生並成長的城市——**北九州市**，作為KITAQGB名稱的由來。
+NORCAL的名稱源自北加利福尼亞（Northern California）。受到這種以地名命名的方式啟發，作者以自己出生並成長的北九州市為基礎，將專案命名為KITAQGB。KITAQ + GB把日本福岡縣北九州市的暱稱**北九（キタキュー，Kitakyū）**與Game Boy結合起來。KITAQ讀作日語「キタキュー」；英語發音提示為 **kee-tah-KYOO**，音標為 **/ˌkiːtɑːˈkjuː/**。最後的Q與英語字母Q同音。KITAQGB中的G和B分別按照字母名稱發音，整個名稱讀作 **kee-tah-KYOO jee bee**。
 
-**KITAQGB** 這個名稱有兩層意思：
+KITAQGB這個名稱有兩層意義。**Kernel-Informed Toolchain for AI-Quality Game Boy Development**表達了工具鏈應理解目標硬體，同時支援程式設計者與生成式AI的目標。
 
-- **Kernel-Informed Toolchain for AI-Quality Game Boy Development**，表達工具鏈應掌握目標硬體特性，並支援人工撰寫與生成式 AI 輔助開發流程的理念。
-- **KITAQ + GB**，將**日本福岡縣北九州市**的暱稱與 **Game Boy** 結合。**KITAQ** 代表北九州的暱稱 **北九（キタキュー，Kitakyū）**。
-
-以英語標示發音時，**KITAQ** 讀作 **「kee-tah-KYOO」**，國際音標為 **/ˌkiːtɑːˈkjuː/**，接近日語的 **キタキュー**。最後的 **Q** 讀英文字母 Q 的名稱。**KITAQGB** 的讀法是 **「kee-tah-KYOO jee bee」**，G 與 B 分別依英文字母名稱發音。
+另一層意義是 **Kids' Imagination Transformed into Actual Quests in Game Boy Forests**，意指「把孩子的想像，化為Game Boy森林裡真實冒險的工具」。這寄託了一份創作心願：讓小小的點子、塗鴉及借助AI製作的原型，成為真正可以遊玩的冒險。
 
 ## 專案狀態：公開預覽版
 
