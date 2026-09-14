@@ -506,7 +506,7 @@ class Assembler
         foreach (Expr e in sectionedAssembly)
         {
             string rdName; byte[] rdBytes;
-            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            if (e.MatchReadonlyData(out rdName, out rdBytes))
             {
                 EnsureSpanFitsRomBank(pc, rdBytes.Length, "readonly data '" + rdName + "'");
                 DefineSymbol(rom, rdName, pc, isLabel: false, MemoryRegion.ProgramRom, currentSectionName);
@@ -517,6 +517,14 @@ class Assembler
                 TrackSourceLocation(e, pc, currentFunctionName ?? rdName, currentSectionName);
                 if (pc + rdBytes.Length <= rom.Length) Array.Copy(rdBytes, 0, rom, pc, rdBytes.Length);
                 else Program.Error("Not enough ROM space for data: " + rdName);
+                foreach (Expr relocation in e.ReadonlyRelocations())
+                {
+                    if (!relocation.Match(Tag.Word, out int offset, out AsmOperand dataAddress) ||
+                        offset < 0 || offset > rdBytes.Length - 2)
+                        Program.Panic("assembler: invalid readonly word relocation");
+                    Fixups.Add(new Fixup { Operand = dataAddress, Location = pc + offset,
+                        Mode = AddressMode.Immediate, IsWordDefinition = true });
+                }
                 pc += rdBytes.Length;
                 UpdateBankMax(pc);
                 continue;
@@ -985,7 +993,7 @@ class Assembler
         foreach (Expr e in assembly)
         {
             string rdName; byte[] rdBytes;
-            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            if (e.MatchReadonlyData(out rdName, out rdBytes))
             {
                 pc += rdBytes.Length;
                 if (pc > maxPc) maxPc = pc;
@@ -1078,7 +1086,7 @@ class Assembler
         foreach (Expr e in assembly)
         {
             string rdName; byte[] rdBytes;
-            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            if (e.MatchReadonlyData(out rdName, out rdBytes))
             {
                 PadToNextBankIfNeeded(rdBytes == null ? 0 : rdBytes.Length, e);
                 output.Add(e);
@@ -1182,7 +1190,7 @@ class Assembler
             if (string.IsNullOrEmpty(current)) continue;
 
             string rdName; byte[] rdBytes;
-            if (e.Match(Tag.ReadonlyData, out rdName, out rdBytes))
+            if (e.MatchReadonlyData(out rdName, out rdBytes))
             {
                 bytes += rdBytes == null ? 0 : rdBytes.Length;
                 continue;
@@ -1232,7 +1240,7 @@ class Assembler
             foreach (var e in cur)
             {
                 string _rdn; byte[] _rdb;
-                if (e.Match(Tag.ReadonlyData, out _rdn, out _rdb)) { pc += _rdb.Length; continue; }
+                if (e.MatchReadonlyData(out _rdn, out _rdb)) { pc += _rdb.Length; continue; }
 
                 string label;
                 int skipTarget;
@@ -1278,7 +1286,7 @@ class Assembler
             {
                 var e = cur[i];
                 string _rdn2; byte[] _rdb2;
-                if (e.Match(Tag.ReadonlyData, out _rdn2, out _rdb2)) { pc += _rdb2.Length; continue; }
+                if (e.MatchReadonlyData(out _rdn2, out _rdb2)) { pc += _rdb2.Length; continue; }
 
                 int skipTarget;
                 string mnemonic;

@@ -48,6 +48,21 @@ class Expr
         return Make(global::Tag.Asm, mnemonic, operand);
     }
 
+    // A ROM object remains one placement unit; optional word relocations carry
+    // byte offsets and symbolic addresses until the assembler knows every bank.
+    public bool MatchReadonlyData(out string name, out byte[] bytes)
+    {
+        if (Match(global::Tag.ReadonlyData, out name, out bytes)) return true;
+        return Match(global::Tag.ReadonlyData, out name, out bytes, out Expr[] relocations);
+    }
+
+    public Expr[] ReadonlyRelocations()
+    {
+        if (Match(global::Tag.ReadonlyData, out string name, out byte[] bytes, out Expr[] relocations))
+            return relocations;
+        return Array.Empty<Expr>();
+    }
+
     // Return a new node sharing all arguments, with a different source coordinate.
     public Expr WithSource(FilePosition newSource)
     {

@@ -129,7 +129,7 @@ static class DeadStripper
         {
             string dn;
             byte[] bytes;
-            if (assembly[i].Match(Tag.ReadonlyData, out dn, out bytes))
+            if (assembly[i].MatchReadonlyData(out dn, out bytes))
             {
                 if (!string.IsNullOrEmpty(dn)) dataNames.Add(dn);
             }
@@ -151,6 +151,23 @@ static class DeadStripper
             CollectDataRefs(assembly[i], dataNames, liveData);
         }
 
+        // Follow pointers stored inside live ROM objects. A payload may have no
+        // direct instruction reference at all, and may itself point to another table.
+        bool dataChanged;
+        do
+        {
+            int count = liveData.Count;
+            for (int i = scanEnd; i < assembly.Count; i++)
+            {
+                if (assembly[i].MatchReadonlyData(out string owner, out byte[] data) && liveData.Contains(owner))
+                    foreach (Expr relocation in assembly[i].ReadonlyRelocations())
+                        if (relocation.Match(Tag.Word, out int offset, out AsmOperand operand) &&
+                            operand.Base.HasValue && dataNames.Contains(operand.Base.Value))
+                            liveData.Add(operand.Base.Value);
+            }
+            dataChanged = liveData.Count != count;
+        } while (dataChanged);
+
         // Build keep mask
         bool[] keep = new bool[assembly.Count];
         for (int i = 0; i < keep.Length; i++) keep[i] = true;
@@ -169,7 +186,7 @@ static class DeadStripper
             for (int i = firstDataIdx; i < assembly.Count; i++)
             {
                 string dn; byte[] bytes;
-                if (assembly[i].Match(Tag.ReadonlyData, out dn, out bytes))
+                if (assembly[i].MatchReadonlyData(out dn, out bytes))
                 {
                     if (!liveData.Contains(dn)) keep[i] = false;
                 }

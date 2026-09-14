@@ -14707,20 +14707,22 @@ void EmitShiftRightLogicalHL(int count)
 	        ReadonlyDataPlannedAlign[name] = romAlign;
 	        if (romAlign > 1) Emit(Tag.Align, romAlign);
 
-        byte[] bytes = EncodeReadonlyDataInitializers(origin, type, valueExprs ?? Array.Empty<Expr>());
+        var relocations = new List<Expr>();
+        byte[] bytes = EncodeReadonlyDataInitializers(origin, type, valueExprs ?? Array.Empty<Expr>(), relocations, 0);
 
         if (!TryFindSymbol(name, out Symbol _existing2))
         {
             DeclareSymbol(origin, new Symbol(SymbolTag.ReadonlyData, 0, type, name));
         }
-        Emit(Tag.ReadonlyData, name, bytes);
+        if (relocations.Count == 0) Emit(Tag.ReadonlyData, name, bytes);
+        else Emit(Tag.ReadonlyData, name, bytes, relocations.ToArray());
     }
 
     // Route arrays to element encoding and reject multiple initializers for a nonarray object.
-    byte[] EncodeReadonlyDataInitializers(Expr origin, CType type, Expr[] valueExprs)
+    byte[] EncodeReadonlyDataInitializers(Expr origin, CType type, Expr[] valueExprs, List<Expr> relocations, int objectOffset)
     {
         if (type != null && type.IsArray)
-            return EncodeReadonlyArrayInitializer(origin, type, valueExprs);
+            return EncodeReadonlyArrayInitializer(origin, type, valueExprs, relocations, objectOffset);
 
         int size = Math.Max(1, SizeOf(origin, type));
         if (valueExprs == null || valueExprs.Length == 0)
@@ -14728,11 +14730,11 @@ void EmitShiftRightLogicalHL(int count)
         if (valueExprs.Length > 1)
             Error(origin, ErrorCode.ParseError, "too many initializers for readonly data");
 
-        return EncodeReadonlyInitializer(origin, type, valueExprs[0]);
+        return EncodeReadonlyInitializer(origin, type, valueExprs[0], relocations, objectOffset);
     }
 
     // Encode nested arrays/aggregates recursively or serialize a scalar constant in little-endian byte order.
-    byte[] EncodeReadonlyInitializer(Expr origin, CType type, Expr init)
+    byte[] EncodeReadonlyInitializer(Expr origin, CType type, Expr init, List<Expr> relocations, int objectOffset)
     {
         if (type == null) type = CType.UInt8;
 
@@ -14743,12 +14745,12 @@ void EmitShiftRightLogicalHL(int count)
         {
             Expr[] items;
             if (init != null && init.MatchAny(Tag.Sequence, out items))
-                return EncodeReadonlyArrayInitializer(origin, type, items ?? Array.Empty<Expr>());
-            return EncodeReadonlyArrayInitializer(origin, type, new Expr[] { init });
+                return EncodeReadonlyArrayInitializer(origin, type, items ?? Array.Empty<Expr>(), relocations, objectOffset);
+            return EncodeReadonlyArrayInitializer(origin, type, new Expr[] { init }, relocations, objectOffset);
         }
 
         if (type.IsStructOrUnion)
-            return EncodeReadonlyAggregateInitializer(origin, type, init);
+            return EncodeReadonlyAggregateInitializer(origin, type, init, relocations, objectOffset);
 
         Expr[] scalarItems;
         if (init != null && init.MatchAny(Tag.Sequence, out scalarItems))
@@ -14764,6 +14766,12 @@ void EmitShiftRightLogicalHL(int count)
         if (size > 4)
             Error(origin, ErrorCode.ParseError, "readonly data scalar initializer supports sizes up to 4 bytes (got {0})", size);
 
+        if (type.IsPointer && size == 2 && TryGetReadonlyPointer(init, false, out AsmOperand address))
+        {
+            relocations.Add(Expr.Make(Tag.Word, objectOffset, address).WithSource(init.Source));
+            return new byte[size];
+        }
+
         int value = CalculateConstantExpression(init);
         byte[] bytes = new byte[size];
         uint u = (uint)value;
@@ -14773,7 +14781,7 @@ void EmitShiftRightLogicalHL(int count)
     }
 
     // Allocate the full declared array extent, zero omitted elements and copy each encoded initializer at its stride.
-    byte[] EncodeReadonlyArrayInitializer(Expr origin, CType arrayType, Expr[] items)
+    byte[] EncodeReadonlyArrayInitializer(Expr origin, CType arrayType, Expr[] items, List<Expr> relocations, int objectOffset)
     {
         CType elemType = arrayType.Subtype ?? CType.UInt8;
         int elemSize = Math.Max(1, SizeOf(origin, elemType));
@@ -14789,7 +14797,7 @@ void EmitShiftRightLogicalHL(int count)
         for (int i = 0; i < n; i++)
         {
             if (IsEmptyReadonlyInitializer(items[i])) continue;
-            byte[] elemBytes = EncodeReadonlyInitializer(origin, elemType, items[i]);
+            byte[] elemBytes = EncodeReadonlyInitializer(origin, elemType, items[i], relocations, objectOffset + i * elemSize);
             if (elemBytes.Length != elemSize)
                 Error(origin, ErrorCode.ParseError, "readonly array initializer size mismatch for element {0}", i);
             System.Array.Copy(elemBytes, 0, bytes, i * elemSize, elemSize);
@@ -14798,7 +14806,7 @@ void EmitShiftRightLogicalHL(int count)
     }
 
     // Place struct fields at their layout offsets; for a union, encode only the first nonempty selected initializer.
-    byte[] EncodeReadonlyAggregateInitializer(Expr origin, CType type, Expr init)
+    byte[] EncodeReadonlyAggregateInitializer(Expr origin, CType type, Expr init, List<Expr> relocations, int objectOffset)
     {
         int totalSize = Math.Max(1, SizeOf(origin, type));
         byte[] bytes = new byte[totalSize];
@@ -14823,7 +14831,7 @@ void EmitShiftRightLogicalHL(int count)
             {
                 if (IsEmptyReadonlyInitializer(items[i])) continue;
                 FieldInfo field = info.Fields[i];
-                byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i]);
+                byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i], relocations, objectOffset + field.Offset);
                 int copy = Math.Min(fieldBytes.Length, totalSize);
                 System.Array.Copy(fieldBytes, 0, bytes, field.Offset, copy);
                 break;
@@ -14835,13 +14843,75 @@ void EmitShiftRightLogicalHL(int count)
         {
             if (IsEmptyReadonlyInitializer(items[i])) continue;
             FieldInfo field = info.Fields[i];
-            byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i]);
+            byte[] fieldBytes = EncodeReadonlyInitializer(origin, field.Type, items[i], relocations, objectOffset + field.Offset);
             int fieldSize = Math.Max(1, SizeOf(origin, field.Type));
             if (fieldBytes.Length != fieldSize)
                 Error(origin, ErrorCode.ParseError, "readonly struct initializer size mismatch for field {0}", field.Name);
             System.Array.Copy(fieldBytes, 0, bytes, field.Offset, fieldSize);
         }
         return bytes;
+    }
+
+    // Resolve only static object addresses, never the contents of a pointer variable.
+    // Symbol bases are preserved so bank placement and dead stripping see the dependency.
+    bool TryGetReadonlyPointer(Expr expr, bool addressOfObject, out AsmOperand address)
+    {
+        address = null;
+        if (expr == null) return false;
+        if (!addressOfObject && expr.Match(Tag.Cast, out CType castType, out Expr castValue))
+            return castType.IsPointer && TryGetReadonlyPointer(castValue, false, out address);
+        if (!addressOfObject && expr.Match(Tag.AddressOf, out Expr target))
+            return TryGetReadonlyPointer(target, true, out address);
+
+        if (expr.Match(Tag.Name, out string name) && TryFindSymbol(name, out Symbol symbol))
+        {
+            if (!addressOfObject && (symbol.Type == null || !symbol.Type.IsArray)) return false;
+            if (symbol.Tag == SymbolTag.ReadonlyData)
+                address = new AsmOperand(name, AddressMode.Immediate);
+            else if (symbol.Tag == SymbolTag.Global)
+                address = new AsmOperand(symbol.Value, AddressMode.Immediate);
+            return address != null;
+        }
+
+        if (addressOfObject && expr.Match(Tag.Index, out Expr array, out Expr index) &&
+            TryGetReadonlyPointer(array, false, out AsmOperand arrayAddress))
+        {
+            CType pointerType = TypeOf(array);
+            if (!pointerType.IsPointer && !pointerType.IsArray) return false;
+            int offset = CalculateConstantExpression(index) * SizeOf(expr, pointerType.Subtype);
+            address = new AsmOperand(arrayAddress.Base, arrayAddress.Offset + offset,
+                AddressMode.Immediate, ImmediateModifier.None);
+            return true;
+        }
+        if (addressOfObject && expr.Match(Tag.Field, out Expr owner, out string fieldName) &&
+            TryGetReadonlyPointer(owner, true, out AsmOperand ownerAddress))
+        {
+            FieldInfo field = GetFieldInfo(owner, fieldName);
+            address = new AsmOperand(ownerAddress.Base, ownerAddress.Offset + field.Offset,
+                AddressMode.Immediate, ImmediateModifier.None);
+            return true;
+        }
+        if (!addressOfObject && (expr.Match(Tag.Add, out Expr left, out Expr right) ||
+            expr.Match(Tag.Subtract, out left, out right)))
+        {
+            bool subtract = expr.MatchTag(Tag.Subtract);
+            CType pointerType = TypeOf(left);
+            if (!subtract && !pointerType.IsPointer && !pointerType.IsArray)
+            {
+                Expr swap = left; left = right; right = swap;
+                pointerType = TypeOf(left);
+            }
+            if ((pointerType.IsPointer || pointerType.IsArray) &&
+                TryGetReadonlyPointer(left, false, out AsmOperand baseAddress))
+            {
+                int offset = CalculateConstantExpression(right) * SizeOf(expr, pointerType.Subtype);
+                if (subtract) offset = -offset;
+                address = new AsmOperand(baseAddress.Base, baseAddress.Offset + offset,
+                    AddressMode.Immediate, ImmediateModifier.None);
+                return true;
+            }
+        }
+        return false;
     }
 
     // Resolve either a stored array count or its constant dimension expression.

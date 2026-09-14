@@ -3274,7 +3274,7 @@ else if (arg == "-Zcheck")
             }
 
             // Count inline byte arrays in both total layout and the active function estimate.
-            if (e.Match(Tag.ReadonlyData, out string rdName, out byte[] rdBytes))
+            if (e.MatchReadonlyData(out string rdName, out byte[] rdBytes))
             {
                 int n = rdBytes == null ? 0 : rdBytes.Length;
                 pc += n;
