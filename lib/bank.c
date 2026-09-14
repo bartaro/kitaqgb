@@ -3,12 +3,12 @@
 // Software shadow starts at zero; initialize it through bank_switch before relying on it.
 u8 kq_bank_current;
 
-// Write the requested bank to the cartridge register and update this library
-// shadow. The shadow reflects calls to this wrapper, not arbitrary mapper writes.
+// Update both the library bank record and the compiler shadow used by far
+// reads and calls. Invoke this permanent bank change from fixed-bank code.
 void bank_switch(u8 bank)
 {
     kq_bank_current = bank;
-    *(u8*)0x2000 = bank;
+    __bankswitch(bank);
 }
 
 // Return the last bank recorded by bank_switch; this does not read cartridge hardware.
@@ -35,8 +35,8 @@ void far_data_read(u8 bank, const void* addr, void* dst, u16 len)
     __farmemcpy(dst, bank, addr, len);
 }
 
-// Forward to __farcall_ptr. The current GB backend evaluates its arguments but
-// emits no indirect call; this wrapper must not be used to invoke a callback.
+// Invoke a no-argument callback in its ROM bank, then restore the caller
+// bank. The pointer must identify executable code; no arguments are forwarded.
 void far_call(u8 bank, const void* func)
 {
     __farcall_ptr(bank, func);

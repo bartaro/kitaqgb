@@ -186,6 +186,7 @@ class CodeGenerator
     AsmOperand StructReturnPtrHiVar;
     bool UseBankSwitchBank0Helper;
     bool UseFarMemcpyBank0Helper;
+    bool UseFarCallPointerBank0Helper;
     readonly Dictionary<string, BankThunkInfo> Bank0ThunkMap = new Dictionary<string, BankThunkInfo>();
     readonly Dictionary<string, string> Bank0RuntimeFarcallThunkMap = new Dictionary<string, string>();
     // Reserve eight nested bank-thunk entries and encode their depth relative to 0x80.
@@ -1513,6 +1514,7 @@ class CodeGenerator
     {
         if (!UseBankSwitchBank0Helper &&
             !UseFarMemcpyBank0Helper &&
+            !UseFarCallPointerBank0Helper &&
             Bank0ThunkMap.Count == 0 &&
             Bank0RuntimeFarcallThunkMap.Count == 0) return;
 
@@ -1556,6 +1558,41 @@ class CodeGenerator
             injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(RomBankSavedAddr & 0xFF, AddressMode.Immediate)));
             injected.Add(Expr.MakeAsm("LD_MEM_A", new AsmOperand(0x2000, AddressMode.Absolute)));
             injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x82, AddressMode.Immediate)));
+            injected.Add(Expr.MakeAsm("RET"));
+        }
+
+        // A holds the requested bank and HL the runtime callback address. Save
+        // each caller bank on the CPU stack, so nested far calls do not share a
+        // mutable saved-bank slot. The callback receives no arguments.
+        if (UseFarCallPointerBank0Helper)
+        {
+            string returned = "__kq_farcall_pointer_return";
+            injected.Add(Expr.Make(Tag.Function, "__kq_farcall_pointer_bank0"));
+            injected.Add(Expr.MakeAsm("PUSH_AF"));
+            injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x82, AddressMode.Immediate)));
+            injected.Add(Expr.MakeAsm("PUSH_AF"));
+            injected.Add(Expr.MakeAsm("POP_BC"));
+            injected.Add(Expr.MakeAsm("POP_AF"));
+            injected.Add(Expr.MakeAsm("PUSH_BC"));
+            injected.Add(Expr.MakeAsm("LD_MEM_A", new AsmOperand(0x2000, AddressMode.Absolute)));
+            injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x82, AddressMode.Immediate)));
+            injected.Add(Expr.MakeAsm("LD_DE_IMM", new AsmOperand(returned, AddressMode.Immediate16)));
+            injected.Add(Expr.MakeAsm("PUSH_DE"));
+            injected.Add(Expr.MakeAsm("JP_HL"));
+            injected.Add(Expr.Make(Tag.Label, returned));
+            // Preserve scalar return registers while restoring the mapping. The
+            // intrinsic is void, but this also avoids corrupting callback flags.
+            injected.Add(Expr.MakeAsm("PUSH_AF"));
+            injected.Add(Expr.MakeAsm("PUSH_HL"));
+            injected.Add(Expr.MakeAsm("POP_DE"));
+            injected.Add(Expr.MakeAsm("POP_BC"));
+            injected.Add(Expr.MakeAsm("POP_AF"));
+            injected.Add(Expr.MakeAsm("LD_MEM_A", new AsmOperand(0x2000, AddressMode.Absolute)));
+            injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x82, AddressMode.Immediate)));
+            injected.Add(Expr.MakeAsm("PUSH_BC"));
+            injected.Add(Expr.MakeAsm("PUSH_DE"));
+            injected.Add(Expr.MakeAsm("POP_HL"));
+            injected.Add(Expr.MakeAsm("POP_AF"));
             injected.Add(Expr.MakeAsm("RET"));
         }
 
@@ -7204,10 +7241,22 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 if (args.Length != 2) Program.Error("__farcall(bank, func) expects 2 arguments");
                 if (!args[1].Match(Tag.Name, out string targetName)) Program.Error("__farcall(bank, func) requires 2nd argument to be a function name");
 
+                // A named far call supplies no arguments. Reject data symbols
+                // and callbacks that would otherwise read stale argument storage.
+                CFunctionInfo targetInfo;
+                if (!Functions.TryGetValue(targetName, out targetInfo))
+                {
+                    Error(expr, "__farcall requires a declared function name");
+                    return;
+                }
+                if ((targetInfo.Parameters ?? Array.Empty<FieldInfo>()).Length != 0)
+                {
+                    Error(expr, "__farcall requires a callback with no parameters");
+                    return;
+                }
                 Expr bankExpr = FoldConstants(args[0]);
                 int targetBank = -1;
-                CFunctionInfo targetInfo;
-                if (Functions.TryGetValue(targetName, out targetInfo))
+                if (targetInfo != null)
                 {
                     targetBank = targetInfo.RomBank;
                     PrepareStructReturnDestination(expr, targetInfo.ReturnType, targetInfo, targetName);
@@ -8218,12 +8267,23 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 return;
             }
 
-            // This dispatch evaluates and discards both arguments; it emits no indirect call here.
+            // Invoke a runtime-address, no-argument callback through fixed ROM.
             if (funcName == "__farcall_ptr")
             {
                 if (args.Length != 2) Error(expr, "__farcall_ptr(bank, func) expects 2 arguments");
-                CompileDiscard(args[0]);
-                CompileDiscard(args[1]);
+                CType callbackType = TypeOf(args[1]);
+                if (callbackType.IsPointer) callbackType = callbackType.Subtype;
+                if (callbackType != null && callbackType.IsFunction &&
+                    (callbackType.ParamTypes ?? Array.Empty<CType>()).Length != 0)
+                    Error(expr, "__farcall_ptr requires a callback with no parameters");
+                CompileIntoA(args[0]);
+                EmitAsm("PUSH_AF");
+                CompileIntoHL(args[1]);
+                EmitAsm("POP_AF");
+                UseFarCallPointerBank0Helper = true;
+                EmitAsm("CALL", new AsmOperand("__kq_farcall_pointer_bank0", AddressMode.Absolute));
+                RecordCallEdge(expr, "<indirect-far>", -1, "farcall_pointer", viaThunk: true,
+                    viaFarcall: true, actualArgSizes: new int[0], expectedArgSizes: new int[0]);
                 return;
             }
 
