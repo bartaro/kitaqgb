@@ -143,8 +143,8 @@ void sprite_flush_oam()
 }
 
 #ifndef KQ_SPRITE_MINIMAL_RUNTIME
-// Return the maintained allocation counter. Metasprite placement also adjusts
-// this value as a high-water mark, so mixed allocation styles need care.
+// Return the number of active slots, including slots activated by metasprite_draw.
+// Hidden allocated slots remain active until sprite_free releases them.
 u8 sprite_count_used()
 {
     return kq_sprite_used;
@@ -184,23 +184,25 @@ u8 sprite_warn_scanline_overflow()
     return (u8)(sprite_max_scanline_count() > 10);
 }
 
-// Place consecutive parts starting at first_id and activate their slots.
-// Return the number written if the slot limit is reached. Callers must keep
-// ID arithmetic within the byte range and manage overlap with existing allocations.
-// Early return at the slot limit leaves written parts active but skips the final used-count update.
+// Place consecutive parts, counting each newly activated slot once. Existing
+// active slots are overwritten without increasing the allocation count. Return
+// the number written; an invalid first slot or zero count writes nothing.
+// A partial write at the slot limit keeps both activity flags and count consistent.
 u8 metasprite_draw(u8 first_id, u8 x, u8 y, const MetaSpritePart* parts, u8 count)
 {
     u8 i = 0;
     while (i < count) {
         u8 id = (u8)(first_id + i);
         if (id >= SPRITE_MAX) return i;
-        kq_sprite_active[id] = 1;
+        if (kq_sprite_active[id] == 0) {
+            kq_sprite_active[id] = 1;
+            kq_sprite_used = (u8)(kq_sprite_used + 1);
+        }
         sprite_set_pos(id, (u8)(x + parts[i].dx), (u8)(y + parts[i].dy));
         sprite_set_tile(id, parts[i].tile);
         sprite_set_flags(id, parts[i].flags);
         i++;
     }
-    if ((u8)(first_id + count) > kq_sprite_used) kq_sprite_used = (u8)(first_id + count);
     return count;
 }
 

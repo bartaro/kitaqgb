@@ -68,8 +68,8 @@ void sprite_hide(u8 id);
 void sprite_flush_oam_now();
 // Wait for VBlank, then transfer shadow OAM using the immediate DMA routine.
 void sprite_flush_oam();
-// Return the maintained allocation counter. Metasprite placement also adjusts
-// this value as a high-water mark, so mixed allocation styles need care.
+// Return the number of active slots, including slots activated by metasprite_draw.
+// Hidden allocated slots remain active until sprite_free releases them.
 u8 sprite_count_used();
 // Report whether the software overlap estimate exceeds ten sprites on a scanline.
 u8 sprite_warn_scanline_overflow();
@@ -77,9 +77,9 @@ u8 sprite_warn_scanline_overflow();
 // visible scanlines using the configured sprite height. This is a software
 // overlap count, not a rendered-pixel or hardware-priority simulation.
 u8 sprite_max_scanline_count();
-// Place consecutive parts starting at first_id and activate their slots.
-// Return the number written if the slot limit is reached. Callers must keep
-// ID arithmetic within the byte range and manage overlap with existing allocations.
+// Place consecutive parts, counting each newly activated slot once. Existing
+// active slots are overwritten without increasing the allocation count. Return
+// the number written; an invalid first slot or zero count writes nothing.
 u8 metasprite_draw(u8 first_id, u8 x, u8 y, const MetaSpritePart* parts, u8 count);
 // Advance animation ticks/frame with wrapping frame selection and return the
 // resulting tile. Zero ticks-per-frame freezes animation; null state returns zero.
