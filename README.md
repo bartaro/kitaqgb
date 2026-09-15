@@ -5,17 +5,10 @@
 | --- | --- |
 | English | [KITAQGB](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
 | 日本語 | [KITAQGB](https://bartaro.github.io/kitaq-docs/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [KITAQGB](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [KITAQGB](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [KITAQGB](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Español | [KITAQGB](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Português (Brasil) | [KITAQGB](https://bartaro.github.io/kitaq-docs/pt/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/pt/gb-library.html) |
-| Français | [KITAQGB](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Deutsch | [KITAQGB](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
 <!-- manual-language-links:end -->
 
 
-[English](#english) | [日本語](#japanese) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](#english) | [日本語](#japanese)
 
 <a name="english"></a>
 

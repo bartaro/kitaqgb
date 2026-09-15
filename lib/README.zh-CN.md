@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md) | **简体中文**
 
-[打开KITAQGB库简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)，查看各函数的说明和示例代码。
+打开KITAQGB库简体中文手册，查看各函数的说明和示例代码。
 
 `wire3d_dmg` 是Game Boy单色线框渲染器。128×96请选择 `wire3d_dmg_96.c`，128×120请选择 `wire3d_dmg.c`，并使用 `Wire3DDMG_*` 函数。`wire3d` 和 `dmg3d` 分别保留为这两种分辨率的兼容入口。每个ROM只编译一个入口。彩色专用的 `wire3d_cgb` 仍是独立渲染器。
 

@@ -2,7 +2,7 @@
 
 [English](README.md) | **Deutsch**
 
-**[Deutsches Bibliothekshandbuch öffnen](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
+**Deutsches Bibliothekshandbuch öffnen**
 
 `wire3d_dmg` ist eine Bibliothek für monochrome Drahtgittergrafik auf dem Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie pro Programm nur einen Einstiegspunkt. `wire3d_cgb` ist der Renderer für die Farbdarstellung.
 

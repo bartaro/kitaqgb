@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md) | **繁體中文**
 
-[開啟 KITAQGB 程式庫繁體中文手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)，查看各函式說明與程式範例。
+開啟 KITAQGB 程式庫繁體中文手冊，查看各函式說明與程式範例。
 
 `wire3d_dmg` 是 Game Boy 單色線框繪圖器。128×96 請選用 `wire3d_dmg_96.c`，128×120 則選用 `wire3d_dmg.c`，並透過 `Wire3DDMG_*` 函式操作。`wire3d` 與 `dmg3d` 分別保留為這兩種解析度的相容入口。每個 ROM 只編譯其中一個入口。彩色專用的 `wire3d_cgb` 仍為獨立繪圖器。
 

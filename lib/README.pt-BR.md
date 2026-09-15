@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md) | **Português (Brasil)**
 
-[Abrir o manual da biblioteca KITAQGB em português](https://bartaro.github.io/kitaq-docs/pt/gb-library.html)
+Abrir o manual da biblioteca KITAQGB em português
 
 `wire3d_dmg` desenha gráficos 3D monocromáticos em wireframe (apenas as arestas) para Game Boy. Escolha `wire3d_dmg_96.c` para 128×96 ou `wire3d_dmg.c` para 128×120 e use as funções `Wire3DDMG_*`. Os arquivos `wire3d` e `dmg3d` permanecem como entradas de compatibilidade para esses respectivos perfis. Compile apenas uma entrada por ROM. `wire3d_cgb` mantém seu nome e continua sendo o renderizador separado para cores.
 

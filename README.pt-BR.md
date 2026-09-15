@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **Português (Brasil)**
 
-**[Manual do compilador em português](https://bartaro.github.io/kitaq-docs/pt/kitaqgb.html)** · **[Manual da biblioteca em português](https://bartaro.github.io/kitaq-docs/pt/gb-library.html)**
+**Manual do compilador em português** · **Manual da biblioteca em português**
 
 ## Origem do nome
 
@@ -159,7 +159,7 @@ Exemplo com funções de RPG, aventura e estratégia:
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-Consulte [lib/README.pt-BR.md](lib/README.pt-BR.md) para ver a classificação e as observações de uso das bibliotecas.
+Consulte lib/README.pt-BR.md para ver a classificação e as observações de uso das bibliotecas.
 
 ## Opções frequentes de linha de comando
 
@@ -213,7 +213,7 @@ O projeto prioriza código gerado previsível, diagnósticos claros, pequenos ex
 
 Preencha os requisitos e envie o prompt completo ao assistente de IA. Ele abrange implementação, testes no emulador, análise com SARAKURA e verificação das correções.
 
-[Ler o exemplo prático no manual HTML](https://bartaro.github.io/kitaq-docs/pt/kitaqgb.html#loop-prompts)
+Ler o exemplo prático no manual HTML
 
 <details>
 <summary>Mostrar o prompt completo</summary>
@@ -379,6 +379,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Manuais e licenças
 
-- [Manual da KITAQGB em português](https://bartaro.github.io/kitaq-docs/pt/kitaqgb.html) · [Biblioteca em português](https://bartaro.github.io/kitaq-docs/pt/gb-library.html)
+- Manual da KITAQGB em português · Biblioteca em português
 - [Fontes do manual para leitura offline](https://github.com/bartaro/kitaq-docs)
 - [Licença](LICENSE) · [Tradução de referência em japonês](LICENSE.ja)

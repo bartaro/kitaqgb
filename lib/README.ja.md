@@ -1,6 +1,6 @@
 # KITAQGB ライブラリ
 
-[English](README.md) | [日本語](README.ja.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.md) | [日本語](README.ja.md)
 
 [日本語のライブラリ説明書](https://bartaro.github.io/kitaq-docs/gb-library.html)には、各関数の使い方とサンプルコードを掲載しています。
 

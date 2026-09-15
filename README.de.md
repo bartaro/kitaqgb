@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **Deutsch**
 
-**[Compiler-Handbuch](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html)** · **[Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
+**Compiler-Handbuch** · **Bibliothekshandbuch**
 
 ## Herkunft des Namens
 
@@ -159,7 +159,7 @@ Beispiel für RPG-, Adventure- oder Strategiespielfunktionen:
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-Die aktuelle Einteilung und Hinweise zu den Bibliotheken stehen in [lib/README.de.md](lib/README.de.md).
+Die aktuelle Einteilung und Hinweise zu den Bibliotheken stehen in lib/README.de.md.
 
 ## Häufig verwendete Optionen
 
@@ -213,7 +213,7 @@ Wichtig sind vorhersehbarer Maschinencode, verständliche Diagnosen, kleine repr
 
 Tragen Sie die Anforderungen ein und geben Sie den vollständigen Prompt an Ihre KI weiter. Er umfasst die Implementierung, Emulator-Tests, die Analyse mit SARAKURA und die erneute Prüfung nach Korrekturen.
 
-[Das Praxisbeispiel im HTML-Handbuch lesen](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html#loop-prompts)
+Das Praxisbeispiel im HTML-Handbuch lesen
 
 <details>
 <summary>Vollständigen Prompt anzeigen</summary>
@@ -379,7 +379,7 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Handbücher und Lizenzen
 
-- [Deutsches Compiler-Handbuch](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) / [Deutsches Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)
+- Deutsches Compiler-Handbuch / Deutsches Bibliothekshandbuch
 - [Japanisches Handbuch](https://bartaro.github.io/kitaq-docs/kitaqgb.html) / [Englisches Handbuch](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html)
 - [Handbuchquellen zum Offline-Lesen](https://github.com/bartaro/kitaq-docs)
 - [Lizenz](LICENSE) / [Japanische Übersetzung zur Orientierung](LICENSE.ja)

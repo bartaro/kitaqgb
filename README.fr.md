@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **Français**
 
-**[Manuel du compilateur](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html)** · **[Manuel de la bibliothèque](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)**
+**Manuel du compilateur** · **Manuel de la bibliothèque**
 
 ## Origine du nom
 
@@ -236,7 +236,7 @@ L'objectif est de rendre le développement pour les machines de type Game Boy pl
 
 Renseignez les besoins, puis transmettez le prompt complet à votre assistant IA. Il couvre l’implémentation, les tests dans l’émulateur, l’analyse avec SARAKURA et la vérification des corrections.
 
-[Lire l’exemple pratique dans le manuel HTML](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html#loop-prompts)
+Lire l’exemple pratique dans le manuel HTML
 
 <details>
 <summary>Afficher le prompt complet</summary>
@@ -408,7 +408,7 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Manuels et licences
 
-- [Manuel en français](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) / [Bibliothèque en français](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)
+- Manuel en français / Bibliothèque en français
 - [Manuel en anglais](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) / [Manuel en japonais](https://bartaro.github.io/kitaq-docs/kitaqgb.html)
 - [Sources du manuel pour lecture hors connexion](https://github.com/bartaro/kitaq-docs)
 - [Licence](LICENSE) / [Traduction japonaise à titre de référence](LICENSE.ja)

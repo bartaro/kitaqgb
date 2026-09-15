@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **简体中文**
 
-**[编译器简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html)** · **[库简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)**
+**编译器简体中文手册** · **库简体中文手册**
 
 ## 名称由来
 
@@ -159,7 +159,7 @@ RPG/ADV/SLG功能示例：
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-库的分类和注意事项见 [lib/README.zh-CN.md](lib/README.zh-CN.md)。
+库的分类和注意事项见 lib/README.zh-CN.md。
 
 ## 常用命令行选项
 
@@ -213,7 +213,7 @@ KITAQGB并不以通用现代C编译器为目标。它专门面向内存有限、
 
 填写需求后，将完整提示词交给 AI。内容涵盖实现、模拟器测试、SARAKURA 分析以及修复后的复测。
 
-[阅读 HTML 手册中的参考示例](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html#loop-prompts)
+阅读 HTML 手册中的参考示例
 
 <details>
 <summary>展开完整提示词</summary>
@@ -379,6 +379,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## 手册与许可证
 
-- [简体中文编译器手册](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) / [简体中文库手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
+- 简体中文编译器手册 / 简体中文库手册
 - [供离线阅读的手册源码](https://github.com/bartaro/kitaq-docs)
 - [许可证](LICENSE) / [日文参考译文](LICENSE.ja)

@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **Español**
 
-**[Manual del compilador en español](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html)** · **[Manual de las bibliotecas en español](https://bartaro.github.io/kitaq-docs/es/gb-library.html)**
+**Manual del compilador en español** · **Manual de las bibliotecas en español**
 
 ## Origen del nombre
 
@@ -159,7 +159,7 @@ Ejemplo con funciones RPG/ADV/SLG:
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-Consulte la clasificación y las notas de las bibliotecas en [lib/README.es.md](lib/README.es.md).
+Consulte la clasificación y las notas de las bibliotecas en lib/README.es.md.
 
 ## Opciones habituales de la línea de comandos
 
@@ -213,7 +213,7 @@ Se busca generar código predecible, ofrecer diagnósticos claros y ejemplos peq
 
 Completa los requisitos y entrega el prompt íntegro a tu asistente de IA. Incluye implementación, pruebas en el emulador, análisis con SARAKURA y verificación de las correcciones.
 
-[Leer el ejemplo práctico en el manual HTML](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html#loop-prompts)
+Leer el ejemplo práctico en el manual HTML
 
 <details>
 <summary>Mostrar el prompt completo</summary>
@@ -379,7 +379,7 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Manuales y licencias
 
-- [Compilador: manual en español](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) / [Bibliotecas: manual en español](https://bartaro.github.io/kitaq-docs/es/gb-library.html)
+- Compilador: manual en español / Bibliotecas: manual en español
 - [Archivos del manual para consultarlo sin conexión](https://github.com/bartaro/kitaq-docs)
 - [Licencia](LICENSE) / [Traducción japonesa de referencia](LICENSE.ja)
 

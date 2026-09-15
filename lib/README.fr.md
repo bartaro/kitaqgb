@@ -6,7 +6,7 @@
 
 [English](README.md) | **Français**
 
-**[Ouvrir le manuel de la bibliothèque KITAQGB](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)**
+**Ouvrir le manuel de la bibliothèque KITAQGB**
 
 Ce dossier contient trois catégories de fichiers :
 

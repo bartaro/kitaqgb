@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **한국어**
 
-**[컴파일러 한국어 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html)** · **[라이브러리 한국어 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)**
+**컴파일러 한국어 설명서** · **라이브러리 한국어 설명서**
 
 ## 이름의 유래
 
@@ -159,7 +159,7 @@ RPG·ADV·SLG 기능을 쓰는 예입니다.
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-라이브러리 분류와 주의 사항은 [lib/README.ko.md](lib/README.ko.md)를 참고하세요.
+라이브러리 분류와 주의 사항은 lib/README.ko.md를 참고하세요.
 
 ## 자주 쓰는 명령줄 옵션
 
@@ -213,7 +213,7 @@ KITAQGB는 범용 현대 C 컴파일러를 목표로 하지 않습니다. 적은
 
 요구 사항을 작성한 뒤 프롬프트 전체를 AI에 전달하세요. 구현, 에뮬레이터 테스트, SARAKURA 분석, 수정 후 재검증까지 다룹니다.
 
-[HTML 설명서에서 활용 예 읽기](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html#loop-prompts)
+HTML 설명서에서 활용 예 읽기
 
 <details>
 <summary>프롬프트 전체 보기</summary>
@@ -379,6 +379,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## 설명서와 라이선스
 
-- [한국어 컴파일러 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) / [한국어 라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
+- 한국어 컴파일러 설명서 / 한국어 라이브러리 설명서
 - [오프라인 열람용 설명서 소스](https://github.com/bartaro/kitaq-docs)
 - [라이선스](LICENSE) / [일본어 참고 번역](LICENSE.ja)

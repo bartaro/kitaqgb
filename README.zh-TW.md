@@ -2,7 +2,7 @@
 
 [English](README.md#english) | [日本語](README.md#japanese) | **繁體中文**
 
-**[編譯器繁體中文手冊](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html)** · **[程式庫繁體中文手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)**
+**編譯器繁體中文手冊** · **程式庫繁體中文手冊**
 
 ## 名稱由來
 
@@ -159,7 +159,7 @@ RPG／ADV／SLG 功能範例：
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-程式庫分類與注意事項請見 [lib/README.zh-TW.md](lib/README.zh-TW.md)。
+程式庫分類與注意事項請見 lib/README.zh-TW.md。
 
 ## 常用命令列選項
 
@@ -213,7 +213,7 @@ KITAQGB 並非以通用現代 C 編譯器為目標，而是專為記憶體有限
 
 填寫需求後，將完整提示詞交給 AI。內容涵蓋實作、模擬器測試、SARAKURA 分析，以及修正後的重新驗證。
 
-[閱讀 HTML 手冊中的參考範例](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html#loop-prompts)
+閱讀 HTML 手冊中的參考範例
 
 <details>
 <summary>展開完整提示詞</summary>
@@ -379,6 +379,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## 手冊與授權
 
-- [繁體中文編譯器手冊](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html)／[繁體中文程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)
+- 繁體中文編譯器手冊／繁體中文程式庫手冊
 - [可供離線閱讀的手冊原始檔](https://github.com/bartaro/kitaq-docs)
 - [授權條款](LICENSE)／[日文參考譯文](LICENSE.ja)

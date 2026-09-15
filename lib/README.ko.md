@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md) | **한국어**
 
-[KITAQGB 라이브러리 한국어 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)에서 각 함수의 사용법과 예제 코드를 볼 수 있습니다.
+KITAQGB 라이브러리 한국어 설명서에서 각 함수의 사용법과 예제 코드를 볼 수 있습니다.
 
 `wire3d_dmg`는 게임보이용 흑백 와이어프레임 렌더러입니다. 128×96에서는 `wire3d_dmg_96.c`, 128×120에서는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*` 함수를 사용하세요. `wire3d`와 `dmg3d`는 각각의 해상도에 대응하는 호환용 진입점으로 남아 있습니다. 한 ROM에는 진입점을 하나만 컴파일하세요. 컬러 전용 렌더러 `wire3d_cgb`는 별도로 사용합니다.
 

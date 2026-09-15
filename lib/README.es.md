@@ -2,7 +2,7 @@
 
 [English](README.md) | [日本語](README.ja.md) | **Español**
 
-El [manual de las bibliotecas KITAQGB en español](https://bartaro.github.io/kitaq-docs/es/gb-library.html) contiene las explicaciones de cada función y sus ejemplos de código.
+El manual de las bibliotecas KITAQGB en español contiene las explicaciones de cada función y sus ejemplos de código.
 
 `wire3d_dmg` es el renderizador monocromo de líneas 3D para Game Boy. Para 128×96, utilice `wire3d_dmg_96.c`; para 128×120, `wire3d_dmg.c`. En ambos casos se usa la API `Wire3DDMG_*`. `wire3d` y `dmg3d` se mantienen como entradas de compatibilidad para esas dos resoluciones, respectivamente. Compile una sola entrada por ROM. `wire3d_cgb`, exclusivo de color, sigue siendo un renderizador independiente.
 
