@@ -2648,8 +2648,11 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
                 int sz = SizeOfType(lt);
 
                 // tmpVal = left
-                // Use an unsigned value temporary and an eight-bit count for the generated one-bit-at-a-time shift loop.
-                string tmpVal = ctx.AcquireTemp(sz == 1 ? CType.UInt8 : CType.UInt16);
+                // Preserve the left operand signedness for the generated right-shift loop.
+                CType shiftValueType = lt != null && lt.IsSigned
+                    ? (sz == 1 ? CType.Int8 : CType.Int16)
+                    : (sz == 1 ? CType.UInt8 : CType.UInt16);
+                string tmpVal = ctx.AcquireTemp(shiftValueType);
                 Expr tmpValName = Expr.Make(Tag.Name, tmpVal).WithSource(expr.Source);
                 prefix.Add(Expr.Make(Tag.Assign, tmpValName, newLeft).WithSource(expr.Source));
 

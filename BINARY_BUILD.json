@@ -1,10 +1,10 @@
 {
-  "built_on": "2026-09-14",
+  "built_on": "2026-09-15",
   "licensor": "DAISUKE OBA",
   "configuration": "Release",
   "build_command": ".\\scripts\\build.ps1",
   "build_exit_code": 0,
-  "source_revision_before_packaging": "13b1e9d9d88dcbd9e6d5997e4507446d2ea906c8",
+  "source_revision_before_packaging": "452a61a7f162456356f058e3bcf4936aa0e8df83",
   "source_state": "Reviewed publication working tree; source_inputs hashes identify the recorded files.",
   "source_inventory_scope": "Compiler project and build entry point.",
   "source_inputs": [
@@ -14,7 +14,7 @@
     },
     {
       "path": "kitaqgb/Assembler.cs",
-      "sha256": "da94523b9d954fcda7672c684a3cbae558a4e277a0cdae5d1ae841d40d157e49"
+      "sha256": "889325f772814b9ec22bcf4839fd33e4f9fe739c61a8a6ec1fa3709ebf01a4d7"
     },
     {
       "path": "kitaqgb/BuildReports.cs",
@@ -26,7 +26,7 @@
     },
     {
       "path": "kitaqgb/CodeGenerator.cs",
-      "sha256": "dc42db9340565420cf1a28b473780c72adc1187d86d4f2c515f3537db6c7ac5e"
+      "sha256": "4b949c2c4f49f9acbf980cbd4805f20d8aab2757f40d3c3f6c756aac3d011192"
     },
     {
       "path": "kitaqgb/CompilerApi.cs",
@@ -38,7 +38,7 @@
     },
     {
       "path": "kitaqgb/DeadStripper.cs",
-      "sha256": "77bfded8eadc75a92132bc609bdef8f259c4ca963d7850be584c114751f8ad30"
+      "sha256": "5d0a8499ac29fa0c35f7b2ad6427756e711091af2136daa6348272b4ce312822"
     },
     {
       "path": "kitaqgb/DebugExporter.cs",
@@ -50,7 +50,7 @@
     },
     {
       "path": "kitaqgb/Expr.cs",
-      "sha256": "cd4ef209434c7942657fa236ae0bbd5d796658f79d3e0df91f7bfba8d90e4649"
+      "sha256": "db839d1a6a5a932d43ec863e8cda1af6e084177a5d19cbce32c32b1739c0f6a4"
     },
     {
       "path": "kitaqgb/IoUtil.cs",
@@ -58,7 +58,7 @@
     },
     {
       "path": "kitaqgb/Lowerer.cs",
-      "sha256": "1f387eb246d5049e73ee0ffaa3e21a0cf9ae52780d4a15fcec29cbd3b11ddecb"
+      "sha256": "88cc611cf2d5492c32a1635846bd45b7a70788ea47cb8312fe56f5f9662d58be"
     },
     {
       "path": "kitaqgb/Maybe.cs",
@@ -70,7 +70,7 @@
     },
     {
       "path": "kitaqgb/Optimizer.cs",
-      "sha256": "3113711fef33a799a12d989ad2cf153d406d08301862e40d7bcc56d85d0f13bf"
+      "sha256": "1158193f0486075d225d339d280b0187ed0b3f96a0922193d154c497fb781754"
     },
     {
       "path": "kitaqgb/Other.cs",
@@ -94,7 +94,7 @@
     },
     {
       "path": "kitaqgb/Program.cs",
-      "sha256": "f7eb3e8c0e42472aee42cadae52b1f1eec2698a237bffda7383a335d620467d3"
+      "sha256": "2f2cc605d5f5985ed93d3c0994bfcb8bd3900496a9dc0a2c8a11ad28c93b6575"
     },
     {
       "path": "kitaqgb/RomHeaderPatcher.cs",
@@ -119,23 +119,33 @@
   ],
   "binary": {
     "path": "kitaqgb.exe",
-    "bytes": 642560,
-    "sha256": "5583835af135575e8bc6d4704b4c5e32c6f16dc4bea4659f6087bfa1c33a17d2",
+    "bytes": 646656,
+    "sha256": "143631a87b2307ad0c0abf075a97460793d30ec058409a5d2bf8649ef098fb9d",
     "imported_system_dlls": [
       "mscoree.dll"
     ]
   },
   "checks": [
     {
-      "check": "--help captured",
-      "exit_code": 1
+      "check": "Library boundary and compiler control-flow runtime checks",
+      "cases": 24,
+      "result": "all passed",
+      "documentation": "https://bartaro.github.io/kitaq-docs/gb-library.html#module-fixed"
     },
     {
-      "check": "Current manual sample compilation",
-      "samples": 29,
-      "frames_per_run": null,
-      "result": "all passed",
-      "evidence": "https://bartaro.github.io/kitaq-docs/verification/current/samples.json"
+      "check": "Library sample RAM values and expected screen pixels",
+      "cases": 20,
+      "result": "all passed"
+    },
+    {
+      "check": "Callback execution on consecutive video frames",
+      "cases": 2,
+      "result": "all passed"
+    },
+    {
+      "check": "Menu acceptance, cancellation, wrapping and simultaneous inputs",
+      "cases": 56,
+      "result": "all passed"
     }
   ],
   "scope": "Windows CLI release. Compilation and bounded emulator execution are separate checks; no blanket physical-hardware or peripheral compatibility claim.",
