@@ -1229,6 +1229,7 @@ class CodeGenerator
 
         // Schedule entry A by programming LYC and STAT bit 6, or disable that bit when A is outside the current count.
         string schedDisable = "__kq_scroll_schedule_next_disable";
+        string schedDisabled = "__kq_scroll_schedule_next_disabled";
         string schedHaveTarget = "__kq_scroll_schedule_next_have_target";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_schedule_next"));
         injected.Add(Expr.MakeAsm("LD_B_A"));
@@ -1254,9 +1255,15 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x41, AddressMode.HighMem)));
         injected.Add(Expr.MakeAsm("RET"));
         injected.Add(Expr.Make(Tag.Label, schedDisable));
+        // Do not rewrite a disabled STAT source: on DMG even writing zero
+        // can raise a fresh request and repeatedly re-enter the STAT handler.
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x41, AddressMode.HighMem)));
+        injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0x40, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(schedDisabled, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x41, AddressMode.HighMem))); // STAT
         injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0xBF, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x41, AddressMode.HighMem)));
+        injected.Add(Expr.Make(Tag.Label, schedDisabled));
         injected.Add(Expr.MakeAsm("RET"));
 
         // Apply the fields selected by an entry's flags. Show follows hide when both are set; palette color zero reuses SCX/SCY bytes.
@@ -1264,6 +1271,7 @@ class CodeGenerator
         string applySkipWin = "__kq_scroll_apply_entry_skip_win";
         string applySkipHide = "__kq_scroll_apply_entry_skip_hide";
         string applySkipBgColor0 = "__kq_scroll_apply_entry_skip_bg_color0";
+        string applyWaitPalette = "__kq_scroll_apply_entry_wait_palette";
         string applyDone = "__kq_scroll_apply_entry_done";
         injected.Add(Expr.Make(Tag.Function, "__kq_scroll_apply_entry"));
         injected.Add(Expr.MakeAsm("INC_HL")); // scx
@@ -1315,6 +1323,13 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("LD_A_H"));
         injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(ScrollSplitFlagBgColor0, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(applyDone, AddressMode.Absolute)));
+        // CGB palette data writes are blocked during pixel transfer. Wait through
+        // OAM search as well, so both color bytes fit in the following HBlank.
+        // The LY-zero entry runs in VBlank and does not wait here.
+        injected.Add(Expr.Make(Tag.Label, applyWaitPalette));
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x41, AddressMode.HighMem)));
+        injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0x02, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("JR_NZ", new AsmOperand(applyWaitPalette, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LD_A_IMM", new AsmOperand(0x80, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x68, AddressMode.HighMem))); // BCPS: palette 0, color 0, auto increment
         injected.Add(Expr.MakeAsm("LD_A_B"));
@@ -1444,6 +1459,13 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("ADD_HL_HL"));
         injected.Add(Expr.MakeAsm("LD_DE_IMM", new AsmOperand(ScrollSplitTableAddr, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("ADD_HL_DE"));
+        // DMG STAT writes can request an interrupt unrelated to LYC. Consume
+        // this entry only on its scheduled line; leave the index intact otherwise.
+        injected.Add(Expr.MakeAsm("LD_A_HL"));
+        injected.Add(Expr.MakeAsm("LD_B_A"));
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x44, AddressMode.HighMem)));
+        injected.Add(Expr.MakeAsm("CP_B"));
+        injected.Add(Expr.MakeAsm("JR_NZ", new AsmOperand(statDone, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_apply_entry", AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LD_A_MEM", ScrollSplitIndexVar));
         injected.Add(Expr.MakeAsm("INC_A"));
@@ -1451,6 +1473,10 @@ class CodeGenerator
         injected.Add(Expr.MakeAsm("CALL", new AsmOperand("__kq_scroll_schedule_next", AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("JR", new AsmOperand(statDone, AddressMode.Absolute)));
         injected.Add(Expr.Make(Tag.Label, statDisable));
+        // Acknowledge an already-disabled source without writing STAT again.
+        injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x41, AddressMode.HighMem)));
+        injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0x40, AddressMode.Immediate)));
+        injected.Add(Expr.MakeAsm("JR_Z", new AsmOperand(statDone, AddressMode.Absolute)));
         injected.Add(Expr.MakeAsm("LDH_A_MEM", new AsmOperand(0x41, AddressMode.HighMem))); // STAT
         injected.Add(Expr.MakeAsm("AND_IMM", new AsmOperand(0xBF, AddressMode.Immediate)));
         injected.Add(Expr.MakeAsm("LDH_MEM_A", new AsmOperand(0x41, AddressMode.HighMem)));

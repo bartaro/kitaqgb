@@ -4,7 +4,7 @@
   "configuration": "Release",
   "build_command": ".\\scripts\\build.ps1",
   "build_exit_code": 0,
-  "source_revision_before_packaging": "452a61a7f162456356f058e3bcf4936aa0e8df83",
+  "source_revision_before_packaging": "bb3ae65215ebc4964c7b6542494c4d5d3ffdc10b",
   "source_state": "Reviewed publication working tree; source_inputs hashes identify the recorded files.",
   "source_inventory_scope": "Compiler project and build entry point.",
   "source_inputs": [
@@ -26,7 +26,7 @@
     },
     {
       "path": "kitaqgb/CodeGenerator.cs",
-      "sha256": "4b949c2c4f49f9acbf980cbd4805f20d8aab2757f40d3c3f6c756aac3d011192"
+      "sha256": "bd9d7e95b0ecfe97087fe755bb6b55937f0bb97470d8fab58ff1d191a9621cb4"
     },
     {
       "path": "kitaqgb/CompilerApi.cs",
@@ -119,36 +119,45 @@
   ],
   "binary": {
     "path": "kitaqgb.exe",
-    "bytes": 646656,
-    "sha256": "143631a87b2307ad0c0abf075a97460793d30ec058409a5d2bf8649ef098fb9d",
+    "bytes": 647168,
+    "sha256": "07fee123e43673213dbbb70ab310fb6acf1e0f6389fb48f16fcd59a8ea5039d2",
     "imported_system_dlls": [
       "mscoree.dll"
     ]
   },
   "checks": [
     {
-      "check": "Library boundary and compiler control-flow runtime checks",
-      "cases": 24,
-      "result": "all passed",
-      "documentation": "https://bartaro.github.io/kitaq-docs/gb-library.html#module-fixed"
+      "check": "Release build of the recorded compiler source",
+      "result": "passed"
     },
     {
-      "check": "Library sample RAM values and expected screen pixels",
-      "cases": 20,
-      "result": "all passed"
+      "check": "GB camera, board and scroll samples: 15 DMG/CGB runs with RAM and pixel comparisons",
+      "result": "passed"
     },
     {
-      "check": "Callback execution on consecutive video frames",
-      "cases": 2,
-      "result": "all passed"
+      "check": "GB boundary cases: 44 DMG/CGB runs",
+      "result": "passed"
     },
     {
-      "check": "Menu acceptance, cancellation, wrapping and simultaneous inputs",
-      "cases": 56,
-      "result": "all passed"
+      "check": "Previous API batch: 26 sample runs, 37 boundary cases, 56 menu-input cases and 3 callback timing cases across GB/FC",
+      "result": "passed"
+    },
+    {
+      "check": "GB memory, bit operations, RNG, flags, RLE, text layout and dialogue regression suites; teaching screenshots refreshed",
+      "result": "passed"
     }
   ],
   "scope": "Windows CLI release. Compilation and bounded emulator execution are separate checks; no blanket physical-hardware or peripheral compatibility claim.",
   "target_framework": ".NET Framework 4.8",
-  "platform": "AnyCPU"
+  "platform": "AnyCPU",
+  "library_inputs": [
+    {
+      "path": "lib/scroll.c",
+      "sha256": "2a136264f753a1774ee2b19b717ab6540a51dd1d6d279ab7b1b3f9e37e3c6f80"
+    },
+    {
+      "path": "lib/scroll.h",
+      "sha256": "80b676b5adaed829c90db2c1ed349cd85bf4ef0d1e3758b9410d391cf8ef8a9e"
+    }
+  ]
 }

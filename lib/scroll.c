@@ -14,9 +14,9 @@ void Scroll_SetBg(u8 scx, u8 scy) { __scroll_bg_set(scx, scy); }
 void Scroll_SetBgX(u8 scx) { __scroll_bg_x_set(scx); }
 // Write vertical background scroll while leaving horizontal scroll unchanged.
 void Scroll_SetBgY(u8 scy) { __scroll_bg_y_set(scy); }
-// Read the current horizontal background-scroll byte through the intrinsic.
+// Read the tracked current background X; this is not a direct SCX register read.
 u8 Scroll_GetBgX() { return __scroll_bg_x_get(); }
-// Read the current vertical background-scroll byte through the intrinsic.
+// Read the tracked current background Y; pending and raster-only values are excluded.
 u8 Scroll_GetBgY() { return __scroll_bg_y_get(); }
 
 // Write raw hardware WX/WY values; callers add seven to a screen-space window X.
@@ -25,9 +25,9 @@ void Scroll_SetWindow(u8 wx, u8 wy) { __scroll_win_set(wx, wy); }
 void Scroll_SetWindowX(u8 wx) { __scroll_win_x_set(wx); }
 // Write the window Y coordinate through the intrinsic.
 void Scroll_SetWindowY(u8 wy) { __scroll_win_y_set(wy); }
-// Read raw hardware WX, including its seven-pixel coordinate offset.
+// Read tracked current WX, including its seven-pixel offset; not a live hardware read.
 u8 Scroll_GetWindowX() { return __scroll_win_x_get(); }
-// Read the current hardware window Y value.
+// Read tracked current WY; pending and raster-only values are excluded.
 u8 Scroll_GetWindowY() { return __scroll_win_y_get(); }
 
 // Stage background-scroll values in the intrinsic buffer for a later flush.
