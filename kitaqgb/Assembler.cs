@@ -762,6 +762,9 @@ class Assembler
                     operandValue = 0;
                 }
 
+                // Resolved backward branches need the same signed-byte check as fixups.
+                if (isRelative && formalSize == 1 && (operandValue < -128 || operandValue > 127))
+                    Program.Error("Branch out of range at {0:X4}", pc);
                 if (formalSize == 1) rom[pc++] = LowByte(operandValue);
                 else if (formalSize == 2) { rom[pc++] = LowByte(operandValue); rom[pc++] = HighByte(operandValue); }
                 if (!string.IsNullOrEmpty(currentFunctionName)) currentFunctionBytes += 1 + formalSize;

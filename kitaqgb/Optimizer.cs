@@ -229,32 +229,32 @@ class Optimizer
                 if (next1.Match(Tag.Asm, out m1, out o1) && next2.Match(Tag.Asm, out m2, out o2))
                 {
                     // Collapse load/modify/store to an in-memory increment or decrement.
-                    // This pattern does not check later uses of A or flag differences from immediate arithmetic.
+                    // Preserve the modified A value and any live carry from immediate arithmetic.
                     if (mnemonic == "LD_A_HL" && m2 == "LD_HL_A")
                     {
                         // INC
-                        if (m1 == "INC_A")
+                        if (m1 == "INC_A" && CanFoldMemoryUpdate(sourceLines, i + 3, false))
                         {
                             optimized.Add(Expr.MakeAsm("INC_HL_REF"));
                             i += 2;
                             continue;
                         }
                         // DEC
-                        if (m1 == "DEC_A")
+                        if (m1 == "DEC_A" && CanFoldMemoryUpdate(sourceLines, i + 3, false))
                         {
                             optimized.Add(Expr.MakeAsm("DEC_HL_REF"));
                             i += 2;
                             continue;
                         }
                         // ADD A,1
-                        if (m1 == "ADD_A_IMM" && o1.Mode == AddressMode.Immediate && o1.Offset == 1 && !o1.Base.HasValue)
+                        if (m1 == "ADD_A_IMM" && o1.Mode == AddressMode.Immediate && o1.Offset == 1 && !o1.Base.HasValue && CanFoldMemoryUpdate(sourceLines, i + 3, true))
                         {
                             optimized.Add(Expr.MakeAsm("INC_HL_REF"));
                             i += 2;
                             continue;
                         }
                         // SUB 1
-                        if (m1 == "SUB_IMM" && o1.Mode == AddressMode.Immediate && o1.Offset == 1 && !o1.Base.HasValue)
+                        if (m1 == "SUB_IMM" && o1.Mode == AddressMode.Immediate && o1.Offset == 1 && !o1.Base.HasValue && CanFoldMemoryUpdate(sourceLines, i + 3, true))
                         {
                             optimized.Add(Expr.MakeAsm("DEC_HL_REF"));
                             i += 2;
@@ -591,6 +591,39 @@ class Optimizer
 
     // Recognize the listed branch, return, wait and restart names plus unconditional CALL.
     // Conditional CALL names are not matched by the exact CALL check.
+    // Folding leaves A untouched, and immediate ADD/SUB also differ in carry.
+    // Require both differing outputs to be overwritten before any use. Unknown
+    // instructions or control-flow boundaries conservatively keep the original code.
+    static bool CanFoldMemoryUpdate(IReadOnlyList<Expr> lines, int start, bool carryDiffers)
+    {
+        bool needA = true;
+        bool needCarry = carryDiffers;
+        for (int i = start; i < lines.Count && i < start + 16; i++)
+        {
+            string m; AsmOperand operand;
+            if (!lines[i].Match(Tag.Asm, out m, out operand)) return false;
+            if (m == "XOR_A" || m == "POP_AF") { needA = false; needCarry = false; }
+            else if (m == "LD_HL_SP_IMM") needCarry = false;
+            else if ((m.StartsWith("LD_A_") && m != "LD_A_A") || m.StartsWith("LDH_A_")) needA = false;
+            else if (m.StartsWith("LD_") || m.StartsWith("LDH_") || m == "LDI_HL_A" || m == "LDD_HL_A")
+            {
+                if (m.EndsWith("_A") && needA) return false;
+            }
+            else if (m == "NOP" || m == "DI" || m == "EI" ||
+                     m == "INC_HL" || m == "DEC_HL" || m == "INC_BC" || m == "DEC_BC" ||
+                     m == "INC_DE" || m == "DEC_DE" || m == "INC_SP" || m == "DEC_SP") { }
+            else if (m.StartsWith("AND") || m.StartsWith("OR") || m.StartsWith("XOR") ||
+                     m.StartsWith("ADD_A") || m.StartsWith("SUB"))
+            {
+                if (needA) return false;
+                needCarry = false;
+            }
+            else return false;
+            if (!needA && !needCarry) return true;
+        }
+        return false;
+    }
+
     static bool IsControlFlowOrCall(string mnemonic)
     {
         return mnemonic.StartsWith("JP") || mnemonic.StartsWith("JR") ||

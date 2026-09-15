@@ -8686,7 +8686,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(2, AddressMode.Relative));
                 EmitAsm("LD_A_HL"); // count
                 EmitAsm("OR_A");
-                EmitAsm("JR_Z", finished);
+                EmitAsm("JP_Z", finished);
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(3, AddressMode.Relative));
                 EmitAsm("LD_HL_A"); // save count in scratch+1
 
@@ -8735,6 +8735,13 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_D_A");
                 EmitAsm("LD_H_D");
                 EmitAsm("LD_L_E"); // dst
+                // Loading dst used D for its high byte. Recover the run value
+                // from stack scratch while preserving the completed HL pointer.
+                EmitAsm("PUSH_HL");
+                EmitAsm("LD_HL_SP_IMM", new AsmOperand(4, AddressMode.Relative));
+                EmitAsm("LD_A_HL");
+                EmitAsm("LD_D_A");
+                EmitAsm("POP_HL");
 
                 // Use the LCD-aware fill loop for each decoded run, then store its advanced destination pointer.
                 EmitVramMemsetLoop(true, "rlevram_fill");
@@ -8771,7 +8778,7 @@ void Load16BitCompareOperands(Expr left, Expr right)
                 EmitAsm("LD_HL_A");
                 EmitLabel(valueDone);
 
-                EmitAsm("JR", loop);
+                EmitAsm("JP", loop);
 
                 EmitLabel(finished);
                 EmitAsm("LD_HL_SP_IMM", new AsmOperand(0, AddressMode.Relative));
