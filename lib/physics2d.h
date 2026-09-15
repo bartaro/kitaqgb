@@ -5,6 +5,7 @@
 // signed arithmetic in range. World/body storage is owned by the caller.
 #include "fixed.h"
 
+// Multiply a signed word by a signed byte; divide by 256, truncating toward zero.
 s16 __smul16x8(s16 a, s8 b);
 
 // Lightweight deterministic 2D physics for KITAQGB.

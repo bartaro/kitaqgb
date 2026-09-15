@@ -820,7 +820,8 @@ static w3dcgb_u8 w3dcgb_fast_stamp_row_bits(w3dcgb_u8 tile_x, w3dcgb_u8 tile_y, 
     }
 
     hidden_corner = 0;
-    if ((variant & 1) == 0) hidden_corner = (w3dcgb_u8)(hidden_corner | 1);
+    // The hidden connector is on the side opposite the back-square offset.
+    if ((variant & 1) != 0) hidden_corner = (w3dcgb_u8)(hidden_corner | 1);
     if ((variant & 2) == 0) hidden_corner = (w3dcgb_u8)(hidden_corner | 2);
     if ((show_all != 0) || (hidden_corner != 0)) bits = w3dcgb_stamp_row_or_line(bits, tile_x, gy, fx0, fy0, bx0, by0);
     if ((show_all != 0) || (hidden_corner != 1)) bits = w3dcgb_stamp_row_or_line(bits, tile_x, gy, fx1, fy0, bx1, by0);
@@ -5208,6 +5209,12 @@ w3dfp_clear_old:
         LD_E_A
         LDI_A_HL
         LD_D_A
+// Long old/new map lists can exceed VBlank. Wait at each write so mode 3
+// cannot discard map updates; A is reloaded after checking STAT.
+w3dfp_clear_wait:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3dfp_clear_wait
         XOR_A
         LD_DE_A
         DEC_B
@@ -5233,6 +5240,10 @@ w3dfp_tile_loop:
         LD_E_A
         LDI_A_HL
         LD_D_A
+w3dfp_tile_wait:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3dfp_tile_wait
         LD_A_MEM w3dcgb_full_map_tile
         LD_DE_A
         INC_A
@@ -5415,6 +5426,8 @@ w3dff_step_x_right:
         OR_A
         RRA
         LD_B_A
+        // RRA always clears Z; test the shifted mask before returning.
+        OR_A
         RET_NZ
         JP w3dff_select_pixel
 

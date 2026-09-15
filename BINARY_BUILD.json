@@ -4,7 +4,7 @@
   "configuration": "Release",
   "build_command": ".\\scripts\\build.ps1",
   "build_exit_code": 0,
-  "source_revision_before_packaging": "bb3ae65215ebc4964c7b6542494c4d5d3ffdc10b",
+  "source_revision_before_packaging": "108914c92d14516173479a874c491cac7da94d2c",
   "source_state": "Reviewed publication working tree; source_inputs hashes identify the recorded files.",
   "source_inventory_scope": "Compiler project and build entry point.",
   "source_inputs": [
@@ -26,7 +26,7 @@
     },
     {
       "path": "kitaqgb/CodeGenerator.cs",
-      "sha256": "bd9d7e95b0ecfe97087fe755bb6b55937f0bb97470d8fab58ff1d191a9621cb4"
+      "sha256": "c6c0ff946eadd3a89f70a9d48ffcebafd32cd2bfac646d7e49c32009b9acf90b"
     },
     {
       "path": "kitaqgb/CompilerApi.cs",
@@ -120,30 +120,30 @@
   "binary": {
     "path": "kitaqgb.exe",
     "bytes": 647168,
-    "sha256": "07fee123e43673213dbbb70ab310fb6acf1e0f6389fb48f16fcd59a8ea5039d2",
+    "sha256": "a9bc7175412d6c21da5b6f18efeaa67c0cf55d96561e4501d740b5731aaf6e68",
     "imported_system_dlls": [
       "mscoree.dll"
     ]
   },
   "checks": [
     {
-      "check": "Release build of the recorded compiler source",
+      "check": "Release compiler build: zero warnings and errors",
       "result": "passed"
     },
     {
-      "check": "GB camera, board and scroll samples: 15 DMG/CGB runs with RAM and pixel comparisons",
+      "check": "Signed scaled multiplication and dot products: 78 DMG/CGB runs, including constant/variable equivalence and zero-coefficient input evaluation",
       "result": "passed"
     },
     {
-      "check": "GB boundary cases: 44 DMG/CGB runs",
+      "check": "Physics examples: 8 DMG/CGB screens and 38 boundary runs; FC subpixel example checked in KUROSAKI",
       "result": "passed"
     },
     {
-      "check": "Previous API batch: 26 sample runs, 37 boundary cases, 56 menu-input cases and 3 callback timing cases across GB/FC",
+      "check": "Wireframe examples: 57 DMG/CGB runs with full-frame pixel and RAM comparisons",
       "result": "passed"
     },
     {
-      "check": "GB memory, bit operations, RNG, flags, RLE, text layout and dialogue regression suites; teaching screenshots refreshed",
+      "check": "Previous memory, bit, RNG, flags, RLE, text-layout, dialogue, menu, callback and two API-batch regressions",
       "result": "passed"
     }
   ],
@@ -159,5 +159,12 @@
       "path": "lib/scroll.h",
       "sha256": "80b676b5adaed829c90db2c1ed349cd85bf4ef0d1e3758b9410d391cf8ef8a9e"
     }
-  ]
+  ],
+  "source_line_ending_normalization": {
+    "path": "kitaqgb/CodeGenerator.cs",
+    "build_input_sha256": "3fdfa03582bc6de0fd7e8bd1d8e0d94a459c07f4834b5edbbf9caaff6f189a69",
+    "published_source_sha256": "c6c0ff946eadd3a89f70a9d48ffcebafd32cd2bfac646d7e49c32009b9acf90b",
+    "normalized_logical_lines_identical": true,
+    "multiline_string_literals": false
+  }
 }

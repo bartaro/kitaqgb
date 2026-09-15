@@ -11473,7 +11473,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
             }
 
             // Signed variants for 3D math (two's complement):
-            // __smul16x8(a_s8_8, b_s0_8) -> (a*b)>>8 (s8_8)
+            // __smul16x8(a_s8_8, b_s0_8) -> trunc_toward_zero(a*b/256).
             if (funcName == "__smul16x8")
             {
                 if (args.Length != 2) Error(expr, "__smul16x8 requires 2 arguments");
@@ -11484,7 +11484,7 @@ if (funcName == "__padrep" || funcName == "__padrep_mask")
             }
 
             // Signed multiply where coefficient is Q1.7 (int8 scaled by 1/128).
-            // Implemented as (a*b)>>8 then *2 (loses 1 bit of fractional precision).
+            // Implemented as trunc_toward_zero(a*b/256) * 2 (loses one low bit).
             // Useful for sin/cos rotation coefficients in [-1, 1).
             if (funcName == "__smul16x8_q1_7")
             {
@@ -11580,6 +11580,8 @@ if (funcName == "__dot2_q8_8")
     // Special-case: 0 / power-of-two coefficients (u8) => shift instead of mul.
     if (TryGetU8Const(args[2], out int ax0) && (ax0 == 0) && TryGetU8Const(args[3], out int ay0) && (ay0 == 0))
     {
+        CompileDiscard(args[0]);
+        CompileDiscard(args[1]);
         EmitAsm("XOR_A");
         EmitAsm("LD_H_A");
         EmitAsm("LD_L_A");
@@ -11587,6 +11589,7 @@ if (funcName == "__dot2_q8_8")
     }
     if (TryGetU8Const(args[2], out int axOnly) && (axOnly == 0))
     {
+        CompileDiscard(args[0]);
         // only y*ay
         if (!TryEmitDot2Pow2Term(args[1], args[3], signed: false, q1_7: false, out _))
         {
@@ -11611,6 +11614,10 @@ if (funcName == "__dot2_q8_8")
             EmitAsm("POP_HL");
             EmitMul16x8Shr8_HL("__dot2_x");
         }
+        // Preserve the scaled result while evaluating the zero-product input.
+        EmitAsm("PUSH_HL");
+        CompileDiscard(args[1]);
+        EmitAsm("POP_HL");
         return;
     }
 
@@ -11652,6 +11659,8 @@ if (funcName == "__sdot2_q8_8")
     // Special-case: 0 / power-of-two coefficients (s8 two's complement) => arithmetic shift instead of mul.
     if (TryGetS8Const(args[2], out int sax0) && (sax0 == 0) && TryGetS8Const(args[3], out int say0) && (say0 == 0))
     {
+        CompileDiscard(args[0]);
+        CompileDiscard(args[1]);
         EmitAsm("XOR_A");
         EmitAsm("LD_H_A");
         EmitAsm("LD_L_A");
@@ -11659,6 +11668,7 @@ if (funcName == "__sdot2_q8_8")
     }
     if (TryGetS8Const(args[2], out int saxOnly) && (saxOnly == 0))
     {
+        CompileDiscard(args[0]);
         // only y*ay
         if (!TryEmitDot2Pow2Term(args[1], args[3], signed: true, q1_7: false, out _))
         {
@@ -11683,6 +11693,10 @@ if (funcName == "__sdot2_q8_8")
             EmitAsm("POP_HL");
             EmitSMul16x8Shr8_HL("__sdot2_x");
         }
+        // Preserve the scaled result while evaluating the zero-product input.
+        EmitAsm("PUSH_HL");
+        CompileDiscard(args[1]);
+        EmitAsm("POP_HL");
         return;
     }
 
@@ -14474,88 +14488,57 @@ void EmitShiftRightLogicalHL(int count)
         EmitAsm("JP_NZ", loop);
     }
 
-    // Select zero, power-of-two or near-unit coefficient expansions; return false when a full multiply is needed.
+    // Optimize powers of two without changing the runtime multiply's truncation.
     bool TryEmitDot2Pow2Term(Expr valueExpr, Expr coefExpr, bool signed, bool q1_7, out bool isZero)
     {
         isZero = false;
-
-        if (!signed)
+        int coefficient;
+        if (signed)
         {
-            if (!TryGetU8Const(coefExpr, out int cU8)) return false;
-            if (cU8 == 0)
-            {
-                isZero = true;
-                EmitAsm("XOR_A");
-                EmitAsm("LD_H_A");
-                EmitAsm("LD_L_A");
-                return true;
-            }
-            if ((cU8 & (cU8 - 1)) != 0) return false; // not power-of-two
-            int k = 0;
-            int t = cU8;
-            while (t > 1) { t >>= 1; k++; }
-            int shift = (q1_7 ? (7 - k) : (8 - k));
-            if (shift < 0) return false;
-            CompileIntoHL(valueExpr);
-            EmitShiftRightLogicalHL(shift);
+            if (!TryGetS8Const(coefExpr, out coefficient)) return false;
+        }
+        else if (!TryGetU8Const(coefExpr, out coefficient)) return false;
+
+        if (coefficient == 0)
+        {
+            // Multiplication by zero must still evaluate its input once.
+            CompileDiscard(valueExpr);
+            isZero = true;
+            EmitAsm("XOR_A");
+            EmitAsm("LD_H_A");
+            EmitAsm("LD_L_A");
             return true;
         }
-        else
+        int magnitude = Math.Abs(coefficient);
+        if ((magnitude & (magnitude - 1)) != 0) return false;
+        int shift = 8;
+        for (int t = magnitude; t > 1; t >>= 1) shift--;
+        CompileIntoHL(valueExpr);
+        if (signed)
         {
-            if (!TryGetS8Const(coefExpr, out int cS8)) return false;
-            if (cS8 == 0)
-            {
-                isZero = true;
-                EmitAsm("XOR_A");
-                EmitAsm("LD_H_A");
-                EmitAsm("LD_L_A");
-                return true;
-            }
-            // Special-case: Q1.7 near +/-1.0 (0x7F / 0x81) => x*(127/128) without mul.
-            // Approximate the positive coefficient with x - floor(x/128), then negate for -127.
-            if (q1_7 && (cS8 == 127 || cS8 == -127))
-            {
-                int signNear = (cS8 < 0) ? -1 : 1;
-
-                // HL = x
-                CompileIntoHL(valueExpr);
-                EmitAsm("PUSH_HL");
-
-                // HL = x >> 7 (arith)
-                EmitShiftRightArithmeticHL(7);
-
-                // DE = x>>7
-                EmitAsm("LD_D_H");
-                EmitAsm("LD_E_L");
-
-                // HL = x
-                EmitAsm("POP_HL");
-
-                // HL = x - (x>>7)
-                EmitAsm("LD_A_L");
-                EmitAsm("SUB_E");
-                EmitAsm("LD_L_A");
-                EmitAsm("LD_A_H");
-                EmitAsm("SBC_D");
-                EmitAsm("LD_H_A");
-
-                if (signNear < 0) EmitNegateHL();
-                return true;
-            }
-
-            int sign = (cS8 < 0) ? -1 : 1;
-            int abs = (cS8 < 0) ? -cS8 : cS8;
-            if ((abs & (abs - 1)) != 0) return false; // not power-of-two
-            int k = 0;
-            int t = abs;
-            while (t > 1) { t >>= 1; k++; }
-            int shift = (q1_7 ? (7 - k) : (8 - k));
-            if (shift < 0) shift = 0;
-            CompileIntoHL(valueExpr);
+            // Bias negative values before shifting so the quotient truncates
+            // toward zero, just like EmitSMul16x8Shr8_HL. The bias is <= 255
+            // and cannot overflow a negative signed word, including -32768.
+            AsmOperand nonnegative = MakeUniqueLabel("__scaled_pow2_nonnegative");
+            EmitAsm("LD_A_H");
+            EmitAsm("AND_IMM", new AsmOperand(0x80, AddressMode.Immediate));
+            EmitAsm("JP_Z", nonnegative);
+            EmitAsm("LD_A_L");
+            EmitAsm("ADD_A_IMM", new AsmOperand((1 << shift) - 1, AddressMode.Immediate));
+            EmitAsm("LD_L_A");
+            EmitAsm("LD_A_H");
+            EmitAsm("ADC_IMM", new AsmOperand(0, AddressMode.Immediate));
+            EmitAsm("LD_H_A");
+            EmitLabel(nonnegative);
             EmitShiftRightArithmeticHL(shift);
-            if (sign < 0) EmitNegateHL();
-            return true;
+            if (coefficient < 0) EmitNegateHL();
         }
+        else EmitShiftRightLogicalHL(shift);
+
+        // Q1.7 uses twice the truncated Q0.8 product, including its lost low
+        // bit. Shifting by one fewer bit would give a different answer.
+        if (q1_7) EmitAsm("ADD_HL_HL");
+        return true;
     }
 
     // Prefer a specialized coefficient term, otherwise preserve the word input while evaluating the byte coefficient.
