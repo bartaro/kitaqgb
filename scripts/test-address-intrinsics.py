@@ -56,6 +56,25 @@ void main() { result[7]=0; result[2]=0; x=2; y=3; width=5; wide_x=258;
         yield name,source,{0:expected&255,1:expected>>8,2:calls,7:165}
 
 
+def rectangle_cases():
+    """Check both constant-folded outcomes against runtime half-open bounds."""
+    cases=[('inside',(10,20,10,20,3,2)),('right',(13,20,10,20,3,2)),
+           ('bottom',(10,22,10,20,3,2)),('left',(9,20,10,20,3,2)),
+           ('empty-width',(10,20,10,20,0,2)),('empty-height',(10,20,10,20,3,0)),
+           ('high-coordinate',(255,1,250,0,10,2)),('no-wrap',(0,1,250,0,10,2))]
+    for name,values in cases:
+        x,y,rx,ry,rw,rh=values
+        answer=int(x>=rx and y>=ry and x-rx<rw and y-ry<rh)
+        setup=''.join(f'{n}={v};' for n,v in zip(['x','y','rx','ry','rw','rh'],values))
+        source='''// Half-open bounds: literals and RAM values must agree.
+__location(0xC700) u8 result[8];
+u8 x;u8 y;u8 rx;u8 ry;u8 rw;u8 rh;
+u8 __xy_in_rect(u8 x,u8 y,u8 rx,u8 ry,u8 rw,u8 rh);
+void main(){'''+setup+'result[0]=__xy_in_rect('+','.join(map(str,values))+');'
+        source+='result[1]=__xy_in_rect(x,y,rx,ry,rw,rh);result[7]=0xA5;while(1){}}'
+        yield 'rectangle-'+name,source,{0:answer,1:answer,7:165}
+
+
 def far_cases():
     """Read distinct banked data and check a normal bank-one read before and after the helper."""
     for bank in (0,1,2):
@@ -103,7 +122,7 @@ def main():
     output=Path(tempfile.mkdtemp(prefix='gb-address-intrinsics-',dir=args.output_parent)).resolve()
     report=dict(compiler=str(compiler),compiler_sha256=digest(compiler),emulator=str(emulator),
         emulator_sha256=digest(emulator),cases=[],scope='Complete compiler CLI and KOKURA DMG RAM watches; no hardware.')
-    for name,text,expected in [*map_cases(),*far_cases()]:
+    for name,text,expected in [*map_cases(),*rectangle_cases(),*far_cases()]:
         directory=output/name; directory.mkdir(); source=directory/'case.c'; rom=directory/'case.gb'
         source.write_text(text,encoding='ascii')
         command=[str(compiler),str(source),'--cgb=dmg','--profile=dev','--rst-disable',

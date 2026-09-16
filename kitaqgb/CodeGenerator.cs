@@ -8452,7 +8452,8 @@ void Load16BitCompareOperands(Expr left, Expr right)
                     int rw = constRw & 0xFF;
                     int rh = constRh & 0xFF;
                     bool inside = x >= rx && y >= ry && (x - rx) < rw && (y - ry) < rh;
-                    EmitAsm(inside ? "LD_A_IMM" : "XOR_A", inside ? new AsmOperand(1, AddressMode.Immediate) : null);
+                    if (inside) EmitAsm("LD_A_IMM", new AsmOperand(1, AddressMode.Immediate));
+                    else EmitAsm("XOR_A");
                     return;
                 }
 

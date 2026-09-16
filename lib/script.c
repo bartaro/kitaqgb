@@ -10,7 +10,7 @@
 #define SCRIPT_OP_SET_FLAG   ((u8)0x02)
 // 03: flag ID:u16 little-endian; clear the selected flag and continue.
 #define SCRIPT_OP_CLEAR_FLAG ((u8)0x03)
-// 04: bank:u8, address:u16; see the handler caveat: the address is read after switching the script bank.
+// 04: bank:u8, address:u16; decode in the source bank before transferring control.
 #define SCRIPT_OP_JUMP       ((u8)0x04)
 // 05: flag ID:u16, bank:u8, address:u16; read all operands before an optional branch.
 #define SCRIPT_OP_IF_FLAG    ((u8)0x05)
@@ -164,12 +164,12 @@ u8 script_step()
             continue;
         }
 
-        // This implementation installs the destination bank before reading the address
-        // operand. That read therefore uses the new bank at the current operand address;
-        // cross-bank script authors must account for this ordering.
         if (op == SCRIPT_OP_JUMP) {
-            script_bank = script_read8();
-            script_pc = (const u8*)script_read16();
+            // Read all operands in the source bank before installing the destination.
+            u8 bank = script_read8();
+            u16 ptr = script_read16();
+            script_bank = bank;
+            script_pc = (const u8*)ptr;
             continue;
         }
 
