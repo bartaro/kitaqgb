@@ -46,7 +46,7 @@ void Link_InitMaster();
 // Reset link state and select the external-clock role for subsequent transfers.
 void Link_InitSlave();
 // Enable or disable serial IRQ delivery and clear its pending flag. Enabling
-// does not install the handler or globally enable interrupts.
+// does not install the handler. Leaving its outer critical section enables CPU interrupts.
 void __stackcall Link_SetUseInterrupt(u8 on);
 // Select the fast-clock bit for future master transfers; this does not restart
 // an active transfer or verify that the hardware supports CGB fast mode.

@@ -399,6 +399,7 @@ u8 __stackcall Link_SendPacket(const u8 *data, u8 len, u8 cmd) {
 // with a controlled cadence and avoid mixing raw reads with packet consumption.
 void Link_PollPacket() {
     u8 progress = 0;
+    u8 previous_state;
     u8 value = 0;
 
     Link_Poll();
@@ -415,7 +416,9 @@ void Link_PollPacket() {
     if (Link_PacketState == LINK_PKT_STATE_SEND_ACK) {
         if (Link_PacketStartAckTransfer() != 0) progress = 1;
     } else if (Link_PacketIsSendState() != 0) {
-        if (Link_PacketStartNextTransfer() != 0) progress = 1;
+        // Clocking an ACK is not protocol progress: a missing peer must time out.
+        previous_state = Link_PacketState;
+        if (Link_PacketStartNextTransfer() != 0 && previous_state != LINK_PKT_STATE_WAIT_ACK) progress = 1;
     } else {
         if (Link_PacketStartReceiveTransfer() != 0) progress = 1;
     }

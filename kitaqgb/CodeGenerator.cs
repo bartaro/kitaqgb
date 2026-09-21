@@ -14138,6 +14138,17 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
             return;
         }
 
+        // Comparisons produce normalized byte booleans. Widen their value without
+        // changing operand width, signed comparison rules or evaluation count.
+        if (expr.Tag == Tag.Equal || expr.Tag == Tag.NotEqual ||
+            expr.Tag == Tag.LessThan || expr.Tag == Tag.LessThanOrEqual ||
+            expr.Tag == Tag.GreaterThan || expr.Tag == Tag.GreaterThanOrEqual)
+        {
+            CompileIntoA(expr);
+            EmitExtendAIntoHL(false);
+            return;
+        }
+
         // Reject expression forms with no supported word-emission path instead of inventing a result.
         NYI(expr, "Expression too complex for CompileIntoHL");
     }

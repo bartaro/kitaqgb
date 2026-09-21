@@ -318,7 +318,7 @@ void Link_InitSlave() {
 }
 
 // Enable or disable serial IRQ delivery and clear its pending flag. Enabling
-// does not install the handler or globally enable interrupts.
+// does not install the handler. Leaving its outer critical section enables CPU interrupts.
 void __stackcall Link_SetUseInterrupt(u8 on) {
     if (on != 0) {
         Link_UseInterrupt = 1;
