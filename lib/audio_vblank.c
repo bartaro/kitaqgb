@@ -406,16 +406,16 @@ audiovb_irq_pointer_maybe_control:
         INC_HL
         JP audiovb_irq_control_apply
 
-// Read the common timed payload in CH2, CH1, CH3, CH4 order and store its delay.
+// Read the common timed payload in CH1, CH2, CH3, CH4 order and store its delay.
 // Queue-only IMMEDIATE records enter here with zero delay and continue this frame.
 audiovb_irq_active:
         LD_MEM_A AudioVBlank_MusicDelay
         LD_A_HL
         INC_HL
-        LD_MEM_A AudioVBlank_Ch2Note
+        LD_MEM_A AudioVBlank_Ch1Note
         LD_A_HL
         INC_HL
-        LD_MEM_A AudioVBlank_Ch1Note
+        LD_MEM_A AudioVBlank_Ch2Note
         LD_A_HL
         INC_HL
         LD_MEM_A AudioVBlank_Ch3Note
@@ -923,4 +923,5 @@ void AudioVBlank_RequestRestoreCh3()
 
 #ifndef AUDIO_VBLANK_CORE_ONLY
 #include "audio_vblank_control.inc"
+#include "audio_vblank_queue.inc"
 #endif

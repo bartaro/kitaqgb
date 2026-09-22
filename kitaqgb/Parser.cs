@@ -20,6 +20,8 @@ partial class Parser
     int? CurrentPragmaFixedOrder = null;
     int SwitchDepth = 0;
     int NextStaticSymbolId = 0;
+    int NextLocalSymbolId = 0;
+    readonly HashSet<string> UsedLocalNames = new HashSet<string>(StringComparer.Ordinal);
 
     // Per-file map of "original static symbol name" -> "mangled internal symbol name".
     readonly Dictionary<string, Dictionary<string, string>> FileStaticSymbols =
@@ -27,7 +29,7 @@ partial class Parser
 
     // Lexical local scopes:
     // local source name -> resolved symbol name.
-    // - normal locals map to themselves (x -> x)
+    // - ordinary locals keep their spelling unless another local in the function used it
     // - function-local static maps to a hidden global symbol (x -> __kq_fstatic_...)
     readonly Stack<Dictionary<string, string>> LocalNameScopes = new Stack<Dictionary<string, string>>();
 
@@ -657,6 +659,7 @@ partial class Parser
     // Start an empty case-sensitive lexical name map.
     void PushLocalScope()
     {
+        if (LocalNameScopes.Count == 0) UsedLocalNames.Clear();
         LocalNameScopes.Push(new Dictionary<string, string>(StringComparer.Ordinal));
     }
 
@@ -666,12 +669,18 @@ partial class Parser
         if (LocalNameScopes.Count > 0) LocalNameScopes.Pop();
     }
 
-    // Bind a normal local to its own spelling in the active scope, replacing an existing same-scope entry.
-    void RegisterLocalName(string name)
+    // Give each lexical declaration distinct storage while preserving simple names.
+    // Lowering uses a function-wide dictionary, so sibling/nested blocks need aliases.
+    string RegisterLocalName(string name)
     {
-        if (LocalNameScopes.Count == 0) return;
-        if (string.IsNullOrEmpty(name)) return;
-        LocalNameScopes.Peek()[name] = name;
+        if (LocalNameScopes.Count == 0 || string.IsNullOrEmpty(name)) return name;
+        if (LocalNameScopes.Peek().ContainsKey(name))
+            ParserError("duplicate declaration in the same local scope: " + name);
+        string resolved = name;
+        while (!UsedLocalNames.Add(resolved))
+            resolved = "__kq_local_" + (++NextLocalSymbolId) + "_" + name;
+        LocalNameScopes.Peek()[name] = resolved;
+        return resolved;
     }
 
     // Bind a source name to hidden storage in the active scope, defaulting an empty replacement to the source name.
@@ -1568,14 +1577,20 @@ Expr ParseDeclaration()
         {
             if (!allowLong) Error_NotAllowedInFor();
 
-            Expect(TokenType.LPAREN);
-            Expr init = ParseStatement(false);
-            Expr test = ParseExpr();
-            Expect(TokenType.SEMICOLON);
-            Expr induct = ParseExpr();
-            Expect(TokenType.RPAREN);
-            Expr body = ParseStatementBlock();
-            return Make(Tag.For, init, test, induct, body);
+            // A for-init declaration is visible through the loop body, then expires.
+            PushLocalScope();
+            try
+            {
+                Expect(TokenType.LPAREN);
+                Expr init = ParseStatement(false);
+                Expr test = ParseExpr();
+                Expect(TokenType.SEMICOLON);
+                Expr induct = ParseExpr();
+                Expect(TokenType.RPAREN);
+                Expr body = ParseStatementBlock();
+                return Make(Tag.For, init, test, induct, body);
+            }
+            finally { PopLocalScope(); }
         }
         // Represent while as a For node with empty initializer and update.
         else if (TryParseName("while"))
@@ -1790,7 +1805,7 @@ Expr ParseDeclaration()
             }
             else
             {
-                RegisterLocalName(sourceName);
+                resolvedName = RegisterLocalName(sourceName);
             }
 
             ParseArrayDeclaration(ref varType);
@@ -1806,7 +1821,7 @@ Expr ParseDeclaration()
 
             if (!isStaticLocal)
             {
-                Expr decl = (range != null) ? Make(Tag.Variable, varType, sourceName, range) : Make(Tag.Variable, varType, sourceName);
+                Expr decl = (range != null) ? Make(Tag.Variable, varType, resolvedName, range) : Make(Tag.Variable, varType, resolvedName);
                 if (initStatements == null || initStatements.Count == 0)
                 {
                     decls.Add(decl);

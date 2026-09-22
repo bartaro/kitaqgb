@@ -5225,7 +5225,7 @@ int mustCheckFlag;
 
                     if (fi.IsStackCall != desiredStack)
                         Error(decl, "Function calling convention mismatch (__stackcall): " + funcName);
-                    fi.Parameters = paramsFields;
+                    fi.SetDefinitionParameters(paramsFields);
                     if (!desiredStack)
                     {
                         if (fi.ParameterSymbols == null || fi.ParameterSymbols.Length != paramsFields.Length)
@@ -12577,7 +12577,7 @@ if (funcName == "__sdot2_q1_7")
             object arg = expr.GetArgs()[1];
             int sz = 0;
             if (arg is CType ct) sz = SizeOf(expr, ct);
-            else if (arg is Expr ex) sz = SizeOf(ex);
+            else if (arg is Expr ex) sz = SizeOfUnevaluated(ex);
             EmitAsm("LD_A_IMM", new AsmOperand(sz & 0xFF, AddressMode.Immediate));
             return;
         }
@@ -13124,7 +13124,7 @@ if (funcName == "__sdot2_q1_7")
         if (expr.Match(Tag.PreIncrement, out sub) || expr.Match(Tag.PostIncrement, out sub) ||
             expr.Match(Tag.PreDecrement, out sub) || expr.Match(Tag.PostDecrement, out sub))
         {
-            if (TryGetOperand(sub, out AsmOperand subOp))
+            if (SizeOf(sub) == 1 && TryGetOperand(sub, out AsmOperand subOp))
             {
                 if (subOp.Mode == AddressMode.HighMem) EmitAsm("LDH_A_MEM", subOp); else EmitAsm("LD_A_MEM", subOp);
                 bool isPost = expr.MatchTag(Tag.PostIncrement) || expr.MatchTag(Tag.PostDecrement);
@@ -13135,6 +13135,9 @@ if (funcName == "__sdot2_q1_7")
                 if (isPost) EmitAsm("LD_A_B");
                 return;
             }
+            CompileIncDecIntoHL(expr, sub);
+            EmitAsm("LD_A_L");
+            return;
         }
 
         if (expr.Match(Tag.Cast, out CType t, out sub))
@@ -13143,6 +13146,44 @@ if (funcName == "__sdot2_q1_7")
         }
 
         NYI(expr, "Expression too complex for CompileIntoA");
+    }
+
+    // Evaluate a mutable scalar address once. Preserve the old value for postfix
+    // expressions, scale pointer steps, and widen signed bytes after updating.
+    void CompileIncDecIntoHL(Expr expr, Expr target)
+    {
+        CType type = TypeOf(target);
+        int size = SizeOf(target);
+        if (size != 1 && size != 2) { Error(expr, "Increment/decrement requires a byte, word or pointer lvalue"); return; }
+        if (!TryCompileLValueAddressIntoHL(target, true)) return;
+        bool post = expr.Tag == Tag.PostIncrement || expr.Tag == Tag.PostDecrement;
+        bool increment = expr.Tag == Tag.PreIncrement || expr.Tag == Tag.PostIncrement;
+        int step = type.IsPointer ? SizeOf(target, type.Subtype) : 1;
+        EmitAsm("PUSH_HL");
+        EmitAsm("LD_A_HL"); EmitAsm("LD_E_A");
+        if (size == 2) { EmitAsm("INC_HL"); EmitAsm("LD_A_HL"); EmitAsm("LD_D_A"); }
+        else EmitAsm("LD_D_IMM", new AsmOperand(0, AddressMode.Immediate));
+        EmitAsm("LD_H_D"); EmitAsm("LD_L_E");
+        if (post) { EmitAsm("LD_B_H"); EmitAsm("LD_C_L"); }
+        if (step == 1) EmitAsm(increment ? "INC_HL" : "DEC_HL");
+        else
+        {
+            EmitAsm("LD_DE_IMM", new AsmOperand((increment ? step : -step) & 0xFFFF, AddressMode.Immediate16));
+            EmitAsm("ADD_HL_DE");
+        }
+        EmitAsm("LD_D_H"); EmitAsm("LD_E_L"); EmitAsm("POP_HL");
+        EmitAsm("LD_A_E"); EmitAsm("LD_HL_A");
+        if (size == 2) { EmitAsm("INC_HL"); EmitAsm("LD_A_D"); EmitAsm("LD_HL_A"); }
+        if (size == 1)
+        {
+            EmitAsm(post ? "LD_A_C" : "LD_A_E");
+            EmitExtendAIntoHL(type.IsSigned);
+        }
+        else
+        {
+            EmitAsm(post ? "LD_H_B" : "LD_H_D");
+            EmitAsm(post ? "LD_L_C" : "LD_L_E");
+        }
     }
 
     // Emit a word value or address into HL, widening byte loads according to their signedness.
@@ -13172,7 +13213,7 @@ if (funcName == "__sdot2_q1_7")
             object arg = expr.GetArgs()[1];
             int sz = 0;
             if (arg is CType ct) sz = SizeOf(expr, ct);
-            else if (arg is Expr ex) sz = SizeOf(ex);
+            else if (arg is Expr ex) sz = SizeOfUnevaluated(ex);
             EmitAsm("LD_HL_IMM", new AsmOperand(sz & 0xFFFF, AddressMode.Immediate16));
             return;
         }
@@ -14069,29 +14110,8 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
         if (expr.Match(Tag.PreIncrement, out sub) || expr.Match(Tag.PostIncrement, out sub) ||
             expr.Match(Tag.PreDecrement, out sub) || expr.Match(Tag.PostDecrement, out sub))
         {
-            if (TryGetOperand(sub, out AsmOperand incOp))
-            {
-                if (incOp.Mode == AddressMode.HighMem) EmitAsm("LDH_A_MEM", incOp); else EmitAsm("LD_A_MEM", incOp);
-                EmitAsm("LD_L_A");
-                AsmOperand highOp = new AsmOperand(Maybe.Nothing, incOp.Offset + 1, incOp.Mode, ImmediateModifier.None);
-                if (incOp.Mode == AddressMode.HighMem) EmitAsm("LDH_A_MEM", highOp); else EmitAsm("LD_A_MEM", highOp);
-                EmitAsm("LD_H_A");
-
-                bool isPost = expr.MatchTag(Tag.PostIncrement) || expr.MatchTag(Tag.PostDecrement);
-                bool isInc = expr.MatchTag(Tag.PreIncrement) || expr.MatchTag(Tag.PostIncrement);
-                if (isPost) EmitAsm("PUSH_HL");
-
-                if (isInc) EmitAsm("INC_HL");
-                else EmitAsm("DEC_HL");
-
-                EmitAsm("LD_A_L");
-                if (incOp.Mode == AddressMode.HighMem) EmitAsm("LDH_MEM_A", incOp); else EmitAsm("LD_MEM_A", incOp);
-                EmitAsm("LD_A_H");
-                if (incOp.Mode == AddressMode.HighMem) EmitAsm("LDH_MEM_A", highOp); else EmitAsm("LD_MEM_A", highOp);
-
-                if (isPost) EmitAsm("POP_HL");
-                return;
-            }
+            CompileIncDecIntoHL(expr, sub);
+            return;
         }
 
         if (expr.MatchTag(Tag.Call))
@@ -14138,11 +14158,12 @@ if (expr.Match(Tag.ShiftLeft, out left, out right))
             return;
         }
 
-        // Comparisons produce normalized byte booleans. Widen their value without
-        // changing operand width, signed comparison rules or evaluation count.
+        // Boolean expressions produce normalized bytes. Widen their value without
+        // changing operand width, signed comparisons or short-circuit evaluation.
         if (expr.Tag == Tag.Equal || expr.Tag == Tag.NotEqual ||
             expr.Tag == Tag.LessThan || expr.Tag == Tag.LessThanOrEqual ||
-            expr.Tag == Tag.GreaterThan || expr.Tag == Tag.GreaterThanOrEqual)
+            expr.Tag == Tag.GreaterThan || expr.Tag == Tag.GreaterThanOrEqual ||
+            expr.Tag == Tag.LogicalAnd || expr.Tag == Tag.LogicalOr || expr.Tag == Tag.LogicalNot)
         {
             CompileIntoA(expr);
             EmitExtendAIntoHL(false);
@@ -15398,7 +15419,7 @@ void EmitShiftRightLogicalHL(int count)
             if (arg1 is CType ct)
                 return new ConstEvalResult(SizeOf(expr, ct), CType.UInt16);
             if (arg1 is Expr ex)
-                return new ConstEvalResult(SizeOf(ex), CType.UInt16);
+                return new ConstEvalResult(SizeOfUnevaluated(ex), CType.UInt16);
         }
 
         // offsetof(type, member)
@@ -15646,7 +15667,7 @@ void EmitShiftRightLogicalHL(int count)
             }
             if (arg1 is Expr ex)
             {
-                result = new ConstEvalResult(SizeOf(ex), CType.UInt16);
+                result = new ConstEvalResult(SizeOfUnevaluated(ex), CType.UInt16);
                 return true;
             }
             return false;
@@ -15922,6 +15943,15 @@ void EmitShiftRightLogicalHL(int count)
             if (scope.Symbols.TryGetValue(name, out s)) return true;
         s = null; return false;
     }
+    // sizeof observes an array object's declared extent without pointer decay
+    // or evaluation of its operand. Ordinary value expressions still decay.
+    int SizeOfUnevaluated(Expr expr)
+    {
+        if (expr.Match(Tag.Name, out string name) && TryFindSymbol(name, out Symbol symbol))
+            return SizeOf(expr, symbol.Type);
+        return SizeOf(expr);
+    }
+
     // Determine expression storage width through its inferred type.
     int SizeOf(Expr expr) => SizeOf(expr, TypeOf(expr));
     // Compute scalar, pointer, array or complete aggregate size, diagnosing unsized arrays and incomplete aggregates.
@@ -15989,6 +16019,8 @@ void EmitShiftRightLogicalHL(int count)
 
         Expr sub;
         if (expr.Match(Tag.Cast, out CType castType, out sub)) return castType;
+        if (expr.Match(Tag.PreIncrement, out sub) || expr.Match(Tag.PostIncrement, out sub) ||
+            expr.Match(Tag.PreDecrement, out sub) || expr.Match(Tag.PostDecrement, out sub)) return TypeOf(sub);
 
         if (expr.Match(Tag.BitwiseNot, out sub))
         {
@@ -16220,6 +16252,11 @@ if (funcName == "__readpadex") return CType.UInt16;
         {
             CType trueType = TypeOf(trueExprType);
             CType falseType = TypeOf(falseExprType);
+
+            // Preserve element type after array-to-pointer conversion so
+            // arithmetic on a selected array advances by its element size.
+            if (trueType != null && trueType.IsArray) trueType = CType.MakePointer(trueType.Subtype);
+            if (falseType != null && falseType.IsArray) falseType = CType.MakePointer(falseType.Subtype);
 
             if ((trueType != null && trueType.IsPointer) || (falseType != null && falseType.IsPointer))
                 return (trueType != null && trueType.IsPointer) ? trueType : falseType;

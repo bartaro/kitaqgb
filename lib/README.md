@@ -232,7 +232,7 @@ The final eight audio note indices currently reuse the preceding octave's freque
 - `cgb_palette.h` uses `cgb_*` as the public API surface.
 - Call `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` whenever your menu or settings change.
 - `Audio_PlaySFX()` captures the current visible ROM bank. Use `Audio_PlaySFXBanked(bank, sfx, priority)` when the SFX data bank is known explicitly.
-- Music stream command IDs use this channel encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
+- Music stream command IDs use this channel encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`.
 - Use `Audio_LoadCustomWave()` with 16 bytes holding 32 packed 4-bit samples if you want a project-specific CH3 waveform.
 - `Audio_FadeToMasterVolume()` advances from `Audio_Update()`, so call `Audio_Update()` each frame during fades.
 - `audio_vblank.c` owns the VBlank IRQ vector symbol `__kq_vblank_vector`. Its BGM stream format is five bytes per event: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`; use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, and `AUDIO_VBLANK_END`.

@@ -55,13 +55,13 @@ static u8 Raster_CheckPush(u8 ly)
     return KQ_RASTER_OK;
 }
 
-// Initialize an empty pending split table and clear raster error/count state.
+// Stop split scheduling, empty the shared table and clear error/count state.
 void Raster_Init()
 {
     Raster_Clear();
 }
 
-// Reset pending splits and bookkeeping. Commit separately to replace active splits.
+// Stop splits immediately and clear bookkeeping. Build and commit a new table to restart.
 void Raster_Clear()
 {
     Scroll_SplitReset();
@@ -278,25 +278,91 @@ u8 Raster_LineXGetOffset(const RasterLineX* effect, u8 ly)
     return effect->base_x;
 }
 
-// Drive horizontal scroll through all 144 visible lines using blocking LY
-// waits, then advance animation phase at the chosen frame interval. This owns
-// the CPU for the effect frame and must not compete with another raster driver.
-// The LCD must remain enabled for LY waits to progress. Delayed execution or interrupt work can miss a target line.
+static __prg_rom u8 Raster_LineXFlat[16] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+const u8* Raster_LineXTable;
+u8 Raster_LineXMask;
+u8 Raster_LineXPhase;
+u8 Raster_LineXBase;
+__location(0xFF40) u8 Raster_LineXLcdc;
+__location(0xFF43) u8 Raster_LineXScx;
+u8 __critical_enter();
+void __critical_leave(u8 state);
+
+// Render one whole visible frame. The bounded inner loop prepares the next
+// offset before LY changes, then writes SCX during mode 2, before pixel fetch.
+// Interrupts remain masked across visible lines: do game/audio work between
+// calls, and do not combine this foreground renderer with STAT raster effects.
+// Register saves also make the loop independent of compiler allocation/ABI.
 void Raster_LineXRunFrame(RasterLineX* effect)
 {
-    u8 ly = 0;
-    u8 scx;
-
-    __wait_vblank();
-    __scroll_bg_x_set(Raster_LineXGetOffset(effect, 0));
-
-    while (ly < 144) {
-        scx = Raster_LineXGetOffset(effect, ly);
-        __wait_ly(ly);
-        __scroll_bg_x_set(scx);
-        ly++;
+    u8 interrupt_state;
+    if ((Raster_LineXLcdc & 0x80) == 0) return;
+    Raster_LineXTable = Raster_LineXFlat;
+    Raster_LineXMask = 15;
+    if (effect->profile == KQ_RASTER_LINE_X_TITLE) {
+        Raster_LineXTable = Raster_LineXXTitle;
     }
-
+    if (effect->profile == KQ_RASTER_LINE_TRAVEL_GATE) {
+        Raster_LineXTable = Raster_LineXTravelGate;
+        Raster_LineXMask = 63;
+    }
+    Raster_LineXPhase = effect->phase;
+    Raster_LineXBase = effect->base_x;
+    interrupt_state = __critical_enter();
+    __asm {
+        PUSH_AF
+        PUSH_BC
+        PUSH_DE
+        PUSH_HL
+        // Use the current VBlank when the preceding frame ended there.
+        // Waiting for another VBlank edge would leave every second frame flat.
+raster_linex_vblank:
+        LDH_A_MEM 0x44
+        CP_IMM 144
+        JR_C raster_linex_vblank
+        LD_B_IMM 0
+        LD_A_MEM Raster_LineXPhase
+        LD_C_A
+        LD_A_MEM Raster_LineXMask
+        LD_D_A
+        LD_A_MEM Raster_LineXBase
+        LD_E_A
+raster_linex_line:
+        LD_A_B
+        ADD_C
+        AND_D
+        LD_L_A
+        LD_H_IMM 0
+        PUSH_DE
+        LD_A_MEM Raster_LineXTable
+        LD_E_A
+        LD_A_MEM Raster_LineXTable+1
+        LD_D_A
+        ADD_HL_DE
+        POP_DE
+        LD_A_HL
+        ADD_E
+        PUSH_AF
+raster_linex_wait:
+        LDH_A_MEM 0x44
+        CP_B
+        JR_NZ raster_linex_wait
+        POP_AF
+        LDH_MEM_A 0x43
+        INC_B
+        LD_A_B
+        CP_IMM 144
+        JR_NZ raster_linex_line
+        POP_HL
+        POP_DE
+        POP_BC
+        POP_AF
+    }
+    // Synchronize the scroll helper's tracked state with the last hardware write.
+    __scroll_bg_x_set(Raster_LineXScx);
+    __critical_leave(interrupt_state);
     effect->frame_counter++;
     if (effect->frame_counter >= effect->frame_divider) {
         effect->frame_counter = 0;

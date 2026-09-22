@@ -70,3 +70,22 @@ covered by the MIT License above.
 The HUD glyph subsets embedded in lib/wire3d_dmg.c (96-line profile)
 and lib/wire3d_cgb.c are converted from the same original ASCII font
 and are covered by that font MIT notice. Paths are relative to the repository.
+
+------------------------------------------------------------------------
+ZX0 format acknowledgment (not an additional license condition)
+------------------------------------------------------------------------
+
+The ZX0 format and original compression algorithm were designed by
+Einar Saukas. We acknowledge his contribution to compression for 8-bit
+computers.
+ZX0 project: https://github.com/einar-saukas/ZX0
+
+KITAQ implementation: Copyright (c) 2026 DAISUKE OBA.
+The ZX0-compatible compressor and decompressor have been independently
+reimplemented for KITAQGB and are covered by the MIT License above.
+They do not incorporate source code from the official ZX0 implementation
+or from other ZX0-compatible implementations.
+
+This acknowledgment credits the format designer. It does not change the
+license of any upstream implementation, imply endorsement, or add further
+conditions to the MIT-licensed KITAQ implementation.

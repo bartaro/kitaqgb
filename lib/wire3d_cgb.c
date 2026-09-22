@@ -299,11 +299,20 @@ static void w3dcgb_rotate_y(w3dcgb_i16* px, w3dcgb_i16* pz, w3dcgb_i8 angle)
 
     ai = (w3dcgb_u8)angle;
     ai = (w3dcgb_u8)(ai & 15);
-    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
-    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     limit = W3DCGB_TRANSFORM_LIMIT;
     in_x = w3dcgb_clamp_i16(*px, (w3dcgb_i16)(0 - limit), limit);
     in_z = w3dcgb_clamp_i16(*pz, (w3dcgb_i16)(0 - limit), limit);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *px = in_x; *pz = in_z; return; }
+        if (ai == 4) { *px = in_z; *pz = (w3dcgb_i16)(0 - in_x); return; }
+        if (ai == 8) { *px = (w3dcgb_i16)(0 - in_x); *pz = (w3dcgb_i16)(0 - in_z); return; }
+        *px = (w3dcgb_i16)(0 - in_z); *pz = in_x; return;
+    }
+    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
+    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     out_x = (w3dcgb_i16)(((in_x * c) + (in_z * s)) >> 6);
     out_z = (w3dcgb_i16)(((in_z * c) - (in_x * s)) >> 6);
     *px = out_x;
@@ -325,11 +334,20 @@ static void w3dcgb_rotate_x(w3dcgb_i16* py, w3dcgb_i16* pz, w3dcgb_i8 angle)
 
     ai = (w3dcgb_u8)angle;
     ai = (w3dcgb_u8)(ai & 15);
-    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
-    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     limit = W3DCGB_TRANSFORM_LIMIT;
     in_y = w3dcgb_clamp_i16(*py, (w3dcgb_i16)(0 - limit), limit);
     in_z = w3dcgb_clamp_i16(*pz, (w3dcgb_i16)(0 - limit), limit);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *py = in_y; *pz = in_z; return; }
+        if (ai == 4) { *py = (w3dcgb_i16)(0 - in_z); *pz = in_y; return; }
+        if (ai == 8) { *py = (w3dcgb_i16)(0 - in_y); *pz = (w3dcgb_i16)(0 - in_z); return; }
+        *py = in_z; *pz = (w3dcgb_i16)(0 - in_y); return;
+    }
+    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
+    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     out_y = (w3dcgb_i16)(((in_y * c) - (in_z * s)) >> 6);
     out_z = (w3dcgb_i16)(((in_y * s) + (in_z * c)) >> 6);
     *py = out_y;
@@ -351,11 +369,20 @@ static void w3dcgb_rotate_z(w3dcgb_i16* px, w3dcgb_i16* py, w3dcgb_i8 angle)
 
     ai = (w3dcgb_u8)angle;
     ai = (w3dcgb_u8)(ai & 15);
-    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
-    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     limit = W3DCGB_TRANSFORM_LIMIT;
     in_x = w3dcgb_clamp_i16(*px, (w3dcgb_i16)(0 - limit), limit);
     in_y = w3dcgb_clamp_i16(*py, (w3dcgb_i16)(0 - limit), limit);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *px = in_x; *py = in_y; return; }
+        if (ai == 4) { *px = (w3dcgb_i16)(0 - in_y); *py = in_x; return; }
+        if (ai == 8) { *px = (w3dcgb_i16)(0 - in_x); *py = (w3dcgb_i16)(0 - in_y); return; }
+        *px = in_y; *py = (w3dcgb_i16)(0 - in_x); return;
+    }
+    s = w3dcgb_sin_q6[(__safe_index w3dcgb_u8)ai];
+    c = w3dcgb_cos_q6[(__safe_index w3dcgb_u8)ai];
     out_x = (w3dcgb_i16)(((in_x * c) - (in_y * s)) >> 6);
     out_y = (w3dcgb_i16)(((in_x * s) + (in_y * c)) >> 6);
     *px = out_x;
@@ -3388,7 +3415,8 @@ w3dps_ret:
 // checks or dirty-range updates; callers must provide in-bounds geometry
 // and arrange sparse uploads. It ORs color 1/2 into their respective planes;
 // other values, including zero, set both planes. Overlapping colors combine.
-// Masked and unmasked shallow/steep loops share address and bit-mask stepping.
+// Masked loops advance both stage and mask pointers; unmasked loops advance
+// only the stage pointer. Each selects the color planes once per line.
 void w3dcgb_line_stage_asm()
 {
     __asm {
@@ -3554,23 +3582,38 @@ w3dls_fast_start:
         OR_A
         JP_Z w3dls_fast_unmasked_branch
 
+// Occlusion is active throughout these loops. Select the color plane once,
+// then test one mask bit per pixel without a helper call or color dispatch.
+        LD_A_MEM w3dcgb_line_color
+        CP_IMM 1
+        JP_Z w3dls_masked_single_branch
+        CP_IMM 2
+        JP_NZ w3dls_masked_both_branch
+        INC_L
+w3dls_masked_single_branch:
         LD_A_MEM w3dcgb_line_dx
         LD_C_A
         LD_A_MEM w3dcgb_line_dy
         CP_C
-        JP_C w3dls_fast_shallow
-        JP_Z w3dls_fast_shallow
-        JP w3dls_fast_steep
+        JP_C w3dls_masked_single_shallow
+        JP_Z w3dls_masked_single_shallow
+        JP w3dls_masked_single_steep
 
-w3dls_fast_shallow:
+w3dls_masked_single_shallow:
         LD_A_MEM w3dcgb_line_dx
         LD_MEM_A w3dcgb_line_remaining
         OR_A
         RRA
         LD_MEM_A w3dcgb_line_err
 
-w3dls_fast_shallow_loop:
-        CALL w3dls_fast_plot
+w3dls_masked_single_shallow_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_single_shallow_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+w3dls_masked_single_shallow_covered:
         LD_A_MEM w3dcgb_line_remaining
         OR_A
         JP_Z w3dls_done
@@ -3581,7 +3624,7 @@ w3dls_fast_shallow_loop:
         LD_C_A
         LD_A_MEM w3dcgb_line_err
         CP_C
-        JP_NC w3dls_fast_shallow_no_y
+        JP_NC w3dls_masked_single_shallow_no_y
         CALL w3dls_fast_step_y
         LD_A_MEM w3dcgb_line_dx
         LD_C_A
@@ -3589,24 +3632,30 @@ w3dls_fast_shallow_loop:
         ADD_C
         LD_MEM_A w3dcgb_line_err
 
-w3dls_fast_shallow_no_y:
+w3dls_masked_single_shallow_no_y:
         LD_A_MEM w3dcgb_line_dy
         LD_C_A
         LD_A_MEM w3dcgb_line_err
         SUB_C
         LD_MEM_A w3dcgb_line_err
         CALL w3dls_fast_step_x
-        JP w3dls_fast_shallow_loop
+        JP w3dls_masked_single_shallow_loop
 
-w3dls_fast_steep:
+w3dls_masked_single_steep:
         LD_A_MEM w3dcgb_line_dy
         LD_MEM_A w3dcgb_line_remaining
         OR_A
         RRA
         LD_MEM_A w3dcgb_line_err
 
-w3dls_fast_steep_loop:
-        CALL w3dls_fast_plot
+w3dls_masked_single_steep_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_single_steep_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+w3dls_masked_single_steep_covered:
         LD_A_MEM w3dcgb_line_remaining
         OR_A
         JP_Z w3dls_done
@@ -3617,7 +3666,7 @@ w3dls_fast_steep_loop:
         LD_C_A
         LD_A_MEM w3dcgb_line_err
         CP_C
-        JP_NC w3dls_fast_steep_no_x
+        JP_NC w3dls_masked_single_steep_no_x
         CALL w3dls_fast_step_x
         LD_A_MEM w3dcgb_line_dy
         LD_C_A
@@ -3625,21 +3674,130 @@ w3dls_fast_steep_loop:
         ADD_C
         LD_MEM_A w3dcgb_line_err
 
-w3dls_fast_steep_no_x:
+w3dls_masked_single_steep_no_x:
         LD_A_MEM w3dcgb_line_dx
         LD_C_A
         LD_A_MEM w3dcgb_line_err
         SUB_C
         LD_MEM_A w3dcgb_line_err
         CALL w3dls_fast_step_y
-        JP w3dls_fast_steep_loop
+        JP w3dls_masked_single_steep_loop
+
+w3dls_masked_both_branch:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        CP_C
+        JP_C w3dls_masked_both_shallow
+        JP_Z w3dls_masked_both_shallow
+        JP w3dls_masked_both_steep
+
+w3dls_masked_both_shallow:
+        LD_A_MEM w3dcgb_line_dx
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_shallow_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_both_shallow_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+w3dls_masked_both_shallow_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_both_shallow_no_y
+        CALL w3dls_fast_step_y
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_shallow_no_y:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_x
+        JP w3dls_masked_both_shallow_loop
+
+w3dls_masked_both_steep:
+        LD_A_MEM w3dcgb_line_dy
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_steep_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_both_steep_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+w3dls_masked_both_steep_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_both_steep_no_x
+        CALL w3dls_fast_step_x
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_steep_no_x:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_y
+        JP w3dls_masked_both_steep_loop
 
 // Skip mask reads when occlusion is disabled; color 3 also bypasses
 // per-pixel color selection in its dedicated loop.
 w3dls_fast_unmasked_branch:
+        // Select the bitplane once per line. The high-only path keeps HL
+        // one byte above the low plane through all subsequent pointer steps.
         LD_A_MEM w3dcgb_line_color
-        CP_IMM 3
-        JP_Z w3dls_fast_unmasked_both_branch
+        CP_IMM 1
+        JP_Z w3dls_fast_single_plane
+        CP_IMM 2
+        JP_NZ w3dls_fast_unmasked_both_branch
+        INC_L
+w3dls_fast_single_plane:
 
         LD_A_MEM w3dcgb_line_dx
         LD_C_A
@@ -3650,75 +3808,61 @@ w3dls_fast_unmasked_branch:
         JP w3dls_fast_unmasked_steep
 
 w3dls_fast_unmasked_shallow:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
         LD_A_MEM w3dcgb_line_dx
-        LD_MEM_A w3dcgb_line_remaining
+        LD_D_A
         OR_A
         RRA
-        LD_MEM_A w3dcgb_line_err
-
+        LD_E_A
+        INC_D
 w3dls_fast_unmasked_shallow_loop:
-        CALL w3dls_plot_hl
-        LD_A_MEM w3dcgb_line_remaining
-        OR_A
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_D
         JP_Z w3dls_done
-        DEC_A
-        LD_MEM_A w3dcgb_line_remaining
-
-        LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        LD_A_E
         CP_C
-        JP_NC w3dls_fast_unmasked_shallow_no_y
-        CALL w3dls_fast_step_y
+        JP_NC w3dls_fast_unmasked_shallow_skip
+        CALL w3dls_unmasked_step_y
         LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
-        ADD_C
-        LD_MEM_A w3dcgb_line_err
-
-w3dls_fast_unmasked_shallow_no_y:
-        LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_shallow_skip:
+        LD_A_E
         SUB_C
-        LD_MEM_A w3dcgb_line_err
-        CALL w3dls_fast_step_x
+        LD_E_A
+        CALL w3dls_unmasked_step_x
         JP w3dls_fast_unmasked_shallow_loop
 
 w3dls_fast_unmasked_steep:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
         LD_A_MEM w3dcgb_line_dy
-        LD_MEM_A w3dcgb_line_remaining
+        LD_D_A
         OR_A
         RRA
-        LD_MEM_A w3dcgb_line_err
-
+        LD_E_A
+        INC_D
 w3dls_fast_unmasked_steep_loop:
-        CALL w3dls_plot_hl
-        LD_A_MEM w3dcgb_line_remaining
-        OR_A
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_D
         JP_Z w3dls_done
-        DEC_A
-        LD_MEM_A w3dcgb_line_remaining
-
-        LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        LD_A_E
         CP_C
-        JP_NC w3dls_fast_unmasked_steep_no_x
-        CALL w3dls_fast_step_x
+        JP_NC w3dls_fast_unmasked_steep_skip
+        CALL w3dls_unmasked_step_x
         LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
-        ADD_C
-        LD_MEM_A w3dcgb_line_err
-
-w3dls_fast_unmasked_steep_no_x:
-        LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_steep_skip:
+        LD_A_E
         SUB_C
-        LD_MEM_A w3dcgb_line_err
-        CALL w3dls_fast_step_y
+        LD_E_A
+        CALL w3dls_unmasked_step_y
         JP w3dls_fast_unmasked_steep_loop
 
 w3dls_fast_unmasked_both_branch:
@@ -3731,76 +3875,110 @@ w3dls_fast_unmasked_both_branch:
         JP w3dls_fast_unmasked_both_steep
 
 w3dls_fast_unmasked_both_shallow:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
         LD_A_MEM w3dcgb_line_dx
-        LD_MEM_A w3dcgb_line_remaining
+        LD_D_A
         OR_A
         RRA
-        LD_MEM_A w3dcgb_line_err
-
+        LD_E_A
+        INC_D
 w3dls_fast_unmasked_both_shallow_loop:
-        CALL w3dls_plot_both
-        LD_A_MEM w3dcgb_line_remaining
-        OR_A
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        DEC_D
         JP_Z w3dls_done
-        DEC_A
-        LD_MEM_A w3dcgb_line_remaining
-
-        LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        LD_A_E
         CP_C
-        JP_NC w3dls_fast_unmasked_both_shallow_no_y
-        CALL w3dls_fast_step_y
+        JP_NC w3dls_fast_unmasked_both_shallow_skip
+        CALL w3dls_unmasked_step_y
         LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
-        ADD_C
-        LD_MEM_A w3dcgb_line_err
-
-w3dls_fast_unmasked_both_shallow_no_y:
-        LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_both_shallow_skip:
+        LD_A_E
         SUB_C
-        LD_MEM_A w3dcgb_line_err
-        CALL w3dls_fast_step_x
+        LD_E_A
+        CALL w3dls_unmasked_step_x
         JP w3dls_fast_unmasked_both_shallow_loop
 
 w3dls_fast_unmasked_both_steep:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
         LD_A_MEM w3dcgb_line_dy
-        LD_MEM_A w3dcgb_line_remaining
+        LD_D_A
         OR_A
         RRA
-        LD_MEM_A w3dcgb_line_err
-
+        LD_E_A
+        INC_D
 w3dls_fast_unmasked_both_steep_loop:
-        CALL w3dls_plot_both
-        LD_A_MEM w3dcgb_line_remaining
-        OR_A
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        DEC_D
         JP_Z w3dls_done
-        DEC_A
-        LD_MEM_A w3dcgb_line_remaining
-
-        LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        LD_A_E
         CP_C
-        JP_NC w3dls_fast_unmasked_both_steep_no_x
-        CALL w3dls_fast_step_x
+        JP_NC w3dls_fast_unmasked_both_steep_skip
+        CALL w3dls_unmasked_step_x
         LD_A_MEM w3dcgb_line_dy
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
-        ADD_C
-        LD_MEM_A w3dcgb_line_err
-
-w3dls_fast_unmasked_both_steep_no_x:
-        LD_A_MEM w3dcgb_line_dx
-        LD_C_A
-        LD_A_MEM w3dcgb_line_err
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_both_steep_skip:
+        LD_A_E
         SUB_C
-        LD_MEM_A w3dcgb_line_err
-        CALL w3dls_fast_step_y
+        LD_E_A
+        CALL w3dls_unmasked_step_y
         JP w3dls_fast_unmasked_both_steep_loop
+
+// No occlusion-mask address is needed by these unmasked pointer steps.
+w3dls_unmasked_step_y:
+        LD_A_MEM w3dcgb_line_sy
+        CP_IMM 1
+        JR_Z w3dls_unmasked_down
+        DEC_HL
+        DEC_HL
+        RET
+w3dls_unmasked_down:
+        INC_HL
+        INC_HL
+        RET
+w3dls_unmasked_step_x:
+        LD_A_MEM w3dcgb_line_sx
+        CP_IMM 1
+        JR_Z w3dls_unmasked_right
+        LD_A_B
+        RLCA
+        LD_B_A
+        RET_NC
+        LD_A_L
+        SUB_IMM 0xC0
+        LD_L_A
+        RET_NC
+        DEC_H
+        RET
+w3dls_unmasked_right:
+        LD_A_B
+        RRCA
+        LD_B_A
+        RET_NC
+        LD_A_L
+        ADD_A_IMM 0xC0
+        LD_L_A
+        RET_NC
+        INC_H
+        RET
 
 w3dls_fast_step_y:
         LD_A_MEM w3dcgb_line_sy
@@ -3858,15 +4036,6 @@ w3dls_fast_step_x_right:
         POP_DE
         INC_DE
 w3dls_fast_step_x_done:
-        RET
-
-w3dls_fast_plot:
-        LD_A_MEM w3dcgb_occlusion_active
-        OR_A
-        JP_Z w3dls_plot_hl
-        LD_A_DE
-        AND_B
-        JP_Z w3dls_plot_hl
         RET
 
 // These retained generic/axis loops are not selected by the active entry,

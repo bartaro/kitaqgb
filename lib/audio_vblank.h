@@ -3,8 +3,8 @@
 // Fixed-bank VBlank BGM driver.
 //
 // Stream format:
-//   delay, ch2_note, ch1_note, ch3_note, ch4_noise_param
-//   IMMEDIATE, ch2_note, ch1_note, ch3_note, ch4_noise_param
+//   delay, ch1_note, ch2_note, ch3_note, ch4_noise_param
+//   IMMEDIATE, ch1_note, ch2_note, ch3_note, ch4_noise_param
 //   CONTROL, command, arg0, arg1, arg2
 //
 // Notes are 0..67. To stay inside the useful CGB register range, C6..G6
@@ -61,10 +61,9 @@ extern __wram u8 AudioVBlank_ControlCommand;
 extern __wram u8 AudioVBlank_ControlArg0;
 extern __wram u8 AudioVBlank_ControlArg1;
 extern __wram u8 AudioVBlank_ControlArg2;
-// The library supplies the queue consumer, not a refill routine. An external
-// producer owns WriteIndex and publishes complete five-byte records by increasing
-// Count; the ISR owns ReadIndex and decreases Count. Keep indices in 0..15 and
-// Count in 0..16. Synchronize count updates and mode changes with the ISR.
+// QueueReset/QueueRefill/QueuePlay provide the foreground producer. The ISR owns
+// ReadIndex and decreases Count; use the producer APIs instead of editing the
+// indices/count while playback is running. Records contain exactly five bytes.
 // MusicPlaying and all enable/pause gates still apply in queue mode.
 extern __wram u8 AudioVBlank_QueueMode;
 extern __wram u8 AudioVBlank_QueueReadIndex;
@@ -84,6 +83,17 @@ extern __wram AudioVBlankFrameHook AudioVBlank_FrameHook;
 // Call before enabling this ISR; the routine does not mask interrupts or
 // initialize the APU registers and cannot synchronize with an active handler.
 void AudioVBlank_Init();
+// Stop music and select an empty WRAM queue; preserve IE, IME and enable/pause gates.
+void AudioVBlank_QueueReset();
+// Copy complete records from the currently mapped source; return records accepted.
+// Each call attempts at most 16 records and stops when full. Null/zero returns 0.
+// Supports ROM and RAM sources, restores SVBK and IE, and never changes IME.
+// Single foreground producer only: do not call from an ISR or frame hook.
+// LOOP must be expanded by the producer. END occupies a full five-byte record.
+u8 __stackcall AudioVBlank_QueueRefill(const u8 *records, u8 count);
+// Start/resume queued playback; return 1 on success, 0 for an empty/nonqueue mode.
+// Does not enable the interrupt, music gate or clear pause. Queue before starting.
+u8 AudioVBlank_QueuePlay();
 // Select a directly addressed song and reset its cursors, leaving the playing
 // flag unchanged. Song storage must remain accessible to the fixed-bank ISR;
 // coordinate this multi-field update with interrupt execution.

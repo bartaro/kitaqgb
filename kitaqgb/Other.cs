@@ -71,6 +71,20 @@ class CFunctionInfo
     public bool IsInline;
     public Expr Body;
 
+    // Prototype parameter names do not bind the definition body. Retain the
+    // allocated argument slots while adopting names from the definition.
+    public void SetDefinitionParameters(FieldInfo[] parameters)
+    {
+        Parameters = parameters;
+        if (ParameterSymbols == null || ParameterSymbols.Length != parameters.Length) return;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            Symbol previous = ParameterSymbols[i];
+            if (previous.Name != parameters[i].Name)
+                ParameterSymbols[i] = new Symbol(previous.Tag, previous.Value, previous.Type, parameters[i].Name, previous.WramBank);
+        }
+    }
+
     // Format parameter types and selected calling-convention attributes; placement and body details are omitted.
     public string Show()
     {

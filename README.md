@@ -161,6 +161,8 @@ Run the resulting ROM in your preferred Game Boy / Game Boy Color emulator, or i
 
 ### Using the bundled libraries
 
+For compressed tile and map assets, see the [ZX0 API and visual example](https://bartaro.github.io/kitaq-docs/en/gb-library.html#module-zx0) and the [host compression tool](tools/zx0/README.md#english).
+
 The `lib/` directory contains reusable C support code. Compile the library source files together with your game source and add `-I lib` so headers can be found.
 
 Example with audio, palette, scrolling, camera, and physics helpers:
@@ -582,6 +584,8 @@ kitaqgb.exe
 生成したROMをGame Boy / Game Boy Colorエミュレータで実行します。付属ツールと連携する開発手順ではKOKURA CLIを利用できます。
 
 ### 同梱ライブラリの利用
+
+タイルやマップを圧縮して使う場合は、[ZX0のAPIと画面付きの使用例](https://bartaro.github.io/kitaq-docs/gb-library.html#module-zx0)、[PC側の圧縮ツール](tools/zx0/README.md#日本語)を参照してください。
 
 `lib/` には再利用可能なCの支援コードがあります。必要なライブラリのソースをゲームのソースと一緒にコンパイルし、ヘッダーの検索用に `-I lib` を指定してください。
 

@@ -16,17 +16,17 @@
 // - GBDAW-Stream v1.2 extends the legacy command set with explicit per-channel
 //   automation commands that map more directly from GUI and Python tooling.
 
-// Physical channel IDs differ from legacy stream IDs below: CH3 and CH4 exchange positions.
+// Physical APIs and music-stream commands share zero-based CH1..CH4 IDs.
 #define AUDIO_CHANNEL_CH1 ((u8)0)
 #define AUDIO_CHANNEL_CH2 ((u8)1)
 #define AUDIO_CHANNEL_CH3 ((u8)2)
 #define AUDIO_CHANNEL_CH4 ((u8)3)
 
-// Legacy music-stream IDs used by AUDIO_CMD_NOTE / AUDIO_CMD_SET_INST.
-#define AUDIO_STREAM_CHANNEL_CH1 ((u8)0)
-#define AUDIO_STREAM_CHANNEL_CH2 ((u8)1)
-#define AUDIO_STREAM_CHANNEL_CH4 ((u8)2)
-#define AUDIO_STREAM_CHANNEL_CH3 ((u8)3)
+// Music-stream IDs used by NOTE, SET_INST and STOP_CHANNEL.
+#define AUDIO_STREAM_CHANNEL_CH1 AUDIO_CHANNEL_CH1
+#define AUDIO_STREAM_CHANNEL_CH2 AUDIO_CHANNEL_CH2
+#define AUDIO_STREAM_CHANNEL_CH3 AUDIO_CHANNEL_CH3
+#define AUDIO_STREAM_CHANNEL_CH4 AUDIO_CHANNEL_CH4
 
 #define AUDIO_PAN_CENTER ((u8)0)
 #define AUDIO_PAN_LEFT ((u8)1)

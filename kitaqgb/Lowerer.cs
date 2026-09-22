@@ -2095,19 +2095,48 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             return Expr.Make(Tag.Cast, castT, newSub).WithSource(expr.Source);
         }
 
-        // Ternary
+        // Ternary: evaluate the condition first and keep extracted arm work local
+        // to the selected branch. Shared prefixes would evaluate both arms.
         Expr cond, texpr, fexpr;
         if (expr.Match(Tag.Conditional, out cond, out texpr, out fexpr))
         {
-            // cond: no prefix in-expression; but if we are in a statement context we still allowExtract.
-            // We'll keep it conservative: do not extract from cond.
-            List<Expr> dummy = new List<Expr>();
-            Expr newCond = LowerExpr(ctx, cond, false, dummy);
-            // Both arms currently append extracted work to the same outer prefix.
-            // Any extracted arm work is therefore outside the eventual conditional expression.
-            Expr newT = LowerExpr(ctx, texpr, allowExtract, prefix);
-            Expr newF = LowerExpr(ctx, fexpr, allowExtract, prefix);
-            return Expr.Make(Tag.Conditional, newCond, newT, newF).WithSource(expr.Source);
+            Expr newCond = LowerExpr(ctx, cond, allowExtract, prefix);
+            var truePrefix = new List<Expr>();
+            var falsePrefix = new List<Expr>();
+            Expr newT = LowerExpr(ctx, texpr, allowExtract, truePrefix);
+            Expr newF = LowerExpr(ctx, fexpr, allowExtract, falsePrefix);
+            if (truePrefix.Count == 0 && falsePrefix.Count == 0)
+                return Expr.Make(Tag.Conditional, newCond, newT, newF).WithSource(expr.Source);
+
+            CType resultType = InferType(ctx, expr);
+            Expr result = Expr.Make(Tag.Name, ctx.AcquireTemp(resultType)).WithSource(expr.Source);
+            truePrefix.Add(Expr.Make(Tag.Assign, result, newT).WithSource(expr.Source));
+            falsePrefix.Add(Expr.Make(Tag.Assign, result, newF).WithSource(expr.Source));
+            prefix.Add(Expr.Make(Tag.If, newCond, MakeSequence(truePrefix),
+                Expr.Make(Tag.Integer, 1), MakeSequence(falsePrefix)).WithSource(expr.Source));
+            return result;
+        }
+
+        // Short-circuit operands may require statement-level work, such as a
+        // variable-shift loop. Guard that work together with the RHS value.
+        Expr logicalLeft, logicalRight;
+        if (allowExtract && (expr.Match(Tag.LogicalAnd, out logicalLeft, out logicalRight) ||
+                             expr.Match(Tag.LogicalOr, out logicalLeft, out logicalRight)))
+        {
+            Expr newLeft = LowerExpr(ctx, logicalLeft, true, prefix);
+            var rightPrefix = new List<Expr>();
+            Expr newRight = LowerExpr(ctx, logicalRight, true, rightPrefix);
+            if (rightPrefix.Count == 0)
+                return Expr.Make(expr.GetTag(), newLeft, newRight).WithSource(expr.Source);
+
+            Expr result = Expr.Make(Tag.Name, ctx.AcquireTemp(CType.UInt8)).WithSource(expr.Source);
+            Expr leftBool = Expr.Make(Tag.LogicalNot, Expr.Make(Tag.LogicalNot, newLeft));
+            Expr rightBool = Expr.Make(Tag.LogicalNot, Expr.Make(Tag.LogicalNot, newRight));
+            prefix.Add(Expr.Make(Tag.Assign, result, leftBool).WithSource(expr.Source));
+            rightPrefix.Add(Expr.Make(Tag.Assign, result, rightBool).WithSource(expr.Source));
+            Expr guard = expr.GetTag() == Tag.LogicalAnd ? result : Expr.Make(Tag.LogicalNot, result);
+            prefix.Add(Expr.Make(Tag.If, guard, MakeSequence(rightPrefix)).WithSource(expr.Source));
+            return result;
         }
 
         // Call (spill non-atom args)
@@ -2699,8 +2728,8 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
 	        string binTag;
 	        if (expr.MatchAnyTag(out binTag, out left, out right) && IsBinaryOpTag(binTag))
 	        {
-            // Both operands share the outer prefix, including logical AND/OR.
-            // Extracted RHS work is not enclosed in a short-circuit branch by this path.
+            // Ordinary binary operands share this prefix. Extracted short-circuit
+            // work is handled by the guarded path above.
             Expr newL = LowerExpr(ctx, left, allowExtract, prefix);
             Expr newR = LowerExpr(ctx, right, allowExtract, prefix);
 
@@ -3743,6 +3772,10 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
         {
             CType tTrue = InferType(ctx, trueExpr);
             CType tFalse = InferType(ctx, falseExpr);
+            // Conditional operands are values: arrays decay before selecting
+            // the pointer result type and the width of an argument spill.
+            if (tTrue != null && tTrue.IsArray) tTrue = CType.MakePointer(tTrue.Subtype);
+            if (tFalse != null && tFalse.IsArray) tFalse = CType.MakePointer(tFalse.Subtype);
             if ((tTrue != null && tTrue.IsPointer) || (tFalse != null && tFalse.IsPointer))
                 return (tTrue != null && tTrue.IsPointer) ? tTrue : tFalse;
 
@@ -3756,7 +3789,12 @@ static Expr LowerIfChain(FunctionCtx ctx, Expr[] parts, FilePosition src)
             return CType.UInt8;
         }
 
-if (expr.Match(Tag.BitwiseNot, out sub))
+// Increment expressions retain the operand type, including pointer stride and signed bytes.
+        if (expr.Match(Tag.PreIncrement, out sub) || expr.Match(Tag.PostIncrement, out sub) ||
+            expr.Match(Tag.PreDecrement, out sub) || expr.Match(Tag.PostDecrement, out sub))
+            return InferType(ctx, sub);
+
+        if (expr.Match(Tag.BitwiseNot, out sub))
 	            return InferType(ctx, sub);
 	        if (expr.Match(Tag.LogicalNot, out sub))
 	            return CType.UInt8;

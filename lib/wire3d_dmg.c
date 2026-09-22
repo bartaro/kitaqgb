@@ -194,6 +194,7 @@ void w3ddmg_put_bg_tile_safe_asm();
 void w3ddmg_clear_stage_asm();
 void w3ddmg_plot_stage_asm();
 void w3ddmg_line_stage_asm();
+void w3ddmg_line_inside_asm();
 void w3ddmg_transfer_stage_asm();
 void w3ddmg_transfer_dirty_tile_asm();
 void w3ddmg_clear_stage_aux_asm();
@@ -342,7 +343,7 @@ static w3ddmg_u8 w3ddmg_neg_angle(w3ddmg_u8 v)
 #endif
 }
 
-#pragma bank 1
+#pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
 #if WIRE3D_DMG_HEIGHT == 96
@@ -370,17 +371,26 @@ static void w3ddmg_rotate_y(w3ddmg_i16* px, w3ddmg_i16* pz, w3ddmg_u8 angle)
 #else
     ai = w3ddmg_angle_index(angle);
 #endif
-    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
-    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     in_x = w3ddmg_clamp_i16(*px, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
     in_z = w3ddmg_clamp_i16(*pz, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *px = in_x; *pz = in_z; return; }
+        if (ai == 4) { *px = in_z; *pz = (w3ddmg_i16)(0 - in_x); return; }
+        if (ai == 8) { *px = (w3ddmg_i16)(0 - in_x); *pz = (w3ddmg_i16)(0 - in_z); return; }
+        *px = (w3ddmg_i16)(0 - in_z); *pz = in_x; return;
+    }
+    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
+    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     out_x = (w3ddmg_i16)(((in_x * c) + (in_z * s)) >> 6);
     out_z = (w3ddmg_i16)(((in_z * c) - (in_x * s)) >> 6);
     *px = out_x;
     *pz = out_z;
 }
 
-#pragma bank 1
+#pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
 #if WIRE3D_DMG_HEIGHT == 96
@@ -407,17 +417,26 @@ static void w3ddmg_rotate_x(w3ddmg_i16* py, w3ddmg_i16* pz, w3ddmg_u8 angle)
 #else
     ai = w3ddmg_angle_index(angle);
 #endif
-    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
-    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     in_y = w3ddmg_clamp_i16(*py, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
     in_z = w3ddmg_clamp_i16(*pz, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *py = in_y; *pz = in_z; return; }
+        if (ai == 4) { *py = (w3ddmg_i16)(0 - in_z); *pz = in_y; return; }
+        if (ai == 8) { *py = (w3ddmg_i16)(0 - in_y); *pz = (w3ddmg_i16)(0 - in_z); return; }
+        *py = in_z; *pz = (w3ddmg_i16)(0 - in_y); return;
+    }
+    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
+    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     out_y = (w3ddmg_i16)(((in_y * c) - (in_z * s)) >> 6);
     out_z = (w3ddmg_i16)(((in_y * s) + (in_z * c)) >> 6);
     *py = out_y;
     *pz = out_z;
 }
 
-#pragma bank 1
+#pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
 #if WIRE3D_DMG_HEIGHT == 96
@@ -444,10 +463,19 @@ static void w3ddmg_rotate_z(w3ddmg_i16* px, w3ddmg_i16* py, w3ddmg_u8 angle)
 #else
     ai = w3ddmg_angle_index(angle);
 #endif
-    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
-    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     in_x = w3ddmg_clamp_i16(*px, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
     in_y = w3ddmg_clamp_i16(*py, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
+    // Cardinal rotations are exact swaps/sign changes after the same input
+    // clamps. Avoid four multiplications and two Q6 shifts for these angles.
+    if ((ai & 3) == 0)
+    {
+        if (ai == 0) { *px = in_x; *py = in_y; return; }
+        if (ai == 4) { *px = (w3ddmg_i16)(0 - in_y); *py = in_x; return; }
+        if (ai == 8) { *px = (w3ddmg_i16)(0 - in_x); *py = (w3ddmg_i16)(0 - in_y); return; }
+        *px = in_y; *py = (w3ddmg_i16)(0 - in_x); return;
+    }
+    s = w3ddmg_sin_q6[(__safe_index w3ddmg_u8)ai];
+    c = w3ddmg_cos_q6[(__safe_index w3ddmg_u8)ai];
     out_x = (w3ddmg_i16)(((in_x * c) - (in_y * s)) >> 6);
     out_y = (w3ddmg_i16)(((in_x * s) + (in_y * c)) >> 6);
     *px = out_x;
@@ -754,36 +782,38 @@ static void w3ddmg_stage_clear_span(w3ddmg_u8 y, w3ddmg_u8 min_x, w3ddmg_u8 max_
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-// Set an inclusive mask span using edge bits and full middle bytes. Supply
-// ordered X endpoints in 0..127; invalid Y is ignored.
+// OR an inclusive span into its row-major mask bytes. Compute the row
+// address once, preserve both partial boundary bytes and fill whole bytes.
+// Supply ordered X endpoints in 0..127; invalid Y is ignored.
 static void w3ddmg_mask_set_span(w3ddmg_u8 y, w3ddmg_u8 min_x, w3ddmg_u8 max_x)
 {
-    w3ddmg_u8 x;
     w3ddmg_u16 ofs;
+    w3ddmg_u8 first;
+    w3ddmg_u8 last;
+    w3ddmg_u8 left;
+    w3ddmg_u8 right;
 
     if (y >= WIRE3D_DMG_SCREEN_H) return;
-
-    x = min_x;
-    while ((x <= max_x) && ((x & 7) != 0))
+    first = (w3ddmg_u8)(min_x >> 3);
+    last = (w3ddmg_u8)(max_x >> 3);
+    ofs = (w3ddmg_u16)(((w3ddmg_u16)y << 4) + first);
+    left = (w3ddmg_u8)((w3ddmg_bit_mask[(__safe_index w3ddmg_u8)(min_x & 7)] << 1) - 1);
+    right = (w3ddmg_u8)(255 ^ (w3ddmg_bit_mask[(__safe_index w3ddmg_u8)(max_x & 7)] - 1));
+    if (first == last)
     {
-        w3ddmg_mask_set(x, y);
-        if (x == max_x) return;
-        x = (w3ddmg_u8)(x + 1);
+        w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] = (w3ddmg_u8)(w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] | (left & right));
+        return;
     }
-
-    while ((w3ddmg_u8)(x + 7) <= max_x)
+    w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] = (w3ddmg_u8)(w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] | left);
+    ofs = (w3ddmg_u16)(ofs + 1);
+    first = (w3ddmg_u8)(first + 1);
+    while (first < last)
     {
-        ofs = w3ddmg_mask_offset(x, y);
-        w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] = 0xFF;
-        x = (w3ddmg_u8)(x + 8);
+        w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] = 255;
+        ofs = (w3ddmg_u16)(ofs + 1);
+        first = (w3ddmg_u8)(first + 1);
     }
-
-    while (x <= max_x)
-    {
-        w3ddmg_mask_set(x, y);
-        if (x == max_x) return;
-        x = (w3ddmg_u8)(x + 1);
-    }
+    w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] = (w3ddmg_u8)(w3ddmg_occlusion_mask[(__safe_index w3ddmg_u16)ofs] | right);
 }
 
 #pragma bank 1
@@ -821,7 +851,11 @@ static void w3ddmg_line_stage_masked_c(w3ddmg_u8 x0, w3ddmg_u8 y0, w3ddmg_u8 x1,
     w3ddmg_line_y0 = y0;
     w3ddmg_line_x1 = x1;
     w3ddmg_line_y1 = y1;
-    w3ddmg_line_stage_asm();
+    // Accepted in-bounds lines use the same connected register loop as direct draws.
+    if (x0 < 128 && x1 < 128 && y0 < WIRE3D_DMG_SCREEN_H && y1 < WIRE3D_DMG_SCREEN_H)
+        w3ddmg_line_inside_asm();
+    else
+        w3ddmg_line_stage_asm();
 }
 
 #pragma bank 1
@@ -1765,6 +1799,173 @@ w3ddmgls_done:
     }
 }
 
+
+#pragma bank 1
+#pragma fixed_bank 1
+#pragma fixed_order 121
+// In-bounds connected lines keep the stage pointer, pixel mask, remaining
+// count, minor delta and error in registers. Address calculation happens once;
+// crossing an eight-pixel column adjusts H instead of recalculating a tile.
+void w3ddmg_line_inside_asm()
+{
+    __asm {
+w3ddmgfast_enter:
+        LD_A_MEM w3ddmg_line_x0
+        LD_B_A
+        LD_A_MEM w3ddmg_line_x1
+        CP_B
+        JP_C w3ddmgfast_x_reverse
+        SUB_B
+        LD_MEM_A w3ddmg_line_dx
+        LD_A_IMM 1
+        LD_MEM_A w3ddmg_line_sx
+        JP w3ddmgfast_y_start
+
+w3ddmgfast_x_reverse:
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3ddmg_line_dx
+        LD_A_IMM 255
+        LD_MEM_A w3ddmg_line_sx
+
+w3ddmgfast_y_start:
+        LD_A_MEM w3ddmg_line_y0
+        LD_B_A
+        LD_A_MEM w3ddmg_line_y1
+        CP_B
+        JP_C w3ddmgfast_y_reverse
+        SUB_B
+        LD_MEM_A w3ddmg_line_dy
+        LD_A_IMM 1
+        LD_MEM_A w3ddmg_line_sy
+        JP w3ddmgfast_branch
+
+w3ddmgfast_y_reverse:
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3ddmg_line_dy
+        LD_A_IMM 255
+        LD_MEM_A w3ddmg_line_sy
+
+w3ddmgfast_branch:
+        LD_A_MEM w3ddmg_line_x0
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3ddmg_bit_mask
+        ADD_HL_DE
+        LD_B_HL
+        LD_A_MEM w3ddmg_line_x0
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD0
+        LD_H_A
+        LD_A_MEM w3ddmg_line_y0
+        LD_L_A
+        LD_A_MEM w3ddmg_line_dx
+        LD_C_A
+        LD_A_MEM w3ddmg_line_dy
+        CP_C
+        JP_C w3ddmgfast_shallow
+        JP_Z w3ddmgfast_shallow
+        JP w3ddmgfast_steep
+w3ddmgfast_shallow:
+        LD_A_MEM w3ddmg_line_dy
+        LD_D_A
+        LD_A_MEM w3ddmg_line_dx
+        LD_C_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_C
+w3ddmgfast_shallow_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_C
+        RET_Z
+        LD_A_E
+        CP_D
+        JP_NC w3ddmgfast_shallow_skip
+        CALL w3ddmgfast_step_y
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        LD_A_MEM w3ddmg_line_dx
+        ADD_E
+        LD_E_A
+w3ddmgfast_shallow_skip:
+        LD_A_E
+        SUB_D
+        LD_E_A
+        CALL w3ddmgfast_step_x
+        JP w3ddmgfast_shallow_loop
+w3ddmgfast_steep:
+        LD_A_MEM w3ddmg_line_dx
+        LD_D_A
+        LD_A_MEM w3ddmg_line_dy
+        LD_C_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_C
+w3ddmgfast_steep_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_C
+        RET_Z
+        LD_A_E
+        CP_D
+        JP_NC w3ddmgfast_steep_skip
+        CALL w3ddmgfast_step_x
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        LD_A_MEM w3ddmg_line_dy
+        ADD_E
+        LD_E_A
+w3ddmgfast_steep_skip:
+        LD_A_E
+        SUB_D
+        LD_E_A
+        CALL w3ddmgfast_step_y
+        JP w3ddmgfast_steep_loop
+w3ddmgfast_step_x:
+        LD_A_MEM w3ddmg_line_sx
+        CP_IMM 1
+        JR_Z w3ddmgfast_right
+        LD_A_B
+        RLCA
+        LD_B_A
+        RET_NC
+        DEC_H
+        RET
+w3ddmgfast_right:
+        LD_A_B
+        RRCA
+        LD_B_A
+        RET_NC
+        INC_H
+        RET
+w3ddmgfast_step_y:
+        LD_A_MEM w3ddmg_line_sy
+        INC_A
+        JR_Z w3ddmgfast_up
+        INC_L
+        RET
+w3ddmgfast_up:
+        DEC_L
+        RET
+    }
+}
+
 #if WIRE3D_DMG_HEIGHT == 96
 #pragma bank 1
 #pragma fixed_bank 1
@@ -2497,7 +2698,10 @@ void Wire3DDMG_DrawLine2D(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddmg_u8 by
     w3ddmg_line_y0 = ay;
     w3ddmg_line_x1 = bx;
     w3ddmg_line_y1 = by;
-    w3ddmg_line_stage_asm();
+    if (ax < 128 && bx < 128 && ay < WIRE3D_DMG_SCREEN_H && by < WIRE3D_DMG_SCREEN_H)
+        w3ddmg_line_inside_asm();
+    else
+        w3ddmg_line_stage_asm();
 }
 
 #pragma bank 1
@@ -2900,12 +3104,10 @@ void Wire3DDMG_EndFrame()
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-// Reduce an unsigned angle modulo 16 by repeated subtraction. The table
-// contains exactly 16 samples; changing ANGLE_STEPS alone does not resize it.
+// Mask an unsigned angle into the fixed sixteen-entry orientation table.
 static w3ddmg_u8 w3ddmg_angle_index(w3ddmg_u8 v)
 {
-    while (v >= WIRE3D_DMG_ANGLE_STEPS) v = (w3ddmg_u8)(v - WIRE3D_DMG_ANGLE_STEPS);
-    return v;
+    return (w3ddmg_u8)(v & 15);
 }
 #endif
 

@@ -1,12 +1,12 @@
 {
-  "built_on": "2026-09-15",
+  "built_on": "2026-09-22",
   "licensor": "DAISUKE OBA",
   "configuration": "Release",
-  "build_command": ".\\scripts\\build.ps1",
   "build_exit_code": 0,
-  "source_revision_before_packaging": "108914c92d14516173479a874c491cac7da94d2c",
-  "source_state": "Reviewed publication working tree; source_inputs hashes identify the recorded files.",
-  "source_inventory_scope": "Compiler project and build entry point.",
+  "build_method": "Roslyn C# compiler from .NET SDK 8.0.302; project Compile and Reference items; /target:exe /optimize+ /define:TRACE /main:Program; .NET Framework reference assemblies.",
+  "developer_build_command": ".\\scripts\\build.ps1",
+  "source_revision_before_packaging": "191c7f47cc38a1d0e8ecef24f9bb939ff6810f04",
+  "source_state": "Publication working tree; exact source inputs listed below. Changes are not committed yet.",
   "source_inputs": [
     {
       "path": "kitaqgb/AsmInfo.cs",
@@ -17,32 +17,24 @@
       "sha256": "889325f772814b9ec22bcf4839fd33e4f9fe739c61a8a6ec1fa3709ebf01a4d7"
     },
     {
-      "path": "kitaqgb/BuildReports.cs",
-      "sha256": "4cc21a570c319a1f19820386e68e2200f2212772412b9d2a121d2f711753612c"
+      "path": "kitaqgb/DebugExporter.cs",
+      "sha256": "464cb0998d5ac8a6c59c4537c4d6e4992a766f89e620d2444e665b50b90751a1"
+    },
+    {
+      "path": "kitaqgb/Lowerer.cs",
+      "sha256": "5fea0369cd3834bd6156a6ea7b0cf893a1a7a5e0bdcc340e58f3cda62a2ffa27"
+    },
+    {
+      "path": "kitaqgb/Optimizer.cs",
+      "sha256": "1158193f0486075d225d339d280b0187ed0b3f96a0922193d154c497fb781754"
+    },
+    {
+      "path": "kitaqgb/Other.cs",
+      "sha256": "6dd798eb868e1bb45f20c33da2b981f95419dfd2c45d370177ecd8124f49508e"
     },
     {
       "path": "kitaqgb/CType.cs",
       "sha256": "4f99133318339dd9931699086d0381cc6fd0212e370fe4dcb56f59b7157a47de"
-    },
-    {
-      "path": "kitaqgb/CodeGenerator.cs",
-      "sha256": "c6c0ff946eadd3a89f70a9d48ffcebafd32cd2bfac646d7e49c32009b9acf90b"
-    },
-    {
-      "path": "kitaqgb/CompilerApi.cs",
-      "sha256": "2ef9b09a106376df75fd0ea6cababde29f912f3e4f04015fb37bf101f567e257"
-    },
-    {
-      "path": "kitaqgb/CompilerSession.cs",
-      "sha256": "cc12d4c1c34984051c09b14da17a8b6752a50b61b9cb8dbeb79edd30fa6e6cfe"
-    },
-    {
-      "path": "kitaqgb/DeadStripper.cs",
-      "sha256": "5d0a8499ac29fa0c35f7b2ad6427756e711091af2136daa6348272b4ce312822"
-    },
-    {
-      "path": "kitaqgb/DebugExporter.cs",
-      "sha256": "464cb0998d5ac8a6c59c4537c4d6e4992a766f89e620d2444e665b50b90751a1"
     },
     {
       "path": "kitaqgb/Disassembler.cs",
@@ -57,28 +49,16 @@
       "sha256": "17f0ec2a7596b94c1a0334a19defd0c959367bef710bb4870ff92601f63b9ffb"
     },
     {
-      "path": "kitaqgb/Lowerer.cs",
-      "sha256": "88cc611cf2d5492c32a1635846bd45b7a70788ea47cb8312fe56f5f9662d58be"
-    },
-    {
       "path": "kitaqgb/Maybe.cs",
       "sha256": "4df9faa279a8030316e025a18b91bb04c61c4b72940eb08ee2709d2a09d0bc9c"
     },
     {
-      "path": "kitaqgb/Minimizer.cs",
-      "sha256": "58ba301c4e35963b65face0fd14e1659e49e9f1da402b3613c9f656134f82705"
-    },
-    {
-      "path": "kitaqgb/Optimizer.cs",
-      "sha256": "1158193f0486075d225d339d280b0187ed0b3f96a0922193d154c497fb781754"
-    },
-    {
-      "path": "kitaqgb/Other.cs",
-      "sha256": "b2f9a149d7408c4c6afdc0f5e1e4ef92c0cc2f77e2029895a2d431a15a0c1ab6"
-    },
-    {
       "path": "kitaqgb/Parser.cs",
-      "sha256": "80a7e65bf746dceb043f6f4ac3ec6bd2a337c9d8b33a735c577e21efa6480bfe"
+      "sha256": "48e5f104409ae89868b37a5df534d365e4923ea9685cb2d245b66619106e214a"
+    },
+    {
+      "path": "kitaqgb/Program.cs",
+      "sha256": "2f2cc605d5f5985ed93d3c0994bfcb8bd3900496a9dc0a2c8a11ad28c93b6575"
     },
     {
       "path": "kitaqgb/Program.Api.cs",
@@ -93,8 +73,16 @@
       "sha256": "20663c5434db57e5e1b90280ade89fea16449e67e6d1ebef089dc22d296b93e6"
     },
     {
-      "path": "kitaqgb/Program.cs",
-      "sha256": "2f2cc605d5f5985ed93d3c0994bfcb8bd3900496a9dc0a2c8a11ad28c93b6575"
+      "path": "kitaqgb/BuildReports.cs",
+      "sha256": "4cc21a570c319a1f19820386e68e2200f2212772412b9d2a121d2f711753612c"
+    },
+    {
+      "path": "kitaqgb/CompilerApi.cs",
+      "sha256": "2ef9b09a106376df75fd0ea6cababde29f912f3e4f04015fb37bf101f567e257"
+    },
+    {
+      "path": "kitaqgb/CompilerSession.cs",
+      "sha256": "cc12d4c1c34984051c09b14da17a8b6752a50b61b9cb8dbeb79edd30fa6e6cfe"
     },
     {
       "path": "kitaqgb/RomHeaderPatcher.cs",
@@ -105,8 +93,12 @@
       "sha256": "b359aeb6c3dd9c235d553e18f776b92801cef11f19a7e2774a67b13863131bbb"
     },
     {
-      "path": "kitaqgb/app.config",
-      "sha256": "d61bde901e7189cc97d45a1d4c4aa39d4c4de2b68419773ec774338506d659ad"
+      "path": "kitaqgb/CodeGenerator.cs",
+      "sha256": "084c65f2bf249b9843315660133b073174a50fb2ecf2e3a828b06708a26ea66a"
+    },
+    {
+      "path": "kitaqgb/Minimizer.cs",
+      "sha256": "58ba301c4e35963b65face0fd14e1659e49e9f1da402b3613c9f656134f82705"
     },
     {
       "path": "kitaqgb/kitaqgb.csproj",
@@ -117,54 +109,14 @@
       "sha256": "3e9cefb5fb9a5cf631355864bbc0830f24f2e755205c56cdd049633ca6245e95"
     }
   ],
-  "binary": {
-    "path": "kitaqgb.exe",
-    "bytes": 647168,
-    "sha256": "a9bc7175412d6c21da5b6f18efeaa67c0cf55d96561e4501d740b5731aaf6e68",
-    "imported_system_dlls": [
-      "mscoree.dll"
-    ]
-  },
-  "checks": [
+  "artifacts": [
     {
-      "check": "Release compiler build: zero warnings and errors",
-      "result": "passed"
-    },
-    {
-      "check": "Signed scaled multiplication and dot products: 78 DMG/CGB runs, including constant/variable equivalence and zero-coefficient input evaluation",
-      "result": "passed"
-    },
-    {
-      "check": "Physics examples: 8 DMG/CGB screens and 38 boundary runs; FC subpixel example checked in KUROSAKI",
-      "result": "passed"
-    },
-    {
-      "check": "Wireframe examples: 57 DMG/CGB runs with full-frame pixel and RAM comparisons",
-      "result": "passed"
-    },
-    {
-      "check": "Previous memory, bit, RNG, flags, RLE, text-layout, dialogue, menu, callback and two API-batch regressions",
-      "result": "passed"
+      "path": "kitaqgb.exe",
+      "sha256": "bc24ad4b78c4a0e2250d52443855a8e676a09ea8ffcc4b82fd012e36b3c1242a",
+      "bytes": 649728
     }
   ],
-  "scope": "Windows CLI release. Compilation and bounded emulator execution are separate checks; no blanket physical-hardware or peripheral compatibility claim.",
   "target_framework": ".NET Framework 4.8",
   "platform": "AnyCPU",
-  "library_inputs": [
-    {
-      "path": "lib/scroll.c",
-      "sha256": "2a136264f753a1774ee2b19b717ab6540a51dd1d6d279ab7b1b3f9e37e3c6f80"
-    },
-    {
-      "path": "lib/scroll.h",
-      "sha256": "80b676b5adaed829c90db2c1ed349cd85bf4ef0d1e3758b9410d391cf8ef8a9e"
-    }
-  ],
-  "source_line_ending_normalization": {
-    "path": "kitaqgb/CodeGenerator.cs",
-    "build_input_sha256": "3fdfa03582bc6de0fd7e8bd1d8e0d94a459c07f4834b5edbbf9caaff6f189a69",
-    "published_source_sha256": "c6c0ff946eadd3a89f70a9d48ffcebafd32cd2bfac646d7e49c32009b9acf90b",
-    "normalized_logical_lines_identical": true,
-    "multiline_string_literals": false
-  }
+  "scope": "Windows CLI compiler. Source and binary hashes describe this build; test coverage is reported separately. No physical-hardware compatibility claim."
 }

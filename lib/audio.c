@@ -23,8 +23,8 @@ extern u8 __rom_bank;
 
 #define AUDIO_RESUME_CH1 ((u8)0x01)
 #define AUDIO_RESUME_CH2 ((u8)0x02)
-#define AUDIO_RESUME_CH4 ((u8)0x04)
-#define AUDIO_RESUME_CH3 ((u8)0x08)
+#define AUDIO_RESUME_CH3 ((u8)0x04)
+#define AUDIO_RESUME_CH4 ((u8)0x08)
 
 // Global Variables (HRAM)
 __hram u8 *Audio_MusicPointer;
@@ -449,7 +449,7 @@ void Audio_RestoreCh3FromMusic() {
 #endif
 }
 
-// Clear the resume bit using STREAM channel IDs (CH1, CH2, CH4, CH3).
+// Clear the resume bit using STREAM channel IDs (CH1, CH2, CH3, CH4).
 // Silence CH1/CH3 only if their effect stream is absent; CH2/CH4 are silenced directly.
 void __stackcall Audio_StopMusicChannelOnly(u8 ch) {
     if (ch == AUDIO_STREAM_CHANNEL_CH1) {

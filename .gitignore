@@ -30,3 +30,6 @@
 
 # Example builds contain regenerable diagnostics and ROMs.
 /examples/out/
+
+# MIT-licensed asset compression tool.
+!/kitaqgb-zx0.exe

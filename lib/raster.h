@@ -33,9 +33,9 @@ typedef struct RasterLineX {
     u8 frame_counter;
 } RasterLineX;
 
-// Initialize an empty pending split table and clear raster error/count state.
+// Stop split scheduling, empty the shared table and clear error/count state.
 void Raster_Init();
-// Reset pending splits and bookkeeping. Commit separately to replace active splits.
+// Stop splits immediately and clear bookkeeping. Build and commit a new table to restart.
 void Raster_Clear();
 // Commit an empty split table so no raster bands remain active.
 void Raster_Disable();
@@ -89,7 +89,8 @@ void Raster_LineXSetPhase(RasterLineX* effect, u8 phase);
 // Look up the selected periodic profile at LY + phase and add base X modulo
 // 256. An unknown profile returns the unmodified base X.
 u8 Raster_LineXGetOffset(const RasterLineX* effect, u8 ly);
-// Drive horizontal scroll through all 144 visible lines using blocking LY
-// waits, then advance animation phase at the chosen frame interval. This owns
-// the CPU for the effect frame and must not compete with another raster driver.
+// Render all 144 visible lines with one SCX write per line, then advance phase.
+// This foreground renderer masks interrupts during the visible frame. Do game
+// and audio work between calls; do not combine it with a STAT raster driver.
+// Returns without changing the effect when the LCD is off.
 void Raster_LineXRunFrame(RasterLineX* effect);

@@ -210,7 +210,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h` の公開API名は `cgb_*` です。
 - メニューや設定で音の有効・無効を変えたら、`Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` を呼びます。
 - `Audio_PlaySFX()` は呼び出し時に見えているROMバンクを記録します。効果音データのバンクが明確な場合は `Audio_PlaySFXBanked(bank, sfx, priority)` を使います。
-- 楽曲ストリームの `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` は次のチャンネル番号を使います。`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3` です。
+- 楽曲ストリームの `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` は次のチャンネル番号を使います。`0=CH1`、`1=CH2`、`2=CH3`、`3=CH4` です。
 - CH3用の独自波形には、32個の4ビットサンプルを16バイトへ詰め、`Audio_LoadCustomWave()` に渡します。
 - `Audio_FadeToMasterVolume()` のフェードは `Audio_Update()` で進みます。フェード中も毎フレーム呼んでください。
 - `audio_vblank.c` はVBlank割り込みベクターのシンボル `__kq_vblank_vector` を定義します。BGMはイベントごとに `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param` の5バイトで、休符・反復・終了には `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END` を使います。
