@@ -213,7 +213,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 楽曲ストリームの `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` は次のチャンネル番号を使います。`0=CH1`、`1=CH2`、`2=CH3`、`3=CH4` です。
 - CH3用の独自波形には、32個の4ビットサンプルを16バイトへ詰め、`Audio_LoadCustomWave()` に渡します。
 - `Audio_FadeToMasterVolume()` のフェードは `Audio_Update()` で進みます。フェード中も毎フレーム呼んでください。
-- `audio_vblank.c` はVBlank割り込みベクターのシンボル `__kq_vblank_vector` を定義します。BGMはイベントごとに `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param` の5バイトで、休符・反復・終了には `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END` を使います。
+- `audio_vblank.c` はVBlank割り込みベクターのシンボル `__kq_vblank_vector` を定義します。BGMはイベントごとに `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param` の5バイトで、休符・反復・終了には `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END` を使います。
 - 直接ポインターで渡すVBlank楽曲は固定バンクへ置いてください。キューモードなら別バンクの楽曲から補充できます。リンク後に `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` を実行し、0040番地からISRへジャンプするよう設定してROMのチェックサムも更新します。
 - VBlankベクター0040番地を持つ別のライブラリやゲーム用スタブと `audio_vblank.c` を併用するには、割り込みを共有する振り分け処理が必要です。
 - `Scroll_SplitCommit()` はIEの `0x01 | 0x02` を自動で有効にし、コンパイラが用意するVBlank/STATハンドラーで画面分割を再生します。

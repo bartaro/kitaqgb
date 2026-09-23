@@ -235,7 +235,7 @@ The final eight audio note indices currently reuse the preceding octave's freque
 - Music stream command IDs use this channel encoding for `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`: `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`.
 - Use `Audio_LoadCustomWave()` with 16 bytes holding 32 packed 4-bit samples if you want a project-specific CH3 waveform.
 - `Audio_FadeToMasterVolume()` advances from `Audio_Update()`, so call `Audio_Update()` each frame during fades.
-- `audio_vblank.c` owns the VBlank IRQ vector symbol `__kq_vblank_vector`. Its BGM stream format is five bytes per event: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`; use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, and `AUDIO_VBLANK_END`.
+- `audio_vblank.c` owns the VBlank IRQ vector symbol `__kq_vblank_vector`. Its BGM stream format is five bytes per event: `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`; use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, and `AUDIO_VBLANK_END`.
 - Direct-pointer VBlank BGM songs must be fixed-bank data; queue mode can be replenished from banked songs. After linking a ROM with `lib/audio_vblank.c`, run `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` so vector `0x0040` jumps to the ISR and the ROM checksums are refreshed.
 - Do not combine `audio_vblank.c` with another library or game stub that also owns VBlank vector `0x0040` unless you add a shared IRQ dispatcher.
 - `Scroll_SplitCommit()` auto-enables IE bits `0x01 | 0x02` and uses compiler-owned VBlank/STAT handlers for split playback.
