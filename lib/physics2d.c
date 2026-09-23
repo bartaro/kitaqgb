@@ -57,13 +57,12 @@ kqscale_value_positive:
         LD_C_A
 kqscale_coefficient_positive:
         LD_HL_IMM 0
-        LD_B_IMM 8
-kqscale_multiply:
+        // Unroll eight bits: avoid a loop branch on every fixed-point product.
         LD_A_C
         AND_IMM 1
-        JR_Z kqscale_shift
+        JR_Z kqscale_shift_0
         ADD_HL_DE
-kqscale_shift:
+kqscale_shift_0:
         LD_A_H
         RRA
         LD_H_A
@@ -73,8 +72,104 @@ kqscale_shift:
         LD_A_C
         RRA
         LD_C_A
-        DEC_B
-        JR_NZ kqscale_multiply
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_1
+        ADD_HL_DE
+kqscale_shift_1:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_2
+        ADD_HL_DE
+kqscale_shift_2:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_3
+        ADD_HL_DE
+kqscale_shift_3:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_4
+        ADD_HL_DE
+kqscale_shift_4:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_5
+        ADD_HL_DE
+kqscale_shift_5:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_6
+        ADD_HL_DE
+kqscale_shift_6:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
+        LD_A_C
+        AND_IMM 1
+        JR_Z kqscale_shift_7
+        ADD_HL_DE
+kqscale_shift_7:
+        LD_A_H
+        RRA
+        LD_H_A
+        LD_A_L
+        RRA
+        LD_L_A
+        LD_A_C
+        RRA
+        LD_C_A
         POP_AF
         OR_A
         RET_Z
