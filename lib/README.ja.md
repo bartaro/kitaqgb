@@ -30,6 +30,7 @@
 | `input.h` / `input.c` | ボタンの押下中・押した瞬間・離した瞬間・リピートの状態管理。 | メニュー、アクション、パズル、SLGなどの入力処理で組み込みます。 |
 | `vram.h` / `vram.c` | BGタイル書き込み、矩形塗りつぶし、マップ転送、memcpy、memsetを予約するVRAMキュー。 | 処理中に更新を予約し、安全な時間帯に `vram_flush()` または `vram_flush_now()` で転送します。 |
 | `sprite.h` / `sprite.c` | OAMの作業用コピー、スプライト割り当て、メタスプライト、アニメーション、OAM DMA、走査線上の個数超過の確認。 | OBJによる描画でヘッダーとソースを組み込みます。 |
+| `sprite_order.h` / `sprite_order.c` | 4段階の選択優先度とOAM順の交替。符号付き画面座標で画面外を除外し、最大255件から40件まで出力して未使用枠を隠します。 | ヘッダーとソースを組み込み、前景処理で影OAMを作成してVBlank中に転送します。[画像付きサンプルと関数説明](https://bartaro.github.io/kitaq-docs/gb-library.html#module-sprite_order)を参照してください。 |
 | `fixed.h` / `fixed.c` | Q8.8固定小数点、`Vec2`、`KQRect`、clamp/min/max/lerp、基本的な矩形判定。 | 移動、物理、カメラ、AIの評価値などに使います。 |
 | `scene.h` / `scene.c` | タイトル・ゲーム・ポーズなどのシーン表と、切り替え・更新・描画の振り分け。 | ゲーム全体の状態遷移を整理するときに組み込みます。 |
 | `entity.h` / `entity.c` | 最大 `ENTITY_MAX` 個の小さなゲームオブジェクトを固定配列で管理するプール。 | コールバックにはIDが渡されます。実体は `entity_get(id)` で取得できます。 |
