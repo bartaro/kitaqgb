@@ -1,0 +1,400 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HARAPEKO SHIROHEBI — Programmer’s Guide</title><link rel="stylesheet" href="guide.css"></head><body>
+<header id="top"><div class="tag">KITAQGB APPLICATION NOTES · GB / CGB</div>
+<h1>HARAPEKO SHIROHEBI</h1>
+
+<p>Programmer’s Guide · Flow, movement and library integration</p>
+<div class="edition"><a href="guide-en.html" lang="en">English</a><a href="guide-ja.html" lang="ja">日本語</a><a href="../README.md">README</a><span>DAISUKE OBA · MIT</span></div></header>
+
+<main>
+<nav class="toc" aria-label="Contents"><strong>CONTENTS</strong>
+<ol>
+<li><a href="#start">Start here</a></li>
+
+<li><a href="#build">Build and file layout</a></li>
+
+<li><a href="#flow">Program flow and states</a></li>
+
+<li><a href="#motion">Head motion: fixed point and steering</a></li>
+
+<li><a href="#chain">How the white snake follows</a></li>
+
+<li><a href="#collision">Fruit, collision and miss effects</a></li>
+
+<li><a href="#display">Drawing: tiles and sprite order</a></li>
+
+<li><a href="#audio">Music and VBlank responsibilities</a></li>
+
+<li><a href="#save">Scores and name entry</a></li>
+
+<li><a href="#libraries">KITAQGB library usage</a></li>
+
+<li><a href="#sources">Source map and safe changes</a></li>
+</ol>
+</nav>
+
+<section id="start">
+<h2><span class="num">01</span>Start here</h2>
+
+<p>This guide explains how HARAPEKO SHIROHEBI works, from controller input to the pixels on the screen. The game is by <strong>DAISUKE OBA</strong>. Eat pomegranates, grow the white snake and avoid mines and your own body. The supplied program, original assets and this guide are released under the <a href="../LICENSE">MIT License</a>.</p>
+
+<p>The screen is 160 × 144 pixels. One ROM supports DMG and CGB; color is selected at runtime. Storage uses MBC5, 64 KiB ROM and 8 KiB battery-backed RAM. Obtain the playable release from <a href="https://bartaro.itch.io/harapeko-shirohebi">the game's itch.io page</a>.</p>
+
+<p><strong>Reading route:</strong> start with the flowchart, then read the head-motion and chain sections together. The library table connects each technique to the source you can reuse. “Apple” and “Block” in identifiers mean the on-screen pomegranate and mine.</p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="build">
+<h2><span class="num">02</span>Build and file layout</h2>
+
+<p>Download the complete KITAQGB repository. On Windows with .NET Framework 4.8 and PowerShell, run this command from the repository root:</p>
+<pre><code>powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\harapeko_shirohebi\build.ps1</code></pre>
+<p>The game is assembled from 17 split C files in an explicit order. Music, exported assets and the bank-selection wrappers are separate compiler inputs. The build links the repository's <code>lib/</code>; it does not need a private art project or an asset exporter. Do not add the split files to a generic C build individually: they share declarations through the assembled translation unit.</p>
+
+<table>
+<thead>
+<tr><th>Option / output</th><th>Meaning</th></tr>
+</thead>
+
+<tbody>
+<tr><td><code>-KitaqgbRoot</code></td><td>Select the directory containing <code>kitaqgb.exe</code> and <code>lib/</code>. Omit it in this repository layout.</td></tr>
+
+<tr><td><code>-OutputDirectory</code></td><td>Choose the output directory; the default is the game's <code>out/</code>.</td></tr>
+
+<tr><td><code>-KeepBuildFiles</code></td><td>Keep the combined source, temporary audio adaptations and compiler diagnostics after success.</td></tr>
+
+<tr><td><code>shirohebi.gb</code></td><td>The newly compiled ROM. Never use an older output after a failed build.</td></tr>
+
+<tr><td><code>shirohebi.map</code></td><td>Symbol addresses for debugging this exact build.</td></tr>
+
+<tr><td><code>build_manifest.json</code></td><td>Compiler/ROM hashes, output size and interrupt-vector address.</td></tr>
+</tbody>
+</table>
+
+<h3>Why the build has a post-processing step</h3>
+
+<p>The VBlank music interrupt must remain callable while any switchable ROM bank is selected. The script verifies four interrupt-related symbols are in fixed bank 0, installs a <code>JP</code> at <code>$0040</code> and recalculates both cartridge checksums. It refuses an unexpected vector. A temporary audio copy disables the ordinary music service so music is not advanced by both the main loop and the interrupt. Another temporary copy places audio helpers and uses an in-range absolute branch. Repository libraries are not edited.</p>
+
+<p>See <a href="../build.ps1">build.ps1</a> for the complete ordered inputs and compiler flags. Main flags are <code>--profile=release --stack-bank=fixed --rst-disable --cgb=cgb --cart=mbc5_ram_battery --romsize=64k --ramsize=8k</code>.</p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="flow">
+<h2><span class="num">03</span>Program flow and states</h2>
+
+<figure><div class="flow"><div class="box"><strong>INITIALIZE</strong><small>Hardware, display, shared state</small></div><div class="arrow" aria-hidden="true">→</div><div class="box"><strong>ARM INTERRUPT</strong><small>Audio hook, load scores, title</small></div><div class="arrow" aria-hidden="true">→</div><div class="box"><strong>MAIN LOOP</strong><small>Input → state update → present</small></div></div><div class="lane"><strong>One loop:</strong> audio bookkeeping → read held/new keys → shortcut/release gate → one state handler → build shadow OAM → wait for VBlank → transfer OAM → service SFX → apply dirty overlays. Repeat.</div>
+<figcaption>Figure 1. Main program flow. Hardware VBlank interrupts can occur while the main loop is executing.</figcaption>
+</figure>
+
+<table>
+<thead>
+<tr><th>State transition</th><th>Trigger and effect</th></tr>
+</thead>
+
+<tbody>
+<tr><td>TITLE → READY → PLAY</td><td>START begins a run. The START introduction finishes before movement begins.</td></tr>
+
+<tr><td>PLAY ⇄ PAUSE</td><td>START pauses/resumes. Physics and chain updates stop while paused.</td></tr>
+
+<tr><td>PAUSE → RETURN_CONFIRM</td><td>SELECT opens the NO-default confirmation. Cancel returns to the same paused run; YES returns to TITLE.</td></tr>
+
+<tr><td>PLAY → MISS</td><td>A mine or self hit triggers the corresponding animation.</td></tr>
+
+<tr><td>MISS → NAME_ENTRY / GAMEOVER</td><td>A qualifying score opens name entry. Other scores go directly to retry. Confirming a name saves it and opens retry.</td></tr>
+
+<tr><td>GAMEOVER → READY / TITLE</td><td>Retry YES starts a fresh run; NO returns to the title.</td></tr>
+
+<tr><td>TITLE ⇄ ERASE</td><td>SELECT+START opens score erasure. A confirms; B/START cancels. Initial choice is NO.</td></tr>
+</tbody>
+</table>
+
+<p>The release gate consumes input until every button is released, including the release iteration. This prevents a button that opened a screen from immediately confirming its next action. Demo mode substitutes steering input and uses the same motion/collision code. Title inactivity is counted in 900 main-loop passes; the demo duration uses 1,800 VBlank ticks. Neither counter should be described as a guaranteed wall-clock duration.</p>
+
+<aside class="note">A gameplay update means one main-loop pass. It is not a promise of one update per hardware frame: a busy loop can miss a VBlank. Music and the interrupt counter follow VBlank independently.</aside>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="motion">
+<h2><span class="num">04</span>Head motion: fixed point and steering</h2>
+
+<p>Only the head is a <code>KQBody2D</code>. Its <code>KQWorld2D</code> contains one active body, zero gravity and zero contact-solver iterations. The game implements its own hit checks after motion. Q4 coordinates use 16 integer units per pixel: <code>160</code> represents 10 pixels. This retains fractional motion without floating-point arithmetic.</p>
+<pre><code>base = 8 + 2 * min(score / 5, 10)     // Q4 component limit
+first UP update: limit = base + (base &gt;&gt; 2)
+held UP:        limit += max(base &gt;&gt; 2, 1), capped at 2 * base
+released UP:    limit -= max(base &gt;&gt; 2, 1), floored at base
+pixel_center = (q4_position + 8) &gt;&gt; 4</code></pre>
+<p>The base component limit ranges from 0.5 to 1.75 pixels per update. Sixteen clockwise headings start at right (0), then down (4), left (8) and up (12). LEFT/RIGHT change the intended heading by one sector. Held turning uses an initial countdown of 8 and a repeat countdown of 4; simultaneous LEFT and RIGHT cancel turning.</p>
+
+<p>The velocity direction uses full, three-quarter, quarter and zero components. Each actual component approaches its target by at most 3 Q4 units per update. These are inexpensive integer approximations, not normalized trigonometric vectors. The displayed heading can therefore change before the velocity finishes aligning.</p>
+
+<p>After <code>kq2d_step</code>, the head snaps across the center limits: X below 4 goes to 156, X above 156 goes to 4; Y similarly uses 4 and 140. It then rounds once to pixel coordinates for both drawing and collision. This head-boundary rule differs from the chain's modulo-160/144 coordinate wrapping.</p>
+
+<p>Read <a href="../shirohebi_snake.c"><code>shirohebi_snake.c</code></a> / <a href="../shirohebi_flow.c"><code>shirohebi_flow.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="chain">
+<h2><span class="num">05</span>How the white snake follows</h2>
+
+<p><code>ChainBody</code> points directly to <code>SND_TraceX</code>, <code>SND_TraceY</code> and <code>SND_TraceDir</code>. These arrays hold the <strong>current pose of each segment</strong>, not a recording of where the head travelled. Collision and rendering read the same arrays. The snake starts with a head and three joints and can grow to 31 segments in total.</p>
+
+<figure><div class="diagram-scroll"><svg class="chain-svg" viewBox="0 0 880 175" role="img" aria-labelledby="chain-title"><title id="chain-title">A new heading travels from the head to successive joints</title><defs><marker id="tip" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#1c6954"/></marker></defs><g fill="#e4ead9" stroke="#1c6954" stroke-width="2"><rect x="20" y="25" width="180" height="90" rx="10"/><rect x="340" y="25" width="180" height="90" rx="10"/><rect x="660" y="25" width="180" height="90" rx="10"/></g><g stroke="#1c6954" stroke-width="2" marker-end="url(#tip)"><path d="M210,65 H325"/><path d="M530,65 H645"/></g><g text-anchor="middle" fill="#173734" font-family="system-ui,sans-serif" font-size="19"><text x="110" y="60">HEAD [0]</text><text x="110" y="92">heading = 0</text><text x="430" y="60">JOINT [1]</text><text x="430" y="92">old 15 → new 0</text><text x="750" y="60">JOINT [2]</text><text x="750" y="92">old 14 → new 15</text><text x="268" y="48" font-size="15">0</text><text x="588" y="48" font-size="15">15</text><text x="440" y="150" font-size="17">Pass the saved OLD heading to the next joint.</text></g></svg></div>
+<figcaption>Figure 2. One update. The old heading is saved before overwriting it, so a bend propagates one joint at a time. Position uses the predecessor after its update.</figcaption>
+</figure>
+
+<ol>
+<li>Store the head's pixel position and heading at index 0; set <code>pull</code> to that heading.</li>
+
+<li>For joint <code>i</code>, save its old heading. Subtract a small heading-dependent offset from the already-updated predecessor to obtain the target position.</li>
+
+<li>Find the shortest wrapped X/Y displacement to the target. Move each axis by 0, 1 or 2 pixels according to the table below.</li>
+
+<li>Assign <code>pull</code> to the joint's heading, wrap its new position and pass the saved old heading to joint <code>i + 1</code>.</li>
+</ol>
+
+<table>
+<thead>
+<tr><th>Signed displacement d</th><th>Per-axis correction</th></tr>
+</thead>
+
+<tbody>
+<tr><td>d > 4</td><td>+2</td></tr>
+
+<tr><td>0 < d ≤ 4</td><td>+1</td></tr>
+
+<tr><td>d = 0</td><td>0</td></tr>
+
+<tr><td>−4 ≤ d < 0</td><td>−1</td></tr>
+
+<tr><td>d < −4</td><td>−2</td></tr>
+</tbody>
+</table>
+
+<p>The X offsets for headings 0…15 are <code>[4,4,3,1,0,-1,-3,-4,-4,-4,-3,-1,0,1,3,4]</code>; Y uses the same values shifted by 12 sectors. Coordinates wrap in a 160 × 144 field. For a field size W, subtract W from a displacement above W/2 and add W below −W/2; an exact half-field displacement keeps its sign.</p>
+
+<h3>Worked example at the screen edge</h3>
+
+<p>A right-facing predecessor at (2, 50) wants the following joint four pixels behind it: target X = (2 − 4) mod 160 = 158. If the joint is at X=156, the displacement is +2, so it advances by +1 to X=157. A joint at X=0 instead sees the shortest displacement −2 and moves to X=159. It follows across the edge rather than crossing the whole screen.</p>
+
+<p>Growth duplicates the tail's position and heading, then increases the active count. Subsequent following separates the new joint. The former tail is highlighted for 20 update counts. The library wrapper keeps the follower and its helpers together in bank 2, avoiding per-joint bank switches.</p>
+<pre><code>/* Excerpt: the game owns these arrays for the entire run. */
+chain_body_init(&amp;SND_ChainBody, SND_TraceX, SND_TraceY, SND_TraceDir,
+                SND_MAX_SEGMENTS, SND_SCREEN_W, SND_SCREEN_H);
+chain_body_reset(&amp;SND_ChainBody, SND_Length,
+                 SND_HeadX, SND_HeadY, SND_Facing);
+
+/* Once per PLAY update, after integrating and rounding the head. */
+SND_ChainBody.count = SND_Length;
+chain_body_step(&amp;SND_ChainBody, SND_HeadX, SND_HeadY, SND_Facing);
+
+/* On fruit collection, within capacity. */
+chain_body_grow(&amp;SND_ChainBody);
+SND_Length = SND_ChainBody.count;</code></pre>
+<p>This excerpt illustrates storage ownership and call order; the full game also checks growth failure and sets the highlight. Sources: <a href="../shirohebi_snake.c"><code>shirohebi_snake.c</code></a> / <a href="../shirohebi_chain.c"><code>shirohebi_chain.c</code></a> / <a href="../../../lib/chain.c"><code>chain.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="collision">
+<h2><span class="num">06</span>Fruit, collision and miss effects</h2>
+
+<p>A PLAY update processes boost → steering → head physics → head wrap/rounding → body following → mines → self hit → fruit → highlight expiry. Fatal hits take precedence over collecting a fruit in the same update.</p>
+
+<table>
+<thead>
+<tr><th>Check</th><th>Actual rule</th></tr>
+</thead>
+
+<tbody>
+<tr><td>Mines</td><td>Every segment center is tested against inclusive rectangles X=46…58 or 102…114, Y=62…74.</td></tr>
+
+<tr><td>Self hit</td><td>Head versus segments 2 onward; shortest wrapped |dx| &lt; 3 and |dy| &lt; 3. The immediately following joint is excluded.</td></tr>
+
+<tr><td>Fruit</td><td>Head versus fruit center; ordinary, nonwrapped |dx| &lt; 7 and |dy| &lt; 7. Add a point, attempt growth and choose the next candidate.</td></tr>
+</tbody>
+</table>
+
+<p>These are axis-aligned thresholds, not circle-distance tests. Sixteen fixed fruit positions are visited deterministically. Minimum tile distance from a mine decreases with score (4, 3, 2, 1 at scores 0, 10, 20, 30); an identical tile is always rejected. A search tries at most 16 candidates. The score is an 8-bit value, so its storage is not an unlimited counter.</p>
+
+<p>A self hit freezes the pose and fades it. A mine hit scatters segments with fixed-point velocities, delayed gravity and staggered bursts, then shows a crater. The miss timer routes a qualifying score to name entry and other scores to the retry prompt. CGB uses colors for the effects; DMG uses its shade palettes.</p>
+
+<p><a href="../shirohebi_collision.c"><code>shirohebi_collision.c</code></a> / <a href="../shirohebi_apples.c"><code>shirohebi_apples.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="display">
+<h2><span class="num">07</span>Drawing: tiles and sprite order</h2>
+
+<p>Initialization waits for a safe display phase, turns the LCD off, clears VRAM, loads tile/font data and palettes, and enables the display. The CGB path supplies background attributes and color palettes; the DMG path uses shade registers. The exported background is 20 tiles wide, while the hardware tilemap uses a stride of 32, so their indices are not interchangeable.</p>
+
+<p>During a loop, the game builds a shadow OAM buffer in RAM. Each sprite is written with the hardware's X+8 and Y+16 coordinate biases. After <code>system_wait_vblank()</code>, it commits the OAM data. Snake slots occupy 0…30; text uses the remaining slots. Unused entries are cleared.</p>
+
+<p>The first six segments keep stable OAM priority. Later segments rotate their ordering by a phase of four per render. This shares the hardware's ten-sprites-per-scanline limit among the rear joints; it does not remove that limit or delete body segments. When changing the maximum snake length, recheck both the storage capacity and all 40 OAM slots.</p>
+
+<p>START and PAUSE overlays track desired, shown and dirty state. Removing text restores each cell using live fruit state before falling back to the background map. Clearing the area to a single tile would erase a fruit underneath it. Font masks are expanded from eight one-bit rows into sixteen bytes of two-bit tile data, with glyph pixels taking precedence over the background pattern.</p>
+
+<p><a href="../shirohebi_render.c"><code>shirohebi_render.c</code></a> / <a href="../shirohebi_display.c"><code>shirohebi_display.c</code></a> / <a href="../shirohebi_pause.c"><code>shirohebi_pause.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="audio">
+<h2><span class="num">08</span>Music and VBlank responsibilities</h2>
+
+<p>The fixed-bank music stream is read by <code>audio_vblank.c</code>. Each normal record is ordered <strong>delay, CH1, CH2, CH3, CH4</strong>: pulse with sweep, pulse, wave, then noise. Channel identity therefore follows the physical hardware order. Music control uses <code>AudioVBlank_PlayMusic</code>, <code>AudioVBlank_Stop</code> and <code>AudioVBlank_SetEnabled</code>.</p>
+
+<p>The ordinary <code>audio.c</code> driver handles game effects. Its music service is excluded by the build's temporary define. Game effects select banked data with <code>__bankof</code> and use priorities; the mine effect also uses direct CH4 noise. Pause coordinates both music and effects. The main loop's <code>SND_AudioServiceWork</code> calls are deliberately empty: processing extra joints must not advance the music clock.</p>
+
+<p><code>AudioVBlank_FrameHook</code> calls the game's fixed-bank <code>SND_DemoVBlankHook</code>. It increments an 8-bit demo counter and samples the system-button row, preserving the P1 selection. When armed, it latches title SELECT+START and pause SELECT so short presses survive a busy main loop. It does not draw or call switchable-bank routines.</p>
+
+<aside class="note">Install the hook only after every shared flag and audio state has been initialized. A pointer stored by a general system callback API is not a substitute for this interrupt hook. Keep all interrupt-reachable code/data resident.</aside>
+<pre><code>/* Excerpt from initialization, after shared state has been set up. */
+SND_AudioInit();
+AudioVBlank_FrameHook = SND_DemoVBlankHook;
+AudioVBlank_EnableIrq();</code></pre>
+<p><a href="../shirohebi_audio.c"><code>shirohebi_audio.c</code></a> / <a href="../shirohebi_lib_bank0.c"><code>shirohebi_lib_bank0.c</code></a> / <a href="../music.c"><code>music.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="save">
+<h2><span class="num">09</span>Scores and name entry</h2>
+
+<p>Slot 0 stores a 42-byte application payload: magic <code>0x53</code>, version <code>2</code>, ten one-byte scores and thirty name characters. The save library supplies the enclosing length/checksum validation. The loader also recognizes 5-byte and 15-byte score payloads, while writes use the 42-byte format.</p>
+
+<p>A nonzero qualifying score is inserted into descending order. The comparison is strictly greater, so equal scores follow existing entries. Names move with their scores. A new entry begins as AAA in RAM; the game writes SRAM when the player confirms the three-character name. Abandoning a pending result reloads the saved ranking instead of committing it.</p>
+
+<p>UP/DOWN select A–Z or a period. RIGHT/SELECT move to the next character with wraparound; LEFT moves back with wraparound. B moves back only when the cursor is not on the first character. A advances, or confirms at the final character; START confirms from any position. The release gate prevents that confirmation from also selecting retry.</p>
+
+<p><a href="../shirohebi_save.c"><code>shirohebi_save.c</code></a> / <a href="../shirohebi_flow.c"><code>shirohebi_flow.c</code></a></p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="libraries">
+<h2><span class="num">10</span>KITAQGB library usage</h2>
+
+<p>Use the repository library and header together. The game-specific wrappers and settings are part of the example, especially its bank placement and audio coordination.</p>
+
+<table>
+<thead>
+<tr><th>Library</th><th>Entry points / purpose</th><th>Example source</th></tr>
+</thead>
+
+<tbody>
+<tr><td><a href="../../../lib/system.c"><code>system.c</code></a></td><td><code>system_init, system_wait_vblank</code><br>Initialize system state and synchronize presentation. The audio IRQ hook is installed separately.</td><td><a href="../shirohebi_main.c"><code>shirohebi_main.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/chain.c"><code>chain.c</code></a></td><td><code>chain_body_init, chain_body_reset, chain_body_step, chain_body_grow</code><br>Bind persistent arrays, construct a pose, follow the head and append the tail. The ring-history Chain API is not used.</td><td><a href="../shirohebi_snake.c"><code>shirohebi_snake.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/physics2d.c"><code>physics2d.c</code></a></td><td><code>kq2d_world_init, kq2d_step</code><br>Integrate one Q4 head body. Set zero gravity and no contact-solver iterations.</td><td><a href="../shirohebi_snake.c"><code>shirohebi_snake.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/sprite.c"><code>sprite.c</code></a></td><td><code>sprite_init; kq_sprite_oam and companion state</code><br>Initialize and use shadow OAM. The game packs entries directly, then commits them; respect slot and coordinate rules.</td><td><a href="../shirohebi_render.c"><code>shirohebi_render.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/audio_vblank.c"><code>audio_vblank.c</code></a></td><td><code>AudioVBlank_Init, PlayMusic, Stop, SetEnabled, EnableIrq, FrameHook</code><br>Resident music stream and an interrupt-time game callback. Keep IRQ code/data in fixed ROM. Names after the first share the AudioVBlank_ prefix.</td><td><a href="../shirohebi_audio.c"><code>shirohebi_audio.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/audio.c"><code>audio.c</code></a></td><td><code>Audio_Init, Audio_Update, Audio_PlaySFXBanked, Audio_StopSfx, Audio_SetPaused</code><br>Effect playback, priority and pause, coordinated with the VBlank music driver.</td><td><a href="../shirohebi_audio.c"><code>shirohebi_audio.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/save.c"><code>save.c</code></a></td><td><code>save_exists, save_read, save_write</code><br>Read/write the versioned ranking payload in slot 0. save_read returns success/failure after checking the exact requested length and checksum; the game checks its own signature too.</td><td><a href="../shirohebi_save.c"><code>shirohebi_save.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/cgb_palette.c"><code>cgb_palette.c</code></a></td><td><code>cgb_bg_palette, cgb_obj_palette</code><br>Configure the game's CGB colors alongside explicit DMG palette registers.</td><td><a href="../shirohebi_display.c"><code>shirohebi_display.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/map.c"><code>map.c</code></a></td><td><code>map_load and the exported map_t descriptor</code><br>Support the asset file's map helper; gameplay restoration writes individual cells itself.</td><td><a href="../shirohebi_assets.c"><code>shirohebi_assets.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/fixed.c"><code>fixed.c</code></a></td><td><code>fixed-point support</code><br>Linked support code; head motion is expressed through physics2d and integer Q4 arithmetic.</td><td><a href="../shirohebi_common.c"><code>shirohebi_common.c</code></a></td></tr>
+
+<tr><td><a href="../../../lib/audio_hwregs_gb.c"><code>audio_hwregs_gb.c</code></a></td><td><code>shared audio register bindings</code><br>Provide the GB hardware register definitions required by both audio paths.</td><td><a href="../shirohebi_audio.c"><code>shirohebi_audio.c</code></a></td></tr>
+</tbody>
+</table>
+
+<h3>Compiler built-ins used alongside libraries</h3>
+
+<p><code>__readpadex(previous)</code> returns held keys in the low byte and newly pressed keys in the high byte. <code>__cgb_is_cgb()</code> selects color handling. Tile/attribute built-ins such as <code>__settile</code> and <code>__settileattr</code> update background cells; <code>__bankof</code> supplies the ROM bank of effect data. These are compiler facilities, not additional C implementations to copy into the game.</p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<section id="sources">
+<h2><span class="num">11</span>Source map and safe changes</h2>
+
+<table>
+<thead>
+<tr><th>File</th><th>Responsibility</th></tr>
+</thead>
+
+<tbody>
+<tr><td><a href="../shirohebi_common.c"><code>shirohebi_common.c</code></a></td><td>Types, constants, shared state and forward declarations. Read this first when following a symbol.</td></tr>
+
+<tr><td><a href="../shirohebi_main.c"><code>shirohebi_main.c</code></a></td><td>Boot sequence and the input → update → render → VBlank loop.</td></tr>
+
+<tr><td><a href="../shirohebi_flow.c"><code>shirohebi_flow.c</code></a></td><td>State dispatch, title options, READY, PLAY, pause, miss, name entry and retry.</td></tr>
+
+<tr><td><a href="../shirohebi_input.c"><code>shirohebi_input.c</code></a></td><td>Release gating, title shortcut and return-to-title confirmation.</td></tr>
+
+<tr><td><a href="../shirohebi_snake.c"><code>shirohebi_snake.c</code></a></td><td>Head physics, boost, relative steering, boundary wrap and chain setup/update/growth.</td></tr>
+
+<tr><td><a href="../shirohebi_chain.c"><code>shirohebi_chain.c</code></a></td><td>Bank-2 wrapper that includes the complete shared chain implementation.</td></tr>
+
+<tr><td><a href="../shirohebi_collision.c"><code>shirohebi_collision.c</code></a></td><td>Mine/self hits, impact classification and scattered-segment animation.</td></tr>
+
+<tr><td><a href="../shirohebi_apples.c"><code>shirohebi_apples.c</code></a></td><td>Pomegranate candidate selection, collection, scoring and growth. Apple is the internal identifier.</td></tr>
+
+<tr><td><a href="../shirohebi_demo.c"><code>shirohebi_demo.c</code></a></td><td>Attract-mode steering, long-snake pose and elapsed-tick accounting using the VBlank counter.</td></tr>
+
+<tr><td><a href="../shirohebi_render.c"><code>shirohebi_render.c</code></a></td><td>Shadow OAM packing, head/joint/tail tiles, priority rotation and miss effects.</td></tr>
+
+<tr><td><a href="../shirohebi_display.c"><code>shirohebi_display.c</code></a></td><td>LCD/VRAM initialization, palette and font uploads, title and ranking layout.</td></tr>
+
+<tr><td><a href="../shirohebi_background.c"><code>shirohebi_background.c</code></a></td><td>Gameplay background cells, mines and restoration of overwritten cells.</td></tr>
+
+<tr><td><a href="../shirohebi_pause.c"><code>shirohebi_pause.c</code></a></td><td>START/PAUSE text overlays with requested/shown/dirty state.</td></tr>
+
+<tr><td><a href="../shirohebi_text.c"><code>shirohebi_text.c</code></a></td><td>Character-to-tile conversion, strings, numeric scores and menu cursors.</td></tr>
+
+<tr><td><a href="../shirohebi_save.c"><code>shirohebi_save.c</code></a></td><td>Ranking validation, insertion, three-character names and SRAM storage.</td></tr>
+
+<tr><td><a href="../shirohebi_audio.c"><code>shirohebi_audio.c</code></a></td><td>Music/SFX setup, start/stop, options, pause and channel coordination.</td></tr>
+
+<tr><td><a href="../music.c"><code>music.c</code></a></td><td>Resident fixed-length VBlank music records for the start jingle, main song and game-over song.</td></tr>
+
+<tr><td><a href="../sfx.c"><code>sfx.c</code></a></td><td>Effect byte streams selected by the game audio functions.</td></tr>
+
+<tr><td><a href="../text_tiles.c"><code>text_tiles.c</code></a></td><td>Font masks and conversion into two-bit Game Boy tile rows.</td></tr>
+
+<tr><td><a href="../shirohebi_assets.c"><code>shirohebi_assets.c</code></a></td><td>Exported tiles, tilemap, attributes, collision/event tables; map descriptor and helpers.</td></tr>
+
+<tr><td><a href="../shirohebi_input_shared.h"><code>shirohebi_input_shared.h</code></a></td><td>Declarations for the WRAM input flags and fixed-bank callback shared with the interrupt.</td></tr>
+
+<tr><td><a href="../shirohebi_lib_bank0.c"><code>shirohebi_lib_bank0.c</code></a></td><td>Fixed-bank VBlank input/clock callback, shared WRAM flags and bank-0 selection for the following system/audio inputs.</td></tr>
+
+<tr><td><a href="../shirohebi_lib_bank1.c"><code>shirohebi_lib_bank1.c</code></a></td><td>Select bank 1 for the following support-library compilation inputs.</td></tr>
+</tbody>
+</table>
+
+<h3>When changing the game</h3>
+
+<ul>
+<li><strong>Speed or steering:</strong> change the Q4 constants and inspect both slow turns and UP acceleration. Do not treat the head's facing sector as its exact velocity direction.</li>
+
+<li><strong>Length:</strong> update array capacity, chain capacity and OAM reservation together. Check mine/self collision at the tail and the scanline sprite limit.</li>
+
+<li><strong>Graphics:</strong> preserve tile numbers, map stride and CGB attributes. When removing overlays, restore the live cell underneath.</li>
+
+<li><strong>Audio:</strong> preserve fixed-bank interrupt residency and exactly one music-clock owner. Test pause/resume as well as normal playback.</li>
+
+<li><strong>Saving:</strong> change the payload version when changing the layout; validate length before indexing and test fresh/invalid SRAM.</li>
+</ul>
+
+<p>After rebuilding, use the generated map from that build. Check the title, START introduction, movement, turning, fruit, self/mine hits, pause/resume, return confirmation and ranking in both hardware modes. A successful compilation alone does not prove those paths or physical-hardware behavior.</p>
+
+<p class="back"><a href="#top">↑ Back to contents</a></p>
+</section>
+
+<footer>© 2026 DAISUKE OBA · <a href="../LICENSE">MIT License</a> · <a href="../LICENSE.ja">日本語参考訳</a>
+<p>This guide describes the supplied source. It is self-contained and needs no external scripts, fonts or network access.</p>
+</footer>
+</main>
+</body></html>

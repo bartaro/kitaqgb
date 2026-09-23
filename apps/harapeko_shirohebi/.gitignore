@@ -1,0 +1,8 @@
+/out/
+*.gb
+*.gbc
+*.exe
+*.dll
+*.sav
+*.map
+*.log
