@@ -29,6 +29,11 @@ u8 chain_get_segment(const Chain* chain, u8 index, ChainPoint* out);
 // Return the number of stored points, or zero for a null chain.
 u8 chain_get_count(const Chain* chain);
 
+// Return target minus current along the shortest wrapped route.
+// Supply size 1..256 and coordinates in 0..size-1; inputs are not normalized.
+// Exactly half a field retains the direct displacement sign.
+s16 chain_wrap_delta(u8 target, u8 current, u16 size);
+
 // Articulated body: one current pose per joint, including the head at index 0.
 // Caller-owned byte arrays keep the inner loop compact on both GB and FC.
 // Heading sectors run clockwise: 0=right, 4=down, 8=left, 12=up.

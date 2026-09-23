@@ -93,7 +93,9 @@ static u8 chain_body_wrap(s16 value, u16 size)
     return (u8)value;
 }
 
-static s16 chain_body_delta(u8 target, u8 current, u16 size)
+// Return the shortest signed displacement for normalized coordinates.
+// Preconditions: size is 1..256 and both coordinates are less than size.
+s16 chain_wrap_delta(u8 target, u8 current, u16 size)
 {
     s16 delta;
     s16 half;
@@ -184,8 +186,8 @@ void chain_body_step(ChainBody* body, u8 head_x, u8 head_y, u8 heading)
         y = body->y[(__safe_index u8)i];
         tx = chain_body_wrap((s16)((s16)body->x[(__safe_index u8)previous] - chain_body_offset_x(pull)), body->width);
         ty = chain_body_wrap((s16)((s16)body->y[(__safe_index u8)previous] - chain_body_offset_y(pull)), body->height);
-        sx = chain_body_correction(chain_body_delta(tx, x, body->width));
-        sy = chain_body_correction(chain_body_delta(ty, y, body->height));
+        sx = chain_body_correction(chain_wrap_delta(tx, x, body->width));
+        sy = chain_body_correction(chain_wrap_delta(ty, y, body->height));
         body->heading[(__safe_index u8)i] = pull;
         body->x[(__safe_index u8)i] = chain_body_wrap((s16)((s16)x + sx), body->width);
         body->y[(__safe_index u8)i] = chain_body_wrap((s16)((s16)y + sy), body->height);
