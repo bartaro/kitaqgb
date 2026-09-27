@@ -1,5 +1,7 @@
 # KITAQGB Libraries
 
+[简体中文](README.zh-CN.md) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
+
 `wire3d_dmg` is a monochrome wireframe renderer for Game Boy. Select 128 × 96 with `wire3d_dmg_96.c`, or 128 × 120 with `wire3d_dmg.c`, and use `Wire3DDMG_*`. `wire3d` and `dmg3d` provide alternative entry points for the 96-line and 120-line profiles, respectively. Compile one entry point per program. `wire3d_cgb` is the dedicated color renderer.
 
 [Shared renderer guide](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)

@@ -1,13 +1,13 @@
 # HARAPEKO SHIROHEBI
 
-[English](#english) · [日本語](#日本語)
+[English](#english) · [日本語](#日本語) · [简体中文](README.zh-CN.md)
 
 ## English
 
 A Game Boy / Game Boy Color score-attack game by **DAISUKE OBA**. Steer the white snake, eat pomegranates to grow, and avoid mines and your own body.
 
 - **Play / official ROM download:** <https://bartaro.itch.io/harapeko-shirohebi>
-- **Program guide:** [English HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-en.html) · [日本語HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-ja.html)
+- **Program guide:** [English HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-en.html) · [日本語HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-ja.html) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-zh-CN.html)
 - **License:** [MIT](LICENSE), copyright © 2026 DAISUKE OBA. This covers the game sources, supplied original graphics, font data, music, sound effects and documentation in this directory. Keep the license notice when redistributing them. KITAQGB and its dependencies retain the notices in the [repository license](../../LICENSE), including the [original ASCII font notice](../../licenses/fonts/ASCII-font-MIT.txt).
 
 The HTML guides contain a program flowchart, the snake-following algorithm, library examples and a source-file guide. Open the links above to read them directly in your browser on KITAQ Docs. Their HTML and stylesheet are maintained in the [kitaq-docs repository](https://github.com/bartaro/kitaq-docs/tree/main/apps/harapeko_shirohebi).
@@ -56,7 +56,7 @@ On the title, SELECT+START opens the score-erasure confirmation. Screen transiti
 **DAISUKE OBA**制作のゲームボーイ／ゲームボーイカラー用スコアアタックゲームです。白ヘビを操り、ザクロを食べて体を伸ばしながら、地雷と自分の胴体を避けます。
 
 - **ゲーム紹介・公開ROMのダウンロード:** <https://bartaro.itch.io/harapeko-shirohebi>
-- **プログラム解説:** [日本語HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-ja.html) · [English HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-en.html)
+- **プログラム解説:** [日本語HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-ja.html) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-zh-CN.html) · [English HTML](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-en.html)
 - **ライセンス:** [MIT](LICENSE)（[日本語訳](LICENSE.ja)）、著作権者はDAISUKE OBA、年は2026年です。このディレクトリのゲームソース、付属の自作画像・フォントデータ・音楽・効果音・解説を対象とします。再配布時にはライセンス表示を保持してください。KITAQGBと依存物については[リポジトリのLICENSE](../../LICENSE)および[元のASCIIフォントの表示](../../licenses/fonts/ASCII-font-MIT.txt)が適用されます。
 
 HTML解説にはフローチャート、白ヘビの追従アルゴリズム、ライブラリの利用例、ソースファイル一覧を収録しています。上のリンクからKITAQ Docsの公開ページをブラウザで直接閲覧できます。HTMLとスタイルシートは[kitaq-docsリポジトリ](https://github.com/bartaro/kitaq-docs/tree/main/apps/harapeko_shirohebi)で管理しています。

@@ -5,10 +5,11 @@
 | --- | --- |
 | English | [KITAQGB](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
 | 日本語 | [KITAQGB](https://bartaro.github.io/kitaq-docs/kitaqgb.html) · [KITAQGB Library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 简体中文 | [KITAQGB](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) · [KITAQGB 库](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
 <!-- manual-language-links:end -->
 
 
-[English](#english) | [日本語](#japanese)
+[English](#english) | [日本語](#japanese) | [简体中文](README.zh-CN.md)
 
 <a name="english"></a>
 

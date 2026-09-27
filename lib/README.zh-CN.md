@@ -2,9 +2,9 @@
 
 [English](README.md) | [日本語](README.ja.md) | **简体中文**
 
-打开KITAQGB库简体中文手册，查看各函数的说明和示例代码。
+[打开KITAQGB库简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)，查看各函数的说明和示例代码。
 
-`wire3d_dmg` 是Game Boy单色线框渲染器。128×96请选择 `wire3d_dmg_96.c`，128×120请选择 `wire3d_dmg.c`，并使用 `Wire3DDMG_*` 函数。`wire3d` 和 `dmg3d` 分别保留为这两种分辨率的兼容入口。每个ROM只编译一个入口。彩色专用的 `wire3d_cgb` 仍是独立渲染器。
+`wire3d_dmg` 是Game Boy单色线框渲染器。128×96请选择 `wire3d_dmg_96.c`，128×120请选择 `wire3d_dmg.c`，并使用 `Wire3DDMG_*` 函数。`wire3d` 和 `dmg3d` 分别是这两种分辨率的别名入口。每个ROM只编译一个入口。彩色专用的 `wire3d_cgb` 是独立渲染器。
 
 [渲染器指南](wire3d_dmg_guide.md) / [日文指南](wire3d_dmg_guide_ja.md)
 
@@ -37,7 +37,7 @@
 | `bank.h` / `bank.c` | 基于内建操作的远端数据、远指针、远调用与简单MBC存储体切换。 | 用于跨存储体访问的封装。 |
 | `asset.h` / `asset.c` | 资源ID描述表及原始数据、图块加载。 | 包含头文件并编译源码；以后生成的 `assets.h/c/json` 也可采用此结构。 |
 | `debug.h` / `debug.c` | ROM端轻量跟踪、断言和标记缓冲区，供KOKURA或其他模拟器查看。 | 将高开销的性能分析放在ROM之外。 |
-| `chain.h` / `chain.c` | 蛇、绳索、列车和关节精灵等对象的坐标历史环形缓冲区。 | 用于分节对象沿历史位置移动。 |
+| `chain.h` / `chain.c` | 用于蛇、绳索、列车和关节精灵的跟随链、坐标历史环形缓冲区及 ChainBody 身体模拟。 | 用于分节对象沿历史位置移动。 |
 | `cgb_tile.h` | CGB图块及属性内建操作的公开声明。 | 游戏使用 `__settile...` 等功能时包含。 |
 | `cgb_palette.h` / `cgb_palette.c` | CGB BG/OBJ调色板的高层接口。 | 包含头文件并编译源码。 |
 | `scroll.h` / `scroll.c` | 基于编译器内建操作的滚动与分屏表。 | 使用 `Scroll_*` 时加入。 |
@@ -210,10 +210,10 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h` 的公开API使用 `cgb_*` 命名。
 - 菜单或设置改变音乐、音效启用状态时，调用 `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()`。
 - `Audio_PlaySFX()` 记录当前可见ROM存储体。已明确知道音效数据所在存储体时，用 `Audio_PlaySFXBanked(bank, sfx, priority)`。
-- 音乐流的 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` 使用以下通道编号：`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3`。
+- 音乐流的 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` 使用以下通道编号：`0=CH1`、`1=CH2`、`2=CH3`、`3=CH4`。
 - 自定义CH3波形时，将32个4位采样打包为16字节，传给 `Audio_LoadCustomWave()`。
 - `Audio_FadeToMasterVolume()` 的淡变由 `Audio_Update()` 推进，淡变期间仍要每帧调用。
-- `audio_vblank.c` 定义VBlank IRQ向量符号 `__kq_vblank_vector`。BGM事件为五字节：`delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`；休止、循环和结束使用 `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END`。
+- `audio_vblank.c` 定义VBlank IRQ向量符号 `__kq_vblank_vector`。BGM事件为五字节：`delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`；休止、循环和结束使用 `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END`。
 - 直接指针VBlank歌曲必须放在固定存储体；队列模式可从其他存储体补充。链接 `lib/audio_vblank.c` 后运行 `scripts/patch_gb_vblank_irq.ps1 <rom> <map>`，使向量 `0x0040` 跳转至ISR并更新ROM校验和。
 - 若未增加共享IRQ分派器，不要将 `audio_vblank.c` 与其他同样占用VBlank向量 `0x0040` 的库或游戏桩代码结合。
 - `Scroll_SplitCommit()` 自动启用IE位 `0x01 | 0x02`，并使用编译器提供的VBlank/STAT处理程序播放分屏配置。

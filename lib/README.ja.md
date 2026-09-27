@@ -1,5 +1,7 @@
 # KITAQGB ライブラリ
 
+[简体中文](README.zh-CN.md) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
+
 [English](README.md) | [日本語](README.ja.md)
 
 [日本語のライブラリ説明書](https://bartaro.github.io/kitaq-docs/gb-library.html)には、各関数の使い方とサンプルコードを掲載しています。
