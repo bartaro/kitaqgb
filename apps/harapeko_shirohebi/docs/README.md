@@ -1,5 +1,9 @@
 # HARAPEKO SHIROHEBI — Program guide / プログラム解説
 
+<!-- readme-language-links:start -->
+**English** | [한국어](README.ko.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
 Read the guide in your browser on KITAQ Docs:
 
 - [English](https://bartaro.github.io/kitaq-docs/apps/harapeko_shirohebi/guide-en.html)

@@ -1,6 +1,8 @@
 # ZX0-compatible asset compression
 
-[English](#english) | [日本語](#日本語)
+<!-- readme-language-links:start -->
+**English** | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | [한국어](README.ko.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
 ## English
 

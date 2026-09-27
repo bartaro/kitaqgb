@@ -1,8 +1,10 @@
 # KITAQGB
 
-[English](README.md#english) | [日本語](README.md#japanese) | **繁體中文**
+<!-- readme-language-links:start -->
+[English](README.md#english) | [日本語](README.md#japanese) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-**編譯器繁體中文手冊** · **程式庫繁體中文手冊**
+[編譯器手冊](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) · [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)
 
 ## 名稱由來
 
@@ -59,16 +61,16 @@ KITAQGB 可產生與 Game Boy 相容、與 Game Boy Color 相容，以及明確�
 編譯器原始碼集中在同名子目錄 `kitaqgb/`。已建置的 Release 程式與執行階段設定檔位於根目錄，程式庫和範例則各自存放在獨立目錄。
 
 ```text
-kitaqgb/                  # Repository root
-├─ kitaqgb/               # Compiler build sources
+kitaqgb/  # 儲存庫根目錄
+├─ kitaqgb/  # 編譯器建置原始碼
 │  ├─ *.cs
 │  ├─ app.config
 │  └─ kitaqgb.csproj
-├─ kitaqgb.exe            # Prebuilt Release compiler
-├─ kitaqgb.exe.config     # .NET Framework runtime configuration
-├─ lib/                # C support libraries
-├─ examples/           # Tutorial programs and original font
-├─ scripts/build.ps1   # Rebuild the Release executable
+├─ kitaqgb.exe  # 預先建置的 Release 編譯器
+├─ kitaqgb.exe.config  # .NET Framework 執行階段設定
+├─ lib/  # C 支援程式庫
+├─ examples/  # 入門範例與原創字型
+├─ scripts/build.ps1  # 重新建置 Release 執行檔
 ├─ LICENSE
 └─ LICENSE.ja
 ```
@@ -133,6 +135,10 @@ kitaqgb.exe
 
 ## 使用隨附程式庫
 
+<!-- current-features:start -->
+如需壓縮圖塊與地圖素材，請參閱 [ZX0 API 與畫面範例](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-zx0)及[電腦端壓縮工具](tools/zx0/README.zh-TW.md)。
+<!-- current-features:end -->
+
 `lib/` 提供可重複使用的 C 支援程式碼。將所需的程式庫原始碼與遊戲原始碼一起編譯，並加上 `-I lib`，讓編譯器能找到標頭檔。
 
 以下範例結合音訊、調色盤、捲動、鏡頭與物理功能。多行指令採用 **cmd.exe** 的續行符號：
@@ -159,7 +165,7 @@ RPG／ADV／SLG 功能範例：
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-程式庫分類與注意事項請見 lib/README.zh-TW.md。
+程式庫的分類與使用注意事項請參閱 [lib/README.md](lib/README.zh-TW.md)。
 
 ## 常用命令列選項
 
@@ -213,7 +219,7 @@ KITAQGB 並非以通用現代 C 編譯器為目標，而是專為記憶體有限
 
 填寫需求後，將完整提示詞交給 AI。內容涵蓋實作、模擬器測試、SARAKURA 分析，以及修正後的重新驗證。
 
-閱讀 HTML 手冊中的參考範例
+[閱讀 HTML 手冊中的參考範例](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html#loop-prompts)
 
 <details>
 <summary>展開完整提示詞</summary>
@@ -363,10 +369,6 @@ Copyright (c) 2026 DAISUKE OBA
 - 新增支援程式庫時，記錄建置指令與所需的硬體暫存器宣告。
 - 讓診斷內容清楚具體，方便開發者與 AI 程式設計工具採取後續行動。
 
-## 本版狀態
-
-本儲存庫為 KITAQGB 首次公開發行而準備。隨著專案發展，介面、支援程式庫、診斷及周邊工具整合仍可能調整。
-
 ## 建置與首次使用
 
 在 Windows 使用 .NET Framework 4.8 Developer Pack 與 Visual Studio Build Tools 提供的 MSBuild。請於 Developer PowerShell 執行：
@@ -379,6 +381,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## 手冊與授權
 
-- 繁體中文編譯器手冊／繁體中文程式庫手冊
+- [編譯器手冊](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) · [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)
 - [可供離線閱讀的手冊原始檔](https://github.com/bartaro/kitaq-docs)
 - [授權條款](LICENSE)／[日文參考譯文](LICENSE.ja)

@@ -1,12 +1,14 @@
 # Bibliothèques KITAQGB
 
-`wire3d_dmg` est une bibliothèque de rendu filaire monochrome pour Game Boy. Compilez `wire3d_dmg_96.c` pour une vue de 128 × 96 ou `wire3d_dmg.c` pour 128 × 120, puis utilisez les fonctions `Wire3DDMG_*`. `wire3d` et `dmg3d` offrent aussi des points d’entrée pour les profils de 96 et 120 lignes, respectivement. Compilez un seul point d’entrée par programme. `wire3d_cgb` est le moteur dédié au rendu couleur.
+`wire3d_dmg` est un moteur de rendu filaire monochrome pour Game Boy. Choisissez `wire3d_dmg_96.c` pour 128 × 96 ou `wire3d_dmg.c` pour 128 × 120, puis utilisez `Wire3DDMG_*`. `wire3d` et `dmg3d` sont d’autres points d’entrée pour les profils de 96 et 120 lignes, respectivement. Compilez un seul point d’entrée par programme. `wire3d_cgb` est le moteur dédié à la couleur.
 
 [Guide du moteur commun (anglais)](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
-[English](README.md) | **Français**
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-**Ouvrir le manuel de la bibliothèque KITAQGB**
+**[Manuel des bibliothèques](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)**
 
 Ce dossier contient trois catégories de fichiers :
 
@@ -30,21 +32,22 @@ Ce dossier contient trois catégories de fichiers :
 | `input.h` / `input.c` | État des commandes par image : maintien, appui, relâchement et répétition. | Inclure et compiler pour les menus, jeux d'action, puzzles et jeux de stratégie. |
 | `vram.h` / `vram.c` | File de commandes VRAM respectant le PPU : tuiles BG, rectangles, blocs de carte, copies et remplissages mémoire. | Préparer les mises à jour pendant le jeu, puis appeler `vram_flush()` ou `vram_flush_now()` au moment approprié. |
 | `sprite.h` / `sprite.c` | Copie de travail de l'OAM, allocation, métasprites, animation, DMA et détection des dépassements par ligne. | Inclure et compiler pour le rendu par OBJ. |
+| `sprite_order.h` / `sprite_order.c` | Quatre niveaux de priorité de sélection et ordre OAM cyclique, avec découpage selon des coordonnées écran signées. Accepte jusqu’à 255 candidats, émet au plus 40 sprites et masque les emplacements inutilisés. | Inclure l’en-tête et compiler le source ; préparer l’OAM en RAM dans le traitement principal, puis le transférer pendant VBlank. [Manuel des bibliothèques](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#module-sprite_order). |
 | `fixed.h` / `fixed.c` | Calcul Q8.8, `Vec2`, `KQRect`, bornage, minimum, maximum, interpolation et tests de rectangles. | Inclure et compiler pour le mouvement, la physique, la caméra et les évaluations d'IA. |
 | `scene.h` / `scene.c` | Table légère de scènes de type titre/jeu/pause et répartition des changements, mises à jour et dessins. | Inclure et compiler pour organiser les états du jeu. |
 | `entity.h` / `entity.c` | Réserve en tableau fixe de jusqu'à `ENTITY_MAX` petites entités. | Inclure et compiler ; les rappels reçoivent un identifiant et peuvent appeler `entity_get(id)`. |
-| `danmaku.h` / `danmaku.c` | Réserve de 96 projectiles en virgule fixe, éventails sur 32 directions, impacts, frôlements et composition de tuiles BG CGB indépendante des limites OAM. | Inclure et compiler ; consulter `danmaku_guide.md`. Le jeu de référence `ressen_gbc` appartient aux exemples de développement historiques. |
+| `danmaku.h` / `danmaku.c` | Réserve de 96 projectiles en virgule fixe, éventails sur 32 directions, impacts, frôlements et composition de tuiles BG CGB indépendante des limites OAM. | Inclure l’en-tête et compiler le source ; consulter `danmaku_guide.md` et les exemples complets du manuel HTML. [Manuel des bibliothèques](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#module-danmaku) |
 | `bank.h` / `bank.c` | Accès lointains aux données et fonctions, pointeurs lointains et commutation MBC simple sur les fonctions intrinsèques. | Inclure et compiler pour les accès aux données en banques. |
 | `asset.h` / `asset.c` | Petite table de descripteurs par identifiant et chargement de données brutes ou de tuiles. | Inclure et compiler ; des fichiers `assets.h/c/json` générés peuvent ensuite viser cette organisation. |
 | `debug.h` / `debug.c` | Petit tampon ROM de traces, assertions et marqueurs pour l'observation par KOKURA ou un émulateur. | Inclure et compiler ; conserver le profilage lourd hors de la ROM. |
-| `chain.h` / `chain.c` | Historique circulaire de coordonnées pour serpent, corde, train ou sprites articulés. | Inclure et compiler pour le déplacement de segments suivant un historique. |
+| `chain.h` / `chain.c` | Historique circulaire de coordonnées et suivi du corps ChainBody pour serpents, cordes, trains ou sprites articulés. | Inclure `chain.h` et compiler `chain.c`. Choisir le suivi par historique ou le suivi fondé sur la pose actuelle des segments. |
 | `cgb_tile.h` | Déclarations des fonctions intrinsèques CGB de tuiles et d'attributs. | Inclure pour utiliser `__settile...` et les fonctions de tuiles CGB. |
 | `cgb_palette.h` / `cgb_palette.c` | Gestion de haut niveau des palettes BG/OBJ CGB. | Inclure l'en-tête et compiler le source utilisé. |
 | `scroll.h` / `scroll.c` | Défilement et tables de fractionnement fondés sur les fonctions intrinsèques. | Inclure et compiler pour les fonctions `Scroll_*`. |
 | `raster.h` / `raster.c` | Construction de bandes de défilement et profils structurés de déformation horizontale par ligne. | Inclure l'en-tête et compiler avec `scroll.c` pour les fonctions `Raster_*`. |
 | `camera.h` / `camera.c` | Caméra en virgule fixe 8.8 fondée sur `scroll.*`, fonctions de caméra globale et conversion monde/écran. | Inclure l'en-tête et compiler le source utilisé. |
-| `audio.h` / `audio.c` | Pilote GB commun : musique, effets, panoramique, ondes et fondus, avec 68 indices de notes jusqu'à 67. | Inclure et compiler pour les projets sonores. Les huit derniers indices reprennent actuellement les fréquences de l'octave précédente. |
-| `audio_vblank.h` / `audio_vblank.c` | Musique par interruption VBlank, mêmes indices de notes, file WRAM de 16 événements pour morceaux en banques et rappel par image facultatif. | Garder les morceaux directement pointés en banque fixe 0, ou alimenter la file depuis le code en banques ; raccorder le vecteur 0x0040. |
+| `audio.h` / `audio.c` | Pilote audio Game Boy pour musique, effets, panoramique, ondes et fondus ; 68 indices de notes, jusqu’à 67 (`G6`). | Inclure `audio.h` et compiler `audio.c`. |
+| `audio_vblank.h` / `audio_vblank.c` | Musique par interruption VBlank, mêmes indices de notes, file WRAM de 16 événements pour morceaux en banques et rappel par image facultatif. | Garder les morceaux à pointeur direct dans la banque fixe 0, ou remplir la file depuis du code en banques ; raccorder le vecteur `0x0040` avec `scripts/patch_gb_vblank_irq.ps1`. |
 | `link.h` / `link.c` | Transferts série d'octets et fonctions logiques coopératives `Link4_*`. | Inclure et compiler pour les projets avec liaison. |
 | `link_packet.c` | Couche de paquets facultative sur `link.c`, avec boîtes de réception `Link4_*` par correspondant. | Compiler avec `link.c` si l'envoi ou la lecture de paquets est nécessaire. |
 | `link_dmg07.h` / `link_dmg07.c` | Pilote par interrogation et horloge externe de l'adaptateur physique Nintendo DMG-07. | Compiler avec `link_hwregs_gb.c` ; API distincte de `Link4_*`. |
@@ -97,7 +100,7 @@ Pour le rendu filaire 3D, compilez le moteur avec le source du jeu :
 
 Le programme fourni `examples/wire3d_minimal.c` initialise tous les champs du modèle et fait tourner un cube dans la vue de 128 × 96. Il ne nécessite ni ressource graphique externe ni police.
 
-Pour un rendu DMG monochrome, utilisez l’entrée de compatibilité à 120 lignes `dmg3d.*` :
+Pour un rendu DMG monochrome, utilisez le point d’entrée à 120 lignes `dmg3d.*` :
 
 ```powershell
 .\kitaqgb.exe lib/dmg3d.c examples/dmg3d_minimal.c -I lib -o examples/dmg3d_minimal.gb --profile=dev --stack-bank=fixed --rst-disable --no-disasm
@@ -111,7 +114,7 @@ Le rendu filaire couleur réservé à la CGB utilise `wire3d_cgb.*` :
 kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wire3d_cgb_color_demo.gbc --profile=dev --stack-bank=fixed --rst-disable --cgb=cgb_only --rom-title=CGBWIRE3D
 ```
 
-`Wire3DCGB_Init()` passe la CGB en double vitesse, configure une surface filaire BG de 128 × 96 en 2bpp et installe la palette BG de quatre couleurs par défaut. Les deux paires d'API d'image utilisent une présentation sans déchirure : le tampon de 3 072 octets à `0xD300–0xDEFF` est envoyé par DMA HBlank vers la banque de tuiles VRAM inactive, puis affiché pendant VBlank sans changement de LCDC à chaque image. La paire `Fast` omet le contrôle habituel de la file BG en fin d'image. Utilisez `Wire3DCGB_SetPaletteRGB15()` et `Wire3DCGB_SetLineColor()` / `Wire3DCGB_Draw*Color()` pour tracer des lignes colorées.
+`Wire3DCGB_Init()` passe la CGB en double vitesse, configure une surface filaire BG de 128 × 96 en 2bpp et installe la palette BG de quatre couleurs par défaut. Les deux paires d'API d'image utilisent une présentation sans déchirure : le tampon de 3 072 octets à `0xD300-0xDEFF` est envoyé par DMA HBlank vers la banque de tuiles VRAM inactive, puis affiché pendant VBlank sans changement de LCDC à chaque image. La paire `Fast` omet le contrôle habituel de la file BG en fin d'image. Utilisez `Wire3DCGB_SetPaletteRGB15()` et `Wire3DCGB_SetLineColor()` / `Wire3DCGB_Draw*Color()` pour tracer des lignes colorées.
 
 Pour les niveaux de détail directionnels générés par CAO, `Wire3DCGB_DrawMaskedModel2D()` reçoit des décalages de sommets signés déjà projetés et un masque compact d'arêtes visibles. Le parcours des arêtes et le rasteriseur assembleur restent dans la banque 4 du moteur ; dessiner un modèle n'impose donc pas un appel entre banques pour chaque ligne.
 
@@ -123,7 +126,7 @@ Le mode de 160 × 144 alloue au maximum 127 tuiles par image. Si le tracé rapid
 
 Le [test des limites du masque triangulaire CGB](../tests/library/wire3d_cgb_mask_bounds.c) est un programme complet qui vérifie les deux modes d'affichage.
 
-Exemples historiques de compilation RPG / ADV / SLG :
+Exemples de compilation pour les fonctions RPG / ADV / SLG :
 
 ```powershell
 kitaqgb examples/example_rpg_text.c lib/text.c lib/menu.c -I lib -o text.gb --profile=dev
@@ -145,7 +148,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link.c lib/link_packet.c main.c -I lib -o game.
 
 Les projets logiques coopératifs à quatre joueurs utilisent les mêmes fichiers. L'hôte appelle `Link4_InitHost(slot_count)` et sélectionne le correspondant par `Link4_SelectPeer()` ou `Link4_SendPacketTo()`. Les correspondants appellent `Link4_InitPeer(local_slot, slot_count)` et communiquent avec l'emplacement hôte `0`.
 
-Les exemples historiques de correspondants peuvent être compilés avec les enveloppes d'emplacement préparées :
+Les exemples de correspondants se compilent avec les points d’entrée propres à chaque emplacement :
 
 ```powershell
 kitaqgb lib/link_hwregs_gb.c lib/link.c lib/link_packet.c examples/link4_demo_peer_slot1.c -I lib -o peer1.gb --profile=dev
@@ -193,6 +196,9 @@ Incluez ensuite les en-têtes nécessaires depuis votre jeu :
 
 ## Remarques
 
+<!-- audio-pitch-range -->
+Les huit derniers indices de notes réutilisent les fréquences de l’octave précédente ; 68 indices ne garantissent donc pas 68 hauteurs distinctes.
+
 - `inv_mass_q8 == 0` indique un corps statique.
 - `Wire3D_Init()` réserve une surface filaire BG de 128 × 96, un tampon WRAM à partir de `0xD000` et des tuiles à partir de `0x8900`. Compilez avec `--stack-bank=fixed`.
 - `Wire3D_BeginFrame()` efface le tampon WRAM ; `Wire3D_EndFrame()` attend VBlank puis effectue une copie en rafales contrôlée par STAT.
@@ -206,11 +212,11 @@ Incluez ensuite les en-têtes nécessaires depuis votre jeu :
 - L'API publique de `cgb_palette.h` utilise les noms `cgb_*`.
 - Appelez `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()` lorsque les menus ou réglages changent.
 - `Audio_PlaySFX()` mémorise la banque ROM visible. Utilisez `Audio_PlaySFXBanked(bank, sfx, priority)` si la banque des données est connue explicitement.
-- `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` conservent les identifiants historiques : `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
+- Les commandes musicales `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` utilisent les indices dans l’ordre matériel : `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`.
 - `Audio_LoadCustomWave()` reçoit 16 octets contenant 32 échantillons de 4 bits pour une forme d'onde CH3 personnalisée.
 - `Audio_FadeToMasterVolume()` progresse dans `Audio_Update()` ; continuez les appels à chaque image pendant un fondu.
-- `audio_vblank.c` définit `__kq_vblank_vector`. Ses événements musicaux font cinq octets : `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. Utilisez `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` et `AUDIO_VBLANK_END`.
-- Les morceaux directement pointés doivent être en banque fixe ; le mode file permet d'alimenter des morceaux en banques. Après l'édition de liens, `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` raccorde le vecteur `0x0040` et actualise les sommes de contrôle. Le script fourni se trouve dans `scripts` ; consultez le manuel pour l'intégration du pilote.
+- `audio_vblank.c` définit `__kq_vblank_vector`. Ses événements musicaux font cinq octets : `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`. Utilisez `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` et `AUDIO_VBLANK_END`.
+- Les morceaux VBlank lus par pointeur direct doivent rester dans la banque fixe ; le mode file peut être alimenté depuis des morceaux placés dans d’autres banques. Après l’édition de liens avec `lib/audio_vblank.c`, exécutez `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` pour relier le vecteur `0x0040` à l’ISR et actualiser les sommes de contrôle de la ROM.
 - Ne combinez pas `audio_vblank.c` avec une autre unité possédant le vecteur VBlank `0x0040` sans répartiteur commun.
 - `Scroll_SplitCommit()` active automatiquement les bits IE `0x01 | 0x02` et utilise les gestionnaires VBlank/STAT du compilateur.
 - Le fractionnement réserve actuellement `0x0040` et `0x0048` ; ne le combinez pas avec un autre gestionnaire personnalisé de ces vecteurs.

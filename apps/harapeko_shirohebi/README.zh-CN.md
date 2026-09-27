@@ -1,6 +1,8 @@
 # HARAPEKO SHIROHEBI
 
-[English](README.md#english) · [日本語](README.md#日本語) · **简体中文**
+<!-- readme-language-links:start -->
+[English](README.md#english) | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | [한국어](README.ko.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
 由 **DAISUKE OBA** 创作的 Game Boy / Game Boy Color 分数挑战游戏。操纵白蛇吃石榴、增长身体，同时避开地雷和自己的身体。
 

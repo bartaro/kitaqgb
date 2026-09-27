@@ -1,8 +1,10 @@
 # KITAQGB
 
-[English](README.md#english) | [日本語](README.md#japanese) | **Deutsch**
+<!-- readme-language-links:start -->
+[English](README.md#english) | [日本語](README.md#japanese) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Deutsch**
+<!-- readme-language-links:end -->
 
-**Compiler-Handbuch** · **Bibliothekshandbuch**
+[Compiler-Handbuch](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) · [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)
 
 ## Herkunft des Namens
 
@@ -59,16 +61,16 @@ Testen Sie erzeugte ROMs im Emulator und, soweit möglich, auf realer Hardware o
 Die Compilerquellen liegen im gleichnamigen Unterordner `kitaqgb/`. Die fertige Release-Version und ihre Laufzeitkonfiguration befinden sich im Stammverzeichnis; Bibliotheken und Beispiele haben eigene Ordner.
 
 ```text
-kitaqgb/                  # Repository root
-├─ kitaqgb/               # Compiler build sources
+kitaqgb/  # Stammverzeichnis des Repositorys
+├─ kitaqgb/  # Compilerquellen
 │  ├─ *.cs
 │  ├─ app.config
 │  └─ kitaqgb.csproj
-├─ kitaqgb.exe            # Prebuilt Release compiler
-├─ kitaqgb.exe.config     # .NET Framework runtime configuration
-├─ lib/                # C support libraries
-├─ examples/           # Tutorial programs and original font
-├─ scripts/build.ps1   # Rebuild the Release executable
+├─ kitaqgb.exe  # Fertiger Release-Compiler
+├─ kitaqgb.exe.config  # Laufzeitkonfiguration für .NET Framework
+├─ lib/  # C-Bibliotheken
+├─ examples/  # Lernbeispiele und Originalschrift
+├─ scripts/build.ps1  # Release-Programm neu bauen
 ├─ LICENSE
 └─ LICENSE.ja
 ```
@@ -133,6 +135,10 @@ Starten Sie die ROM in einem Game-Boy-/Game-Boy-Color-Emulator Ihrer Wahl oder i
 
 ## Mitgelieferte Bibliotheken verwenden
 
+<!-- current-features:start -->
+Zum Komprimieren von Tiles und Karten dienen die [ZX0-API mit Bildbeispiel](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-zx0) und das [Kompressionswerkzeug für den Entwicklungsrechner](tools/zx0/README.de.md).
+<!-- current-features:end -->
+
 `lib/` enthält wiederverwendbaren C-Code. Kompilieren Sie die benötigten Bibliotheksdateien zusammen mit Ihrem Spiel und geben Sie mit `-I lib` das Headerverzeichnis an.
 
 Beispiel mit Audio, Paletten, Scrollen, Kamera und Physik. Die folgenden mehrzeiligen Befehle verwenden die Fortsetzungszeichen von **cmd.exe**:
@@ -159,7 +165,7 @@ Beispiel für RPG-, Adventure- oder Strategiespielfunktionen:
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-Die aktuelle Einteilung und Hinweise zu den Bibliotheken stehen in lib/README.de.md.
+Die Einteilung der Bibliotheken und Hinweise zur Verwendung finden Sie in [lib/README.md](lib/README.de.md).
 
 ## Häufig verwendete Optionen
 
@@ -213,7 +219,7 @@ Wichtig sind vorhersehbarer Maschinencode, verständliche Diagnosen, kleine repr
 
 Tragen Sie die Anforderungen ein und geben Sie den vollständigen Prompt an Ihre KI weiter. Er umfasst die Implementierung, Emulator-Tests, die Analyse mit SARAKURA und die erneute Prüfung nach Korrekturen.
 
-Das Praxisbeispiel im HTML-Handbuch lesen
+[Referenzbeispiel im HTML-Handbuch lesen](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html#loop-prompts)
 
 <details>
 <summary>Vollständigen Prompt anzeigen</summary>
@@ -363,10 +369,6 @@ Beachten Sie vor dem Einreichen von Änderungen:
 - Bei neuen Bibliotheken den benötigten Build-Befehl und erforderliche Hardwareregister-Deklarationen dokumentieren.
 - Diagnosen so formulieren, dass Menschen und KI-Programmieragenten daraus konkrete Schritte ableiten können.
 
-## Stand dieser Ausgabe
-
-Dieses Repository ist für eine erste öffentliche Ausgabe von KITAQGB vorbereitet. Schnittstellen, Bibliotheken, Diagnosen und die Anbindung anderer Werkzeuge können sich mit der Weiterentwicklung ändern.
-
 ## Build und erster Aufruf
 
 Verwenden Sie unter Windows das .NET Framework 4.8 Developer Pack und Visual Studio Build Tools. Führen Sie in einer Developer PowerShell aus:
@@ -379,7 +381,7 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Handbücher und Lizenzen
 
-- Deutsches Compiler-Handbuch / Deutsches Bibliothekshandbuch
+- [Compiler-Handbuch](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) · [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)
 - [Japanisches Handbuch](https://bartaro.github.io/kitaq-docs/kitaqgb.html) / [Englisches Handbuch](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html)
 - [Handbuchquellen zum Offline-Lesen](https://github.com/bartaro/kitaq-docs)
 - [Lizenz](LICENSE) / [Japanische Übersetzung zur Orientierung](LICENSE.ja)

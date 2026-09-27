@@ -1,8 +1,10 @@
 # KITAQGB
 
-[English](README.md#english) | [日本語](README.md#japanese) | **한국어**
+<!-- readme-language-links:start -->
+[English](README.md#english) | [日本語](README.md#japanese) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-**컴파일러 한국어 설명서** · **라이브러리 한국어 설명서**
+[컴파일러 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) · [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
 
 ## 이름의 유래
 
@@ -59,16 +61,16 @@ KITAQGB에는 **상용 ROM, Nintendo BIOS, Nintendo SDK, 독점 소유권이 있
 컴파일러 소스는 이름이 같은 하위 폴더 `kitaqgb/`에 있습니다. 배포용 Release 실행 파일과 런타임 설정은 최상위 폴더에 두고, 라이브러리와 예제는 별도 폴더로 나눕니다.
 
 ```text
-kitaqgb/                  # Repository root
-├─ kitaqgb/               # Compiler build sources
+kitaqgb/  # 저장소 최상위 폴더
+├─ kitaqgb/  # 컴파일러 빌드 소스
 │  ├─ *.cs
 │  ├─ app.config
 │  └─ kitaqgb.csproj
-├─ kitaqgb.exe            # Prebuilt Release compiler
-├─ kitaqgb.exe.config     # .NET Framework runtime configuration
-├─ lib/                # C support libraries
-├─ examples/           # Tutorial programs and original font
-├─ scripts/build.ps1   # Rebuild the Release executable
+├─ kitaqgb.exe  # 빌드된 Release 컴파일러
+├─ kitaqgb.exe.config  # .NET Framework 런타임 설정
+├─ lib/  # C 지원 라이브러리
+├─ examples/  # 입문 예제와 원본 글꼴
+├─ scripts/build.ps1  # Release 실행 파일 다시 빌드
 ├─ LICENSE
 └─ LICENSE.ja
 ```
@@ -133,6 +135,10 @@ kitaqgb.exe
 
 ## 동봉된 라이브러리 사용
 
+<!-- current-features:start -->
+타일과 맵 자료를 압축하려면 [ZX0 API와 화면 예제](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-zx0) 및 [PC용 압축 도구](tools/zx0/README.ko.md)를 참고하세요.
+<!-- current-features:end -->
+
 `lib/`에는 재사용 가능한 C 코드가 있습니다. 필요한 라이브러리 소스를 게임 소스와 함께 컴파일하고, 헤더를 찾을 수 있도록 `-I lib`를 지정하세요.
 
 오디오, 팔레트, 스크롤, 카메라, 물리를 함께 쓰는 예입니다. 아래 여러 줄 명령은 **cmd.exe**의 줄 연결 문자를 사용합니다.
@@ -159,7 +165,7 @@ RPG·ADV·SLG 기능을 쓰는 예입니다.
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-라이브러리 분류와 주의 사항은 lib/README.ko.md를 참고하세요.
+라이브러리 분류와 주의 사항은 [lib/README.md](lib/README.ko.md)를 참고하세요.
 
 ## 자주 쓰는 명령줄 옵션
 
@@ -213,7 +219,7 @@ KITAQGB는 범용 현대 C 컴파일러를 목표로 하지 않습니다. 적은
 
 요구 사항을 작성한 뒤 프롬프트 전체를 AI에 전달하세요. 구현, 에뮬레이터 테스트, SARAKURA 분석, 수정 후 재검증까지 다룹니다.
 
-HTML 설명서에서 활용 예 읽기
+[HTML 설명서에서 참고 예제 읽기](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html#loop-prompts)
 
 <details>
 <summary>프롬프트 전체 보기</summary>
@@ -363,10 +369,6 @@ Copyright (c) 2026 DAISUKE OBA
 - 라이브러리를 추가할 때는 빌드 명령과 필요한 하드웨어 레지스터 선언을 문서화합니다.
 - 진단은 사람과 AI 코딩 도구가 다음 행동을 판단할 수 있도록 명확하게 작성합니다.
 
-## 이번 공개본의 상태
-
-이 저장소는 KITAQGB의 첫 공개판을 준비한 것입니다. 프로젝트가 발전하면서 인터페이스, 라이브러리, 진단, 다른 도구와의 연동이 바뀔 수 있습니다.
-
 ## 빌드 후 첫 실행
 
 Windows에서 .NET Framework 4.8 Developer Pack과 Visual Studio Build Tools의 MSBuild를 사용합니다. Developer PowerShell에서 실행하세요.
@@ -379,6 +381,6 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## 설명서와 라이선스
 
-- 한국어 컴파일러 설명서 / 한국어 라이브러리 설명서
+- [컴파일러 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) · [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
 - [오프라인 열람용 설명서 소스](https://github.com/bartaro/kitaq-docs)
 - [라이선스](LICENSE) / [일본어 참고 번역](LICENSE.ja)

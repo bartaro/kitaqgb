@@ -1,10 +1,12 @@
 # KITAQGB-Bibliotheken
 
-[English](README.md) | **Deutsch**
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Deutsch**
+<!-- readme-language-links:end -->
 
-**Deutsches Bibliothekshandbuch öffnen**
+**[Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
 
-`wire3d_dmg` ist eine Bibliothek für monochrome Drahtgittergrafik auf dem Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie pro Programm nur einen Einstiegspunkt. `wire3d_cgb` ist der Renderer für die Farbdarstellung.
+`wire3d_dmg` ist ein monochromer Drahtgitterrenderer für den Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie einen Einstiegspunkt pro Programm. `wire3d_cgb` ist der eigenständige Farbrenderer.
 
 [Renderer-Anleitung auf Englisch](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
@@ -23,28 +25,29 @@ Dieser Ordner enthält drei Arten von Dateien:
 | `physics2d.h` / `physics2d.c` | 2D-AABB-Körper, Schwerkraftintegration und iterativer Kontaktlöser. | Header einbinden und Implementierung mitkompilieren. |
 | `physics2d_circle.h` / `physics2d_circle.c` | Physik kreisförmiger Körper für Ballspiele. | Header einbinden und Implementierung mitkompilieren. |
 | `physics3d.h` / `physics3d.c` | 3D-AABB-Physik mit Beschleunigung, massengewichteten Abprallreaktionen, Bruchmarkierungen und `kq3d_dot_q8_8()`. | Header einbinden und Implementierung mitkompilieren. |
-| `wire3d.h` / `wire3d.c` | Drahtgitterrenderer mit Festkommaarithmetik, WRAM-Puffer und Verdeckung von Modellkanten und Szenen. | Header und Quelle verwenden, wenn das kompatible 96-Zeilen-Profil benötigt wird. |
-| `dmg3d.h` / `dmg3d.c` | DMG-Drahtgitterrenderer mit 128 × 120-Puffer ab D000, Inline-Assembler und STAT-gesteuerter Übertragung nach 8900. | Für den kompatiblen 120-Zeilen-Pfad mit 1bpp-Puffer einbinden. |
+| `wire3d.h` / `wire3d.c` | Drahtgitterrenderer mit Festkommaarithmetik, WRAM-Puffer und Verdeckung von Modellkanten und Szenen. | Header und Quelle verwenden, wenn das 96-Zeilen-Profil benötigt wird. |
+| `dmg3d.h` / `dmg3d.c` | DMG-Drahtgitterrenderer mit 128 × 120-Puffer ab D000, Inline-Assembler und STAT-gesteuerter Übertragung nach 8900. | Für den 120-Zeilen-Pfad mit 1bpp-Puffer einbinden. |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB-exklusiver Farbrenderer bei doppelter Taktrate, mit 2bpp-WRAM-Puffer, Verdeckung, API zur Linienbegrenzung und HBlank-DMA-Präsentation. | Header und Quelle mit einem CGB-exklusiven ROM-Build verwenden. |
 | `system.h` / `system.c` | Kleine GB-Laufzeitbasis: Initialisierung, Bildzähler, VBlank-Warten, kooperativer VBlank-Callback und DI/EI. | Für eine am Bildwechsel ausgerichtete Spielschleife einbinden. |
 | `input.h` / `input.c` | Eingabezustand pro Bild: gehalten, gedrückt, losgelassen und Wiederholung. | Für Menüs, Action-, Puzzle- und Strategiespiele einbinden. |
 | `vram.h` / `vram.c` | VRAM-Warteschlange für BG-Kacheln, Rechtecke, Kartenblöcke, Kopieren und Füllen. | Änderungen vormerken und `vram_flush()` beziehungsweise `vram_flush_now()` in einem sicheren Zeitfenster aufrufen. |
 | `sprite.h` / `sprite.c` | OAM-Schattenpuffer, Sprite-Reservierung, Metasprites, Animation, OAM-DMA und Prüfung der Scanline-Grenzen. | Für OBJ-basierte Darstellung einbinden. |
+| `sprite_order.h` / `sprite_order.c` | Vier Auswahlprioritätsstufen und zyklische OAM-Reihenfolge mit Begrenzung vorzeichenbehafteter Bildschirmkoordinaten. Aus bis zu 255 Kandidaten werden höchstens 40 Sprites ausgegeben; ungenutzte Plätze werden verborgen. | Header einbinden und Quelldatei kompilieren; Schatten-OAM im Hauptprogramm aufbauen und während VBlank übertragen. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-sprite_order). |
 | `fixed.h` / `fixed.c` | Q8.8-Hilfen, `Vec2`, `KQRect`, Begrenzung, Minimum/Maximum, Interpolation und einfache Rechtecktests. | Für Bewegung, Physik, Kamera und KI-Bewertung einbinden. |
 | `scene.h` / `scene.c` | Kleine Szenentabelle mit Wechsel-, Aktualisierungs- und Zeichenfunktionen, etwa für Titel, Spiel und Pause. | Zur Strukturierung des Spielzustands einbinden. |
 | `entity.h` / `entity.c` | Fester Objektpool für bis zu `ENTITY_MAX` kleine Spielobjekte. | Callbacks erhalten eine Objekt-ID und können `entity_get(id)` verwenden. |
-| `danmaku.h` / `danmaku.c` | Festkommapool mit 96 Geschossen, Fächern in 32 Richtungen, Treffer-/Streifereignissen und CGB-BG-Komposition unabhängig vom OAM-Limit. | Header und Quelle einbinden; siehe `danmaku_guide.md`. `ressen_gbc` ist ein historisches Entwicklungsbeispiel und gehört nicht zu diesem öffentlichen Paket. |
+| `danmaku.h` / `danmaku.c` | Festkommapool mit 96 Geschossen, Fächern in 32 Richtungen, Treffer-/Streifereignissen und CGB-BG-Komposition unabhängig vom OAM-Limit. | Header einbinden und Quelldatei kompilieren; siehe `danmaku_guide.md` und die vollständigen Beispiele im HTML-Handbuch. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-danmaku) |
 | `bank.h` / `bank.c` | Daten, Zeiger und Aufrufe über Bankgrenzen sowie einfache MBC-Umschaltung auf Basis der Intrinsics. | Für bankübergreifende Datenzugriffe einbinden. |
 | `asset.h` / `asset.c` | Kleine Ressourcentabelle mit IDs und Hilfen zum Laden roher Daten oder Kacheln. | Header und Quelle einbinden; spätere Erzeuger für `assets.h/c/json` können dieses Format verwenden. |
 | `debug.h` / `debug.c` | Kleiner ROM-seitiger RAM-Puffer für Ablaufmarkierungen und Assertions. | Mit KOKURA oder im Emulator auswerten; aufwendiges Profiling außerhalb der ROM durchführen. |
-| `chain.h` / `chain.c` | Ringpuffer mit Koordinatenverlauf für Schlangen, Seile, Züge oder verbundene Sprites. | Für segmentierte Bewegungen einbinden. |
+| `chain.h` / `chain.c` | Koordinatenverlauf im Ringpuffer und ChainBody-Körpernachführung für Schlangen, Seile, Züge oder verbundene Sprites. | `chain.h` einbinden und `chain.c` kompilieren. Je nach Bedarf Verlaufsspeicherung oder Nachführung anhand der aktuellen Segmentpose wählen. |
 | `cgb_tile.h` | Deklarationen der Compiler-Intrinsics für CGB-Kacheln und Attribute. | Bei Verwendung der `__settile...`- und CGB-Kachelfunktionen einbinden. |
 | `cgb_palette.h` / `cgb_palette.c` | Höhere Abstraktion für BG-/OBJ-Paletten auf CGB. | Header einbinden und Quelle mitkompilieren. |
 | `scroll.h` / `scroll.c` | Scroll- und Split-Tabellenfunktionen auf Basis der Intrinsics. | Für `Scroll_*`-Aufrufe einbinden. |
 | `raster.h` / `raster.c` | Aufbau von Scrollbändern und strukturierten X-Verzerrungsprofilen je Scanline. | Für `Raster_*` zusammen mit `scroll.c` kompilieren. |
 | `camera.h` / `camera.c` | Q8.8-Kamera auf Basis von `scroll.*`, globale Kamerahelfer und Welt-/Bildschirmumrechnung. | Header einbinden und Quelle mitkompilieren. |
-| `audio.h` / `audio.c` | GB-Audiotreiber für Musik, Effekte, Panorama, Wellenformen und Überblendungen; 68 Notenindizes bis 67 (`G6`). | Für Projekte mit Audio einbinden. |
-| `audio_vblank.h` / `audio_vblank.c` | VBlank-IRQ-Musiktreiber mit demselben Indexbereich, WRAM-Warteschlange für 16 Ereignisse und optionalem Callback pro Bild. | Direkt adressierte Musik in Bank 0 ablegen oder die Warteschlange aus bankiertem Code nachfüllen; Vektor 0x0040 mit `scripts/patch_gb_vblank_irq.ps1` verbinden. |
+| `audio.h` / `audio.c` | Game-Boy-Audiotreiber für Musik, Effekte, Panorama, Wellenformen und Überblendungen; 68 Notenindizes bis 67 (`G6`). | `audio.h` einbinden und `audio.c` kompilieren. |
+| `audio_vblank.h` / `audio_vblank.c` | VBlank-IRQ-Musiktreiber mit demselben Indexbereich, WRAM-Warteschlange für 16 Ereignisse und optionalem Callback pro Bild. | Direkt adressierte Musik in der festen Bank 0 ablegen oder die Warteschlange aus Code anderer Banken nachfüllen; Vektor `0x0040` mit `scripts/patch_gb_vblank_irq.ps1` verbinden. |
 | `link.h` / `link.c` | Serielle Byteübertragung und kooperative logische `Link4_*`-Funktionen. | Für Spiele mit Verbindungskabel einbinden. |
 | `link_packet.c` | Optionale Paketschicht auf `link.c` mit getrennten `Link4_*`-Postfächern je Teilnehmer. | Zusammen mit `link.c` kompilieren, wenn Paketfunktionen benötigt werden. |
 | `link_dmg07.h` / `link_dmg07.c` | Polling-Treiber mit externem Takt für den physischen Nintendo-DMG-07-Vierspieleradapter. | Mit `link_hwregs_gb.c` kompilieren; getrennt von der logischen `Link4_*`-API. |
@@ -113,7 +116,7 @@ CGB-exklusive Farbprojekte verwenden `wire3d_cgb.*`:
 kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wire3d_cgb_color_demo.gbc --profile=dev --stack-bank=fixed --rst-disable --cgb=cgb_only --rom-title=CGBWIRE3D
 ```
 
-`Wire3DCGB_Init()` schaltet die CGB auf doppelte Taktrate, richtet eine 128 × 96-BG-Fläche mit 2bpp ein und installiert die Standardpalette mit vier Einträgen. Beide Paare von Bildfunktionen übertragen den 3072-Byte-Puffer bei `0xD300–0xDEFF` per HBlank-DMA in die inaktive VRAM-Kachelbank und zeigen diese während VBlank an. LCDC wird dabei nicht für jedes Bild umgeschaltet. Das `Fast`-Paar lässt die übliche BG-Warteschlangenprüfung am Bildende aus. Farben wählen Sie mit `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()` beziehungsweise `Wire3DCGB_Draw*Color()`.
+`Wire3DCGB_Init()` schaltet die CGB auf doppelte Taktrate, richtet eine 128 × 96-BG-Fläche mit 2bpp ein und installiert die Standardpalette mit vier Einträgen. Beide Paare von Bildfunktionen übertragen den 3072-Byte-Puffer bei `0xD300-0xDEFF` per HBlank-DMA in die inaktive VRAM-Kachelbank und zeigen diese während VBlank an. LCDC wird dabei nicht für jedes Bild umgeschaltet. Das `Fast`-Paar lässt die übliche BG-Warteschlangenprüfung am Bildende aus. Farben wählen Sie mit `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()` beziehungsweise `Wire3DCGB_Draw*Color()`.
 
 Für aus CAD-Daten erzeugte richtungsabhängige Detailstufen nimmt `Wire3DCGB_DrawMaskedModel2D()` vorprojizierte vorzeichenbehaftete Eckpunktversätze und eine gepackte Maske sichtbarer Kanten entgegen. Kantenschleife und Assembler-Rasterizer liegen in Rendererbank 4; dadurch fällt nicht für jede Linie ein bankübergreifender Aufruf an.
 
@@ -145,7 +148,7 @@ kitaqgb lib/link_hwregs_gb.c lib/link.c lib/link_packet.c main.c -I lib -o game.
 
 Kooperative, vom Host gesteuerte logische Vierspielerprojekte verwenden dieselben Dateien. Der Host ruft `Link4_InitHost(slot_count)` auf und wählt den Teilnehmer mit `Link4_SelectPeer()` oder `Link4_SendPacketTo()`. Teilnehmer verwenden `Link4_InitPeer(local_slot, slot_count)` und kommunizieren mit Host-Slot `0`.
 
-Die historischen Teilnehmerbeispiele lassen sich mit den jeweiligen Slot-Einstiegspunkten bauen, sofern deren Quellen vorhanden sind:
+Die Teilnehmerbeispiele lassen sich mit den jeweiligen Slot-Einstiegspunkten bauen:
 
 ```powershell
 kitaqgb lib/link_hwregs_gb.c lib/link.c lib/link_packet.c examples/link4_demo_peer_slot1.c -I lib -o peer1.gb --profile=dev
@@ -193,7 +196,8 @@ Binden Sie im Spielcode die benötigten Header ein:
 
 ## Hinweise
 
-Die letzten acht Audionotenindizes verwenden derzeit die Frequenzen der vorigen Oktave erneut. 68 Indizes bedeuten deshalb nicht 68 verschiedene Tonhöhen.
+<!-- audio-pitch-range -->
+Die letzten acht Notenindizes verwenden die Frequenzen der vorigen Oktave erneut. 68 Indizes garantieren daher keine 68 unterschiedlichen Tonhöhen.
 
 - `inv_mass_q8 == 0` kennzeichnet einen statischen Körper.
 - `Wire3D_Init()` belegt eine 128 × 96-BG-Fläche, WRAM-Puffer ab `0xD000` und Kacheldaten ab `0x8900`. Kompilieren Sie mit `--stack-bank=fixed`.
@@ -208,11 +212,11 @@ Die letzten acht Audionotenindizes verwenden derzeit die Frequenzen der vorigen 
 - Die öffentliche Schnittstelle von `cgb_palette.h` verwendet das Präfix `cgb_*`.
 - Rufen Sie `Audio_SetMusicEnabled()` beziehungsweise `Audio_SetSfxEnabled()` bei Änderungen in Menüs oder Einstellungen auf.
 - `Audio_PlaySFX()` übernimmt die gerade sichtbare ROM-Bank. Wenn die Datenbank bekannt ist, verwenden Sie `Audio_PlaySFXBanked(bank, sfx, priority)`.
-- Die Musikbefehle `AUDIO_CMD_NOTE` und `AUDIO_CMD_SET_INST` behalten die Reihenfolge `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3` bei.
+- Die Musikstrombefehle `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` verwenden die Kanalindizes in Hardwarereihenfolge: `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`.
 - `Audio_LoadCustomWave()` erhält 16 Bytes mit 32 gepackten 4-Bit-Abtastwerten für eine eigene CH3-Wellenform.
 - `Audio_FadeToMasterVolume()` schreitet nur bei `Audio_Update()` fort. Aktualisieren Sie während einer Überblendung in jedem Bild.
-- `audio_vblank.c` besitzt das VBlank-Vektorsymbol `__kq_vblank_vector`. Ein Musikereignis hat fünf Bytes: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. Verwenden Sie `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` und `AUDIO_VBLANK_END`.
-- Direkt adressierte IRQ-Musik muss in der festen Bank liegen. Im Warteschlangenmodus kann bankierter Spielcode nachfüllen; eine fertige Nachfüllroutine ist nicht enthalten. Nach dem Linken mit `lib/audio_vblank.c` verbindet `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` den Vektor 0x0040 mit der ISR und erneuert die ROM-Prüfsummen.
+- `audio_vblank.c` besitzt das VBlank-Vektorsymbol `__kq_vblank_vector`. Ein Musikereignis hat fünf Bytes: `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`. Verwenden Sie `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` und `AUDIO_VBLANK_END`.
+- Per direktem Zeiger gelesene VBlank-Musik muss in der festen Bank liegen; die Warteschlange kann aus Musikdaten anderer Banken nachgefüllt werden. Führen Sie nach dem Linken mit `lib/audio_vblank.c` den Befehl `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` aus, damit Vektor `0x0040` zur ISR springt und die ROM-Prüfsummen aktualisiert werden.
 - Kombinieren Sie `audio_vblank.c` nicht mit einer anderen Einheit, die Vektor 0x0040 beansprucht, ohne einen gemeinsamen Interrupt-Verteiler einzubauen.
 - `Scroll_SplitCommit()` aktiviert die IE-Bits `0x01 | 0x02` und verwendet die VBlank-/STAT-Handler des Compilers.
 - Die Split-Funktionen reservieren dabei 0x0040 und 0x0048. Kombinieren Sie sie vorerst nicht mit eigenen getrennten VBlank-/STAT-Stubs.

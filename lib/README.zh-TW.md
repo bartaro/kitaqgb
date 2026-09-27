@@ -1,10 +1,12 @@
 # KITAQGB 程式庫
 
-[English](README.md) | [日本語](README.ja.md) | **繁體中文**
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-開啟 KITAQGB 程式庫繁體中文手冊，查看各函式說明與程式範例。
+**[程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)**
 
-`wire3d_dmg` 是 Game Boy 單色線框繪圖器。128×96 請選用 `wire3d_dmg_96.c`，128×120 則選用 `wire3d_dmg.c`，並透過 `Wire3DDMG_*` 函式操作。`wire3d` 與 `dmg3d` 分別保留為這兩種解析度的相容入口。每個 ROM 只編譯其中一個入口。彩色專用的 `wire3d_cgb` 仍為獨立繪圖器。
+`wire3d_dmg` 是 Game Boy 單色線框繪圖器。128 × 96 選用 `wire3d_dmg_96.c`，128 × 120 選用 `wire3d_dmg.c`，並透過 `Wire3DDMG_*` 操作。`wire3d` 與 `dmg3d` 分別提供 96 列與 120 列設定的另一組入口。每個程式只編譯一個入口；`wire3d_cgb` 是彩色專用繪圖器。
 
 [繪圖器指南](wire3d_dmg_guide.md)／[日文指南](wire3d_dmg_guide_ja.md)
 
@@ -30,21 +32,22 @@
 | `input.h` / `input.c` | 每影格按鍵狀態：按住、剛按下、剛放開與重複輸入。 | 用於選單、動作、益智與策略遊戲的操作。 |
 | `vram.h` / `vram.c` | VRAM 指令佇列，可排程 BG 圖塊寫入、矩形填滿、地圖區塊複製、memcpy 與 memset。 | 遊戲執行時排入佇列，在安全時段呼叫 `vram_flush()` 或 `vram_flush_now()`。 |
 | `sprite.h` / `sprite.c` | OAM 影子緩衝區、精靈配置、組合精靈、動畫推進、OAM DMA 更新與掃描線溢位檢查。 | 用於以 OBJ 為基礎的顯示。 |
+| `sprite_order.h` / `sprite_order.c` | 提供四級選取優先權與循環 OAM 排序，依帶正負號的畫面座標裁切。最多接受 255 個候選，輸出不超過 40 個精靈，並隱藏未使用的槽位。 | 引入標頭並編譯原始碼；在主程式建立 OAM 影子緩衝區，於 VBlank 傳送。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-sprite_order). |
 | `fixed.h` / `fixed.c` | Q8.8 定點數、`Vec2`、`KQRect`、clamp／min／max／lerp 與基本矩形檢測。 | 用於移動、物理、鏡頭、AI 評分等運算。 |
 | `scene.h` / `scene.c` | 輕量場景表與切換、更新、繪製分派，可組織標題、遊戲、暫停等狀態。 | 用於安排遊戲狀態流程。 |
 | `entity.h` / `entity.c` | 固定陣列物件池，最多容納 `ENTITY_MAX` 個小型遊戲實體。 | 回呼接收實體 ID，再透過 `entity_get(id)` 取得資料。 |
-| `danmaku.h` / `danmaku.c` | 96 發定點數彈幕池、32 方向扇形彈、命中與擦彈事件，以及不受 OAM 數量限制的 CGB BG 圖塊合成。 | 引入標頭檔並編譯原始碼；參閱 `danmaku_guide.md` 與完整遊戲 `ressen_gbc`。 |
+| `danmaku.h` / `danmaku.c` | 96 發定點數彈幕池、32 方向扇形彈、命中與擦彈事件，以及不受 OAM 數量限制的 CGB BG 圖塊合成。 | 引入標頭並編譯原始碼；請參閱 `danmaku_guide.md` 與 HTML 手冊中的完整範例。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-danmaku) |
 | `bank.h` / `bank.c` | 以內建操作實作的遠端資料、遠指標、遠端呼叫與簡單 MBC 記憶體區塊切換。 | 用作跨記憶體區塊存取的包裝層。 |
 | `asset.h` / `asset.c` | 素材 ID 描述表，以及原始資料與圖塊載入。 | 引入標頭檔並編譯原始碼；日後產生的 `assets.h/c/json` 也可採用此結構。 |
 | `debug.h` / `debug.c` | ROM 端輕量追蹤、斷言與標記緩衝區，可由 KOKURA 或其他模擬器讀取。 | 將較耗資源的效能分析留在 ROM 外執行。 |
-| `chain.h` / `chain.c` | 蛇、繩索、列車與關節精靈等物件的座標歷程環形緩衝區。 | 讓分節物件沿著過去的位置移動。 |
+| `chain.h` / `chain.c` | 提供蛇、繩索、列車與關節精靈用的座標歷史環形緩衝區，以及 ChainBody 身體跟隨功能。 | 引入 `chain.h` 並編譯 `chain.c`，依需求選擇歷史座標跟隨或以各節目前姿態運作的追隨方式。 |
 | `cgb_tile.h` | CGB 圖塊與屬性內建操作的公開宣告。 | 遊戲使用 `__settile...` 等功能時引入。 |
 | `cgb_palette.h` / `cgb_palette.c` | CGB BG／OBJ 調色盤高階介面。 | 引入標頭檔並編譯原始碼。 |
 | `scroll.h` / `scroll.c` | 以編譯器內建操作實作的捲動與分割畫面表。 | 使用 `Scroll_*` 時加入。 |
-| `raster.h` / `raster.c` | 分帶光柵捲動與逐掃描線 X 方向變形設定。 | 引入 `raster.h`，並同時編譯 `raster.c` 與 `scroll.c`。 |
+| `raster.h` / `raster.c` | 分帶光柵捲動與逐掃描線 X 方向變形設定。 | 使用 `Raster_*` 函式時，引入 `raster.h`，並同時編譯 `raster.c` 與 `scroll.c`。 |
 | `camera.h` / `camera.c` | 以 `scroll.*` 為基礎的 8.8 定點數鏡頭、簡單全域介面，以及世界與螢幕座標轉換。 | 引入標頭檔並編譯原始碼。 |
-| `audio.h` / `audio.c` | 共用 Game Boy 音訊驅動，支援音樂、音效、聲像、波形與淡變，共有 0 至 67（`G6`）的 68 個音符編號。 | 加入需要音訊的專案。 |
-| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM 驅動，同樣支援 68 個音符編號，提供可容納 16 筆紀錄的 WRAM 佇列以播放跨記憶體區塊歌曲，並可掛接逐影格處理。 | 直接指標歌曲須放在固定區塊 0，或由其他區塊補入佇列；使用 `scripts/patch_gb_vblank_irq.ps1` 設定向量 `0x0040`。 |
+| `audio.h` / `audio.c` | Game Boy 音訊驅動程式，提供音樂、音效、聲像、波形與淡入淡出；共有 68 個音符索引，最高為 67（`G6`）。 | 引入 `audio.h` 並編譯 `audio.c`。 |
+| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM 驅動，同樣支援 68 個音符編號，提供可容納 16 筆紀錄的 WRAM 佇列以播放跨記憶體區塊歌曲，並可掛接逐影格處理。 | 直接指標曲目放在固定 bank 0，或由其他 bank 的程式補充佇列；以 `scripts/patch_gb_vblank_irq.ps1` 設定向量 `0x0040`。 |
 | `link.h` / `link.c` | 通訊線的序列位元組傳輸，以及協作式邏輯 4 人通訊 `Link4_*`。 | 加入需要通訊的專案。 |
 | `link_packet.c` | `link.c` 上的選用封包層，包含 `Link4_*` 各對端獨立的收件匣。 | 需要封包收發時，才與 `link.c` 一起編譯。 |
 | `link_dmg07.h` / `link_dmg07.c` | 實體 Nintendo DMG-07 Four Player Adapter 的外部時脈輪詢驅動。 | 與 `link_hwregs_gb.c` 一起編譯；此驅動與邏輯 `Link4_*` API 各自獨立。 |
@@ -99,7 +102,7 @@ kitaqgb hwregs.c lib/audio.c main.c lib/physics2d.c lib/physics2d_circle.c lib/p
 
 隨附的 `examples/wire3d_minimal.c` 會初始化所有模型欄位，並在 128×96 視埠中旋轉立方體，不需要外部圖像或字型素材。
 
-採用 128×120 視埠的 DMG 專案，可使用 120 列相容入口 `dmg3d.*`：
+採用 128×120 視埠的 DMG 專案，可使用 120 列入口 `dmg3d.*`：
 
 ```powershell
 .\kitaqgb.exe lib/dmg3d.c examples/dmg3d_minimal.c -I lib -o examples/dmg3d_minimal.gb --profile=dev --stack-bank=fixed --rst-disable --no-disasm
@@ -113,7 +116,7 @@ CGB 專用彩色專案使用獨立的 `wire3d_cgb.*`：
 kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wire3d_cgb_color_demo.gbc --profile=dev --stack-bank=fixed --rst-disable --cgb=cgb_only --rom-title=CGBWIRE3D
 ```
 
-`Wire3DCGB_Init()` 將 CGB 切換為雙倍速，設定 128×96、2bpp 的 BG 線框繪圖區，並安裝預設的四項 BG 調色盤。一般與 `Fast` 兩組影格 API 都採無畫面撕裂顯示：以 HBlank DMA 將 `0xD300–0xDEFF` 的 3072 位元組傳至未顯示的 VRAM 圖塊區塊，再於 VBlank 切換顯示，不必逐影格改動 LCDC。`Fast` 組省略一般影格結束時的 BG 佇列檢查。可透過 `Wire3DCGB_SetPaletteRGB15()`、`Wire3DCGB_SetLineColor()` 及 `Wire3DCGB_Draw*Color()` 指定顏色。
+`Wire3DCGB_Init()` 將 CGB 切換為雙倍速，設定 128×96、2bpp 的 BG 線框繪圖區，並安裝預設的四項 BG 調色盤。一般與 `Fast` 兩組影格 API 都採無畫面撕裂顯示：以 HBlank DMA 將 `0xD300-0xDEFF` 的 3072 位元組傳至未顯示的 VRAM 圖塊區塊，再於 VBlank 切換顯示，不必逐影格改動 LCDC。`Fast` 組省略一般影格結束時的 BG 佇列檢查。可透過 `Wire3DCGB_SetPaletteRGB15()`、`Wire3DCGB_SetLineColor()` 及 `Wire3DCGB_Draw*Color()` 指定顏色。
 
 對於 CAD 產生、依方向劃分的 LOD，`Wire3DCGB_DrawMaskedModel2D()` 可接收預先投影的有號頂點偏移量與封裝的可見邊遮罩。邊的走訪及組合語言光柵化都在繪圖器的記憶體區塊 4 內完成，因此繪製一個模型時，不必為每條線進行跨區塊呼叫。
 
@@ -195,7 +198,8 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 
 ## 使用注意事項
 
-最後八個音符編號目前沿用前一個八度的頻率。因此，支援 68 個編號不代表能發出 68 種不同音高。
+<!-- audio-pitch-range -->
+最後八個音符索引會重用前一個八度的頻率；68 個索引不代表有 68 種不同音高。
 
 - `inv_mass_q8 == 0` 表示靜態物體。
 - `Wire3D_Init()` 使用 128×96 的 BG 線框繪圖區、從 `0xD000` 開始的 WRAM 暫存區，以及從 `0x8900` 開始的圖塊資料。Wire3D 專案請指定 `--stack-bank=fixed`。
@@ -210,11 +214,11 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h` 的公開 API 採用 `cgb_*` 命名。
 - 選單或設定變更音樂、音效啟用狀態時，請呼叫 `Audio_SetMusicEnabled()`／`Audio_SetSfxEnabled()`。
 - `Audio_PlaySFX()` 會記錄目前可見的 ROM 記憶體區塊。已知音效資料所在區塊時，請使用 `Audio_PlaySFXBanked(bank, sfx, priority)`。
-- 音樂串流的 `AUDIO_CMD_NOTE`／`AUDIO_CMD_SET_INST` 使用以下聲道編號：`0=CH1`、`1=CH2`、`2=CH4`、`3=CH3`。
+- 音樂串流的 `AUDIO_CMD_NOTE`／`AUDIO_CMD_SET_INST` 使用硬體順序的聲道編號：`0=CH1`、`1=CH2`、`2=CH3`、`3=CH4`。
 - 自訂 CH3 波形時，將 32 個 4 位元取樣值封裝為 16 位元組，再傳給 `Audio_LoadCustomWave()`。
 - `Audio_FadeToMasterVolume()` 的淡變由 `Audio_Update()` 推進，淡變期間仍須每影格呼叫。
-- `audio_vblank.c` 定義 VBlank IRQ 向量符號 `__kq_vblank_vector`。BGM 事件由五個位元組組成：`delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`；休止、循環與結束分別使用 `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END`。
-- 直接指標 VBlank 歌曲須放在固定記憶體區塊；佇列模式可由其他區塊補入資料。連結 `lib/audio_vblank.c` 後，執行 `scripts/patch_gb_vblank_irq.ps1 <rom> <map>`，讓向量 `0x0040` 跳至 ISR，並更新 ROM 檢查碼。
+- `audio_vblank.c` 定義 VBlank IRQ 向量符號 `__kq_vblank_vector`。BGM 事件由五個位元組組成：`delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`；休止、循環與結束分別使用 `AUDIO_VBLANK_REST`、`AUDIO_VBLANK_LOOP`、`AUDIO_VBLANK_END`。
+- 以直接指標播放的 VBlank 曲目須位於固定 bank；佇列模式可從其他 bank 的曲目補充資料。連結 `lib/audio_vblank.c` 後，請執行 `scripts/patch_gb_vblank_irq.ps1 <rom> <map>`，讓向量 `0x0040` 跳至 ISR 並更新 ROM 校驗和。
 - 未加入共用 IRQ 分派器時，不要將 `audio_vblank.c` 與其他同樣使用 VBlank 向量 `0x0040` 的程式庫或遊戲中斷入口程式搭配。
 - `Scroll_SplitCommit()` 自動啟用 IE 位元 `0x01 | 0x02`，並使用編譯器提供的 VBlank／STAT 處理常式套用分割畫面設定。
 - 目前建置中的分割畫面功能保留向量 `0x0040` 與 `0x0048`，暫勿與獨立自訂的 VBlank／STAT 中斷入口程式混用。

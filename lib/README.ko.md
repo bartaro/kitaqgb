@@ -1,10 +1,12 @@
 # KITAQGB 라이브러리
 
-[English](README.md) | [日本語](README.ja.md) | **한국어**
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-KITAQGB 라이브러리 한국어 설명서에서 각 함수의 사용법과 예제 코드를 볼 수 있습니다.
+**[라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)**
 
-`wire3d_dmg`는 게임보이용 흑백 와이어프레임 렌더러입니다. 128×96에서는 `wire3d_dmg_96.c`, 128×120에서는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*` 함수를 사용하세요. `wire3d`와 `dmg3d`는 각각의 해상도에 대응하는 호환용 진입점으로 남아 있습니다. 한 ROM에는 진입점을 하나만 컴파일하세요. 컬러 전용 렌더러 `wire3d_cgb`는 별도로 사용합니다.
+`wire3d_dmg`는 Game Boy용 흑백 와이어프레임 렌더러입니다. 128 × 96에는 `wire3d_dmg_96.c`, 128 × 120에는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*`를 사용하세요. `wire3d`와 `dmg3d`는 각각 96줄과 120줄 프로필의 다른 진입점입니다. 프로그램마다 진입점 하나만 컴파일하세요. `wire3d_cgb`는 컬러 전용 렌더러입니다.
 
 [렌더러 가이드](wire3d_dmg_guide.md) / [일본어 가이드](wire3d_dmg_guide_ja.md)
 
@@ -30,21 +32,22 @@ KITAQGB 라이브러리 한국어 설명서에서 각 함수의 사용법과 예
 | `input.h` / `input.c` | 버튼의 누른 상태, 누른 순간, 뗀 순간, 반복 입력을 프레임별로 관리합니다. | 메뉴, 액션, 퍼즐, 전략 게임의 조작에 사용합니다. |
 | `vram.h` / `vram.c` | BG 타일 쓰기, 사각형 채우기, 맵 블록, memcpy, memset을 예약하는 VRAM 명령 큐. | 게임 처리 중 갱신을 예약하고, 안전한 시간에 `vram_flush()` 또는 `vram_flush_now()`로 전송합니다. |
 | `sprite.h` / `sprite.c` | OAM 작업용 복사본, 스프라이트 할당, 메타스프라이트, 애니메이션, OAM DMA, 주사선별 개수 초과 확인. | OBJ를 이용한 렌더링에 사용합니다. |
+| `sprite_order.h` / `sprite_order.c` | 선택 우선순위 4단계와 OAM 순서 순환을 제공합니다. 부호 있는 화면 좌표를 클리핑하고 최대 255개 후보에서 40개 이하의 스프라이트를 출력하며, 남은 슬롯은 숨깁니다. | 헤더를 포함하고 소스를 컴파일합니다. 메인 처리에서 섀도 OAM을 구성하고 VBlank 중 전송하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-sprite_order). |
 | `fixed.h` / `fixed.c` | Q8.8 고정소수점, `Vec2`, `KQRect`, clamp/min/max/lerp, 기본 사각형 판정. | 이동, 물리, 카메라, AI 평가값 등에 사용합니다. |
 | `scene.h` / `scene.c` | 타이틀·게임·일시정지 같은 장면 표와 전환·갱신·그리기 호출 분배. | 게임 상태의 흐름을 구성할 때 사용합니다. |
 | `entity.h` / `entity.c` | 최대 `ENTITY_MAX`개의 작은 게임 개체를 고정 배열로 관리하는 풀. | 콜백에는 개체 ID가 전달됩니다. `entity_get(id)`로 실제 데이터를 얻습니다. |
-| `danmaku.h` / `danmaku.c` | 고정소수점 탄환 96개 풀, 32방향 부채꼴 탄막, 명중·스침 이벤트, OAM 개수 제한에 묶이지 않는 CGB BG 타일 합성. | 헤더와 소스를 포함하고 `danmaku_guide.md`와 완성 게임 `ressen_gbc`를 참고하세요. |
+| `danmaku.h` / `danmaku.c` | 고정소수점 탄환 96개 풀, 32방향 부채꼴 탄막, 명중·스침 이벤트, OAM 개수 제한에 묶이지 않는 CGB BG 타일 합성. | 헤더를 포함하고 소스를 컴파일합니다. `danmaku_guide.md`와 HTML 설명서의 완전한 예제를 참고하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-danmaku) |
 | `bank.h` / `bank.c` | 컴파일러 내장 연산 위에서 먼 뱅크의 데이터·포인터·함수 호출과 간단한 MBC 뱅크 전환을 지원합니다. | 뱅크를 넘는 데이터 접근에 사용합니다. |
 | `asset.h` / `asset.c` | 자료 ID별 설명자 표와 원시 데이터·타일 로드. | 헤더와 소스를 포함합니다. 향후 `assets.h/c/json` 생성 도구의 출력 형식으로도 사용할 수 있습니다. |
 | `debug.h` / `debug.c` | KOKURA 등에서 확인하는 ROM 내부의 작은 트레이스·단언·표식 버퍼. | 무거운 프로파일링은 ROM 밖에서 처리합니다. |
-| `chain.h` / `chain.c` | 뱀, 밧줄, 열차, 관절 스프라이트 등에 쓰는 좌표 이력 링 버퍼. | 뒤쪽 조각이 과거 위치를 따라 움직이게 할 때 사용합니다. |
+| `chain.h` / `chain.c` | 뱀, 로프, 기차, 관절형 스프라이트를 위한 좌표 이력 원형 버퍼와 ChainBody 몸통 추종을 제공합니다. | `chain.h`를 포함하고 `chain.c`를 컴파일합니다. 이력 재생과 현재 마디 자세 기반 추종 중 필요한 방식을 선택하세요. |
 | `cgb_tile.h` | CGB 타일·속성 관련 컴파일러 내장 연산의 공개 선언. | `__settile...` 같은 함수를 쓰는 게임 소스에서 포함합니다. |
 | `cgb_palette.h` / `cgb_palette.c` | CGB BG/OBJ 팔레트를 다루는 상위 API. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
 | `scroll.h` / `scroll.c` | 내장 연산을 이용한 스크롤과 화면 분할 테이블. | `Scroll_*` 함수를 사용할 때 포함합니다. |
-| `raster.h` / `raster.c` | 띠 단위의 래스터 스크롤과 주사선별 X 방향 변형 패턴. | `raster.h`를 포함하고 `raster.c`와 `scroll.c`를 컴파일합니다. |
+| `raster.h` / `raster.c` | 띠 단위의 래스터 스크롤과 주사선별 X 방향 변형 패턴. | `Raster_*` 함수를 사용할 때는 `raster.h`를 포함하고 `raster.c`와 `scroll.c`를 컴파일합니다. |
 | `camera.h` / `camera.c` | `scroll.*` 기반의 8.8 고정소수점 카메라, 간단한 전역 함수, 월드·화면 좌표 변환. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
-| `audio.h` / `audio.c` | 음악, 효과음, 패닝, 파형, 페이드를 다루는 공통 오디오 드라이버. 음표 번호 67(`G6`)까지 68개 번호를 지원합니다. | 오디오가 필요한 프로젝트에 포함합니다. |
-| `audio_vblank.h` / `audio_vblank.c` | 같은 68개 음표 번호를 쓰는 VBlank IRQ BGM 드라이버. 뱅크에 배치한 곡을 위한 WRAM 큐 16레코드와 선택적 프레임 훅. | 직접 포인터로 읽는 곡은 고정 뱅크 0에 두고, 다른 뱅크의 곡은 큐를 보충하며 재생합니다. `scripts/patch_gb_vblank_irq.ps1`로 벡터 `0x0040`을 설정합니다. |
+| `audio.h` / `audio.c` | 음악, 효과음, 패닝, 파형, 페이드를 다루는 Game Boy 오디오 드라이버입니다. 음표 인덱스 67(`G6`)까지 68개 인덱스를 제공합니다. | `audio.h`를 포함하고 `audio.c`를 컴파일합니다. |
+| `audio_vblank.h` / `audio_vblank.c` | 같은 68개 음표 번호를 쓰는 VBlank IRQ BGM 드라이버. 뱅크에 배치한 곡을 위한 WRAM 큐 16레코드와 선택적 프레임 훅. | 직접 포인터 곡은 고정 뱅크 0에 두거나, 다른 뱅크의 코드에서 큐를 보충합니다. `scripts/patch_gb_vblank_irq.ps1`로 벡터 `0x0040`을 설정하세요. |
 | `link.h` / `link.c` | 통신 케이블용 바이트 전송과 협조적인 논리 4인 통신 `Link4_*`. | 통신 기능이 필요한 프로젝트에 포함합니다. |
 | `link_packet.c` | `link.c` 위에 추가하는 패킷 계층과 `Link4_*`의 상대별 수신함. | 패킷 송수신이 필요할 때만 `link.c`와 함께 컴파일합니다. |
 | `link_dmg07.h` / `link_dmg07.c` | 실물 Nintendo DMG-07 Four Player Adapter용 외부 클록 폴링 드라이버. | `link_hwregs_gb.c`와 함께 컴파일합니다. 논리 API `Link4_*`와는 별개입니다. |
@@ -113,7 +116,7 @@ CGB 전용 컬러 프로젝트에서는 `wire3d_cgb.*`를 사용합니다.
 kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wire3d_cgb_color_demo.gbc --profile=dev --stack-bank=fixed --rst-disable --cgb=cgb_only --rom-title=CGBWIRE3D
 ```
 
-`Wire3DCGB_Init()`은 CGB를 배속 모드로 바꾸고 128×96·2bpp BG 영역과 기본 4색 팔레트를 설정합니다. 일반 프레임 API와 `Fast` API 모두 화면 중간 갱신으로 인한 찢어짐을 피하는 표시 방식을 씁니다. `0xD300–0xDEFF`의 3072바이트를 HBlank DMA로 비표시 VRAM 타일 뱅크에 보내고, VBlank 중에 표시를 바꿉니다. 매 프레임 LCDC를 바꿀 필요는 없습니다. `Fast` API는 일반 프레임 종료 시 수행하는 BG 큐 검사를 생략합니다. 색은 `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()`, `Wire3DCGB_Draw*Color()`로 지정합니다.
+`Wire3DCGB_Init()`은 CGB를 배속 모드로 바꾸고 128×96·2bpp BG 영역과 기본 4색 팔레트를 설정합니다. 일반 프레임 API와 `Fast` API 모두 화면 중간 갱신으로 인한 찢어짐을 피하는 표시 방식을 씁니다. `0xD300-0xDEFF`의 3072바이트를 HBlank DMA로 비표시 VRAM 타일 뱅크에 보내고, VBlank 중에 표시를 바꿉니다. 매 프레임 LCDC를 바꿀 필요는 없습니다. `Fast` API는 일반 프레임 종료 시 수행하는 BG 큐 검사를 생략합니다. 색은 `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()`, `Wire3DCGB_Draw*Color()`로 지정합니다.
 
 CAD에서 방향별로 생성한 LOD 자료에는 `Wire3DCGB_DrawMaskedModel2D()`를 사용할 수 있습니다. 이미 투영된 부호 있는 꼭짓점 오프셋과 표시할 모서리의 압축 비트마스크를 전달합니다. 모서리 순회와 어셈블리 래스터라이저는 렌더러 뱅크 4 안에서 실행되므로 선마다 뱅크를 넘나드는 호출을 하지 않습니다.
 
@@ -195,7 +198,8 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 
 ## 사용 시 참고 사항
 
-마지막 8개 음표 번호는 현재 이전 옥타브의 주파수를 재사용합니다. 68개 번호가 있다는 것이 서로 다른 음높이 68개를 보장하는 것은 아닙니다.
+<!-- audio-pitch-range -->
+마지막 여덟 음표 인덱스는 앞선 옥타브의 주파수를 재사용합니다. 인덱스 68개가 서로 다른 음높이 68개를 뜻하지는 않습니다.
 
 - `inv_mass_q8 == 0`은 움직이지 않는 물체를 나타냅니다.
 - `Wire3D_Init()`은 128×96 BG 영역, `0xD000`부터의 WRAM 버퍼, `0x8900`부터의 타일 데이터를 사용합니다. `--stack-bank=fixed`로 빌드하세요.
@@ -210,11 +214,11 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - `cgb_palette.h`의 공개 API 이름은 `cgb_*`입니다.
 - 메뉴나 설정에서 음악·효과음 사용 여부를 바꾸면 `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()`를 호출하세요.
 - `Audio_PlaySFX()`는 호출 시 보이는 ROM 뱅크를 기록합니다. 효과음 데이터 뱅크를 명확히 알고 있다면 `Audio_PlaySFXBanked(bank, sfx, priority)`를 사용하세요.
-- 음악 스트림의 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST`는 다음 채널 번호를 사용합니다. `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`입니다.
+- 음악 스트림의 `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` 채널 번호는 하드웨어 순서를 따릅니다. `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`입니다.
 - CH3의 사용자 파형은 4비트 샘플 32개를 16바이트에 담아 `Audio_LoadCustomWave()`로 전달하세요.
 - `Audio_FadeToMasterVolume()`의 페이드는 `Audio_Update()`에서 진행됩니다. 페이드 중에도 매 프레임 호출하세요.
-- `audio_vblank.c`는 VBlank IRQ 벡터 심볼 `__kq_vblank_vector`를 정의합니다. BGM 이벤트는 `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`의 5바이트이며, 쉼·반복·끝에는 `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, `AUDIO_VBLANK_END`를 사용합니다.
-- 직접 포인터로 읽는 VBlank 곡은 고정 뱅크 데이터여야 합니다. 큐 모드에서는 다른 뱅크의 곡으로 보충할 수 있습니다. `lib/audio_vblank.c`를 링크한 뒤 `scripts/patch_gb_vblank_irq.ps1 <rom> <map>`을 실행해 벡터 `0x0040`을 ISR 점프로 바꾸고 ROM 체크섬을 갱신하세요.
+- `audio_vblank.c`는 VBlank IRQ 벡터 심볼 `__kq_vblank_vector`를 정의합니다. BGM 이벤트는 `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`의 5바이트이며, 쉼·반복·끝에는 `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP`, `AUDIO_VBLANK_END`를 사용합니다.
+- 직접 포인터로 재생하는 VBlank 곡 데이터는 고정 뱅크에 두어야 합니다. 큐 모드는 다른 뱅크의 곡에서 보충할 수 있습니다. `lib/audio_vblank.c`를 링크한 뒤 `scripts/patch_gb_vblank_irq.ps1 <rom> <map>`을 실행하여 벡터 `0x0040`을 ISR로 연결하고 ROM 체크섬을 갱신하세요.
 - VBlank 벡터 `0x0040`을 소유하는 다른 라이브러리나 게임 스텁과 `audio_vblank.c`를 함께 쓰려면 공용 IRQ 분배 처리가 필요합니다.
 - `Scroll_SplitCommit()`은 IE 비트 `0x01 | 0x02`를 자동으로 켜고, 컴파일러의 VBlank/STAT 핸들러로 화면 분할을 재생합니다.
 - 화면 분할 기능은 해당 빌드에서 벡터 `0x0040`과 `0x0048`을 예약합니다. 현재는 별도 사용자 VBlank/STAT 스텁과 함께 쓰지 마세요.

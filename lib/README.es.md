@@ -1,10 +1,12 @@
 # Bibliotecas de KITAQGB
 
-[English](README.md) | [日本語](README.ja.md) | **Español**
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | **Español** | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-El manual de las bibliotecas KITAQGB en español contiene las explicaciones de cada función y sus ejemplos de código.
+**[Manual de bibliotecas](https://bartaro.github.io/kitaq-docs/es/gb-library.html)**
 
-`wire3d_dmg` es el renderizador monocromo de líneas 3D para Game Boy. Para 128×96, utilice `wire3d_dmg_96.c`; para 128×120, `wire3d_dmg.c`. En ambos casos se usa la API `Wire3DDMG_*`. `wire3d` y `dmg3d` se mantienen como entradas de compatibilidad para esas dos resoluciones, respectivamente. Compile una sola entrada por ROM. `wire3d_cgb`, exclusivo de color, sigue siendo un renderizador independiente.
+`wire3d_dmg` es un renderizador monocromo de líneas 3D para Game Boy. Para 128 × 96 se utiliza `wire3d_dmg_96.c`; para 128 × 120, `wire3d_dmg.c`, con la API `Wire3DDMG_*`. `wire3d` y `dmg3d` ofrecen otras entradas para los perfiles de 96 y 120 líneas, respectivamente. Solo se debe compilar una entrada por programa. `wire3d_cgb` es el renderizador dedicado al color.
 
 [Guía del renderizador](wire3d_dmg_guide.md) / [Guía en japonés](wire3d_dmg_guide_ja.md)
 
@@ -30,21 +32,22 @@ Este directorio contiene tres clases de archivos:
 | `input.h` / `input.c` | Estados de botones por fotograma: mantenido, recién pulsado, recién soltado y repetición. | Controles de menús y juegos de acción, puzles o estrategia. |
 | `vram.h` / `vram.c` | Cola de comandos VRAM para escrituras de tiles BG, rellenos rectangulares, copias de bloques de mapa, memcpy y memset. | Encolar durante el juego y llamar a `vram_flush()` o `vram_flush_now()` en un periodo seguro. |
 | `sprite.h` / `sprite.c` | Búfer espejo de OAM, asignación de sprites, metasprites, avance de animaciones, actualización por OAM DMA y detección de exceso por línea de barrido. | Representación basada en OBJ. |
+| `sprite_order.h` / `sprite_order.c` | Cuatro niveles de prioridad de selección y orden OAM cíclico, con recorte de coordenadas de pantalla con signo. Admite hasta 255 candidatos, emite como máximo 40 sprites y oculta las posiciones sin usar. | Incluya la cabecera y compile el código; prepare OAM en RAM desde el código principal y transfiérala durante VBlank. [Manual de bibliotecas](https://bartaro.github.io/kitaq-docs/es/gb-library.html#module-sprite_order). |
 | `fixed.h` / `fixed.c` | Punto fijo Q8.8, `Vec2`, `KQRect`, clamp/min/max/lerp y comprobaciones rectangulares básicas. | Movimiento, física, cámara y puntuaciones de IA, entre otros usos. |
 | `scene.h` / `scene.c` | Tabla ligera de escenas con cambio, actualización y dibujo para estados como título, juego y pausa. | Organizar el flujo de estados del juego. |
 | `entity.h` / `entity.c` | Reserva de objetos en un array fijo para un máximo de `ENTITY_MAX` entidades pequeñas. | Los callbacks reciben un ID; `entity_get(id)` permite acceder a sus datos. |
-| `danmaku.h` / `danmaku.c` | Reserva de 96 proyectiles en punto fijo, abanicos de 32 direcciones, eventos de impacto y roce, y composición con tiles BG de CGB sin depender del límite de OAM. | Incluir cabecera y código; consultar `danmaku_guide.md` y el juego completo `ressen_gbc`. |
+| `danmaku.h` / `danmaku.c` | Reserva de 96 proyectiles en punto fijo, abanicos de 32 direcciones, eventos de impacto y roce, y composición con tiles BG de CGB sin depender del límite de OAM. | Incluya la cabecera y compile el código; consulte `danmaku_guide.md` y los ejemplos completos del manual HTML. [Manual de bibliotecas](https://bartaro.github.io/kitaq-docs/es/gb-library.html#module-danmaku) |
 | `bank.h` / `bank.c` | Datos y punteros lejanos, llamadas lejanas y cambios sencillos de bancos MBC, basados en operaciones intrínsecas. | Envolver accesos entre bancos. |
 | `asset.h` / `asset.c` | Tabla descriptiva de ID de recursos y carga de datos sin procesar o tiles. | Incluir cabecera y código; los futuros `assets.h/c/json` generados también pueden seguir este esquema. |
 | `debug.h` / `debug.c` | Búferes ligeros de trazas, aserciones y marcas en la ROM para su inspección desde KOKURA u otro emulador. | Mantener el análisis de rendimiento costoso fuera de la ROM. |
-| `chain.h` / `chain.c` | Búfer circular de posiciones anteriores para serpientes, cuerdas, trenes y sprites articulados. | Mover objetos segmentados siguiendo una trayectoria registrada. |
+| `chain.h` / `chain.c` | Historial circular de coordenadas y seguimiento corporal ChainBody para serpientes, cuerdas, trenes o sprites articulados. | Incluya `chain.h` y compile `chain.c`. Elija entre seguir el historial o actualizar el cuerpo a partir de la postura actual de sus segmentos. |
 | `cgb_tile.h` | Declaraciones públicas de las operaciones intrínsecas de tiles y atributos CGB. | Incluir cuando el juego utilice `__settile...` y funciones similares. |
 | `cgb_palette.h` / `cgb_palette.c` | Interfaz de alto nivel para paletas BG/OBJ de CGB. | Incluir la cabecera y compilar el código. |
 | `scroll.h` / `scroll.c` | Desplazamiento y tablas de pantalla dividida mediante operaciones intrínsecas del compilador. | Añadir al utilizar `Scroll_*`. |
-| `raster.h` / `raster.c` | Desplazamiento por bandas y deformación horizontal por línea de barrido. | Incluir `raster.h` y compilar tanto `raster.c` como `scroll.c`. |
+| `raster.h` / `raster.c` | Desplazamiento por bandas y deformación horizontal por línea de barrido. | Para utilizar `Raster_*`, incluya `raster.h` y compile tanto `raster.c` como `scroll.c`. |
 | `camera.h` / `camera.c` | Cámara en punto fijo 8.8 sobre `scroll.*`, interfaz global sencilla y conversión entre coordenadas del mundo y de pantalla. | Incluir la cabecera y compilar el código. |
-| `audio.h` / `audio.c` | Controlador de audio común para Game Boy: música, efectos, panoramización, ondas y fundidos, con 68 índices de nota, del 0 al 67 (`G6`). | Añadir a proyectos que necesiten audio. |
-| `audio_vblank.h` / `audio_vblank.c` | Controlador BGM por IRQ de VBlank, también con 68 índices de nota, cola WRAM de 16 registros para canciones entre bancos y un punto de enganche por fotograma. | Situar canciones con puntero directo en el banco fijo 0 o alimentar la cola desde otros bancos; configurar el vector `0x0040` con `scripts/patch_gb_vblank_irq.ps1`. |
+| `audio.h` / `audio.c` | Controlador de audio Game Boy para música, efectos, panorámica, ondas y fundidos; 68 índices de nota, hasta el 67 (`G6`). | Incluir `audio.h` y compilar `audio.c`. |
+| `audio_vblank.h` / `audio_vblank.c` | Controlador BGM por IRQ de VBlank, también con 68 índices de nota, cola WRAM de 16 registros para canciones entre bancos y un punto de enganche por fotograma. | Mantenga las canciones de puntero directo en el banco fijo 0 o rellene la cola desde código en otros bancos; configure el vector `0x0040` con `scripts/patch_gb_vblank_irq.ps1`. |
 | `link.h` / `link.c` | Transferencia serie de bytes por cable y comunicación lógica cooperativa para cuatro jugadores con `Link4_*`. | Añadir a proyectos con comunicación. |
 | `link_packet.c` | Capa opcional de paquetes sobre `link.c`, con buzones por interlocutor para `Link4_*`. | Compilar junto con `link.c` solo si se necesitan paquetes. |
 | `link_dmg07.h` / `link_dmg07.c` | Controlador por sondeo y reloj externo para el adaptador físico Nintendo DMG-07 Four Player Adapter. | Compilar con `link_hwregs_gb.c`; es independiente de la API lógica `Link4_*`. |
@@ -99,7 +102,7 @@ Los proyectos de líneas 3D deben compilar también el código del renderizador:
 
 El ejemplo incluido `examples/wire3d_minimal.c` inicializa todos los campos del modelo y hace girar un cubo dentro de un área de 128×96, sin gráficos ni tipografías externos.
 
-Los proyectos DMG con un área de 128×120 pueden utilizar la entrada de compatibilidad de 120 líneas, `dmg3d.*`:
+Los proyectos DMG con un área de 128×120 pueden utilizar el punto de entrada de 120 líneas, `dmg3d.*`:
 
 ```powershell
 .\kitaqgb.exe lib/dmg3d.c examples/dmg3d_minimal.c -I lib -o examples/dmg3d_minimal.gb --profile=dev --stack-bank=fixed --rst-disable --no-disasm
@@ -113,7 +116,7 @@ Los proyectos de color exclusivos de CGB utilizan `wire3d_cgb.*`:
 kitaqgb lib/wire3d_cgb.c examples/wire3d_cgb_color_demo.c -I lib -o examples/wire3d_cgb_color_demo.gbc --profile=dev --stack-bank=fixed --rst-disable --cgb=cgb_only --rom-title=CGBWIRE3D
 ```
 
-`Wire3DCGB_Init()` activa la doble velocidad de CGB, configura una superficie BG de 128×96 a 2 bpp e instala una paleta BG predeterminada de cuatro entradas. Tanto las API de fotograma normales como las `Fast` presentan la imagen sin desgarro: HBlank DMA transfiere los 3072 bytes de `0xD300–0xDEFF` al banco de tiles VRAM que no está visible, y la presentación cambia durante VBlank. No hace falta modificar LCDC en cada fotograma. Las variantes `Fast` omiten la comprobación de la cola BG que realiza el cierre normal. Los colores se controlan con `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()` y `Wire3DCGB_Draw*Color()`.
+`Wire3DCGB_Init()` activa la doble velocidad de CGB, configura una superficie BG de 128×96 a 2 bpp e instala una paleta BG predeterminada de cuatro entradas. Tanto las API de fotograma normales como las `Fast` presentan la imagen sin desgarro: HBlank DMA transfiere los 3072 bytes de `0xD300-0xDEFF` al banco de tiles VRAM que no está visible, y la presentación cambia durante VBlank. No hace falta modificar LCDC en cada fotograma. Las variantes `Fast` omiten la comprobación de la cola BG que realiza el cierre normal. Los colores se controlan con `Wire3DCGB_SetPaletteRGB15()`, `Wire3DCGB_SetLineColor()` y `Wire3DCGB_Draw*Color()`.
 
 Para niveles de detalle por orientación generados con CAD, `Wire3DCGB_DrawMaskedModel2D()` acepta desplazamientos de vértices con signo ya proyectados y una máscara empaquetada de aristas visibles. El recorrido de aristas y la rasterización en ensamblador se realizan dentro del banco 4 del renderizador, por lo que dibujar un modelo no exige una llamada entre bancos por cada línea.
 
@@ -195,7 +198,8 @@ Incluya después las cabeceras necesarias en el juego:
 
 ## Notas de uso
 
-Los últimos ocho índices de nota reutilizan actualmente las frecuencias de la octava anterior. Admitir 68 índices no significa producir 68 alturas distintas.
+<!-- audio-pitch-range -->
+Los ocho últimos índices reutilizan las frecuencias de la octava anterior; disponer de 68 índices no garantiza 68 alturas distintas.
 
 - `inv_mass_q8 == 0` indica un cuerpo estático.
 - `Wire3D_Init()` utiliza una superficie BG de líneas de 128×96, un búfer WRAM desde `0xD000` y datos de tiles desde `0x8900`. En proyectos Wire3D, use `--stack-bank=fixed`.
@@ -210,11 +214,11 @@ Los últimos ocho índices de nota reutilizan actualmente las frecuencias de la 
 - La API pública de `cgb_palette.h` utiliza nombres `cgb_*`.
 - Cuando un menú o un ajuste active o desactive música o efectos, llame a `Audio_SetMusicEnabled()` / `Audio_SetSfxEnabled()`.
 - `Audio_PlaySFX()` registra el banco ROM visible en ese momento. Si conoce el banco de los datos del efecto, utilice `Audio_PlaySFXBanked(bank, sfx, priority)`.
-- `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` usan la siguiente numeración de canales del flujo musical: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
+- Los comandos musicales `AUDIO_CMD_NOTE` / `AUDIO_CMD_SET_INST` usan los índices en el orden del hardware: `0=CH1`, `1=CH2`, `2=CH3`, `3=CH4`.
 - Para una onda CH3 propia, empaquete 32 muestras de 4 bits en 16 bytes y páselas a `Audio_LoadCustomWave()`.
 - El fundido de `Audio_FadeToMasterVolume()` avanza mediante `Audio_Update()`: siga llamando a esta función en cada fotograma durante el fundido.
-- `audio_vblank.c` define el símbolo de vector IRQ de VBlank `__kq_vblank_vector`. Cada evento BGM tiene cinco bytes: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. El silencio, el bucle y el final se indican con `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` y `AUDIO_VBLANK_END`.
-- Las canciones VBlank con puntero directo deben estar en un banco fijo; el modo de cola puede recibir datos de otros bancos. Tras enlazar `lib/audio_vblank.c`, ejecute `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` para dirigir el vector `0x0040` a la ISR y actualizar la suma de comprobación de la ROM.
+- `audio_vblank.c` define el símbolo de vector IRQ de VBlank `__kq_vblank_vector`. Cada evento BGM tiene cinco bytes: `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`. El silencio, el bucle y el final se indican con `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` y `AUDIO_VBLANK_END`.
+- Las canciones VBlank leídas mediante puntero directo deben residir en el banco fijo; la cola puede rellenarse desde canciones en otros bancos. Tras enlazar `lib/audio_vblank.c`, ejecute `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` para dirigir el vector `0x0040` a la ISR y actualizar las sumas de comprobación de la ROM.
 - Sin un despachador IRQ compartido, no combine `audio_vblank.c` con otra biblioteca o rutina de entrada del juego que también ocupe el vector VBlank `0x0040`.
 - `Scroll_SplitCommit()` habilita automáticamente los bits de IE `0x01 | 0x02` y utiliza los manejadores VBlank/STAT del compilador para aplicar la configuración de pantalla dividida.
 - La pantalla dividida reserva actualmente los vectores `0x0040` y `0x0048`; por ahora, no la mezcle con rutinas de entrada VBlank/STAT propias e independientes.

@@ -1,8 +1,10 @@
 # KITAQGB
 
-[English](README.md#english) | [日本語](README.md#japanese) | **Español**
+<!-- readme-language-links:start -->
+[English](README.md#english) | [日本語](README.md#japanese) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | **Español** | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
 
-**Manual del compilador en español** · **Manual de las bibliotecas en español**
+[Manual del compilador](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) · [Manual de las bibliotecas](https://bartaro.github.io/kitaq-docs/es/gb-library.html)
 
 ## Origen del nombre
 
@@ -59,16 +61,16 @@ Pruebe las ROM generadas en un emulador y, cuando sea posible, en hardware real 
 El código del compilador se encuentra en el subdirectorio homónimo `kitaqgb/`. El ejecutable Release y su configuración de ejecución están en la raíz; las bibliotecas y los ejemplos tienen sus propios directorios.
 
 ```text
-kitaqgb/                  # Repository root
-├─ kitaqgb/               # Compiler build sources
+kitaqgb/  # Raíz del repositorio
+├─ kitaqgb/  # Fuentes del compilador
 │  ├─ *.cs
 │  ├─ app.config
 │  └─ kitaqgb.csproj
-├─ kitaqgb.exe            # Prebuilt Release compiler
-├─ kitaqgb.exe.config     # .NET Framework runtime configuration
-├─ lib/                # C support libraries
-├─ examples/           # Tutorial programs and original font
-├─ scripts/build.ps1   # Rebuild the Release executable
+├─ kitaqgb.exe  # Compilador Release ya compilado
+├─ kitaqgb.exe.config  # Configuración de ejecución de .NET Framework
+├─ lib/  # Bibliotecas de C
+├─ examples/  # Ejemplos introductorios y tipografía original
+├─ scripts/build.ps1  # Recompilar el ejecutable Release
 ├─ LICENSE
 └─ LICENSE.ja
 ```
@@ -133,6 +135,10 @@ Ejecute la ROM resultante en su emulador de Game Boy/Game Boy Color habitual, o 
 
 ## Utilizar las bibliotecas incluidas
 
+<!-- current-features:start -->
+Para comprimir tiles y mapas, consulte la [referencia de ZX0 y su ejemplo visual](https://bartaro.github.io/kitaq-docs/es/gb-library.html#module-zx0), junto con la [herramienta de compresión para el ordenador](tools/zx0/README.es.md).
+<!-- current-features:end -->
+
 `lib/` contiene código de apoyo reutilizable en C. Compile los archivos de biblioteca junto con el código del juego y añada `-I lib` para que el compilador encuentre las cabeceras.
 
 Este ejemplo combina audio, paletas, desplazamiento, cámara y física. Los comandos de varias líneas que aparecen a continuación usan el carácter de continuación de **cmd.exe**:
@@ -159,7 +165,7 @@ Ejemplo con funciones RPG/ADV/SLG:
   -I lib -o rpg.gb --profile=dev --fast-build --cache
 ```
 
-Consulte la clasificación y las notas de las bibliotecas en lib/README.es.md.
+Consulte [lib/README.md](lib/README.es.md) para conocer la clasificación de las bibliotecas y sus notas de uso.
 
 ## Opciones habituales de la línea de comandos
 
@@ -213,7 +219,7 @@ Se busca generar código predecible, ofrecer diagnósticos claros y ejemplos peq
 
 Completa los requisitos y entrega el prompt íntegro a tu asistente de IA. Incluye implementación, pruebas en el emulador, análisis con SARAKURA y verificación de las correcciones.
 
-Leer el ejemplo práctico en el manual HTML
+[Consultar el ejemplo de referencia en el manual HTML](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html#loop-prompts)
 
 <details>
 <summary>Mostrar el prompt completo</summary>
@@ -363,10 +369,6 @@ Antes de enviar cambios, tenga en cuenta lo siguiente:
 - Al añadir bibliotecas, documente el comando de compilación y las declaraciones de registros de hardware necesarias.
 - Redacte diagnósticos lo bastante claros para que las personas y las herramientas de programación con IA puedan actuar sobre ellos.
 
-## Estado de esta publicación
-
-Este repositorio se ha preparado para la primera publicación de KITAQGB. Las interfaces, las bibliotecas, los diagnósticos y la integración con herramientas complementarias pueden evolucionar a medida que madure el proyecto.
-
 ## Compilación y primer uso
 
 En Windows, utilice .NET Framework 4.8 Developer Pack y MSBuild de Visual Studio Build Tools. Ejecute desde Developer PowerShell:
@@ -379,7 +381,7 @@ MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
 
 ## Manuales y licencias
 
-- Compilador: manual en español / Bibliotecas: manual en español
+- [Manual del compilador](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) · [Manual de las bibliotecas](https://bartaro.github.io/kitaq-docs/es/gb-library.html)
 - [Archivos del manual para consultarlo sin conexión](https://github.com/bartaro/kitaq-docs)
 - [Licencia](LICENSE) / [Traducción japonesa de referencia](LICENSE.ja)
 
