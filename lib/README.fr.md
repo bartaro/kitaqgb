@@ -8,6 +8,41 @@
 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
 
+<!-- local-library-20261003:start -->
+## Bibliothèque locale : changements et vérification du 2026-10-03
+
+Les sources de C:/kitaqgb_project/lib ont été comparées à la révision publique 2de7f4b. Les dates seules ne déterminent pas la version la plus récente. La version locale comporte des ajouts ; la version publique contient d’autres ajouts et corrections. Cette section décrit les sources locales conservées, séparément des preuves existantes de l’API publique.
+
+physics2d.c conserve l’API de contact et ajoute des implémentations avec cache pour les contacts et la limite de vitesse sous KQ2D_CACHE_SURFACE. Réservez la banque ROM 13 si vous l’activez. Définir KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT ou KQ2D_EXTERNAL_SURFACE exige de fournir l’implémentation correspondante. Les 8 872 cas ci-dessous utilisent le chemin par défaut, sans ces définitions.
+
+KQ3D_BODY_SPHERE=0x04 sélectionne les contacts sphère–boîte. Le rayon est half_x. kq3d_overlap_sphere_aabb(sphere, box) inclut la tangence et renvoie 0 si un pointeur est NULL ou si le rayon est nul ou négatif. Aucun solveur dédié aux paires de sphères n’est fourni. Gardez différences, produits et sommes des carrés dans leurs plages de 16 bits.
+
+Un body actif portant KQ3D_BODY_KINEMATIC=0x02 met à jour vitesse et position X/Y dans kq3d_step, même avec une masse inverse nulle. Sa position et sa vitesse Z restent inchangées. Les contacts ne déplacent pas un body de masse inverse nulle. kq3d_integrate_body ignore toujours les bodies statiques. break_speed et KQ3D_BODY_BROKEN ne déclenchent aucune destruction automatique.
+
+Le bank_switch local écrit kq_bank_current et l’adresse 0x2000. Contrairement au chemin public __bankswitch, il ne met pas à jour le suivi de banque du compilateur. Changez de banque depuis la banque fixe ; utilisez __bankswitch si l’état de restauration doit aussi être maintenu.
+
+Les fonctions locales cgb_bg_color/cgb_obj_color et leurs enveloppes RGB unitaires n’activent pas l’incrément automatique de l’index. L’exécution CGB confirme que l’octet bas de 0x1234 est écrasé par 0x12. Utilisez la correction publique ou une API colors prenant un tableau. Aucun accès en écriture n’est effectué sur DMG.
+
+Le metasprite_draw local étend le compteur à first_id+count uniquement après achèvement. Un retour anticipé à la limite de 40 sprites ne le met pas à jour. Avec first_id=39 et count=2, le résultat est 1, l’emplacement 39 est actif et le compteur vaut 0. La version publique actualise le compteur à chaque emplacement traité.
+
+La version locale fournit vram_get_queue_used et vram_get_queue_free, mais pas le vram_get_queue_capacity public. La capacité est VRAM_QUEUE_MAX, soit 32 par défaut. Une commande donne used=1 et free=31.
+
+wire3d_dmg.h déclare DrawRect2D uniquement pour le profil de 96 lignes. DrawBoxEdges2D est déclaré pour les deux profils, DrawIndexedEdges seulement pour 120 lignes. Choisissez une seule source adaptée au profil. Le rendu de ces fonctions n’a pas été revérifié ici. Aucune implémentation de DrawRect2D ou DrawBoxEdges2D n’a été trouvée dans les sources lib conservées. Ce sont des déclarations seules ; leur appel exige une implémentation séparée.
+
+Le audio_vblank local ne contient ni AudioVBlank_QueueReset/QueueRefill/QueuePlay ni audio_vblank_queue.inc de la version publique. ZX0 n’existe également que dans la version publique. Ces ajouts sont exclus des fonctions locales déclarées vérifiées.
+
+### Vérifications exécutées
+
+Chemin 2D par défaut : 8 872 cas réussis via l’API C de KOKURA, avec sélection automatique du matériel. Limite de vitesse, contacts, multiplication Q8 signée et instant de contact ont été contrôlés. Il ne s’agit pas de deux exécutions DMG/CGB explicitement sélectionnées.
+
+Limites physiques : 19 cas sur DMG et CGB, soit 38 exécutions réussies. Les essais séparés d’extensions 3D et de reproduction sprite/VRAM/palette correspondent aux attentes dans les deux modes. Les résultats palette et sprite reproduisent des défauts ; ils ne valident pas un fonctionnement correct.
+
+Ces essais sur émulateur concernent les ROM produites par le compilateur C#. Ils ne prouvent ni l’équivalence Rust, ni le matériel réel, ni l’audio, ni le rendu, ni la validité de toutes les API. Les images et essais existants restent des résultats historiques liés aux empreintes de sources enregistrées.
+
+[Empreintes des sources, entrées, valeurs attendues et observées, procédure de reproduction](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 **[Manuel des bibliothèques](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)**
 
 Ce dossier contient trois catégories de fichiers :

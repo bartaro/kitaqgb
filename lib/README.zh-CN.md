@@ -4,6 +4,41 @@
 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
 
+<!-- local-library-20261003:start -->
+## 2026-10-03 本地库差异与验证
+
+已将 C:/kitaqgb_project/lib 的源码与公开版 2de7f4b 比较。仅凭时间戳无法确定哪个版本更新。本地版有新增功能，公开版也有其他新增功能和修正。以下说明针对保存的本地源码，与原有公开 API 的验证记录分开。
+
+physics2d.c 保留接触 API，并通过 KQ2D_CACHE_SURFACE 提供缓存接触与速度限制实现。启用时须预留 ROM bank 13。定义 KQ2D_EXTERNAL_SCALE_Q8、KQ2D_EXTERNAL_REST_COMPONENT 或 KQ2D_EXTERNAL_SURFACE 时，调用方须提供对应实现。下列 8,872 项测试使用未定义这些选项的默认路径。
+
+KQ3D_BODY_SPHERE=0x04 选择球与盒的接触处理。球半径为 half_x。kq3d_overlap_sphere_aabb(sphere, box) 包括相切边界；指针为 NULL 或半径不大于 0 时返回 0。没有专用的球与球求解器。坐标差、乘积与平方和须保持在各自的 16 位范围内。
+
+带有 KQ3D_BODY_KINEMATIC=0x02 的活动 body，即使逆质量为 0，也会在 kq3d_step 中更新 X/Y 速度和位置。Z 位置和速度不变。逆质量为 0 的 body 不会被接触推移。kq3d_integrate_body 仍跳过静态 body。break_speed 和 KQ3D_BODY_BROKEN 不会自动触发破坏。
+
+本地 bank_switch 写入 kq_bank_current 与地址 0x2000。它与公开版的 __bankswitch 路径不同，不更新编译器的 bank 跟踪状态。应从固定 bank 切换；需要维护编译器恢复状态时使用 __bankswitch。
+
+本地 cgb_bg_color/cgb_obj_color 及单色 RGB 包装函数未启用调色板索引自动递增。CGB 执行确认 0x1234 的低字节被 0x12 覆盖。请使用公开版修正或 colors 数组 API。DMG 不执行写入。
+
+本地 metasprite_draw 仅在全部完成时将使用数增加到 first_id+count。到达 40 个上限而提前返回时不会更新。first_id=39、count=2 时返回 1，槽位 39 活动，使用数为 0。公开版在处理每个槽位时更新使用数。
+
+本地版提供 vram_get_queue_used 和 vram_get_queue_free，但没有公开版的 vram_get_queue_capacity。容量可使用 VRAM_QUEUE_MAX，默认 32。登记一个命令后，已用 1，空闲 31。
+
+wire3d_dmg.h 仅在 96 行配置声明 DrawRect2D。DrawBoxEdges2D 在两种配置均有声明，DrawIndexedEdges 仅在 120 行配置声明。请选择一个与配置对应的源文件。本次未重新验证这些函数的绘制结果。 保存的 lib 源码中未找到 DrawRect2D 或 DrawBoxEdges2D 的实现。这些仅为声明，调用需要另外提供实现。
+
+本地 audio_vblank 不含公开版的 AudioVBlank_QueueReset/QueueRefill/QueuePlay 和 audio_vblank_queue.inc。ZX0 也仅存在于公开版。这些属于公开版新增功能，不计入已验证的本地功能。
+
+### 本次执行的验证
+
+2D 默认路径：通过 KOKURA C API 自动选择硬件，8,872 项全部通过。检查了速度限制、接触、有符号 Q8 乘法与接触时刻。这不是分别指定 DMG/CGB 的测试。
+
+19 项物理边界测试在 DMG 与 CGB 各运行一次，共 38 次全部通过。独立的 3D 扩展与精灵/VRAM/调色板复现测试也在两种模式符合预期。调色板和精灵结果是成功复现缺陷，不是确认正确运行。
+
+这些结果是 C# 编译器生成 ROM 的模拟器验证，不证明 Rust 等价性、实机、音频、绘制或所有 API 的正确性。原有图片与测试仍是绑定到各记录源码指纹的历史结果。
+
+[源码指纹、输入、预期值、实测值与复现步骤](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 [打开KITAQGB库简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)，查看各函数的说明和示例代码。
 
 `wire3d_dmg` 是Game Boy单色线框渲染器。128×96请选择 `wire3d_dmg_96.c`，128×120请选择 `wire3d_dmg.c`，并使用 `Wire3DDMG_*` 函数。`wire3d` 和 `dmg3d` 分别是这两种分辨率的别名入口。每个ROM只编译一个入口。彩色专用的 `wire3d_cgb` 是独立渲染器。

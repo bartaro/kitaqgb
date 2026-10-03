@@ -6,6 +6,41 @@
 [English](README.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
 
+<!-- local-library-20261003:start -->
+## 2026-10-03 ローカル版ライブラリの差分と検証
+
+C:/kitaqgb_project/lib のソースを、公開版 2de7f4b と比較しました。更新日時だけでは最新版を決められません。ローカル版には追加機能があり、公開版には別の追加機能と修正があります。以下は保存したローカルソースの契約です。従来の公開版APIの検証結果とは対象を区別します。
+
+physics2d.c は既存の接触APIを保ち、KQ2D_CACHE_SURFACE による接触・速度制限のキャッシュ実装を追加しています。この設定はROMバンク13を使うため、そのバンクを確保してください。KQ2D_EXTERNAL_SCALE_Q8、KQ2D_EXTERNAL_REST_COMPONENT、KQ2D_EXTERNAL_SURFACE を定義した場合は、対応する実装を呼び出し側で提供します。今回の8,872ケースはこれらを定義しない標準経路の結果です。
+
+KQ3D_BODY_SPHERE=0x04 は球と箱の接触を選びます。球の半径は half_x です。kq3d_overlap_sphere_aabb(sphere, box) は接する境界を含めて判定し、NULLまたは半径が0以下なら0を返します。球同士の専用ソルバはありません。座標差、積、二乗和を16ビットの範囲に収めてください。
+
+KQ3D_BODY_KINEMATIC=0x02 を持つ有効なbodyは、kq3d_step で逆質量が0でもX/Y速度と位置を更新します。Z位置とZ速度は更新しません。逆質量0のbodyは接触で押し戻されません。kq3d_integrate_body は従来どおり静的bodyを積分しません。break_speed と KQ3D_BODY_BROKEN による自動破壊は行いません。
+
+ローカルの bank_switch は kq_bank_current と0x2000へ書き込みます。公開版の __bankswitch 経由の処理とは、コンパイラのバンク追跡状態の更新が異なります。切替処理は固定バンクから実行し、コンパイラのバンク復帰状態も必要な場合は __bankswitch を使ってください。
+
+ローカルの cgb_bg_color/cgb_obj_color（RGB単色ラッパーも同様）は、パレットのインデックスに自動インクリメントを設定しません。CGB実行では0x1234の下位バイトが0x12で上書きされることを確認しました。単色設定には公開版の修正、または colors 系の配列APIを使ってください。DMGでは書き込みを行いません。
+
+ローカルの metasprite_draw は完了時に first_id+count へ使用数を伸ばします。上限40で途中終了した場合は使用数を更新しません。再現例では first_id=39、count=2 の戻り値は1、スロット39は有効、使用数は0でした。公開版は各スロットを処理する際に使用数を更新します。
+
+ローカル版は vram_get_queue_used と vram_get_queue_free を提供しますが、公開版の vram_get_queue_capacity はありません。容量には VRAM_QUEUE_MAX（既定32）を使えます。1件の登録後は使用数1、空き31でした。
+
+wire3d_dmg.h は DrawRect2D の宣言を96行プロファイルに限定します。DrawBoxEdges2D は両プロファイルで宣言され、DrawIndexedEdges は120行プロファイルだけです。プロファイルに対応するソースを1つ選んでください。今回これらの描画結果は再検証していません。 保存したlib内には DrawRect2D と DrawBoxEdges2D の実装が見つかりません。宣言だけの項目なので、呼び出すには別途実装が必要です。
+
+ローカルの audio_vblank は公開版の AudioVBlank_QueueReset/QueueRefill/QueuePlay と audio_vblank_queue.inc を含みません。ZX0も公開版だけにあります。これらは公開版の追加機能として扱い、ローカル版の検証済み機能に含めません。
+
+### 今回実行した検証
+
+2D標準経路：KOKURA C APIの自動ハードウェア選択で8,872ケース。全件成功。速度制限、接触、符号付きQ8乗算、接触時刻を照合しました。明示的なDMG/CGB別試験ではありません。
+
+物理境界試験：19ケースをDMG・CGBで実行し、計38実行が全件成功しました。3D追加機能とスプライト/VRAM/パレットの再現試験も、それぞれ両モードで期待値と一致しました。パレットとスプライトは不具合の再現成功であり、正常動作の合格とは区別します。
+
+これはC#版コンパイラが生成したROMのエミュレータ検証です。Rust版の同等性、実機、音声、描画、全APIの正常動作を証明する結果ではありません。既存の画像・検証結果は各記録のソース指紋に結び付いた過去の結果です。
+
+[ソース指紋・入力・期待値・実測値・再実行手順](https://bartaro.github.io/kitaq-docs/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 [日本語のライブラリ説明書](https://bartaro.github.io/kitaq-docs/gb-library.html)には、各関数の使い方とサンプルコードを掲載しています。
 
 `wire3d_dmg` はゲームボーイ用のモノクロ・ワイヤーフレーム描画ライブラリです。128×96では `wire3d_dmg_96.c`、128×120では `wire3d_dmg.c` を選び、`Wire3DDMG_*` 関数を使います。`wire3d` と `dmg3d` は、それぞれの解像度に対応する互換用の入口として残しています。同じROMに組み込む入口は一つだけにしてください。カラー専用の `wire3d_cgb` は別のライブラリです。

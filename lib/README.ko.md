@@ -4,6 +4,41 @@
 [English](README.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
 
+<!-- local-library-20261003:start -->
+## 2026-10-03 로컬 라이브러리 변경 사항과 검증
+
+C:/kitaqgb_project/lib 소스를 공개 버전 2de7f4b와 비교했습니다. 수정 시각만으로 최신 버전을 판단할 수 없습니다. 로컬에는 추가 기능이 있고 공개 버전에는 별도의 추가 기능과 수정이 있습니다. 아래 설명은 저장한 로컬 소스를 대상으로 하며 기존 공개 API의 검증 기록과 구분합니다.
+
+physics2d.c는 접촉 API를 유지하고 KQ2D_CACHE_SURFACE에서 접촉 및 속도 제한의 캐시 구현을 제공합니다. 활성화할 때 ROM 뱅크 13을 확보하세요. KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT, KQ2D_EXTERNAL_SURFACE를 정의하면 해당 구현을 직접 제공해야 합니다. 아래 8,872건은 이 정의가 없는 기본 경로의 결과입니다.
+
+KQ3D_BODY_SPHERE=0x04는 구와 상자의 접촉을 선택합니다. 반지름은 half_x입니다. kq3d_overlap_sphere_aabb(sphere, box)는 접하는 경계를 포함하며 NULL 또는 0 이하의 반지름이면 0을 반환합니다. 구끼리의 전용 해법은 없습니다. 좌표 차이, 곱과 제곱 합을 16비트 범위 안에 두세요.
+
+KQ3D_BODY_KINEMATIC=0x02인 활성 body는 역질량이 0이어도 kq3d_step에서 X/Y 속도와 위치를 갱신합니다. Z 위치와 속도는 그대로입니다. 역질량 0인 body는 접촉으로 밀리지 않습니다. kq3d_integrate_body는 정적 body를 계속 건너뜁니다. break_speed와 KQ3D_BODY_BROKEN은 자동 파괴를 일으키지 않습니다.
+
+로컬 bank_switch는 kq_bank_current와 주소 0x2000에 씁니다. 공개 __bankswitch 경로와 달리 컴파일러의 뱅크 추적 상태를 갱신하지 않습니다. 고정 뱅크에서 전환하고 컴파일러의 복귀 상태도 유지해야 한다면 __bankswitch를 사용하세요.
+
+로컬 cgb_bg_color/cgb_obj_color와 단색 RGB 래퍼는 팔레트 인덱스의 자동 증가를 켜지 않습니다. CGB 실행에서 0x1234의 하위 바이트가 0x12로 덮이는 것을 확인했습니다. 공개 수정이나 colors 배열 API를 사용하세요. DMG에서는 쓰지 않습니다.
+
+로컬 metasprite_draw는 정상 완료할 때만 사용 수를 first_id+count로 늘립니다. 40개 제한에서 조기 반환하면 갱신하지 않습니다. first_id=39, count=2에서 반환값 1, 슬롯 39 활성, 사용 수 0이었습니다. 공개 버전은 각 슬롯 처리 시 사용 수를 갱신합니다.
+
+로컬에는 vram_get_queue_used와 vram_get_queue_free가 있지만 공개 vram_get_queue_capacity는 없습니다. 용량은 VRAM_QUEUE_MAX이며 기본값은 32입니다. 명령 하나를 등록하면 사용 1, 여유 31이었습니다.
+
+wire3d_dmg.h의 DrawRect2D 선언은 96줄 프로필에만 있습니다. DrawBoxEdges2D는 두 프로필에, DrawIndexedEdges는 120줄 프로필에만 있습니다. 프로필에 맞는 소스를 하나 선택하세요. 이번에는 이 함수들의 화면 결과를 다시 검증하지 않았습니다. 저장한 lib 소스에는 DrawRect2D와 DrawBoxEdges2D 구현이 없습니다. 선언만 있으므로 호출하려면 별도 구현이 필요합니다.
+
+로컬 audio_vblank에는 공개 AudioVBlank_QueueReset/QueueRefill/QueuePlay와 audio_vblank_queue.inc가 없습니다. ZX0도 공개 버전에만 있습니다. 이 기능들은 공개 추가 기능이며 검증된 로컬 기능에 포함하지 않습니다.
+
+### 이번에 실행한 검증
+
+2D 기본 경로: KOKURA C API의 자동 하드웨어 선택으로 8,872건 모두 통과했습니다. 속도 제한, 접촉, 부호 있는 Q8 곱셈과 충돌 시각을 확인했습니다. DMG/CGB를 명시적으로 나눈 시험은 아닙니다.
+
+물리 경계 19건을 DMG와 CGB에서 실행하여 총 38회 모두 통과했습니다. 별도 3D 추가 기능과 스프라이트/VRAM/팔레트 재현 시험도 두 모드에서 기대값과 일치했습니다. 팔레트와 스프라이트는 결함 재현 성공이지 정상 동작의 확인이 아닙니다.
+
+C# 컴파일러가 생성한 ROM의 에뮬레이터 검증입니다. Rust 동등성, 실제 기기, 음성, 화면이나 모든 API의 정확성을 증명하지 않습니다. 기존 이미지와 검증은 각 기록의 소스 지문에 연결된 과거 결과입니다.
+
+[소스 지문, 입력, 기대값, 실측값과 재실행 절차](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 **[라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)**
 
 `wire3d_dmg`는 Game Boy용 흑백 와이어프레임 렌더러입니다. 128 × 96에는 `wire3d_dmg_96.c`, 128 × 120에는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*`를 사용하세요. `wire3d`와 `dmg3d`는 각각 96줄과 120줄 프로필의 다른 진입점입니다. 프로그램마다 진입점 하나만 컴파일하세요. `wire3d_cgb`는 컬러 전용 렌더러입니다.

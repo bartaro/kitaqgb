@@ -1,5 +1,40 @@
 # Bibliotecas da KITAQGB
 
+<!-- local-library-20261003:start -->
+## Alterações e verificação da biblioteca local, 2026-10-03
+
+As fontes de C:/kitaqgb_project/lib foram comparadas com a revisão pública 2de7f4b. As datas sozinhas não determinam a versão mais recente. A versão local tem acréscimos; a pública contém outros acréscimos e correções. Esta seção descreve as fontes locais preservadas, separadamente das evidências existentes da API pública.
+
+physics2d.c mantém a API de contato e adiciona implementações com cache para contato e limite de velocidade em KQ2D_CACHE_SURFACE. Reserve o banco ROM 13 ao ativá-lo. Definir KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT ou KQ2D_EXTERNAL_SURFACE exige fornecer a implementação correspondente. Os 8.872 casos abaixo usam o caminho padrão sem essas definições.
+
+KQ3D_BODY_SPHERE=0x04 seleciona contatos esfera–caixa. O raio é half_x. kq3d_overlap_sphere_aabb(sphere, box) inclui a tangência e retorna 0 para ponteiros NULL ou raio não positivo. Não há solucionador específico esfera–esfera. Mantenha diferenças, produtos e somas dos quadrados em suas faixas de 16 bits.
+
+Um body ativo com KQ3D_BODY_KINEMATIC=0x02 atualiza velocidade e posição X/Y em kq3d_step mesmo com massa inversa zero. A posição e a velocidade Z não mudam. Os contatos não deslocam um body de massa inversa zero. kq3d_integrate_body continua ignorando bodies estáticos. break_speed e KQ3D_BODY_BROKEN não causam destruição automática.
+
+O bank_switch local grava kq_bank_current e o endereço 0x2000. Diferentemente do caminho público __bankswitch, não atualiza o estado de rastreamento de banco do compilador. Troque a partir do banco fixo; use __bankswitch se o estado de restauração também precisar ser mantido.
+
+Os cgb_bg_color/cgb_obj_color locais e seus wrappers RGB de uma cor não habilitam o incremento automático do índice. A execução CGB confirmou que o byte baixo de 0x1234 é sobrescrito com 0x12. Use a correção pública ou uma API colors com arrays. No DMG não ocorre escrita.
+
+O metasprite_draw local amplia o contador para first_id+count apenas ao concluir. Um retorno antecipado no limite de 40 sprites não o atualiza. Com first_id=39 e count=2, o retorno é 1, o slot 39 está ativo e o contador vale 0. A versão pública atualiza o contador ao processar cada slot.
+
+A versão local oferece vram_get_queue_used e vram_get_queue_free, mas não o vram_get_queue_capacity público. A capacidade é VRAM_QUEUE_MAX, 32 por padrão. Um comando produz used=1 e free=31.
+
+wire3d_dmg.h declara DrawRect2D apenas no perfil de 96 linhas. DrawBoxEdges2D é declarado nos dois perfis; DrawIndexedEdges apenas no de 120 linhas. Escolha uma fonte correspondente ao perfil. O desenho dessas funções não foi reverificado nesta execução. Nenhuma implementação de DrawRect2D ou DrawBoxEdges2D foi encontrada nas fontes lib preservadas. São apenas declarações; chamá-las exige uma implementação separada.
+
+O audio_vblank local não inclui os AudioVBlank_QueueReset/QueueRefill/QueuePlay públicos nem audio_vblank_queue.inc. ZX0 também existe somente na versão pública. Esses acréscimos não integram as funções locais declaradas verificadas.
+
+### Verificação executada
+
+Caminho 2D padrão: 8.872 casos passaram pela API C do KOKURA com seleção automática de hardware. Foram verificados limite de velocidade, contatos, multiplicação Q8 com sinal e instante de impacto. Não foram execuções separadas com DMG/CGB explícitos.
+
+Limites físicos: 19 casos em DMG e CGB, 38 execuções aprovadas. Os testes separados da extensão 3D e reprodução de sprites/VRAM/paleta também corresponderam aos valores esperados nos dois modos. Paleta e sprites reproduzem defeitos; não confirmam operação correta.
+
+São testes de emulador de ROMs geradas pelo compilador C#. Não comprovam equivalência Rust, hardware físico, áudio, desenho nem correção de todas as APIs. Imagens e testes existentes permanecem resultados históricos vinculados às suas impressões digitais de fontes.
+
+[Impressões digitais das fontes, entradas, valores esperados e observados, passos de reprodução](https://bartaro.github.io/kitaq-docs/pt/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 [English](README.md) | [日本語](README.ja.md) | **Português (Brasil)**
 
 Abrir o manual da biblioteca KITAQGB em português

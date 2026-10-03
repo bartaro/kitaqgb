@@ -4,6 +4,41 @@
 [English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Deutsch**
 <!-- readme-language-links:end -->
 
+<!-- local-library-20261003:start -->
+## Lokale Bibliothek: Änderungen und Prüfung vom 2026-10-03
+
+Die Quellen aus C:/kitaqgb_project/lib wurden mit der öffentlichen Revision 2de7f4b verglichen. Zeitstempel allein bestimmen nicht die neuere Version. Die lokale Fassung enthält Ergänzungen; die öffentliche enthält andere Ergänzungen und Korrekturen. Dieser Abschnitt beschreibt die gesicherten lokalen Quellen getrennt von bisherigen Nachweisen der öffentlichen API.
+
+physics2d.c behält die Kontakt-API bei und ergänzt zwischengespeicherte Kontakt- und Geschwindigkeitsbegrenzung unter KQ2D_CACHE_SURFACE. Reservieren Sie dabei ROM-Bank 13. Bei KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT oder KQ2D_EXTERNAL_SURFACE muss der Aufrufer die jeweilige Implementierung liefern. Die folgenden 8.872 Fälle prüfen den Standardpfad ohne diese Definitionen.
+
+KQ3D_BODY_SPHERE=0x04 wählt Kugel–Quader-Kontakte. Der Kugelradius ist half_x. kq3d_overlap_sphere_aabb(sphere, box) schließt Berührung ein und liefert bei NULL-Zeigern oder nichtpositivem Radius 0. Einen speziellen Kugel–Kugel-Löser gibt es nicht. Differenzen, Produkte und Quadratsummen müssen in ihren 16-Bit-Bereichen bleiben.
+
+Ein aktiver body mit KQ3D_BODY_KINEMATIC=0x02 aktualisiert in kq3d_step X/Y-Geschwindigkeit und Position auch bei inverser Masse 0. Z-Position und Z-Geschwindigkeit bleiben unverändert. Kontakte verschieben einen body mit inverser Masse 0 nicht. kq3d_integrate_body überspringt weiterhin statische bodies. break_speed und KQ3D_BODY_BROKEN lösen keine automatische Zerstörung aus.
+
+Lokales bank_switch schreibt kq_bank_current und Adresse 0x2000. Anders als der öffentliche __bankswitch-Pfad aktualisiert es die Bankverfolgung des Compilers nicht. Wechseln Sie aus der festen Bank; verwenden Sie __bankswitch, wenn auch der Wiederherstellungszustand gepflegt werden muss.
+
+Lokales cgb_bg_color/cgb_obj_color und die RGB-Hüllen für einzelne Farben aktivieren die automatische Indexerhöhung nicht. Die CGB-Ausführung bestätigt: Das untere Byte von 0x1234 wird durch 0x12 überschrieben. Verwenden Sie die öffentliche Korrektur oder eine colors-Array-API. Auf DMG erfolgt kein Schreibzugriff.
+
+Lokales metasprite_draw erhöht den Belegungszähler erst nach vollständigem Abschluss auf first_id+count. Bei vorzeitiger Rückkehr an der Grenze von 40 Sprites bleibt er unverändert. Bei first_id=39 und count=2 war der Rückgabewert 1, Platz 39 aktiv und der Zähler 0. Die öffentliche Version aktualisiert ihn für jeden bearbeiteten Platz.
+
+Die lokale Version bietet vram_get_queue_used und vram_get_queue_free, jedoch nicht das öffentliche vram_get_queue_capacity. Die Kapazität ist VRAM_QUEUE_MAX, standardmäßig 32. Nach einem Auftrag waren used=1 und free=31.
+
+wire3d_dmg.h deklariert DrawRect2D nur für das Profil mit 96 Zeilen. DrawBoxEdges2D ist in beiden Profilen deklariert, DrawIndexedEdges nur bei 120 Zeilen. Wählen Sie eine zum Profil passende Quelle. Die Darstellung dieser Funktionen wurde diesmal nicht erneut geprüft. In den gesicherten lib-Quellen wurde keine Implementierung von DrawRect2D oder DrawBoxEdges2D gefunden. Es sind nur Deklarationen; für Aufrufe ist eine eigene Implementierung nötig.
+
+Lokales audio_vblank enthält weder die öffentlichen AudioVBlank_QueueReset/QueueRefill/QueuePlay-APIs noch audio_vblank_queue.inc. Auch ZX0 gibt es nur öffentlich. Diese Ergänzungen zählen nicht zu den nachgewiesenen lokalen Funktionen.
+
+### Ausgeführte Prüfungen
+
+2D-Standardpfad: 8.872 erfolgreiche Fälle über die KOKURA-C-API mit automatischer Hardwarewahl. Geprüft wurden Geschwindigkeitsbegrenzung, Kontakte, vorzeichenbehaftete Q8-Multiplikation und Kontaktzeit. Dies war keine getrennte Prüfung mit expliziter DMG/CGB-Wahl.
+
+Physikgrenzen: 19 Fälle jeweils auf DMG und CGB, alle 38 Läufe erfolgreich. Getrennte 3D-Erweiterungs- und Sprite/VRAM/Paletten-Reproduktionen entsprachen in beiden Modi den Erwartungen. Palette und Sprites reproduzieren Fehler; sie bestätigen keine korrekte Funktion.
+
+Dies sind Emulatorprüfungen von ROMs des C#-Compilers. Sie belegen weder Rust-Gleichwertigkeit, reale Hardware, Audio, Darstellung noch die Korrektheit aller APIs. Vorhandene Bilder und Prüfungen bleiben historische Ergebnisse, gebunden an die Quellfingerabdrücke ihrer Aufzeichnungen.
+
+[Quellfingerabdrücke, Eingaben, erwartete und gemessene Werte sowie Wiederholungsschritte](https://bartaro.github.io/kitaq-docs/de/gb-library.html#local-library-20261003-heading)
+<!-- local-library-20261003:end -->
+
+
 **[Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
 
 `wire3d_dmg` ist ein monochromer Drahtgitterrenderer für den Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie einen Einstiegspunkt pro Programm. `wire3d_cgb` ist der eigenständige Farbrenderer.
