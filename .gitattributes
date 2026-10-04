@@ -1,2 +1,10 @@
 # Preserve fixture bytes on every operating system.
 * -text
+
+# Game Boy libraries, ROM examples and C test inputs are target code.
+# Exclude target C sources from host implementation language statistics.
+# Preserve their syntax highlighting and visibility in diffs.
+lib/**/*.[ch] -linguist-detectable
+apps/**/*.[ch] -linguist-detectable
+examples/**/*.[ch] -linguist-detectable
+tests/**/*.[ch] -linguist-detectable
