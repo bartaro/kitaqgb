@@ -546,5 +546,81 @@
     "compiler_source_unchanged_since_ci": true
   },
   "portable_linux_ci": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170055811",
-  "universal_ci": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+  "universal_ci": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584",
+  "public_native_ci": {
+    "passed": true,
+    "source_commit": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+    "workflows": {
+      "gb-universal": {
+        "repository": "kitaqgb",
+        "id": 37174454491,
+        "kind": "gb-universal",
+        "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174454491",
+        "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+        "passed": true,
+        "jobs": [
+          {
+            "id": 111354061127,
+            "name": "universal (macos-15-intel)",
+            "conclusion": "success"
+          },
+          {
+            "id": 111354061233,
+            "name": "universal (macos-latest)",
+            "conclusion": "success"
+          }
+        ]
+      },
+      "gb": {
+        "repository": "kitaqgb",
+        "id": 37174283048,
+        "kind": "gb",
+        "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174283048",
+        "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+        "passed": true,
+        "jobs": [
+          {
+            "id": 111353539930,
+            "name": "minimum-rust",
+            "conclusion": "success"
+          },
+          {
+            "id": 111353540078,
+            "name": "native (ubuntu-latest)",
+            "conclusion": "success"
+          },
+          {
+            "id": 111353540099,
+            "name": "native (windows-latest)",
+            "conclusion": "success"
+          },
+          {
+            "id": 111353540100,
+            "name": "native (macos-15-intel)",
+            "conclusion": "success"
+          },
+          {
+            "id": 111353540162,
+            "name": "native (macos-latest)",
+            "conclusion": "success"
+          }
+        ]
+      },
+      "gb-musl": {
+        "repository": "kitaqgb",
+        "id": 37174282889,
+        "kind": "gb-musl",
+        "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174282889",
+        "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+        "passed": true,
+        "jobs": [
+          {
+            "id": 111353541572,
+            "name": "linux-musl",
+            "conclusion": "success"
+          }
+        ]
+      }
+    }
+  }
 }

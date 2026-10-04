@@ -2,115 +2,115 @@
   "date": "2026-10-04",
   "implementation": "Rust",
   "original_public_csharp_commit": "096dbfb728123d8767dec2d60d4814eed7d52256",
-  "compiler_source_validation_commit": "50c48583cc867b20a1c69a84fa47277029b0c978",
+  "compiler_source_validation_commit": "6d432c00f974853e7d1015c04b54fec265a4f93d",
   "minimum_rust": "1.85",
   "native_binaries": [
     {
-      "path": "bin/macos-x86_64/kitaqgb",
-      "bytes": 5102000,
-      "sha256": "979e5a82a0a269f22c8296ff96f6f121483960475a48e7b789dac5d938f6dbea",
-      "origin_artifact": "kitaqgb-macOS-X64"
+      "path": "bin/macos-universal/kitaqgb",
+      "sha256": "7566843501337acad6ac983927698b43f987dbef1b9b5408a847357653597136",
+      "bytes": 9608784,
+      "origin_artifact": "kitaqgb-macOS-Universal-X64"
     },
     {
-      "path": "bin/macos-x86_64/kitaqgb-zx0",
-      "bytes": 430520,
-      "sha256": "a9f413ba2ade2b1547c50c0d53dea0a262c1e692496c890ecda32392dcaf787c",
-      "origin_artifact": "kitaqgb-macOS-X64"
+      "path": "bin/macos-universal/kitaqgb-zx0",
+      "sha256": "83217e39c3b051f67098983be4391d410ee0360fa6f6fbfbd39396f7b8d5c5fe",
+      "bytes": 884896,
+      "origin_artifact": "kitaqgb-macOS-Universal-X64"
     },
     {
-      "path": "bin/macos-x86_64/kitaqgb-patch-vblank",
-      "bytes": 1846904,
-      "sha256": "44cb228242300fe248fdc13588f2036104f0d973b3367d834425b6e1b6086400",
-      "origin_artifact": "kitaqgb-macOS-X64"
-    },
-    {
-      "path": "bin/macos-arm64/kitaqgb",
-      "bytes": 4496976,
-      "sha256": "88aac9dcbaf61cb5c59ef5ff6f4cdcdff22ff9d6ba6ff53110ee91e45ce0076b",
-      "origin_artifact": "kitaqgb-macOS-ARM64"
-    },
-    {
-      "path": "bin/macos-arm64/kitaqgb-zx0",
-      "bytes": 442528,
-      "sha256": "0936d271b3d1d40533d05e0524bfd2aa8a2ff57a06444a52f4a4a728655385ae",
-      "origin_artifact": "kitaqgb-macOS-ARM64"
-    },
-    {
-      "path": "bin/macos-arm64/kitaqgb-patch-vblank",
-      "bytes": 1749504,
-      "sha256": "e049ff0aed6a47002911539e865ae37d83c4746e4a1a90ed018f5a159d51cacc",
-      "origin_artifact": "kitaqgb-macOS-ARM64"
+      "path": "bin/macos-universal/kitaqgb-patch-vblank",
+      "sha256": "5acdcff2f80cc2589d53ea6be2a7c11f5f047b12bde764dae752c1cf4d0d3468",
+      "bytes": 3617280,
+      "origin_artifact": "kitaqgb-macOS-Universal-X64"
     },
     {
       "path": "kitaqgb.exe",
+      "sha256": "033c3fe6fd6f5ce624eab7087b15351807d0dc8f5f146f65f1d821d55062fa13",
       "bytes": 5427712,
-      "sha256": "caadee2356a50725928c3c86e948b882ea147e4355f641d2ef15488ee2060e00",
       "origin_artifact": "kitaqgb-Windows-X64"
     },
     {
       "path": "kitaqgb-zx0.exe",
+      "sha256": "e92266aefbaff89a0bcb8f09d545eeb2a97fbc52967155ef9a0d0a3df09a4764",
       "bytes": 184320,
-      "sha256": "1b9e54392a414cccd39fc6d7eddc8d5d891257191a2617be0bf30c041ace5e22",
       "origin_artifact": "kitaqgb-Windows-X64"
     },
     {
       "path": "kitaqgb-patch-vblank.exe",
+      "sha256": "a384466e53886c1021202243bbac7df8232d2b1a34326786a6047c4d93431c40",
       "bytes": 1594880,
-      "sha256": "1ae48aab95ddcf0257e9a9c223f7f3c4fb4c669a001a642aa42dd91f96ff209a",
       "origin_artifact": "kitaqgb-Windows-X64"
     },
     {
+      "path": "bin/macos-x86_64/kitaqgb",
+      "sha256": "2fc44a4c1bf1de5fd1018d650bbe360ccbfd5d2a46533358219b2b6e74506d8a",
+      "bytes": 5102000,
+      "origin_artifact": "kitaqgb-macOS-X64"
+    },
+    {
+      "path": "bin/macos-x86_64/kitaqgb-zx0",
+      "sha256": "45e380cba8ae141d3acecb6dc3578e89b9a3549f32155f3253e58e8881038dbe",
+      "bytes": 430520,
+      "origin_artifact": "kitaqgb-macOS-X64"
+    },
+    {
+      "path": "bin/macos-x86_64/kitaqgb-patch-vblank",
+      "sha256": "a88a074a2b6de5794bf6e873f14c9d3a1d0d09841efe57c13e715d55e1a4e698",
+      "bytes": 1846904,
+      "origin_artifact": "kitaqgb-macOS-X64"
+    },
+    {
       "path": "bin/linux-gnu-x86_64/kitaqgb",
-      "bytes": 5535024,
-      "sha256": "415b0402c405e4ded036376d646f0dab32cbaed477b164c2bb5ab617c0a046e7",
+      "sha256": "fe0a5d52c9cc2a899e25056ef2c3ec5d9bac2a7041e9dd6781222f2bd980e10e",
+      "bytes": 5535008,
       "origin_artifact": "kitaqgb-Linux-X64"
     },
     {
       "path": "bin/linux-gnu-x86_64/kitaqgb-zx0",
-      "bytes": 455776,
       "sha256": "261945e527007e158d08df7ebdd4d7dbf59e6035fd7ae2397f2650e26c764850",
+      "bytes": 455776,
       "origin_artifact": "kitaqgb-Linux-X64"
     },
     {
       "path": "bin/linux-gnu-x86_64/kitaqgb-patch-vblank",
-      "bytes": 2122744,
       "sha256": "55b678516171439a4a9793601c09dd93497654620873b2d6a0de6a2e34a013cb",
+      "bytes": 2122744,
       "origin_artifact": "kitaqgb-Linux-X64"
     },
     {
-      "path": "bin/macos-universal/kitaqgb",
-      "bytes": 9608784,
-      "sha256": "289b7bbd640bbe8f88198070bab26205d2b15d0a2008c796920542b95e72f4fd",
-      "origin_artifact": "kitaqgb-macOS-Universal-ARM64"
+      "path": "bin/macos-arm64/kitaqgb",
+      "sha256": "54c452e60e8cf4b0cb488e17ca369e4b7ac103f881e59fe3951e156a8b8a18d3",
+      "bytes": 4496976,
+      "origin_artifact": "kitaqgb-macOS-ARM64"
     },
     {
-      "path": "bin/macos-universal/kitaqgb-zx0",
-      "bytes": 884896,
-      "sha256": "dc6ee1e162840cd4606adffe38fd4aaed27457ec0d708f344b49b26403b8138e",
-      "origin_artifact": "kitaqgb-macOS-Universal-ARM64"
+      "path": "bin/macos-arm64/kitaqgb-zx0",
+      "sha256": "29841ec29e6756f96eb8353029d04ec96d9c6b5dc6f18b9d2e7d159b7ebad2c1",
+      "bytes": 442528,
+      "origin_artifact": "kitaqgb-macOS-ARM64"
     },
     {
-      "path": "bin/macos-universal/kitaqgb-patch-vblank",
-      "bytes": 3617280,
-      "sha256": "69638e6ccf6fd7246ae9e84ea8584620d079ec2f003fc424f5fb2bdc28fac54a",
-      "origin_artifact": "kitaqgb-macOS-Universal-ARM64"
+      "path": "bin/macos-arm64/kitaqgb-patch-vblank",
+      "sha256": "faf74b763c9a9e971cd1f9b8705bac4311801029d664c90660c6adfb47ef5f4b",
+      "bytes": 1749504,
+      "origin_artifact": "kitaqgb-macOS-ARM64"
     },
     {
       "path": "bin/linux-x86_64/kitaqgb",
+      "sha256": "2761d0812dcd65c413e5cb18a700bcaf796db63e163936d0a176f9f76503805c",
       "bytes": 5645784,
-      "sha256": "27a2cd41b5e97060d29d2f161edb94b531371898f9ecdf122e165e812d836939",
       "origin_artifact": "kitaqgb-Linux-musl-X64"
     },
     {
       "path": "bin/linux-x86_64/kitaqgb-zx0",
-      "bytes": 569592,
       "sha256": "7e2ef97b6aea912ac20bd38bbc67aac188e4dc5470c9332ec60825a37945960a",
+      "bytes": 569592,
       "origin_artifact": "kitaqgb-Linux-musl-X64"
     },
     {
       "path": "bin/linux-x86_64/kitaqgb-patch-vblank",
-      "bytes": 2231416,
       "sha256": "d10dcff00b892e1feb34fc29e5af0a24673b933065356b15f299c22bb5581228",
+      "bytes": 2231416,
       "origin_artifact": "kitaqgb-Linux-musl-X64"
     }
   ],
@@ -121,74 +121,72 @@
   "tests_per_environment": 48,
   "helper_checks_per_environment": 395,
   "validation_provenance": {
-    "gb": {
-      "id": 37169762319,
-      "url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319",
-      "status": "completed",
-      "conclusion": "success",
+    "gb-universal": {
+      "repository": "kitaqgb",
+      "id": 37174454491,
+      "kind": "gb-universal",
+      "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174454491",
+      "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+      "passed": true,
       "jobs": [
         {
-          "id": 111340125144,
-          "name": "minimum-rust",
-          "status": "completed",
+          "id": 111354061127,
+          "name": "universal (macos-15-intel)",
           "conclusion": "success"
         },
         {
-          "id": 111340125260,
-          "name": "native (windows-latest)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 111340125310,
-          "name": "native (ubuntu-latest)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 111340125322,
-          "name": "native (macos-15-intel)",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "id": 111340125405,
-          "name": "native (macos-latest)",
-          "status": "completed",
+          "id": 111354061233,
+          "name": "universal (macos-latest)",
           "conclusion": "success"
         }
       ]
     },
-    "gb-universal": {
-      "id": 37170086584,
-      "url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584",
-      "status": "completed",
-      "conclusion": "success",
+    "gb": {
+      "repository": "kitaqgb",
+      "id": 37174283048,
+      "kind": "gb",
+      "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174283048",
+      "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+      "passed": true,
       "jobs": [
         {
-          "id": 111341092925,
-          "name": "universal (macos-latest)",
-          "status": "completed",
+          "id": 111353539930,
+          "name": "minimum-rust",
           "conclusion": "success"
         },
         {
-          "id": 111341093040,
-          "name": "universal (macos-15-intel)",
-          "status": "completed",
+          "id": 111353540078,
+          "name": "native (ubuntu-latest)",
+          "conclusion": "success"
+        },
+        {
+          "id": 111353540099,
+          "name": "native (windows-latest)",
+          "conclusion": "success"
+        },
+        {
+          "id": 111353540100,
+          "name": "native (macos-15-intel)",
+          "conclusion": "success"
+        },
+        {
+          "id": 111353540162,
+          "name": "native (macos-latest)",
           "conclusion": "success"
         }
       ]
     },
     "gb-musl": {
-      "id": 37170055811,
-      "url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170055811",
-      "status": "completed",
-      "conclusion": "success",
+      "repository": "kitaqgb",
+      "id": 37174282889,
+      "kind": "gb-musl",
+      "url": "https://github.com/bartaro/kitaqgb/actions/runs/37174282889",
+      "head": "6d432c00f974853e7d1015c04b54fec265a4f93d",
+      "passed": true,
       "jobs": [
         {
-          "id": 111340992792,
+          "id": 111353541572,
           "name": "linux-musl",
-          "status": "completed",
           "conclusion": "success"
         }
       ]
@@ -198,5 +196,6 @@
     "Original PNG converter source and original sample images absent from current local/public repositories. Reimplemented local indexed-PNG specification; independent PNG/CHR/attribute fixtures and downstream NES compilation verify the replacement. Original PNG output byte parity cannot be asserted.",
     "Existing compiler/backend limitations and emulator verification boundaries remain in PORT_STATUS.md and VERIFICATION_STATUS.json."
   ],
-  "future_public_ci": "https://github.com/bartaro/kitaqgb/actions"
+  "future_public_ci": "https://github.com/bartaro/kitaqgb/actions",
+  "public_native_ci_passed": true
 }
