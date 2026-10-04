@@ -11,3 +11,10 @@
 !/*.exe
 !/bin/
 !/bin/**
+
+# Rebuildable sample outputs and debug symbols.
+/examples/out/
+*.pdb
+.kitaqgb_cache/
+.kitaqfc_cache/
+**/obj/
