@@ -1,0 +1,1 @@
+{"functions":[{"name":"main","bank":0,"fixed_bank":false,"placement_order":2147483647,"fixed_order":false,"prototype":false,"inline":false,"stack_call":false,"fast_call":false,"return_size":0,"param_sizes":[]}],"calls":[],"aggregate_copies":[],"rst_selections":[],"abi_issues":[],"cgb_runtime_checks":0,"cgb_guarded_writes":0,"cgb_guarded_registers":[]}

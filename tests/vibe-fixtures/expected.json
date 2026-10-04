@@ -1,0 +1,309 @@
+[
+  {
+    "case": "snippet-list",
+    "args": [
+      "snippet",
+      "list"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB snippet library\ninput.poll_joypad  [input]  Joypad Poll\nrender.clear_oam4  [render]  Clear 4 sprites\nrender.wait_vblank  [render]  Wait VBlank\nsound.beep_ch2  [sound]  Simple CH2 beep\nsram.enable_disable  [sram]  Enable / Disable SRAM\nsram.save_byte  [sram]  Save one byte\n"
+  },
+  {
+    "case": "snippet-input.poll_joypad",
+    "args": [
+      "snippet",
+      "get",
+      "input.poll_joypad"
+    ],
+    "exit_code": 0,
+    "stdout": "u8 PollJoypad() {\n    // requires: __location(0xFF00) u8 P1;\n    P1 = 0x20;\n    u8 dpad = (~P1) & 0x0F;\n    P1 = 0x10;\n    u8 buttons = ((~P1) & 0x0F) << 4;\n    return (u8)(buttons | dpad);\n}\n"
+  },
+  {
+    "case": "snippet-render.wait_vblank",
+    "args": [
+      "snippet",
+      "get",
+      "render.wait_vblank"
+    ],
+    "exit_code": 0,
+    "stdout": "void WaitVBlank() {\n    // requires:\n    // __location(0xFF40) u8 LCDC;\n    // __location(0xFF44) u8 LY;\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n"
+  },
+  {
+    "case": "snippet-render.clear_oam4",
+    "args": [
+      "snippet",
+      "get",
+      "render.clear_oam4"
+    ],
+    "exit_code": 0,
+    "stdout": "void ClearOam4() {\n    __store8(0xFE00, 0);\n    __store8(0xFE01, 0);\n    __store8(0xFE02, 0);\n    __store8(0xFE03, 0);\n}\n"
+  },
+  {
+    "case": "snippet-sound.beep_ch2",
+    "args": [
+      "snippet",
+      "get",
+      "sound.beep_ch2"
+    ],
+    "exit_code": 0,
+    "stdout": "void SfxBeepCh2() {\n    // requires:\n    // __location(0xFF16) u8 NR21;\n    // __location(0xFF17) u8 NR22;\n    // __location(0xFF18) u8 NR23;\n    // __location(0xFF19) u8 NR24;\n    NR21 = 0x80;\n    NR22 = 0xF3;\n    NR23 = 0x40;\n    NR24 = 0x87;\n}\n"
+  },
+  {
+    "case": "snippet-sram.enable_disable",
+    "args": [
+      "snippet",
+      "get",
+      "sram.enable_disable"
+    ],
+    "exit_code": 0,
+    "stdout": "void SRAM_Enable()  { __store8(0x0000, 0x0A); }\nvoid SRAM_Disable() { __store8(0x0000, 0x00); }\n"
+  },
+  {
+    "case": "snippet-sram.save_byte",
+    "args": [
+      "snippet",
+      "get",
+      "sram.save_byte"
+    ],
+    "exit_code": 0,
+    "stdout": "void SRAM_SaveByte(u16 addr, u8 value) {\n    SRAM_Enable();\n    __store8(addr, value);\n    SRAM_Disable();\n}\n"
+  },
+  {
+    "case": "bundle-input",
+    "args": [
+      "snippet",
+      "emit",
+      "input"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=input\n\n// --- input.poll_joypad [input] Joypad Poll ---\nu8 PollJoypad() {\n    // requires: __location(0xFF00) u8 P1;\n    P1 = 0x20;\n    u8 dpad = (~P1) & 0x0F;\n    P1 = 0x10;\n    u8 buttons = ((~P1) & 0x0F) << 4;\n    return (u8)(buttons | dpad);\n}\n\n"
+  },
+  {
+    "case": "bundle-render",
+    "args": [
+      "snippet",
+      "emit",
+      "render"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=render\n\n// --- render.clear_oam4 [render] Clear 4 sprites ---\nvoid ClearOam4() {\n    __store8(0xFE00, 0);\n    __store8(0xFE01, 0);\n    __store8(0xFE02, 0);\n    __store8(0xFE03, 0);\n}\n\n// --- render.wait_vblank [render] Wait VBlank ---\nvoid WaitVBlank() {\n    // requires:\n    // __location(0xFF40) u8 LCDC;\n    // __location(0xFF44) u8 LY;\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\n"
+  },
+  {
+    "case": "bundle-sound",
+    "args": [
+      "snippet",
+      "emit",
+      "sound"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=sound\n\n// --- sound.beep_ch2 [sound] Simple CH2 beep ---\nvoid SfxBeepCh2() {\n    // requires:\n    // __location(0xFF16) u8 NR21;\n    // __location(0xFF17) u8 NR22;\n    // __location(0xFF18) u8 NR23;\n    // __location(0xFF19) u8 NR24;\n    NR21 = 0x80;\n    NR22 = 0xF3;\n    NR23 = 0x40;\n    NR24 = 0x87;\n}\n\n"
+  },
+  {
+    "case": "bundle-sram",
+    "args": [
+      "snippet",
+      "emit",
+      "sram"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=sram\n\n// --- sram.enable_disable [sram] Enable / Disable SRAM ---\nvoid SRAM_Enable()  { __store8(0x0000, 0x0A); }\nvoid SRAM_Disable() { __store8(0x0000, 0x00); }\n\n// --- sram.save_byte [sram] Save one byte ---\nvoid SRAM_SaveByte(u16 addr, u8 value) {\n    SRAM_Enable();\n    __store8(addr, value);\n    SRAM_Disable();\n}\n\n"
+  },
+  {
+    "case": "bundle-all",
+    "args": [
+      "snippet",
+      "emit",
+      "all"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=all\n\n// --- input.poll_joypad [input] Joypad Poll ---\nu8 PollJoypad() {\n    // requires: __location(0xFF00) u8 P1;\n    P1 = 0x20;\n    u8 dpad = (~P1) & 0x0F;\n    P1 = 0x10;\n    u8 buttons = ((~P1) & 0x0F) << 4;\n    return (u8)(buttons | dpad);\n}\n\n// --- render.clear_oam4 [render] Clear 4 sprites ---\nvoid ClearOam4() {\n    __store8(0xFE00, 0);\n    __store8(0xFE01, 0);\n    __store8(0xFE02, 0);\n    __store8(0xFE03, 0);\n}\n\n// --- render.wait_vblank [render] Wait VBlank ---\nvoid WaitVBlank() {\n    // requires:\n    // __location(0xFF40) u8 LCDC;\n    // __location(0xFF44) u8 LY;\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\n// --- sound.beep_ch2 [sound] Simple CH2 beep ---\nvoid SfxBeepCh2() {\n    // requires:\n    // __location(0xFF16) u8 NR21;\n    // __location(0xFF17) u8 NR22;\n    // __location(0xFF18) u8 NR23;\n    // __location(0xFF19) u8 NR24;\n    NR21 = 0x80;\n    NR22 = 0xF3;\n    NR23 = 0x40;\n    NR24 = 0x87;\n}\n\n// --- sram.enable_disable [sram] Enable / Disable SRAM ---\nvoid SRAM_Enable()  { __store8(0x0000, 0x0A); }\nvoid SRAM_Disable() { __store8(0x0000, 0x00); }\n\n// --- sram.save_byte [sram] Save one byte ---\nvoid SRAM_SaveByte(u16 addr, u8 value) {\n    SRAM_Enable();\n    __store8(addr, value);\n    SRAM_Disable();\n}\n\n"
+  },
+  {
+    "case": "bundle-RENDER",
+    "args": [
+      "snippet",
+      "emit",
+      "RENDER"
+    ],
+    "exit_code": 0,
+    "stdout": "// KITAQGB snippet bundle\n// category=RENDER\n\n// --- render.clear_oam4 [render] Clear 4 sprites ---\nvoid ClearOam4() {\n    __store8(0xFE00, 0);\n    __store8(0xFE01, 0);\n    __store8(0xFE02, 0);\n    __store8(0xFE03, 0);\n}\n\n// --- render.wait_vblank [render] Wait VBlank ---\nvoid WaitVBlank() {\n    // requires:\n    // __location(0xFF40) u8 LCDC;\n    // __location(0xFF44) u8 LY;\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\n"
+  },
+  {
+    "case": "snippet-missing",
+    "args": [
+      "snippet",
+      "get",
+      "missing"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "snippet-category-missing",
+    "args": [
+      "snippet",
+      "emit",
+      "missing"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "conventions",
+    "args": [
+      "conventions",
+      "--stdout"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB Project Conventions\n\ngenerated_utc=<UTC>\n\n## Build\n- Default dev build: `kitaqgb a.c b.c -o out.gb --profile=dev --fast-build --cache --deps-out`\n- Release build: `kitaqgb a.c b.c -o out.gb --profile=release --cache --deps-out`\n- Test entrypoint: `kitaqgb test`\n\n## Diagnostics\n- Use `--diag-json` for machine-readable diagnostics.\n- Use `kitaqgb fixhint <diag-or-log>` for shortest fix suggestions.\n- Use `--strict` in CI and `--permissive` during exploration.\n\n## Vibe Workflow\n- Start with `kitaqgb template` and keep prototype in one file.\n- Use `kitaqgb snippet list` and `kitaqgb snippet get <id>` to paste proven fragments.\n- Use `kitaqgb devserver ...` for dependency-aware rebuild loop.\n- Record reproducible steps with `kitaqgb recipe`.\n\n## Encoding\n- Treat source, reports, and scripts as UTF-8.\n- Keep command history in `integration_test/reports/COMMAND_HISTORY.log`.\n"
+  },
+  {
+    "case": "fix-json",
+    "args": [
+      "fixhint",
+      "{ROOT}/diag.json"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB shortest fix suggestions\ninput={ROOT}/diag.json\ndiagnostics_found=2\nsuggestions_emitted=2\n\n1. [error KQ2501] extern symbol not defined\n   shortest_fix: Use the supplied hint\n\n2. [warning KQ2418] implicit narrowing @ demo.c:3\n   shortest_fix: If narrowing is intentional, add an explicit cast.\n\n"
+  },
+  {
+    "case": "fix-log",
+    "args": [
+      "fixhint",
+      "{ROOT}/stderr.log"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB shortest fix suggestions\ninput={ROOT}/stderr.log\ndiagnostics_found=3\nsuggestions_emitted=3\n\n1. [fatal KQ0000] unknown option: --oops\n   shortest_fix: Use --help to check valid option names.\n\n2. [error KQ2501] extern not defined\n   shortest_fix: Add a matching definition for this extern declaration.\n\n3. [warning KQ2418] implicit narrowing @ demo.c:3\n   shortest_fix: If narrowing is intentional, add an explicit cast.\n\n"
+  },
+  {
+    "case": "fix-limit",
+    "args": [
+      "fixhint",
+      "{ROOT}/stderr.log",
+      "--max=1"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB shortest fix suggestions\ninput={ROOT}/stderr.log\ndiagnostics_found=3\nsuggestions_emitted=1\n\n1. [fatal KQ0000] unknown option: --oops\n   shortest_fix: Use --help to check valid option names.\n\n"
+  },
+  {
+    "case": "fix-empty",
+    "args": [
+      "fixhint",
+      "{ROOT}/empty.log"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB shortest fix suggestions\ninput={ROOT}/empty.log\ndiagnostics_found=0\nsuggestions_emitted=0\n\nNo diagnostics were parsed.\nRun compiler with --diag-json and re-run fixhint.\n"
+  },
+  {
+    "case": "ir-summary",
+    "args": [
+      "irsum",
+      "--ir={ROOT}/ir.txt",
+      "--asm={ROOT}/asm.txt"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB AI IR short summary\ngenerated_utc=<UTC>\nir_file={ROOT}/ir.txt\nasm_file={ROOT}/asm.txt\n\ncounts.ir_lines=6\ncounts.asm_lines=11\ncounts.ir_functions=1\ncounts.ir_function_decls=1\ncounts.ir_banks=1\ncounts.ir_calls=2\ncounts.ir_variables=1\ncounts.asm_functions=2\ncounts.asm_instructions=3\n\ntop_functions_by_asm_insn:\n- foo = 3\n- bar = 0\n"
+  },
+  {
+    "case": "ir-top",
+    "args": [
+      "irsum",
+      "--ir={ROOT}/ir.txt",
+      "--asm={ROOT}/asm.txt",
+      "--top=1"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB AI IR short summary\ngenerated_utc=<UTC>\nir_file={ROOT}/ir.txt\nasm_file={ROOT}/asm.txt\n\ncounts.ir_lines=6\ncounts.asm_lines=11\ncounts.ir_functions=1\ncounts.ir_function_decls=1\ncounts.ir_banks=1\ncounts.ir_calls=2\ncounts.ir_variables=1\ncounts.asm_functions=2\ncounts.asm_instructions=3\n\ntop_functions_by_asm_insn:\n- foo = 3\n"
+  },
+  {
+    "case": "ir-only",
+    "args": [
+      "irsum",
+      "--ir={ROOT}/ir.txt",
+      "--asm={ROOT}/absent"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB AI IR short summary\ngenerated_utc=<UTC>\nir_file={ROOT}/ir.txt\nasm_file={ROOT}/absent\n\ncounts.ir_lines=6\ncounts.asm_lines=0\ncounts.ir_functions=1\ncounts.ir_function_decls=1\ncounts.ir_banks=1\ncounts.ir_calls=2\ncounts.ir_variables=1\ncounts.asm_functions=0\ncounts.asm_instructions=0\n\ntop_functions_by_asm_insn:\n"
+  },
+  {
+    "case": "attribute-full",
+    "args": [
+      "attrviz",
+      "{ROOT}/attrs.bin",
+      "--width=17",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB tile attribute map visualization\nsource={ROOT}/attrs.bin\nbytes=259\nwidth=17\nheight=16\ncells=272\n\n# bit layout: b0-2=palette b3=vram_bank b4=dmg_palette b5=xflip b6=yflip b7=priority\n\n# summary\npalette_0=33\npalette_1=32\npalette_2=32\npalette_3=33\npalette_4=32\npalette_5=32\npalette_6=32\npalette_7=33\nvram_bank_1=129\ndmg_palette_1=129\nxflip_1=129\nyflip_1=129\npriority_1=129\n\n# grid raw(hex)\n000: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10\n001: 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F 20 21\n002: 22 23 24 25 26 27 28 29 2A 2B 2C 2D 2E 2F 30 31 32\n003: 33 34 35 36 37 38 39 3A 3B 3C 3D 3E 3F 40 41 42 43\n004: 44 45 46 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54\n005: 55 56 57 58 59 5A 5B 5C 5D 5E 5F 60 61 62 63 64 65\n006: 66 67 68 69 6A 6B 6C 6D 6E 6F 70 71 72 73 74 75 76\n007: 77 78 79 7A 7B 7C 7D 7E 7F 80 81 82 83 84 85 86 87\n008: 88 89 8A 8B 8C 8D 8E 8F 90 91 92 93 94 95 96 97 98\n009: 99 9A 9B 9C 9D 9E 9F A0 A1 A2 A3 A4 A5 A6 A7 A8 A9\n010: AA AB AC AD AE AF B0 B1 B2 B3 B4 B5 B6 B7 B8 B9 BA\n011: BB BC BD BE BF C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 CA CB\n012: CC CD CE CF D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 DA DB DC\n013: DD DE DF E0 E1 E2 E3 E4 E5 E6 E7 E8 E9 EA EB EC ED\n014: EE EF F0 F1 F2 F3 F4 F5 F6 F7 F8 F9 FA FB FC FD FE\n015: FF FF 00 03 -- -- -- -- -- -- -- -- -- -- -- -- --\n\n# grid decoded\n# token format: p<pal><B|.><D|.><X|.><Y|.><P|.>\n000: p0..... p1..... p2..... p3..... p4..... p5..... p6..... p7..... p0B.... p1B.... p2B.... p3B.... p4B.... p5B.... p6B.... p7B.... p0.D...\n001: p1.D... p2.D... p3.D... p4.D... p5.D... p6.D... p7.D... p0BD... p1BD... p2BD... p3BD... p4BD... p5BD... p6BD... p7BD... p0..X.. p1..X..\n002: p2..X.. p3..X.. p4..X.. p5..X.. p6..X.. p7..X.. p0B.X.. p1B.X.. p2B.X.. p3B.X.. p4B.X.. p5B.X.. p6B.X.. p7B.X.. p0.DX.. p1.DX.. p2.DX..\n003: p3.DX.. p4.DX.. p5.DX.. p6.DX.. p7.DX.. p0BDX.. p1BDX.. p2BDX.. p3BDX.. p4BDX.. p5BDX.. p6BDX.. p7BDX.. p0...Y. p1...Y. p2...Y. p3...Y.\n004: p4...Y. p5...Y. p6...Y. p7...Y. p0B..Y. p1B..Y. p2B..Y. p3B..Y. p4B..Y. p5B..Y. p6B..Y. p7B..Y. p0.D.Y. p1.D.Y. p2.D.Y. p3.D.Y. p4.D.Y.\n005: p5.D.Y. p6.D.Y. p7.D.Y. p0BD.Y. p1BD.Y. p2BD.Y. p3BD.Y. p4BD.Y. p5BD.Y. p6BD.Y. p7BD.Y. p0..XY. p1..XY. p2..XY. p3..XY. p4..XY. p5..XY.\n006: p6..XY. p7..XY. p0B.XY. p1B.XY. p2B.XY. p3B.XY. p4B.XY. p5B.XY. p6B.XY. p7B.XY. p0.DXY. p1.DXY. p2.DXY. p3.DXY. p4.DXY. p5.DXY. p6.DXY.\n007: p7.DXY. p0BDXY. p1BDXY. p2BDXY. p3BDXY. p4BDXY. p5BDXY. p6BDXY. p7BDXY. p0....P p1....P p2....P p3....P p4....P p5....P p6....P p7....P\n008: p0B...P p1B...P p2B...P p3B...P p4B...P p5B...P p6B...P p7B...P p0.D..P p1.D..P p2.D..P p3.D..P p4.D..P p5.D..P p6.D..P p7.D..P p0BD..P\n009: p1BD..P p2BD..P p3BD..P p4BD..P p5BD..P p6BD..P p7BD..P p0..X.P p1..X.P p2..X.P p3..X.P p4..X.P p5..X.P p6..X.P p7..X.P p0B.X.P p1B.X.P\n010: p2B.X.P p3B.X.P p4B.X.P p5B.X.P p6B.X.P p7B.X.P p0.DX.P p1.DX.P p2.DX.P p3.DX.P p4.DX.P p5.DX.P p6.DX.P p7.DX.P p0BDX.P p1BDX.P p2BDX.P\n011: p3BDX.P p4BDX.P p5BDX.P p6BDX.P p7BDX.P p0...YP p1...YP p2...YP p3...YP p4...YP p5...YP p6...YP p7...YP p0B..YP p1B..YP p2B..YP p3B..YP\n012: p4B..YP p5B..YP p6B..YP p7B..YP p0.D.YP p1.D.YP p2.D.YP p3.D.YP p4.D.YP p5.D.YP p6.D.YP p7.D.YP p0BD.YP p1BD.YP p2BD.YP p3BD.YP p4BD.YP\n013: p5BD.YP p6BD.YP p7BD.YP p0..XYP p1..XYP p2..XYP p3..XYP p4..XYP p5..XYP p6..XYP p7..XYP p0B.XYP p1B.XYP p2B.XYP p3B.XYP p4B.XYP p5B.XYP\n014: p6B.XYP p7B.XYP p0.DXYP p1.DXYP p2.DXYP p3.DXYP p4.DXYP p5.DXYP p6.DXYP p7.DXYP p0BDXYP p1BDXYP p2BDXYP p3BDXYP p4BDXYP p5BDXYP p6BDXYP\n015: p7BDXYP p7BDXYP p0..... p3..... ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------\n"
+  },
+  {
+    "case": "attribute-prefix",
+    "args": [
+      "attrviz",
+      "{ROOT}/attrs.bin",
+      "--width=8",
+      "--height=1",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB tile attribute map visualization\nsource={ROOT}/attrs.bin\nbytes=259\nwidth=8\nheight=1\ncells=8\n\n# bit layout: b0-2=palette b3=vram_bank b4=dmg_palette b5=xflip b6=yflip b7=priority\n\n# summary\npalette_0=33\npalette_1=32\npalette_2=32\npalette_3=33\npalette_4=32\npalette_5=32\npalette_6=32\npalette_7=33\nvram_bank_1=129\ndmg_palette_1=129\nxflip_1=129\nyflip_1=129\npriority_1=129\n\n# grid raw(hex)\n000: 00 01 02 03 04 05 06 07\n\n# grid decoded\n# token format: p<pal><B|.><D|.><X|.><Y|.><P|.>\n000: p0..... p1..... p2..... p3..... p4..... p5..... p6..... p7.....\n"
+  },
+  {
+    "case": "attribute-padding",
+    "args": [
+      "attrviz",
+      "{ROOT}/attrs.bin",
+      "--width=32",
+      "--height=10",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB tile attribute map visualization\nsource={ROOT}/attrs.bin\nbytes=259\nwidth=32\nheight=10\ncells=320\n\n# bit layout: b0-2=palette b3=vram_bank b4=dmg_palette b5=xflip b6=yflip b7=priority\n\n# summary\npalette_0=33\npalette_1=32\npalette_2=32\npalette_3=33\npalette_4=32\npalette_5=32\npalette_6=32\npalette_7=33\nvram_bank_1=129\ndmg_palette_1=129\nxflip_1=129\nyflip_1=129\npriority_1=129\n\n# grid raw(hex)\n000: 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F 10 11 12 13 14 15 16 17 18 19 1A 1B 1C 1D 1E 1F\n001: 20 21 22 23 24 25 26 27 28 29 2A 2B 2C 2D 2E 2F 30 31 32 33 34 35 36 37 38 39 3A 3B 3C 3D 3E 3F\n002: 40 41 42 43 44 45 46 47 48 49 4A 4B 4C 4D 4E 4F 50 51 52 53 54 55 56 57 58 59 5A 5B 5C 5D 5E 5F\n003: 60 61 62 63 64 65 66 67 68 69 6A 6B 6C 6D 6E 6F 70 71 72 73 74 75 76 77 78 79 7A 7B 7C 7D 7E 7F\n004: 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F 90 91 92 93 94 95 96 97 98 99 9A 9B 9C 9D 9E 9F\n005: A0 A1 A2 A3 A4 A5 A6 A7 A8 A9 AA AB AC AD AE AF B0 B1 B2 B3 B4 B5 B6 B7 B8 B9 BA BB BC BD BE BF\n006: C0 C1 C2 C3 C4 C5 C6 C7 C8 C9 CA CB CC CD CE CF D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 DA DB DC DD DE DF\n007: E0 E1 E2 E3 E4 E5 E6 E7 E8 E9 EA EB EC ED EE EF F0 F1 F2 F3 F4 F5 F6 F7 F8 F9 FA FB FC FD FE FF\n008: FF 00 03 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --\n009: -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --\n\n# grid decoded\n# token format: p<pal><B|.><D|.><X|.><Y|.><P|.>\n000: p0..... p1..... p2..... p3..... p4..... p5..... p6..... p7..... p0B.... p1B.... p2B.... p3B.... p4B.... p5B.... p6B.... p7B.... p0.D... p1.D... p2.D... p3.D... p4.D... p5.D... p6.D... p7.D... p0BD... p1BD... p2BD... p3BD... p4BD... p5BD... p6BD... p7BD...\n001: p0..X.. p1..X.. p2..X.. p3..X.. p4..X.. p5..X.. p6..X.. p7..X.. p0B.X.. p1B.X.. p2B.X.. p3B.X.. p4B.X.. p5B.X.. p6B.X.. p7B.X.. p0.DX.. p1.DX.. p2.DX.. p3.DX.. p4.DX.. p5.DX.. p6.DX.. p7.DX.. p0BDX.. p1BDX.. p2BDX.. p3BDX.. p4BDX.. p5BDX.. p6BDX.. p7BDX..\n002: p0...Y. p1...Y. p2...Y. p3...Y. p4...Y. p5...Y. p6...Y. p7...Y. p0B..Y. p1B..Y. p2B..Y. p3B..Y. p4B..Y. p5B..Y. p6B..Y. p7B..Y. p0.D.Y. p1.D.Y. p2.D.Y. p3.D.Y. p4.D.Y. p5.D.Y. p6.D.Y. p7.D.Y. p0BD.Y. p1BD.Y. p2BD.Y. p3BD.Y. p4BD.Y. p5BD.Y. p6BD.Y. p7BD.Y.\n003: p0..XY. p1..XY. p2..XY. p3..XY. p4..XY. p5..XY. p6..XY. p7..XY. p0B.XY. p1B.XY. p2B.XY. p3B.XY. p4B.XY. p5B.XY. p6B.XY. p7B.XY. p0.DXY. p1.DXY. p2.DXY. p3.DXY. p4.DXY. p5.DXY. p6.DXY. p7.DXY. p0BDXY. p1BDXY. p2BDXY. p3BDXY. p4BDXY. p5BDXY. p6BDXY. p7BDXY.\n004: p0....P p1....P p2....P p3....P p4....P p5....P p6....P p7....P p0B...P p1B...P p2B...P p3B...P p4B...P p5B...P p6B...P p7B...P p0.D..P p1.D..P p2.D..P p3.D..P p4.D..P p5.D..P p6.D..P p7.D..P p0BD..P p1BD..P p2BD..P p3BD..P p4BD..P p5BD..P p6BD..P p7BD..P\n005: p0..X.P p1..X.P p2..X.P p3..X.P p4..X.P p5..X.P p6..X.P p7..X.P p0B.X.P p1B.X.P p2B.X.P p3B.X.P p4B.X.P p5B.X.P p6B.X.P p7B.X.P p0.DX.P p1.DX.P p2.DX.P p3.DX.P p4.DX.P p5.DX.P p6.DX.P p7.DX.P p0BDX.P p1BDX.P p2BDX.P p3BDX.P p4BDX.P p5BDX.P p6BDX.P p7BDX.P\n006: p0...YP p1...YP p2...YP p3...YP p4...YP p5...YP p6...YP p7...YP p0B..YP p1B..YP p2B..YP p3B..YP p4B..YP p5B..YP p6B..YP p7B..YP p0.D.YP p1.D.YP p2.D.YP p3.D.YP p4.D.YP p5.D.YP p6.D.YP p7.D.YP p0BD.YP p1BD.YP p2BD.YP p3BD.YP p4BD.YP p5BD.YP p6BD.YP p7BD.YP\n007: p0..XYP p1..XYP p2..XYP p3..XYP p4..XYP p5..XYP p6..XYP p7..XYP p0B.XYP p1B.XYP p2B.XYP p3B.XYP p4B.XYP p5B.XYP p6B.XYP p7B.XYP p0.DXYP p1.DXYP p2.DXYP p3.DXYP p4.DXYP p5.DXYP p6.DXYP p7.DXYP p0BDXYP p1BDXYP p2BDXYP p3BDXYP p4BDXYP p5BDXYP p6BDXYP p7BDXYP\n008: p7BDXYP p0..... p3..... ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------\n009: ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------ ------\n"
+  },
+  {
+    "case": "template-dmg",
+    "args": [
+      "template",
+      "{ROOT}/game.c",
+      "--overwrite"
+    ],
+    "exit_code": 0,
+    "stdout": "[template] source: {ROOT}/game.c\n[template] build script: {ROOT}/game_build.ps1\n[template] readme: {ROOT}/game_README.md\n[template] instant build:\nkitaqgb game.c -o game.gb --profile=dev --fast-build --cache --deps-out\n",
+    "files": {
+      "game.c": "#pragma bank 0\n\n// Auto-generated single-file prototype.\n// Build: kitaqgb game.c -o game.gb --profile=dev --fast-build --cache\n\n// Hardware register declarations (keep __location in ascending order).\n__location(0xFF40) u8 LCDC;\n__location(0xFF44) u8 LY;\n__location(0xFF47) u8 BGP;\n\n__wram u8 g_frame;\n__wram u8 g_flash;\n\nvoid WaitVBlank() {\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\nvoid main() {\n    BGP = 0xE4;\n    g_frame = 0;\n    g_flash = 0;\n    while (1) {\n        WaitVBlank();\n        g_frame++;\n        if ((g_frame & 31) == 0) {\n            g_flash ^= 1;\n            if (g_flash != 0) BGP = 0x1B;\n            else BGP = 0xE4;\n        }\n    }\n}\n",
+      "game_build.ps1": "param(\n    [switch]$Release\n)\n$ErrorActionPreference = 'Stop'\n$args = @('game.c', '-o', 'game.gb', '--cache', '--deps-out')\nif ($Release) {\n    $args += '--profile=release'\n} else {\n    $args += '--profile=dev'\n    $args += '--fast-build'\n}\n& kitaqgb @args\nexit $LASTEXITCODE\n",
+      "game_README.md": "# Quick Prototype\n\n1. Build:\n   `kitaqgb game.c -o game.gb --profile=dev --fast-build --cache --deps-out`\n2. Run on emulator/hardware and iterate.\n3. Add snippets with `kitaqgb snippet list` / `kitaqgb snippet get <id>`.\n"
+    }
+  },
+  {
+    "case": "template-cgb",
+    "args": [
+      "template",
+      "{ROOT}/game.c",
+      "--overwrite",
+      "--cgb"
+    ],
+    "exit_code": 0,
+    "stdout": "[template] source: {ROOT}/game.c\n[template] build script: {ROOT}/game_build.ps1\n[template] readme: {ROOT}/game_README.md\n[template] instant build:\nkitaqgb game.c -o game.gb --profile=dev --fast-build --cache --deps-out\n",
+    "files": {
+      "game.c": "#pragma bank 0\n\n// Auto-generated single-file prototype.\n// Build: kitaqgb game.c -o game.gb --profile=dev --fast-build --cache\n\n// Hardware register declarations (keep __location in ascending order).\n__location(0xFF40) u8 LCDC;\n__location(0xFF44) u8 LY;\n__location(0xFF47) u8 BGP;\n\n__wram u8 g_frame;\n__wram u8 g_flash;\n\nvoid WaitVBlank() {\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\nvoid main() {\n    BGP = 0xE4;\n // CGB-safe template: only writes DMG-compatible registers by default.\n\n    g_frame = 0;\n    g_flash = 0;\n    while (1) {\n        WaitVBlank();\n        g_frame++;\n        if ((g_frame & 31) == 0) {\n            g_flash ^= 1;\n            if (g_flash != 0) BGP = 0x1B;\n            else BGP = 0xE4;\n        }\n    }\n}\n",
+      "game_build.ps1": "param(\n    [switch]$Release\n)\n$ErrorActionPreference = 'Stop'\n$args = @('game.c', '-o', 'game.gb', '--cache', '--deps-out')\nif ($Release) {\n    $args += '--profile=release'\n} else {\n    $args += '--profile=dev'\n    $args += '--fast-build'\n}\n& kitaqgb @args\nexit $LASTEXITCODE\n",
+      "game_README.md": "# Quick Prototype\n\n1. Build:\n   `kitaqgb game.c -o game.gb --profile=dev --fast-build --cache --deps-out`\n2. Run on emulator/hardware and iterate.\n3. Add snippets with `kitaqgb snippet list` / `kitaqgb snippet get <id>`.\n"
+    }
+  },
+  {
+    "case": "template-minimal",
+    "args": [
+      "template",
+      "{ROOT}/game.c",
+      "--overwrite",
+      "--no-build-script",
+      "--no-readme"
+    ],
+    "exit_code": 0,
+    "stdout": "[template] source: {ROOT}/game.c\n[template] instant build:\nkitaqgb game.c -o game.gb --profile=dev --fast-build --cache --deps-out\n",
+    "files": {
+      "game.c": "#pragma bank 0\n\n// Auto-generated single-file prototype.\n// Build: kitaqgb game.c -o game.gb --profile=dev --fast-build --cache\n\n// Hardware register declarations (keep __location in ascending order).\n__location(0xFF40) u8 LCDC;\n__location(0xFF44) u8 LY;\n__location(0xFF47) u8 BGP;\n\n__wram u8 g_frame;\n__wram u8 g_flash;\n\nvoid WaitVBlank() {\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\nvoid main() {\n    BGP = 0xE4;\n    g_frame = 0;\n    g_flash = 0;\n    while (1) {\n        WaitVBlank();\n        g_frame++;\n        if ((g_frame & 31) == 0) {\n            g_flash ^= 1;\n            if (g_flash != 0) BGP = 0x1B;\n            else BGP = 0xE4;\n        }\n    }\n}\n"
+    }
+  }
+]

@@ -1,0 +1,7 @@
+// Generated asset data. Original asset rights remain with its author.
+#pragma once
+__prg_rom u8 asset_data[] = {
+109,187,60,173,155,235,210,221,63,157,52,12,47,216,48,170,130,78,48,192,100,126,247,
+};
+#define asset_data_SIZE 23
+#define asset_data_RAW_SIZE 23

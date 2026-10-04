@@ -1,0 +1,3 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+00:0160 C:\kitaqgb_project\integration_test\cases\lang_range_lvalue_combo.c:11 symbol=main

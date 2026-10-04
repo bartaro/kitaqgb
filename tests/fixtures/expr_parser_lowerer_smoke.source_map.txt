@@ -1,0 +1,4 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+00:0168 C:\kitaqgb_project\integration_test\cases\expr_parser_lowerer_smoke.c:17 symbol=mix5
+00:0188 C:\kitaqgb_project\integration_test\cases\expr_parser_lowerer_smoke.c:21 symbol=main

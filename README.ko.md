@@ -1,8 +1,62 @@
 # KITAQGB
 
 <!-- readme-language-links:start -->
-[English](README.md#english) | [日本語](README.md#japanese) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [kitaqgb](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) |
+| 日本語 | [kitaqgb](https://bartaro.github.io/kitaq-docs/kitaqgb.html) |
+| 한국어 | [kitaqgb](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) |
+| 简体中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) |
+| 繁體中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) |
+| Français | [kitaqgb](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) |
+| Español | [kitaqgb](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) |
+| Deutsch | [kitaqgb](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Rust 네이티브 컴파일러와 보조 도구
+
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 실행 파일은 저장소 최상위 폴더에, Linux와 macOS 실행 파일은 아래 표의 bin/ 폴더에 있습니다. lib/와 라이선스 고지를 함께 보관하세요. Linux/macOS에서는 chmod +x로 실행 권한을 주고 해당 폴더를 PATH에 추가하거나 전체 경로로 실행하세요.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
+
+
+Windows, Linux, macOS ARM 및 macOS Intel에서 네이티브 빌드와 실행 검증이 성공했습니다. KITAQGB는 환경별 테스트 48개와 보조 도구 검사 395개, KITAQFC는 55개와 401개를 통과했습니다. Rust 1.85도 검증했습니다. PUBLIC_DISTRIBUTION.json은 배치한 바이너리의 해시와 검증 출처를 기록합니다. 공개 GitHub Actions는 이 소스를 독립적으로 빌드하고 검증합니다.
+
+저장된 참조 출력으로 ROM 바이트, 진단 및 보조 도구 형식을 검사합니다. 이전 C# 에뮬레이터 검증은 원래 소스 지문에 해당하는 과거 기록입니다. 모든 Rust API, 실제 하드웨어 또는 FDS BIOS를 통한 완전한 게임 시작을 입증하지는 않습니다. 원본 PNG 변환 스크립트는 없어 사양으로 재구현했으며 원본과의 바이트 일치는 확인할 수 없습니다.
+
+[Rust 네이티브 컴파일러와 보조 도구](tools/README.ko.md)
+
+<!-- rust-native-20261004:end -->
+
+
 
 [컴파일러 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) · [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
 
@@ -58,57 +112,101 @@ KITAQGB에는 **상용 ROM, Nintendo BIOS, Nintendo SDK, 독점 소유권이 있
 
 ## 저장소 구성
 
-컴파일러 소스는 이름이 같은 하위 폴더 `kitaqgb/`에 있습니다. 배포용 Release 실행 파일과 런타임 설정은 최상위 폴더에 두고, 라이브러리와 예제는 별도 폴더로 나눕니다.
-
 ```text
-kitaqgb/  # 저장소 최상위 폴더
-├─ kitaqgb/  # 컴파일러 빌드 소스
-│  ├─ *.cs
-│  ├─ app.config
-│  └─ kitaqgb.csproj
-├─ kitaqgb.exe  # 빌드된 Release 컴파일러
-├─ kitaqgb.exe.config  # .NET Framework 런타임 설정
-├─ lib/  # C 지원 라이브러리
-├─ examples/  # 입문 예제와 원본 글꼴
-├─ scripts/build.ps1  # Release 실행 파일 다시 빌드
-├─ LICENSE
-└─ LICENSE.ja
+Cargo.toml / Cargo.lock
+src/                     # Rust compiler and native helper sources
+kitaqgb.exe             # Windows x64 compiler
+kitaqgb-*.exe           # Windows native helper tools
+bin/                     # Linux and macOS executables
+lib/                     # C libraries for console ROMs
+tests/                   # Frozen reference fixtures and Rust tests
+scripts/build.ps1
+scripts/build.sh
 ```
 
-제공된 컴파일러를 실행하려면 Windows와 .NET Framework 4.8이 필요합니다. 실행 파일, 설정, 라이브러리, 라이선스 고지를 함께 받을 수 있도록 저장소 ZIP을 내려받으세요. 직접 빌드하려면 .NET Framework 4.8 Developer Pack과 Visual Studio Build Tools도 필요합니다. 저장소 최상위 폴더에서 실행하세요.
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 실행 파일은 저장소 최상위 폴더에, Linux와 macOS 실행 파일은 아래 표의 bin/ 폴더에 있습니다. lib/와 라이선스 고지를 함께 보관하세요. Linux/macOS에서는 chmod +x로 실행 권한을 주고 해당 폴더를 PATH에 추가하거나 전체 경로로 실행하세요.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
 .\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
 ```
 
-Release 빌드는 실행 파일과 설정을 최상위 폴더로 복사합니다. Debug 빌드는 `kitaqgb/bin/Debug`에 남으며, 배포용 Release 컴파일러를 덮어쓰지 않습니다. 빌드 캐시와 PDB 파일은 배포하지 않습니다. 입력 자료와 SHA-256은 [바이너리 빌드 기록](BINARY_BUILD.json)에 있습니다.
+```sh
+sh scripts/build.sh
+```
 
 ## 필요한 개발 환경
 
-주 개발 환경은 Windows, .NET Framework 4.8 대상 참조 파일, MSBuild가 포함된 Visual Studio 또는 Visual Studio Build Tools입니다. 프로젝트 파일은 `.NET Framework v4.8`을 대상으로 하는 MSBuild 형식의 C# 프로젝트입니다.
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다.
 
-다른 운영체제에서도 설치된 참조 어셈블리에 따라 Mono/MSBuild로 빌드할 수 있지만, 주로 지원하는 환경은 Windows와 MSBuild입니다.
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 실행 파일은 저장소 최상위 폴더에, Linux와 macOS 실행 파일은 아래 표의 bin/ 폴더에 있습니다. lib/와 라이선스 고지를 함께 보관하세요. Linux/macOS에서는 chmod +x로 실행 권한을 주고 해당 폴더를 PATH에 추가하거나 전체 경로로 실행하세요.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
 
 ## KITAQGB 빌드
 
-저장소 최상위 폴더에서 다음 명령을 실행하세요.
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다.
 
-```powershell
-msbuild kitaqgb\kitaqgb.csproj /p:Configuration=Release
+```sh
+cargo test --locked --tests
+cargo build --locked --release
 ```
 
-빌드가 성공하면 실행 파일을 최상위 폴더로 복사합니다.
+Windows 실행 파일은 저장소 최상위 폴더에, Linux와 macOS 실행 파일은 아래 표의 bin/ 폴더에 있습니다. lib/와 라이선스 고지를 함께 보관하세요. Linux/macOS에서는 chmod +x로 실행 권한을 주고 해당 폴더를 PATH에 추가하거나 전체 경로로 실행하세요.
 
-```text
-kitaqgb.exe
-```
-
-명령줄 도움말을 확인할 수 있습니다.
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
+.\scripts\build.ps1
 .\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## 빠르게 시작하기
@@ -371,12 +469,31 @@ Copyright (c) 2026 DAISUKE OBA
 
 ## 빌드 후 첫 실행
 
-Windows에서 .NET Framework 4.8 Developer Pack과 Visual Studio Build Tools의 MSBuild를 사용합니다. Developer PowerShell에서 실행하세요.
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 실행 파일은 저장소 최상위 폴더에, Linux와 macOS 실행 파일은 아래 표의 bin/ 폴더에 있습니다. lib/와 라이선스 고지를 함께 보관하세요. Linux/macOS에서는 chmod +x로 실행 권한을 주고 해당 폴더를 PATH에 추가하거나 전체 경로로 실행하세요.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
-MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
+.\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## 설명서와 라이선스

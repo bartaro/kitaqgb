@@ -1,0 +1,9 @@
+version	major=2,minor=0
+info	csym=0,file=1,lib=0,line=0,mod=0,scope=0,seg=3,span=1,sym=2,type=0
+file	id=0,name="bank-padding.dbc"
+seg	id=0,start=0x0000,size=0x8000,type=ro,ooffs=16
+seg	id=3,start=0xC000,size=0x2000,type=rw
+seg	id=6,start=0xFF00,size=0x0100,type=rw
+span	id=0,seg=0,start=16384,size=16383,type=0
+sym	id=0,name="blob",size=16383,val=0x4000,seg=0,region="ROM",bank=1
+sym	id=1,name="main",size=1,val=0x4000,seg=0,region="ROM",bank=2

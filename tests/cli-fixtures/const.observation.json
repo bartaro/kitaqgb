@@ -1,0 +1,35 @@
+{
+  "flags": [],
+  "diagnostics": {
+    "exit_code": 1,
+    "errors": 2,
+    "warnings": 0,
+    "output": "<STEM>.gb",
+    "diagnostics": [
+      {
+        "severity": "error",
+        "code": "KQ2201",
+        "message": "cannot use constant 'value' as an lvalue or take its address",
+        "suggestion": "You are modifying a const-qualified object. Write to a non-const variable or revise qualifiers.",
+        "file": "<SOURCES>/main.c",
+        "line": 1,
+        "column": 30
+      },
+      {
+        "severity": "error",
+        "code": "KQ2202",
+        "message": "cannot modify const-qualified object",
+        "suggestion": "You are modifying a const-qualified object. Write to a non-const variable or revise qualifiers.",
+        "file": "<SOURCES>/main.c",
+        "line": 1,
+        "column": 36
+      }
+    ]
+  },
+  "paths": {
+    "exit_code": 1,
+    "diag_json": "<DIAG>"
+  },
+  "files": {},
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17"
+}

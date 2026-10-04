@@ -1,0 +1,27 @@
+# KITAQGB function size report
+# name, bank, cpu_addr, start_file, end_file, size
+__kq_static_2_kq3d__resolve_sphere_box, 2, 0x5D0A, 0x09D0A, 0x0AB43, 3641
+main, 0, 0x0200, 0x00200, 0x00BFC, 2556
+kq3d__resolve_pair, 2, 0x6B43, 0x0AB43, 0x0B518, 2517
+kq3d_overlap_sphere_aabb, 2, 0x4E07, 0x08E07, 0x095E2, 2011
+kq3d__bounce_axis, 2, 0x4151, 0x08151, 0x08824, 1747
+__kq_static_1_kq3d__bounce_normal, 2, 0x5647, 0x09647, 0x09D0A, 1731
+kq3d_step, 2, 0x788B, 0x0B88B, 0x0BE99, 1550
+__kq_static_3_kq3d__integrate_body, 2, 0x7518, 0x0B518, 0x0B862, 842
+kq3d_overlap_aabb, 2, 0x4C21, 0x08C21, 0x08E07, 486
+kq3d_body_init, 2, 0x4A5E, 0x08A5E, 0x08C21, 451
+kq3d_body_set_mass, 2, 0x48D0, 0x088D0, 0x08A5E, 398
+kq3d_dot_q8_8, 3, 0x4000, 0x0C000, 0x0C181, 385
+kq3d_world_init, 2, 0x4824, 0x08824, 0x088D0, 172
+kq3d_clamp_abs_s16_asm, 2, 0x4032, 0x08032, 0x080D0, 158
+__kq_static_0_kq3d__clamp_s16, 2, 0x55E2, 0x095E2, 0x09647, 101
+kq3d__record_impact, 2, 0x40F4, 0x080F4, 0x08151, 93
+kq3d_integrate_body, 2, 0x7862, 0x0B862, 0x0B88B, 41
+kq3d__abs_s16, 2, 0x40D0, 0x080D0, 0x080F4, 36
+__kq_thunk_b2_kq3d_body_init, 0, 0x0160, 0x00160, 0x00180, 32
+__kq_thunk_b2_kq3d_integrate_body, 0, 0x0180, 0x00180, 0x001A0, 32
+__kq_thunk_b2_kq3d_overlap_sphere_aabb, 0, 0x01A0, 0x001A0, 0x001C0, 32
+__kq_thunk_b2_kq3d_step, 0, 0x01C0, 0x001C0, 0x001E0, 32
+__kq_thunk_b2_kq3d_world_init, 0, 0x01E0, 0x001E0, 0x00200, 32
+kq3d_add_s16_asm, 2, 0x4000, 0x08000, 0x0801A, 26
+kq3d_abs_s16_asm, 2, 0x401A, 0x0801A, 0x08032, 24

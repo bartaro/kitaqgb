@@ -1,0 +1,1 @@
+{"diagnostics":[{"severity":"warning","code":"KQ2418","message":"implicit narrowing","suggestion":"","file":"demo.c","line":3,"column":4},{"severity":"error","code":"KQ2501","message":"extern symbol not defined","suggestion":"Use the supplied hint","file":"","line":0,"column":0}]}

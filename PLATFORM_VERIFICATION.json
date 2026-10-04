@@ -1,0 +1,550 @@
+{
+  "passed": true,
+  "ci_commit": "50c48583cc867b20a1c69a84fa47277029b0c978",
+  "ci_run": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319",
+  "tests_per_environment": 48,
+  "minimum_rust_1_85_verified": true,
+  "auxiliary_tools": {
+    "date": "2026-10-04",
+    "status": "complete",
+    "passed": true,
+    "implementation_ci_commit": "50c48583cc867b20a1c69a84fa47277029b0c978",
+    "private_repository": "bartaro/kitaqgb-rust-validation-20261004",
+    "native_helper_binaries": [
+      "kitaqgb-patch-vblank",
+      "kitaqgb-zx0"
+    ],
+    "full_tests_per_environment": 48,
+    "codec_reference_inputs": 60,
+    "malformed_stream_cases": 33,
+    "runtime_requires_dotnet": false,
+    "runtime_requires_python": false,
+    "all_source_helpers_accounted_for": true,
+    "source_manifest": "AUXILIARY_SOURCE_MANIFEST.json",
+    "native_validation": [
+      {
+        "artifact": "kitaqgb-macOS-X64",
+        "system": "Darwin",
+        "machine": "x86_64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+      },
+      {
+        "artifact": "kitaqgb-macOS-ARM64",
+        "system": "Darwin",
+        "machine": "arm64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+      },
+      {
+        "artifact": "kitaqgb-Windows-X64",
+        "system": "Windows",
+        "machine": "AMD64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+      },
+      {
+        "artifact": "kitaqgb-Linux-X64",
+        "system": "Linux",
+        "machine": "x86_64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-X64",
+        "system": "Darwin",
+        "machine": "x86_64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-ARM64",
+        "system": "Darwin",
+        "machine": "arm64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+      },
+      {
+        "artifact": "kitaqgb-Linux-musl-X64",
+        "system": "Linux",
+        "machine": "x86_64",
+        "helper_checks": 395,
+        "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170055811"
+      }
+    ],
+    "executables": [
+      {
+        "artifact": "kitaqgb-macOS-X64",
+        "name": "kitaqgb",
+        "sha256": "979e5a82a0a269f22c8296ff96f6f121483960475a48e7b789dac5d938f6dbea",
+        "bytes": 5102000,
+        "format": "Mach-O 64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-X64",
+        "name": "kitaqgb-zx0",
+        "sha256": "a9f413ba2ade2b1547c50c0d53dea0a262c1e692496c890ecda32392dcaf787c",
+        "bytes": 430520,
+        "format": "Mach-O 64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-X64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "44cb228242300fe248fdc13588f2036104f0d973b3367d834425b6e1b6086400",
+        "bytes": 1846904,
+        "format": "Mach-O 64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-ARM64",
+        "name": "kitaqgb",
+        "sha256": "88aac9dcbaf61cb5c59ef5ff6f4cdcdff22ff9d6ba6ff53110ee91e45ce0076b",
+        "bytes": 4496976,
+        "format": "Mach-O 64",
+        "architecture": "arm64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-ARM64",
+        "name": "kitaqgb-zx0",
+        "sha256": "0936d271b3d1d40533d05e0524bfd2aa8a2ff57a06444a52f4a4a728655385ae",
+        "bytes": 442528,
+        "format": "Mach-O 64",
+        "architecture": "arm64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-ARM64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "e049ff0aed6a47002911539e865ae37d83c4746e4a1a90ed018f5a159d51cacc",
+        "bytes": 1749504,
+        "format": "Mach-O 64",
+        "architecture": "arm64"
+      },
+      {
+        "artifact": "kitaqgb-Windows-X64",
+        "name": "kitaqgb.exe",
+        "sha256": "caadee2356a50725928c3c86e948b882ea147e4355f641d2ef15488ee2060e00",
+        "bytes": 5427712,
+        "format": "PE32+",
+        "architecture": "x86_64",
+        "managed_clr_header": false
+      },
+      {
+        "artifact": "kitaqgb-Windows-X64",
+        "name": "kitaqgb-zx0.exe",
+        "sha256": "1b9e54392a414cccd39fc6d7eddc8d5d891257191a2617be0bf30c041ace5e22",
+        "bytes": 184320,
+        "format": "PE32+",
+        "architecture": "x86_64",
+        "managed_clr_header": false
+      },
+      {
+        "artifact": "kitaqgb-Windows-X64",
+        "name": "kitaqgb-patch-vblank.exe",
+        "sha256": "1ae48aab95ddcf0257e9a9c223f7f3c4fb4c669a001a642aa42dd91f96ff209a",
+        "bytes": 1594880,
+        "format": "PE32+",
+        "architecture": "x86_64",
+        "managed_clr_header": false
+      },
+      {
+        "artifact": "kitaqgb-Linux-X64",
+        "name": "kitaqgb",
+        "sha256": "415b0402c405e4ded036376d646f0dab32cbaed477b164c2bb5ab617c0a046e7",
+        "bytes": 5535024,
+        "format": "ELF64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-Linux-X64",
+        "name": "kitaqgb-zx0",
+        "sha256": "261945e527007e158d08df7ebdd4d7dbf59e6035fd7ae2397f2650e26c764850",
+        "bytes": 455776,
+        "format": "ELF64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-Linux-X64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "55b678516171439a4a9793601c09dd93497654620873b2d6a0de6a2e34a013cb",
+        "bytes": 2122744,
+        "format": "ELF64",
+        "architecture": "x86_64"
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-X64",
+        "name": "kitaqgb",
+        "sha256": "289b7bbd640bbe8f88198070bab26205d2b15d0a2008c796920542b95e72f4fd",
+        "bytes": 9608784,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-X64",
+        "name": "kitaqgb-zx0",
+        "sha256": "dc6ee1e162840cd4606adffe38fd4aaed27457ec0d708f344b49b26403b8138e",
+        "bytes": 884896,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-X64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "69638e6ccf6fd7246ae9e84ea8584620d079ec2f003fc424f5fb2bdc28fac54a",
+        "bytes": 3617280,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-ARM64",
+        "name": "kitaqgb",
+        "sha256": "289b7bbd640bbe8f88198070bab26205d2b15d0a2008c796920542b95e72f4fd",
+        "bytes": 9608784,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-ARM64",
+        "name": "kitaqgb-zx0",
+        "sha256": "dc6ee1e162840cd4606adffe38fd4aaed27457ec0d708f344b49b26403b8138e",
+        "bytes": 884896,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-macOS-Universal-ARM64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "69638e6ccf6fd7246ae9e84ea8584620d079ec2f003fc424f5fb2bdc28fac54a",
+        "bytes": 3617280,
+        "format": "Mach-O Universal",
+        "architectures": [
+          "arm64",
+          "x86_64"
+        ]
+      },
+      {
+        "artifact": "kitaqgb-Linux-musl-X64",
+        "name": "kitaqgb",
+        "sha256": "27a2cd41b5e97060d29d2f161edb94b531371898f9ecdf122e165e812d836939",
+        "bytes": 5645784,
+        "format": "ELF64",
+        "architecture": "x86_64",
+        "static_no_interpreter": true
+      },
+      {
+        "artifact": "kitaqgb-Linux-musl-X64",
+        "name": "kitaqgb-zx0",
+        "sha256": "7e2ef97b6aea912ac20bd38bbc67aac188e4dc5470c9332ec60825a37945960a",
+        "bytes": 569592,
+        "format": "ELF64",
+        "architecture": "x86_64",
+        "static_no_interpreter": true
+      },
+      {
+        "artifact": "kitaqgb-Linux-musl-X64",
+        "name": "kitaqgb-patch-vblank",
+        "sha256": "d10dcff00b892e1feb34fc29e5af0a24673b933065356b15f299c22bb5581228",
+        "bytes": 2231416,
+        "format": "ELF64",
+        "architecture": "x86_64",
+        "static_no_interpreter": true
+      }
+    ]
+  },
+  "historical_core_validation": {
+    "passed": true,
+    "ci_run": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37135591661",
+    "ci_commit": "35591d27a28c23efb34dc6c93aeda37594e61317",
+    "native_test_jobs": 5,
+    "tests_per_environment": 44,
+    "minimum_rust_1_85_verified": true,
+    "artifacts": [
+      {
+        "artifact_name": "kitaqgb-Windows-X64",
+        "executable": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-Windows-X64\\kitaqgb.exe",
+        "executable_sha256": "81daeb8870db682e5c56333c0ef3c1432bf0ce8771101a18f0660f94d50ee170",
+        "system": "Windows",
+        "machine": "AMD64",
+        "platform": "Windows-2025Server-10.0.26100-SP0",
+        "receipt": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-Windows-X64\\native-platform.json",
+        "native_sdk_build_verified": false,
+        "native_execution_verified": true,
+        "library_all_files_byte_verified": true
+      },
+      {
+        "artifact_name": "kitaqgb-macOS-ARM64",
+        "executable": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-macOS-ARM64\\kitaqgb",
+        "executable_sha256": "f10a8e138be2d71514391606f0039e195ac73c9ead6ec6aaaee9bff4064c3527",
+        "system": "Darwin",
+        "machine": "arm64",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "receipt": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-macOS-ARM64\\native-platform.json",
+        "native_sdk_build_verified": true,
+        "native_execution_verified": true,
+        "library_all_files_byte_verified": true
+      },
+      {
+        "artifact_name": "kitaqgb-Linux-X64",
+        "executable": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-Linux-X64\\kitaqgb",
+        "executable_sha256": "01bba62edc5a3bee3b40b13ebf6a49e50dccd33cb6f5850649fea3181971dee6",
+        "system": "Linux",
+        "machine": "x86_64",
+        "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+        "receipt": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-Linux-X64\\native-platform.json",
+        "native_sdk_build_verified": false,
+        "native_execution_verified": true,
+        "library_all_files_byte_verified": true
+      },
+      {
+        "artifact_name": "kitaqgb-macOS-X64",
+        "executable": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-macOS-X64\\kitaqgb",
+        "executable_sha256": "c912378cfcc901edf8ad1a36a709e7179a72a7877d2143dc2b35e06b97b8d05f",
+        "system": "Darwin",
+        "machine": "x86_64",
+        "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+        "receipt": "C:\\Users\\daisu\\Documents\\Codex\\2026-10-03\\c-kitaqgb-project-kitaqgb\\outputs\\native-ci\\kitaqgb-macOS-X64\\native-platform.json",
+        "native_sdk_build_verified": true,
+        "native_execution_verified": true,
+        "library_all_files_byte_verified": true
+      }
+    ],
+    "portable_linux_native_execution_verified": true,
+    "portable_linux_ci_run": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37136792465",
+    "portable_linux_receipt": {
+      "utc": "2026-10-03T16:27:52.850602+00:00",
+      "system": "Linux",
+      "machine": "x86_64",
+      "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+      "compiler_sha256": "6a77b55058a509ac9a1362118b264780f313120002c58db7c1666dc85e3b750a",
+      "source_sha256": "a3bdd3654dc84cd79981e7de04432e1854f09efa134e14c51e84a1adfd991dab",
+      "scope": "Native compiler process, golden ROM bytes, devserver, failure status, templates and safe recipe replay; no emulated Game Boy execution in this script.",
+      "passed": true,
+      "records": [
+        {
+          "case": "version",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "kitaqgb 0.1.0 (migration in progress)\n",
+          "stderr": ""
+        },
+        {
+          "case": "native-compile",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "",
+          "stderr": "/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+          "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+        },
+        {
+          "case": "devserver-once",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "[devserver] build #1\n[devserver] exit=0\n",
+          "stderr": "/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n",
+          "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+        },
+        {
+          "case": "failure-status",
+          "exit_code": 1,
+          "passed": true,
+          "stdout": "",
+          "stderr": "/tmp/kitaqgb-platform-bcsghmys/broken.c (line 1, column 1) error KQ1004: #error: deliberate\n  #error deliberate\n  ^\n"
+        },
+        {
+          "case": "template",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "[template] source: /tmp/kitaqgb-platform-bcsghmys/demo 'literal' $x.c\n[template] build script: /tmp/kitaqgb-platform-bcsghmys/demo 'literal' $x_build.ps1\n[template] readme: /tmp/kitaqgb-platform-bcsghmys/demo 'literal' $x_README.md\n[template] instant build:\nkitaqgb \"demo 'literal' $x.c\" -o \"demo 'literal' $x.gb\" --profile=dev --fast-build --cache --deps-out\n",
+          "stderr": ""
+        },
+        {
+          "case": "recipe",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "[recipe] /tmp/kitaqgb-platform-bcsghmys/recipe.md\n[recipe] script: /tmp/kitaqgb-platform-bcsghmys/replay.ps1\n[recipe] script: /tmp/kitaqgb-platform-bcsghmys/replay.sh\n",
+          "stderr": ""
+        },
+        {
+          "case": "template-shell-build",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "",
+          "stderr": ""
+        },
+        {
+          "case": "recipe-replay",
+          "exit_code": 0,
+          "passed": true,
+          "stdout": "",
+          "stderr": "/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/home/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+          "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+        }
+      ]
+    },
+    "universal_ci_run": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37137721833",
+    "universal_native_execution_verified": true,
+    "universal_receipts": [
+      {
+        "utc": "2026-10-03T16:40:49.330149+00:00",
+        "system": "Darwin",
+        "machine": "x86_64",
+        "platform": "macOS-15.7.9-x86_64-i386-64bit-Mach-O",
+        "compiler_sha256": "09e22e8b1da370e75962c297fce02633bf5d5fd939615d5f9207df876d5cbe71",
+        "source_sha256": "a3bdd3654dc84cd79981e7de04432e1854f09efa134e14c51e84a1adfd991dab",
+        "scope": "Native compiler process, golden ROM bytes, devserver, failure status, templates and safe recipe replay; no emulated Game Boy execution in this script.",
+        "passed": true,
+        "records": [
+          {
+            "case": "version",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "kitaqgb 0.1.0 (migration in progress)\n",
+            "stderr": ""
+          },
+          {
+            "case": "native-compile",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          },
+          {
+            "case": "devserver-once",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[devserver] build #1\n[devserver] exit=0\n",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          },
+          {
+            "case": "failure-status",
+            "exit_code": 1,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/broken.c (line 1, column 1) error KQ1004: #error: deliberate\n  #error deliberate\n  ^\n"
+          },
+          {
+            "case": "template",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[template] source: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/demo 'literal' $x.c\n[template] build script: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/demo 'literal' $x_build.ps1\n[template] readme: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/demo 'literal' $x_README.md\n[template] instant build:\nkitaqgb \"demo 'literal' $x.c\" -o \"demo 'literal' $x.gb\" --profile=dev --fast-build --cache --deps-out\n",
+            "stderr": ""
+          },
+          {
+            "case": "recipe",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[recipe] /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/recipe.md\n[recipe] script: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/replay.ps1\n[recipe] script: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/kitaqgb-platform-xzuf9qs2/replay.sh\n",
+            "stderr": ""
+          },
+          {
+            "case": "template-shell-build",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "case": "recipe-replay",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          }
+        ]
+      },
+      {
+        "utc": "2026-10-03T16:40:45.237477+00:00",
+        "system": "Darwin",
+        "machine": "arm64",
+        "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O",
+        "compiler_sha256": "09e22e8b1da370e75962c297fce02633bf5d5fd939615d5f9207df876d5cbe71",
+        "source_sha256": "a3bdd3654dc84cd79981e7de04432e1854f09efa134e14c51e84a1adfd991dab",
+        "scope": "Native compiler process, golden ROM bytes, devserver, failure status, templates and safe recipe replay; no emulated Game Boy execution in this script.",
+        "passed": true,
+        "records": [
+          {
+            "case": "version",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "kitaqgb 0.1.0 (migration in progress)\n",
+            "stderr": ""
+          },
+          {
+            "case": "native-compile",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          },
+          {
+            "case": "devserver-once",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[devserver] build #1\n[devserver] exit=0\n",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          },
+          {
+            "case": "failure-status",
+            "exit_code": 1,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/broken.c (line 1, column 1) error KQ1004: #error: deliberate\n  #error deliberate\n  ^\n"
+          },
+          {
+            "case": "template",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[template] source: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/demo 'literal' $x.c\n[template] build script: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/demo 'literal' $x_build.ps1\n[template] readme: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/demo 'literal' $x_README.md\n[template] instant build:\nkitaqgb \"demo 'literal' $x.c\" -o \"demo 'literal' $x.gb\" --profile=dev --fast-build --cache --deps-out\n",
+            "stderr": ""
+          },
+          {
+            "case": "recipe",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "[recipe] /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/recipe.md\n[recipe] script: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/replay.ps1\n[recipe] script: /var/folders/36/tjdph2t965j8snz9_vkdnw0r0000gn/T/kitaqgb-platform-kb3ndai4/replay.sh\n",
+            "stderr": ""
+          },
+          {
+            "case": "template-shell-build",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "case": "recipe-replay",
+            "exit_code": 0,
+            "passed": true,
+            "stdout": "",
+            "stderr": "/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 8, column 30) warning KQ2418: implicit narrowing in return in 'plus': uint16 -> uint8; cast explicitly to silence\n  u8 plus(u8 x) { return x + 5; }\n                               ^\n  hint: If narrowing is intentional, add an explicit cast.\n/Users/runner/work/kitaqgb-rust-validation-20261004/kitaqgb-rust-validation-20261004/tests/emission-fixtures/runtime.c (line 18, column 22) warning KQ2418: implicit narrowing in assignment: uint16 -> uint8; cast explicitly to silence\n          sum = sum + i;\n                       ^\n  hint: If narrowing is intentional, add an explicit cast.\n",
+            "rom_sha256": "8219bba20fa9d34b282b05a35ec842bef4139be8fc0b5369c0f1e98b0eaa0ab7"
+          }
+        ]
+      }
+    ],
+    "compiler_source_unchanged_since_ci": true
+  },
+  "portable_linux_ci": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170055811",
+  "universal_ci": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+}

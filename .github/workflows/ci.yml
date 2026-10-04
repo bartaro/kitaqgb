@@ -1,0 +1,79 @@
+name: Native build and differential tests
+on:
+  push:
+    paths:
+      - 'Cargo.*'
+      - 'src/**'
+      - 'tests/**'
+      - 'lib/**'
+      - 'tools/**'
+      - '.github/workflows/ci.yml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: kitaqgb-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  native:
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-15-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          rustup toolchain install 1.93.1 --profile minimal
+          rustup default 1.93.1
+          rustup show
+          rustc --version --verbose
+      - name: Differential tests
+        run: cargo test --locked
+      - name: Release
+        run: cargo build --locked --release
+      - name: CLI smoke on Unix
+        if: runner.os != 'Windows'
+        run: python3 tools/platform_smoke.py --compiler target/release/kitaqgb --receipt native-platform.json
+      - name: CLI smoke on Windows
+        if: runner.os == 'Windows'
+        run: python tools/platform_smoke.py --compiler target/release/kitaqgb.exe --receipt native-platform.json
+      - name: Release helper execution on Unix
+        if: runner.os != 'Windows'
+        run: python3 tools/auxiliary_smoke.py --kind gb --bin-dir target/release --receipt auxiliary-platform.json
+      - name: Release helper execution on Windows
+        if: runner.os == 'Windows'
+        run: python tools/auxiliary_smoke.py --kind gb --bin-dir target/release --receipt auxiliary-platform.json
+      - name: Save executable and library
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitaqgb-${{ runner.os }}-${{ runner.arch }}
+          retention-days: 14
+          path: |
+            target/release/kitaqgb
+            target/release/kitaqgb.exe
+            target/release/kitaqgb-zx0
+            target/release/kitaqgb-zx0.exe
+            target/release/kitaqgb-patch-vblank
+            target/release/kitaqgb-patch-vblank.exe
+            lib/
+            native-platform.json
+            auxiliary-platform.json
+      - name: Remove build intermediates
+        if: always()
+        run: cargo clean
+  minimum-rust:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install declared minimum Rust
+        run: rustup toolchain install 1.85.0 --profile minimal
+      - name: Verify all targets with minimum Rust
+        run: cargo +1.85.0 test --locked
+      - name: Remove build intermediates
+        if: always()
+        run: cargo clean

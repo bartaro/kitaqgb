@@ -1,8 +1,62 @@
 # KITAQGB
 
 <!-- readme-language-links:start -->
-[English](README.md#english) | [日本語](README.md#japanese) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Deutsch](README.de.md)
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [kitaqgb](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) |
+| 日本語 | [kitaqgb](https://bartaro.github.io/kitaq-docs/kitaqgb.html) |
+| 한국어 | [kitaqgb](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) |
+| 简体中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) |
+| 繁體中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) |
+| Français | [kitaqgb](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) |
+| Español | [kitaqgb](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) |
+| Deutsch | [kitaqgb](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Compilateur natif Rust et outils auxiliaires
+
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
+
+
+Les constructions natives et vérifications d'exécution ont réussi sous Windows, Linux, macOS ARM et macOS Intel. KITAQGB a passé 48 tests et 395 vérifications d'outils par environnement ; KITAQFC en a passé 55 et 401. Rust 1.85 a également été testé. PUBLIC_DISTRIBUTION.json consigne les empreintes des binaires installés et la provenance des validations. Les workflows GitHub Actions publics reconstruisent et testent ces sources indépendamment.
+
+Les sorties de référence conservées vérifient les octets ROM, les diagnostics et les formats des outils. Les anciennes preuves d'émulation C# restent des résultats historiques liés à leurs empreintes sources. Elles ne prouvent pas automatiquement toutes les API Rust, le matériel réel ou le démarrage complet d'un jeu par le BIOS FDS. Le script PNG d'origine, indisponible, a été réimplémenté d'après sa spécification ; l'identité des octets avec ce script ne peut être affirmée.
+
+[Compilateur natif Rust et outils auxiliaires](tools/README.fr.md)
+
+<!-- rust-native-20261004:end -->
+
+
 
 [Manuel du compilateur](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) · [Manuel de la bibliothèque](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)
 
@@ -65,60 +119,100 @@ Testez les ROM produites dans un émulateur et, lorsque c'est possible, sur le m
 ## Organisation du dépôt
 
 ```text
-kitaqgb/  # Racine du dépôt
-├─ kitaqgb/  # Sources du compilateur
-│  ├─ *.cs
-│  ├─ app.config
-│  └─ kitaqgb.csproj
-├─ kitaqgb.exe  # Compilateur Release prêt à l’emploi
-├─ kitaqgb.exe.config  # Configuration du runtime .NET Framework
-├─ lib/  # Bibliothèques C
-├─ examples/  # Exemples pédagogiques et police originale
-├─ scripts/build.ps1  # Reconstruire l’exécutable Release
-├─ LICENSE
-└─ LICENSE.ja
+Cargo.toml / Cargo.lock
+src/                     # Rust compiler and native helper sources
+kitaqgb.exe             # Windows x64 compiler
+kitaqgb-*.exe           # Windows native helper tools
+bin/                     # Linux and macOS executables
+lib/                     # C libraries for console ROMs
+tests/                   # Frozen reference fixtures and Rust tests
+scripts/build.ps1
+scripts/build.sh
 ```
 
-Le compilateur fourni nécessite Windows avec .NET Framework 4.8. Téléchargez l'archive ZIP du dépôt pour conserver ensemble l'exécutable, sa configuration, les bibliothèques et les mentions de licence. Pour recompiler, il faut également le Developer Pack .NET Framework 4.8 et Visual Studio Build Tools. Depuis la racine du dépôt :
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
 .\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
 ```
 
-Une compilation Release copie l'exécutable et sa configuration à la racine du dépôt. Les compilations Debug restent dans `kitaqgb/bin/Debug` et ne remplacent pas le compilateur Release distribué. Les caches de compilation et les fichiers PDB ne sont pas distribués. Consultez le [compte rendu de compilation binaire](BINARY_BUILD.json) pour les entrées et les empreintes SHA-256.
+```sh
+sh scripts/build.sh
+```
 
 ## Prérequis
 
-L'environnement principal de compilation est :
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
 
-- Windows ;
-- la prise en charge du ciblage .NET Framework 4.8 ;
-- Visual Studio ou Visual Studio Build Tools avec MSBuild.
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
 
-Le fichier de projet est actuellement un projet C# classique ciblant `.NET Framework v4.8`.
+Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
 
-Un environnement non Windows peut fonctionner avec Mono/MSBuild selon les assemblies de référence installées, mais Windows avec MSBuild reste la voie principale de compilation prise en charge.
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
 
 ## Compiler KITAQGB
 
-Depuis la racine du dépôt :
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
 
-```powershell
-msbuild kitaqgb\kitaqgb.csproj /p:Configuration=Release
+```sh
+cargo test --locked --tests
+cargo build --locked --release
 ```
 
-Après une compilation réussie, le projet copie l'exécutable à la racine :
+Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
 
-```text
-kitaqgb.exe
-```
-
-Vous pouvez ensuite consulter l'aide en ligne de commande :
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
+.\scripts\build.ps1
 .\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## Démarrage rapide
@@ -400,12 +494,31 @@ Avant de proposer une modification :
 
 ## Compiler et commencer à utiliser l'outil
 
-Utilisez Windows, le Developer Pack .NET Framework 4.8 et Visual Studio Build Tools avec MSBuild. Lancez les commandes depuis Developer PowerShell.
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
-MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
+.\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## Manuels et licences

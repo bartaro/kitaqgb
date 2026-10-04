@@ -1,8 +1,6 @@
 # KITAQGB 程式庫
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
+
 
 <!-- local-library-20261003:start -->
 ## 2026-10-03 本機程式庫差異與驗證
@@ -273,3 +271,33 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 撞球類遊戲優先使用 `physics2d_circle.*`，而非 AABB 程式庫。
 - 目前結構不必另外加入 `random`、`collision`、`ui`、`tilemap`、`dialog`、`board_game`、`simple_physics` 程式庫；對應功能請使用 `rng`、`physics2d`、`text`／`menu`、`map`、`script`、`slg`、`physics2d`。
 - `scene.c` 與 `entity.c` 避免在函式指標呼叫中使用指標大小的參數。目前 KITAQGB 的函式指標呼叫路徑，以無參數或單一位元組 ID 最為可靠。
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## 使用原生編譯器呼叫程式庫
+
+lib/ 包含編入遊戲機 ROM 的 C 標頭與原始碼。PC 編譯器與輔助工具使用 Rust；遊戲原始碼、目標平台程式庫與 API 仍使用 C。提供的 SOURCE_MANIFEST.json 與 LIBRARY_MERGE.json 記錄程式庫原始碼的選擇。
+
+Windows、Linux、macOS ARM 和 macOS Intel 的原生建置及執行驗證均成功。KITAQGB 在每個環境通過 48 項測試與 395 項輔助工具檢查；KITAQFC 通過 55 項測試與 401 項檢查，也驗證了 Rust 1.85。PUBLIC_DISTRIBUTION.json 記錄已配置程式的雜湊與驗證來源。公開 GitHub Actions 會獨立建置及驗證這些原始碼。
+
+保存的參考輸出用於檢查 ROM 位元組、診斷與輔助工具格式。先前的 C# 模擬器驗證保留為對應原始碼指紋的歷史紀錄，並不自動證明所有 Rust API、實體硬體或完整的 FDS BIOS 遊戲啟動。原始 PNG 轉換腳本無法取得，因此依規格重新實作，不能宣稱與原腳本位元組一致。
+
+[Rust 原生編譯器與輔助工具](../tools/README.zh-TW.md)
+
+<!-- rust-native-20261004:end -->

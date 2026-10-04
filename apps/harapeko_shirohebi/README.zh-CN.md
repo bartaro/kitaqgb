@@ -14,7 +14,7 @@ HTML 解说包含程序流程图、白蛇身体跟随算法、库的使用示例
 
 ## 在 Windows 上构建
 
-需要 Windows、.NET Framework 4.8、PowerShell，以及本仓库的完整副本或 ZIP。请将根目录的编译器文件和 `lib/` 保存在一起。图形和音频已作为 C 数组提供，无需使用素材编辑器。
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。 PowerShell 示例构建使用根目录的 Windows 程序。在 Linux/macOS 上使用原生编译器并传入相同的 C 输入和选项，或使用 PowerShell 7。CHR 图形与 C 源码是不同输入；font.chr 保留原示例字体。
 
 在仓库根目录运行：
 

@@ -14,7 +14,7 @@ Le guide HTML contient un schéma d’exécution, l’algorithme de suivi du ser
 
 ## Compiler sous Windows
 
-Il faut Windows, .NET Framework 4.8, PowerShell et une copie complète du dépôt, obtenue par Git ou sous forme de ZIP. Conservez ensemble les fichiers du compilateur à la racine et `lib/`. Les graphismes et l’audio sont fournis sous forme de tableaux C ; aucun éditeur de ressources n’est nécessaire.
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow. Les scripts PowerShell utilisent l'exécutable Windows à la racine. Sous Linux/macOS, transmettez les mêmes sources C et options au compilateur natif, ou utilisez PowerShell 7. Les graphismes CHR et le source C sont des entrées distinctes ; font.chr conserve la police des exemples.
 
 Depuis la racine du dépôt :
 

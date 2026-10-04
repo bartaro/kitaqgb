@@ -1,0 +1,26 @@
+{
+  "flags": [],
+  "diagnostics": {
+    "exit_code": 1,
+    "errors": 1,
+    "warnings": 0,
+    "output": "<STEM>.gb",
+    "diagnostics": [
+      {
+        "severity": "error",
+        "code": "KQ2501",
+        "message": "extern symbol not defined: missing",
+        "suggestion": "Add a matching definition for this extern declaration.",
+        "file": "<SOURCES>/main.c",
+        "line": 1,
+        "column": 18
+      }
+    ]
+  },
+  "paths": {
+    "exit_code": 1,
+    "diag_json": "<DIAG>"
+  },
+  "files": {},
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17"
+}

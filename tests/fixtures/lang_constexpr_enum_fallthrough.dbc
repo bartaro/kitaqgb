@@ -1,0 +1,37 @@
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; variable
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; for
+NOP
+; switch
+NOP
+; assign
+NOP
+; break
+NOP
+; assign
+NOP
+; fallthrough
+; assign
+NOP
+; break
+NOP
+; assign
+NOP
+; break
+NOP
+; post_increment
+NOP
+; for
+NOP

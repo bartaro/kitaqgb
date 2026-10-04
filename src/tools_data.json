@@ -1,0 +1,44 @@
+{
+  "snippets": [
+    {
+      "id": "input.poll_joypad",
+      "category": "input",
+      "title": "Joypad Poll",
+      "body": "u8 PollJoypad() {\n    // requires: __location(0xFF00) u8 P1;\n    P1 = 0x20;\n    u8 dpad = (~P1) & 0x0F;\n    P1 = 0x10;\n    u8 buttons = ((~P1) & 0x0F) << 4;\n    return (u8)(buttons | dpad);\n}"
+    },
+    {
+      "id": "render.wait_vblank",
+      "category": "render",
+      "title": "Wait VBlank",
+      "body": "void WaitVBlank() {\n    // requires:\n    // __location(0xFF40) u8 LCDC;\n    // __location(0xFF44) u8 LY;\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}"
+    },
+    {
+      "id": "render.clear_oam4",
+      "category": "render",
+      "title": "Clear 4 sprites",
+      "body": "void ClearOam4() {\n    __store8(0xFE00, 0);\n    __store8(0xFE01, 0);\n    __store8(0xFE02, 0);\n    __store8(0xFE03, 0);\n}"
+    },
+    {
+      "id": "sound.beep_ch2",
+      "category": "sound",
+      "title": "Simple CH2 beep",
+      "body": "void SfxBeepCh2() {\n    // requires:\n    // __location(0xFF16) u8 NR21;\n    // __location(0xFF17) u8 NR22;\n    // __location(0xFF18) u8 NR23;\n    // __location(0xFF19) u8 NR24;\n    NR21 = 0x80;\n    NR22 = 0xF3;\n    NR23 = 0x40;\n    NR24 = 0x87;\n}"
+    },
+    {
+      "id": "sram.enable_disable",
+      "category": "sram",
+      "title": "Enable / Disable SRAM",
+      "body": "void SRAM_Enable()  { __store8(0x0000, 0x0A); }\nvoid SRAM_Disable() { __store8(0x0000, 0x00); }"
+    },
+    {
+      "id": "sram.save_byte",
+      "category": "sram",
+      "title": "Save one byte",
+      "body": "void SRAM_SaveByte(u16 addr, u8 value) {\n    SRAM_Enable();\n    __store8(addr, value);\n    SRAM_Disable();\n}"
+    }
+  ],
+  "template_dmg": "#pragma bank 0\n\n// Auto-generated single-file prototype.\n// Build: kitaqgb __STEM__.c -o __STEM__.gb --profile=dev --fast-build --cache\n\n// Hardware register declarations (keep __location in ascending order).\n__location(0xFF40) u8 LCDC;\n__location(0xFF44) u8 LY;\n__location(0xFF47) u8 BGP;\n\n__wram u8 g_frame;\n__wram u8 g_flash;\n\nvoid WaitVBlank() {\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\nvoid main() {\n    BGP = 0xE4;\n    g_frame = 0;\n    g_flash = 0;\n    while (1) {\n        WaitVBlank();\n        g_frame++;\n        if ((g_frame & 31) == 0) {\n            g_flash ^= 1;\n            if (g_flash != 0) BGP = 0x1B;\n            else BGP = 0xE4;\n        }\n    }\n}\n",
+  "template_cgb": "#pragma bank 0\n\n// Auto-generated single-file prototype.\n// Build: kitaqgb __STEM__.c -o __STEM__.gb --profile=dev --fast-build --cache\n\n// Hardware register declarations (keep __location in ascending order).\n__location(0xFF40) u8 LCDC;\n__location(0xFF44) u8 LY;\n__location(0xFF47) u8 BGP;\n\n__wram u8 g_frame;\n__wram u8 g_flash;\n\nvoid WaitVBlank() {\n    if ((LCDC & 0x80) == 0) return;\n    while (LY >= 144) { }\n    while (LY < 144) { }\n}\n\nvoid main() {\n    BGP = 0xE4;\n // CGB-safe template: only writes DMG-compatible registers by default.\n\n    g_frame = 0;\n    g_flash = 0;\n    while (1) {\n        WaitVBlank();\n        g_frame++;\n        if ((g_frame & 31) == 0) {\n            g_flash ^= 1;\n            if (g_flash != 0) BGP = 0x1B;\n            else BGP = 0xE4;\n        }\n    }\n}\n",
+  "build_ps1": "param(\n    [switch]$Release\n)\n$ErrorActionPreference = 'Stop'\n$args = @('__SOURCE__', '-o', '__ROM__', '--cache', '--deps-out')\nif ($Release) {\n    $args += '--profile=release'\n} else {\n    $args += '--profile=dev'\n    $args += '--fast-build'\n}\n& kitaqgb @args\nexit $LASTEXITCODE\n",
+  "conventions": "# KITAQGB Project Conventions\n\ngenerated_utc=__UTC__\n\n## Build\n- Default dev build: `kitaqgb a.c b.c -o out.gb --profile=dev --fast-build --cache --deps-out`\n- Release build: `kitaqgb a.c b.c -o out.gb --profile=release --cache --deps-out`\n- Test entrypoint: `kitaqgb test`\n\n## Diagnostics\n- Use `--diag-json` for machine-readable diagnostics.\n- Use `kitaqgb fixhint <diag-or-log>` for shortest fix suggestions.\n- Use `--strict` in CI and `--permissive` during exploration.\n\n## Vibe Workflow\n- Start with `kitaqgb template` and keep prototype in one file.\n- Use `kitaqgb snippet list` and `kitaqgb snippet get <id>` to paste proven fragments.\n- Use `kitaqgb devserver ...` for dependency-aware rebuild loop.\n- Record reproducible steps with `kitaqgb recipe`.\n\n## Encoding\n- Treat source, reports, and scripts as UTF-8.\n- Keep command history in `integration_test/reports/COMMAND_HISTORY.log`.\n"
+}

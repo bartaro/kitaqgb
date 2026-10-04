@@ -1,0 +1,696 @@
+[
+  {
+    "case": "help-0",
+    "args": [
+      "kqhelp",
+      "0"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ0000\nenum=None\ncategory=generic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-1000",
+    "args": [
+      "kqhelp",
+      "1000"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1000\nenum=ParseError\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\n構文を解析できません。トークンの欠落や順序不整合が疑われます。\n\nsuggestion: Check the previous line for missing brackets, commas, or semicolons.\n"
+  },
+  {
+    "case": "help-1001",
+    "args": [
+      "kqhelp",
+      "1001"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1001\nenum=ExpectedToken\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\n期待された記号/トークンが見つかりません。\n\nsuggestion: Check matching tokens (; ) ] }) and ensure the previous expression/declarator is properly closed.\n"
+  },
+  {
+    "case": "help-1002",
+    "args": [
+      "kqhelp",
+      "1002"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1002\nenum=ExpectedType\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\n型指定が必要な位置で型が解決できませんでした。\n\nsuggestion: A type is required here. Add a valid type specifier such as u8/u16/s8/s16/struct/enum.\n"
+  },
+  {
+    "case": "help-1003",
+    "args": [
+      "kqhelp",
+      "1003"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1003\nenum=PreprocessorWarning\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-1004",
+    "args": [
+      "kqhelp",
+      "1004"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1004\nenum=PreprocessorError\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-2100",
+    "args": [
+      "kqhelp",
+      "2100"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2100\nenum=AggregateNotDefined\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nstruct/union が未定義のまま参照されています。\n"
+  },
+  {
+    "case": "help-2101",
+    "args": [
+      "kqhelp",
+      "2101"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2101\nenum=IncompleteType\ncategory=type/semantic\nseverity_behavior=通常ルール\n\n不完全型のままサイズ確定やフィールドアクセスが要求されました。\n"
+  },
+  {
+    "case": "help-2102",
+    "args": [
+      "kqhelp",
+      "2102"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2102\nenum=InvalidWramXBank\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Use WRAMX bank numbers in the range 1..7.\n"
+  },
+  {
+    "case": "help-2103",
+    "args": [
+      "kqhelp",
+      "2103"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2103\nenum=BankedWramRequiresCgbOnly\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Build with #pragma rom_cgb cgb_only or --cgb=cgb_only before using banked WRAM/SVBK.\n"
+  },
+  {
+    "case": "help-2104",
+    "args": [
+      "kqhelp",
+      "2104"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2104\nenum=BankedWramLocalNotAllowed\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Move this declaration to file scope; MVP banked WRAM is only for globals/file-statics.\n"
+  },
+  {
+    "case": "help-2105",
+    "args": [
+      "kqhelp",
+      "2105"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2105\nenum=WramXBankOverflow\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Reduce the allocation size or move data into a different WRAMX bank.\n"
+  },
+  {
+    "case": "help-2106",
+    "args": [
+      "kqhelp",
+      "2106"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2106\nenum=InvalidStackTop\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Use a 16-bit address inside the selected stack window, for example --stack-top=0xCFFF or --stack-top=$DFFF.\n"
+  },
+  {
+    "case": "help-2107",
+    "args": [
+      "kqhelp",
+      "2107"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2107\nenum=InvalidStackReserve\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Choose a reserve size that fits between the selected stack top and the bottom of the chosen WRAM window.\n"
+  },
+  {
+    "case": "help-2108",
+    "args": [
+      "kqhelp",
+      "2108"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2108\nenum=StackTopBankMismatch\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Keep --stack-top inside the WRAM window selected by --stack-bank.\n"
+  },
+  {
+    "case": "help-2109",
+    "args": [
+      "kqhelp",
+      "2109"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2109\nenum=StackReservedOverlap\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Move the fixed allocation or lower its address so it does not overlap the reserved stack range.\n"
+  },
+  {
+    "case": "help-2110",
+    "args": [
+      "kqhelp",
+      "2110"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2110\nenum=FixedAllocationOverlap\ncategory=type/semantic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Move the fixed allocation or reduce earlier automatic WRAM allocations so their ranges do not overlap.\n"
+  },
+  {
+    "case": "help-2201",
+    "args": [
+      "kqhelp",
+      "2201"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2201\nenum=ConstAssign\ncategory=const/qualifier\nseverity_behavior=通常ルール\n\nconstオブジェクトへの代入が検出されました。\n\nsuggestion: You are modifying a const-qualified object. Write to a non-const variable or revise qualifiers.\n"
+  },
+  {
+    "case": "help-2202",
+    "args": [
+      "kqhelp",
+      "2202"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2202\nenum=ConstModify\ncategory=const/qualifier\nseverity_behavior=通常ルール\n\nconst修飾の実体を変更しようとしています。\n\nsuggestion: You are modifying a const-qualified object. Write to a non-const variable or revise qualifiers.\n"
+  },
+  {
+    "case": "help-2301",
+    "args": [
+      "kqhelp",
+      "2301"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2301\nenum=StaticAssertFailed\ncategory=compile-time assert\nseverity_behavior=通常ルール\n\nstatic_assert の条件が偽です。\n\nsuggestion: Revisit the static_assert condition and the constants it depends on.\n"
+  },
+  {
+    "case": "help-2401",
+    "args": [
+      "kqhelp",
+      "2401"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2401\nenum=MustCheckUnused\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__must_check関数の戻り値が未使用です。\n"
+  },
+  {
+    "case": "help-2402",
+    "args": [
+      "kqhelp",
+      "2402"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2402\nenum=NonNullArgument\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nnonnull制約に違反する引数が渡されています。\n"
+  },
+  {
+    "case": "help-2403",
+    "args": [
+      "kqhelp",
+      "2403"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2403\nenum=RangeViolation\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__range制約を超える値が検出されました。\n\nsuggestion: Adjust the assigned value or the __range declaration so the value stays in range.\n"
+  },
+  {
+    "case": "help-2404",
+    "args": [
+      "kqhelp",
+      "2404"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2404\nenum=RangeIndexOob\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__range付きインデックスが配列境界外となる可能性があります。\n\nsuggestion: Align array length and possible index range; clamp the index if needed.\n"
+  },
+  {
+    "case": "help-2405",
+    "args": [
+      "kqhelp",
+      "2405"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2405\nenum=SwitchCaseEnumMismatch\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nswitch(enum)に対するcaseの列挙型が一致しません。\n"
+  },
+  {
+    "case": "help-2406",
+    "args": [
+      "kqhelp",
+      "2406"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2406\nenum=SwitchCaseNonEnumOnEnumSwitch\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nenum switchに非enum caseが含まれています。\n"
+  },
+  {
+    "case": "help-2407",
+    "args": [
+      "kqhelp",
+      "2407"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2407\nenum=EnumStrictMix\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__enum_strictモードでenumと整数の混在が検出されました。\n"
+  },
+  {
+    "case": "help-2408",
+    "args": [
+      "kqhelp",
+      "2408"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2408\nenum=BitFlagsOp\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__bitflags型に不適切な演算が適用されています。\n"
+  },
+  {
+    "case": "help-2409",
+    "args": [
+      "kqhelp",
+      "2409"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2409\nenum=BitFlagsMix\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__bitflagsと通常整数の混在が検出されました。\n"
+  },
+  {
+    "case": "help-2410",
+    "args": [
+      "kqhelp",
+      "2410"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2410\nenum=SafeIndexIndex\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__safe_indexで安全でない添字式が検出されました。\n"
+  },
+  {
+    "case": "help-2411",
+    "args": [
+      "kqhelp",
+      "2411"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2411\nenum=SafeIndexMix\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__safe_index型と通常整数の混在が検出されました。\n"
+  },
+  {
+    "case": "help-2412",
+    "args": [
+      "kqhelp",
+      "2412"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2412\nenum=RestrictAlias\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n__restrict違反の可能性があるエイリアスが検出されました。\n"
+  },
+  {
+    "case": "help-2413",
+    "args": [
+      "kqhelp",
+      "2413"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2413\nenum=ConstDiscard\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nポインタ変換でconst修飾が暗黙に破棄されています。\n"
+  },
+  {
+    "case": "help-2414",
+    "args": [
+      "kqhelp",
+      "2414"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2414\nenum=SwitchImplicitFallthrough\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nswitch caseで暗黙fallthroughが検出されました。\n\nsuggestion: If fallthrough is intentional, add 'fallthrough;' explicitly.\n"
+  },
+  {
+    "case": "help-2415",
+    "args": [
+      "kqhelp",
+      "2415"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2415\nenum=SwitchFallthroughUsage\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nfallthrough使用位置が不正です。\n\nsuggestion: Use 'fallthrough;' only as the last statement in a case block.\n"
+  },
+  {
+    "case": "help-2416",
+    "args": [
+      "kqhelp",
+      "2416"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2416\nenum=UnreachableCode\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n到達不能コードが検出されました。\n\nsuggestion: Remove statements after return/goto/break/continue or split control flow.\n"
+  },
+  {
+    "case": "help-2417",
+    "args": [
+      "kqhelp",
+      "2417"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2417\nenum=UnusedSymbol\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n未使用の変数/関数/シンボルです。\n\nsuggestion: The symbol is unused. Remove it or add a real use-site.\n"
+  },
+  {
+    "case": "help-2418",
+    "args": [
+      "kqhelp",
+      "2418"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2418\nenum=ImplicitNarrowing\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n暗黙縮小変換の可能性があります。\n\nsuggestion: If narrowing is intentional, add an explicit cast.\n"
+  },
+  {
+    "case": "help-2419",
+    "args": [
+      "kqhelp",
+      "2419"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2419\nenum=PointerArithmeticDanger\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n危険なポインタ演算の可能性があります。\n\nsuggestion: Review pointer-offset type/range and add explicit casts if intentional.\n"
+  },
+  {
+    "case": "help-2420",
+    "args": [
+      "kqhelp",
+      "2420"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2420\nenum=ManualSvbkRequired\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Save SVBK, switch to the symbol's bank, use the data, then restore the previous SVBK.\n"
+  },
+  {
+    "case": "help-2421",
+    "args": [
+      "kqhelp",
+      "2421"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2421\nenum=LargeStructCopy\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\nこのコードの詳細説明は未登録です。\n\nsuggestion: Consider passing a pointer, copying only changed fields, or moving this copy out of a hot loop.\n"
+  },
+  {
+    "case": "help-2501",
+    "args": [
+      "kqhelp",
+      "2501"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2501\nenum=ExternUndefined\ncategory=extern linkage\nseverity_behavior=通常ルール\n\nextern宣言に対応する定義が見つかりません。\n\nsuggestion: Add a matching definition for this extern declaration.\n"
+  },
+  {
+    "case": "help-2502",
+    "args": [
+      "kqhelp",
+      "2502"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2502\nenum=ExternTypeMismatch\ncategory=extern linkage\nseverity_behavior=通常ルール\n\nextern宣言と定義の型が一致しません。\n\nsuggestion: Make the extern declaration type match the actual definition type.\n"
+  },
+  {
+    "case": "help-2503",
+    "args": [
+      "kqhelp",
+      "2503"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2503\nenum=ExternNotSupported\ncategory=extern linkage\nseverity_behavior=通常ルール\n\nexternの扱いとして未対応なパターンです。\n\nsuggestion: For const-scalar address-taking, consider enabling -Zconst-scalar-in-rom.\n"
+  },
+  {
+    "case": "help-9000",
+    "args": [
+      "kqhelp",
+      "9000"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ9000\nenum=Internal\ncategory=internal\nseverity_behavior=通常ルール\n\n内部エラーです。\n"
+  },
+  {
+    "case": "help-9001",
+    "args": [
+      "kqhelp",
+      "9001"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ9001\nenum=InternalNYI\ncategory=internal\nseverity_behavior=通常ルール\n\n未実装パスに到達しました。\n"
+  },
+  {
+    "case": "help-9002",
+    "args": [
+      "kqhelp",
+      "9002"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ9002\nenum=InternalUnhandledCase\ncategory=internal\nseverity_behavior=通常ルール\n\n想定外ケースが発生しました。\n"
+  },
+  {
+    "case": "help-1999",
+    "args": [
+      "kqhelp",
+      "1999"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ1999\nenum=<unknown>\ncategory=parser/front-end\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-3000",
+    "args": [
+      "kqhelp",
+      "3000"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ3000\nenum=<unknown>\ncategory=generic\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-9999",
+    "args": [
+      "kqhelp",
+      "9999"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ9999\nenum=<unknown>\ncategory=internal\nseverity_behavior=通常ルール\n\nこのコードの詳細説明は未登録です。\n"
+  },
+  {
+    "case": "help-prefix",
+    "args": [
+      "kqhelp",
+      "kq2416"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB diagnostic help\ncode=KQ2416\nenum=UnreachableCode\ncategory=lint/warning\nseverity_behavior=strict modeではerrorに昇格\n\n到達不能コードが検出されました。\n\nsuggestion: Remove statements after return/goto/break/continue or split control flow.\n"
+  },
+  {
+    "case": "help-invalid",
+    "args": [
+      "kqhelp",
+      "10000"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "help-missing",
+    "args": [
+      "kqhelp"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "symbols",
+    "args": [
+      "symfind",
+      "foo",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=foo\nuse_regex=0\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=3\n\n# name, address, bank, size, kind, region, source\nfoo, 0xC000, 0, 2, sym, WRAM0, dbg\nfoo, 0xC000, 0, , S, WRAM0, map\nfoobar, 0x4012, 1, , L, ROM, map\n"
+  },
+  {
+    "case": "symbols-ignore",
+    "args": [
+      "symfind",
+      "bar",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--ignore-case"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=bar\nuse_regex=0\nignore_case=1\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=3\n\n# name, address, bank, size, kind, region, source\nBAR, 0x4010, 3, 5, sym, ROM, dbg\nBAR, 0x4010, 1, , S, ROM, map\nfoobar, 0x4012, 1, , L, ROM, map\n"
+  },
+  {
+    "case": "symbols-regex",
+    "args": [
+      "symfind",
+      "^(foo|BAR)$",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=^(foo|BAR)$\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=4\n\n# name, address, bank, size, kind, region, source\nBAR, 0x4010, 3, 5, sym, ROM, dbg\nBAR, 0x4010, 1, , S, ROM, map\nfoo, 0xC000, 0, 2, sym, WRAM0, dbg\nfoo, 0xC000, 0, , S, WRAM0, map\n"
+  },
+  {
+    "case": "symbols-regex-ignore",
+    "args": [
+      "symfind",
+      "^bar$",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex",
+      "--ignore-case"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=^bar$\nuse_regex=1\nignore_case=1\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=2\n\n# name, address, bank, size, kind, region, source\nBAR, 0x4010, 3, 5, sym, ROM, dbg\nBAR, 0x4010, 1, , S, ROM, map\n"
+  },
+  {
+    "case": "symbols-empty",
+    "args": [
+      "symfind",
+      "absent",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=absent\nuse_regex=0\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=0\n\n# name, address, bank, size, kind, region, source\n"
+  },
+  {
+    "case": "symbols-lookahead",
+    "args": [
+      "symfind",
+      "foo(?=bar)",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=foo(?=bar)\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=1\n\n# name, address, bank, size, kind, region, source\nfoobar, 0x4012, 1, , L, ROM, map\n"
+  },
+  {
+    "case": "symbols-lookbehind",
+    "args": [
+      "symfind",
+      "(?<=foo)bar$",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=(?<=foo)bar$\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=1\n\n# name, address, bank, size, kind, region, source\nfoobar, 0x4012, 1, , L, ROM, map\n"
+  },
+  {
+    "case": "symbols-negative-lookahead",
+    "args": [
+      "symfind",
+      "^foo(?!bar)",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=^foo(?!bar)\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=2\n\n# name, address, bank, size, kind, region, source\nfoo, 0xC000, 0, 2, sym, WRAM0, dbg\nfoo, 0xC000, 0, , S, WRAM0, map\n"
+  },
+  {
+    "case": "symbols-backreference",
+    "args": [
+      "symfind",
+      "^(f)(o)\\2$",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=^(f)(o)\\2$\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=2\n\n# name, address, bank, size, kind, region, source\nfoo, 0xC000, 0, 2, sym, WRAM0, dbg\nfoo, 0xC000, 0, , S, WRAM0, map\n"
+  },
+  {
+    "case": "symbols-named-group",
+    "args": [
+      "symfind",
+      "^(?<word>foo)$",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB symbol search\npattern=^(?<word>foo)$\nuse_regex=1\nignore_case=0\nmap={ROOT}/symbols.map\ndbg={ROOT}/symbols.dbg\nmatch_count=2\n\n# name, address, bank, size, kind, region, source\nfoo, 0xC000, 0, 2, sym, WRAM0, dbg\nfoo, 0xC000, 0, , S, WRAM0, map\n"
+  },
+  {
+    "case": "symbols-invalid-regex",
+    "args": [
+      "symfind",
+      "(",
+      "--map={ROOT}/symbols.map",
+      "--dbg={ROOT}/symbols.dbg",
+      "--out=-",
+      "--regex"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "source-range",
+    "args": [
+      "src2asm",
+      "{ROOT}/source.c:6",
+      "--disasm={ROOT}/listing.s",
+      "--out=-",
+      "--funcsizes={ROOT}/old.funcsizes.txt"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB source -> assembly lookup\nsource={ROOT}/source.c:6\nfunction=main (5-7)\nrange=0x00020..0x00022\ndisasm={ROOT}/listing.s\n\n# disassembly excerpt\nA ; file_off=$00010\nB ; file_off=$00011\nC ; file_off=$00020\nD ; file_off=$00021\nfooter\n"
+  },
+  {
+    "case": "source-map",
+    "args": [
+      "src2asm",
+      "{ROOT}/source.c:6",
+      "--disasm={ROOT}/listing.s",
+      "--out=-",
+      "--funcsizes={ROOT}/absent",
+      "--map={ROOT}/ranges.map"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB source -> assembly lookup\nsource={ROOT}/source.c:6\nfunction=main (5-7)\nrange=0x00020..0x00030\ndisasm={ROOT}/listing.s\n\n# disassembly excerpt\nA ; file_off=$00010\nB ; file_off=$00011\nC ; file_off=$00020\nD ; file_off=$00021\nfooter\n"
+  },
+  {
+    "case": "source-context",
+    "args": [
+      "src2asm",
+      "{ROOT}/source.c:6",
+      "--disasm={ROOT}/listing.s",
+      "--out=-",
+      "--funcsizes={ROOT}/old.funcsizes.txt",
+      "--context=0"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB source -> assembly lookup\nsource={ROOT}/source.c:6\nfunction=main (5-7)\nrange=0x00020..0x00022\ndisasm={ROOT}/listing.s\n\n# disassembly excerpt\nC ; file_off=$00020\nD ; file_off=$00021\n"
+  },
+  {
+    "case": "source-absent",
+    "args": [
+      "src2asm",
+      "{ROOT}/source.c:99",
+      "--disasm={ROOT}/listing.s",
+      "--funcsizes={ROOT}/old.funcsizes.txt",
+      "--out=-"
+    ],
+    "exit_code": 1,
+    "stdout": ""
+  },
+  {
+    "case": "rom-diff",
+    "args": [
+      "romdiff",
+      "{ROOT}/old.gb",
+      "{ROOT}/new.gb",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB ROM diff (function-level)\nold_rom={ROOT}/old.gb\nnew_rom={ROOT}/new.gb\nold_ranges={ROOT}/old.funcsizes.txt\nnew_ranges={ROOT}/new.funcsizes.txt\nfunction_count=5\nchanged=2, added=1, removed=1, same=1\n\n# name, status, old_size, new_size, delta, changed_bytes, old_hash8, new_hash8\nadded, added, 0, 4, 4, 4, , 1be2e452\ngone, removed, 3, 0, -3, 3, bf6aaaab, \nmain, changed, 2, 3, 1, 2, 76e5424b, 4787ab93\nclipped, changed, 18, 18, 0, 1, 714eccb1, 42f1772c\nfirst, same, 2, 2, 0, 0, 3a393a86, 3a393a86\n"
+  },
+  {
+    "case": "rom-map",
+    "args": [
+      "romdiff",
+      "{ROOT}/old.gb",
+      "{ROOT}/new.gb",
+      "--old-func={ROOT}/absent",
+      "--new-func={ROOT}/absent",
+      "--old-map={ROOT}/ranges.map",
+      "--new-map={ROOT}/ranges.map",
+      "--out=-"
+    ],
+    "exit_code": 0,
+    "stdout": "# KITAQGB ROM diff (function-level)\nold_rom={ROOT}/old.gb\nnew_rom={ROOT}/new.gb\nold_ranges={ROOT}/ranges.map\nnew_ranges={ROOT}/ranges.map\nfunction_count=3\nchanged=2, added=0, removed=0, same=1\n\n# name, status, old_size, new_size, delta, changed_bytes, old_hash8, new_hash8\nfirst, changed, 16, 16, 0, 2, fc2e2c73, 66763327\nmain, changed, 16, 16, 0, 1, 36db1adc, 7b5b55d0\nlast, same, 1, 1, 0, 0, 5feceb66, 5feceb66\n"
+  }
+]

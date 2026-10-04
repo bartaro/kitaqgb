@@ -14,7 +14,7 @@ Der HTML-Leitfaden enthält ein Ablaufdiagramm, den Nachführungsalgorithmus der
 
 ## Unter Windows bauen
 
-Benötigt werden Windows, .NET Framework 4.8, PowerShell und ein vollständiger Checkout oder eine ZIP-Kopie dieses Repositorys. Halten Sie die Compilerdateien im Stammverzeichnis und `lib/` zusammen. Grafik und Audio liegen als C-Arrays vor; ein Ressourceneditor ist nicht erforderlich.
+Mit Rust 1.85 oder neuer lassen sich Compiler und sämtliche Hilfswerkzeuge für Windows, Linux, macOS ARM und macOS Intel bauen. Die nativen Programme benötigen kein .NET; die Werkzeuge für Grafikdaten benötigen auch weder Python noch Pillow. Die PowerShell-Skripte verwenden das Windows-Programm im Stammverzeichnis. Unter Linux/macOS übergeben Sie dieselben C-Eingaben und Optionen an den nativen Compiler oder verwenden PowerShell 7. CHR-Grafik und C-Quellen sind getrennte Eingaben; font.chr bewahrt die Schrift der Beispiele.
 
 Im Stammverzeichnis des Repositorys:
 

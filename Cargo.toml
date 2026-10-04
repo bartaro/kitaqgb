@@ -1,0 +1,33 @@
+[package]
+name = "kitaqgb"
+default-run = "kitaqgb"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT"
+description = "Native Rust migration of the KITAQGB Game Boy toolchain"
+
+[lib]
+name = "kitaqgb"
+path = "src/lib.rs"
+
+[[bin]]
+name = "kitaqgb"
+path = "src/main.rs"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.dev]
+debug = 0
+incremental = false
+
+[profile.test]
+debug = 0
+incremental = false
+
+[dependencies]
+regex = "=1.12.3"
+ctrlc = "=3.5.2"
+fancy-regex = "=0.19.1"

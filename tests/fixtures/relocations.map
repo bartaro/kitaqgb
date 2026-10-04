@@ -1,0 +1,9 @@
+; KITAQGB symbol map
+; Addr(CPU) Bank  Off   Kind Region Name
+FF83     0  0003   S    HRAM     high
+0160     0  0160   S    ROM      pointers
+0168     0  0168   S    ROM      main
+4000     1  0000   S    ROM      helper
+4005     1  0005   L    ROM      exit
+4007     1  0007   S    ROM      data
+D012     3  0012   S    WRAMX[3] banked

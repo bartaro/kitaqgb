@@ -1,0 +1,3 @@
+; KITAQGB symbol map
+; Addr(CPU) Bank  Off   Kind Region Name
+0160     0  0160   S    ROM      main

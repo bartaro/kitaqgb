@@ -14,7 +14,7 @@ HTML 해설에는 프로그램 흐름도, 몸통 추종 알고리즘, 라이브�
 
 ## Windows에서 빌드하기
 
-Windows, .NET Framework 4.8, PowerShell, 이 저장소 전체의 체크아웃 또는 ZIP이 필요합니다. 최상위 컴파일러 파일과 `lib/`를 함께 두세요. 그래픽과 오디오는 C 배열로 제공하므로 리소스 편집기는 필요하지 않습니다.
+Rust 1.85 이상으로 Windows, Linux, macOS ARM 및 macOS Intel용 컴파일러와 모든 보조 도구를 빌드할 수 있습니다. 네이티브 실행 파일에는 .NET이 필요하지 않으며, 리소스 처리 도구에도 Python이나 Pillow가 필요하지 않습니다. PowerShell 샘플 빌드는 최상위 Windows 실행 파일을 사용합니다. Linux/macOS에서는 같은 C 입력과 옵션을 네이티브 컴파일러에 전달하거나 PowerShell 7을 사용하세요. CHR 그래픽과 C 소스는 별도 입력이며 font.chr은 원래 샘플 글꼴을 유지합니다.
 
 저장소 최상위 디렉터리에서 실행합니다.
 

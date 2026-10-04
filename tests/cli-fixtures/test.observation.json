@@ -1,0 +1,44 @@
+{
+  "flags": [
+    "--profile=test"
+  ],
+  "diagnostics": {
+    "exit_code": 0,
+    "errors": 0,
+    "warnings": 1,
+    "output": "<STEM>.gb",
+    "diagnostics": [
+      {
+        "severity": "warning",
+        "code": "KQ0000",
+        "message": "warning: ROM size 32768 bytes smaller than --romsize (131072 bytes); padding with 0xFF",
+        "suggestion": "",
+        "file": "",
+        "line": 0,
+        "column": 0
+      }
+    ]
+  },
+  "paths": {
+    "exit_code": 0,
+    "banks_txt": "<STEM>.banks.txt",
+    "build_report_json": "<STEM>.build_report.json",
+    "dbc": "<STEM>.dbc",
+    "dbg": "<STEM>.dbg",
+    "dbg2_json": "<STEM>.dbg2.json",
+    "debug_dir": "<DEBUG>",
+    "diag_json": "<DIAG>",
+    "funcsizes_txt": "<STEM>.funcsizes.txt",
+    "map": "<STEM>.map",
+    "output_rom": "<STEM>.gb",
+    "source_map": "<STEM>.source_map.txt"
+  },
+  "files": {
+    "debug/assembly_code.txt": "\t; <<unknown> (line 1, column 1)>\n\t($variable __rom_bank $FF82 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __rom_bank_saved $FF83 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_sret_ptr $FF84 2)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_sp $FF86 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_bank_stack $FF87 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_retlo_stack $FF8F 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_rethi_stack $FF97 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_critical_depth $FF9F 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_rng_lo $FFA0 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_rng_hi $FFA1 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable x $C000 1 Wram0)\n\t; <<unknown> (line 1, column 1)>\n\t($skip_to $4000)\n\n; <<unknown> (line 1, column 1)>\n; function main:\n\t; <<unknown> (line 1, column 1)>\n\tXOR_A\n\t; <<unknown> (line 1, column 1)>\n\tLDH_MEM_A 159\n\t; <<unknown> (line 1, column 1)>\n\tLDH_MEM_A 134\n\t; <<unknown> (line 1, column 1)>\n\t; assign\n\t; <<unknown> (line 1, column 1)>\n\tLD_A_IMM 7\n\t; <<unknown> (line 1, column 1)>\n\tLD_MEM_A [$C000]\n\t; <<unknown> (line 1, column 1)>\n\tRET\n",
+    "debug/assembly_sectioned.txt": "\t; <<unknown> (line 1, column 1)>\n\t($variable __rom_bank $FF82 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __rom_bank_saved $FF83 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_sret_ptr $FF84 2)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_sp $FF86 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_bank_stack $FF87 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_retlo_stack $FF8F 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_thunk_rethi_stack $FF97 8)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_critical_depth $FF9F 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_rng_lo $FFA0 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable __kq_rng_hi $FFA1 1)\n\t; <<unknown> (line 1, column 1)>\n\t($variable x $C000 1 Wram0)\n\t; <<unknown> (line 1, column 1)>\n\t($skip_to $4000)\n\n; <<unknown> (line 1, column 1)>\n; function main:\n\t; <<unknown> (line 1, column 1)>\n\tXOR_A\n\t; <<unknown> (line 1, column 1)>\n\tLDH_MEM_A 159\n\t; <<unknown> (line 1, column 1)>\n\tLDH_MEM_A 134\n\t; <<unknown> (line 1, column 1)>\n\t; assign\n\t; <<unknown> (line 1, column 1)>\n\tLD_A_IMM 7\n\t; <<unknown> (line 1, column 1)>\n\tLD_MEM_A [$C000]\n\t; <<unknown> (line 1, column 1)>\n\tRET\n",
+    "debug/stack_policy.txt": "stack.bank = wramx1\nstack.top = $DFFF\nstack.reserve = 512\nstack.auto_limit = $DDFF\nstack.reserved_range = $DE00-$DFFF\n",
+    "debug/syntax_tree.txt": "($sequence\n    ($variable Ram <uint8> x)\n    ($bank\n        1\n        ($function\n            <void>\n            main\n            <fields>\n            0\n            ($sequence ($assign\n                ($name x)\n                ($integer 7))))))",
+    "debug/syntax_tree_lowered.txt": "($sequence\n    ($variable Ram <uint8> x)\n    ($bank\n        1\n        ($function\n            <void>\n            main\n            <fields>\n            0\n            ($sequence ($sequence ($assign\n                ($name x)\n                ($integer 7)))))))"
+  },
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17"
+}

@@ -1,0 +1,558 @@
+{
+  "fixture": "banked.c",
+  "flags": [
+    "-O1"
+  ],
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17",
+  "dbg2": {
+    "schema_version": "1",
+    "rom": {
+      "path": "<STEM>.gb",
+      "sha256": "a7badfe99b540fe34fea78a05b2f335d415072a19f6ad875ba77025339bb0d7b",
+      "size_bytes": 49152
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "symbols": [
+      {
+        "name": "__kq_thunk_b1_remote_word",
+        "bank": 0,
+        "start": 352,
+        "end": 384,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_thunk_b2_remote",
+        "bank": 0,
+        "start": 384,
+        "end": 416,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__rom_bank",
+        "bank": 0,
+        "start": 65410,
+        "end": 65411,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "bank": 0,
+        "start": 65411,
+        "end": 65412,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "bank": 0,
+        "start": 65412,
+        "end": 65413,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "bank": 0,
+        "start": 65414,
+        "end": 65415,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "bank": 0,
+        "start": 65415,
+        "end": 65416,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "bank": 0,
+        "start": 65423,
+        "end": 65424,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "bank": 0,
+        "start": 65431,
+        "end": 65432,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "bank": 0,
+        "start": 65439,
+        "end": 65440,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "bank": 0,
+        "start": 65440,
+        "end": 65441,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "bank": 0,
+        "start": 65441,
+        "end": 65442,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "byte_result",
+        "bank": 0,
+        "start": 49155,
+        "end": 49156,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "word_result",
+        "bank": 0,
+        "start": 49156,
+        "end": 49157,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 416,
+        "end": 451,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "remote_word",
+        "bank": 1,
+        "start": 16384,
+        "end": 16405,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "remote",
+        "bank": 2,
+        "start": 16384,
+        "end": 16393,
+        "kind": "symbol",
+        "region": "ROM"
+      }
+    ],
+    "source_locations": [
+      {
+        "bank": 0,
+        "addr": 416,
+        "path": "<SOURCES>/banked.c",
+        "line": 7,
+        "symbol": "main"
+      },
+      {
+        "bank": 1,
+        "addr": 16384,
+        "path": "<SOURCES>/banked.c",
+        "line": 4,
+        "symbol": "remote_word"
+      },
+      {
+        "bank": 2,
+        "addr": 16384,
+        "path": "<SOURCES>/banked.c",
+        "line": 2,
+        "symbol": "remote"
+      }
+    ],
+    "functions": [
+      {
+        "name": "__kq_thunk_b1_remote_word",
+        "bank": 0,
+        "start": 352,
+        "end": 384,
+        "size_bytes": 32
+      },
+      {
+        "name": "__kq_thunk_b2_remote",
+        "bank": 0,
+        "start": 384,
+        "end": 416,
+        "size_bytes": 32
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 416,
+        "end": 451,
+        "size_bytes": 35,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "remote_word",
+        "bank": 1,
+        "start": 16384,
+        "end": 16405,
+        "size_bytes": 21,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 2,
+        "param_sizes": [
+          2
+        ]
+      },
+      {
+        "name": "remote",
+        "bank": 2,
+        "start": 16384,
+        "end": 16393,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      }
+    ],
+    "variables": [
+      {
+        "name": "__rom_bank",
+        "address": 65410,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "address": 65411,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "address": 65412,
+        "size": 2,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "address": 65414,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "address": 65415,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "address": 65423,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "address": 65431,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "address": 65439,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "address": 65440,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "address": 65441,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "byte_result",
+        "address": 49155,
+        "size": 1,
+        "region": "WRAM0"
+      },
+      {
+        "name": "word_result",
+        "address": 49156,
+        "size": 2,
+        "region": "WRAM0"
+      }
+    ],
+    "static_estimates": [
+      {
+        "name": "__kq_thunk_b1_remote_word",
+        "bank": 0,
+        "size_bytes": 32,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "__kq_thunk_b2_remote",
+        "bank": 0,
+        "size_bytes": 32,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "size_bytes": 35,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 2,
+        "cross_bank_outgoing_count": 2,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "remote_word",
+        "bank": 1,
+        "size_bytes": 21,
+        "incoming_call_count": 1,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 2,
+        "param_sizes": [
+          2
+        ]
+      },
+      {
+        "name": "remote",
+        "bank": 2,
+        "size_bytes": 9,
+        "incoming_call_count": 1,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      }
+    ],
+    "call_edges": [
+      {
+        "caller": "main",
+        "callee": "remote",
+        "caller_bank": 0,
+        "callee_bank": 2,
+        "kind": "bank_thunk",
+        "via_thunk": true,
+        "via_farcall": false,
+        "count": 1,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "remote_word",
+        "caller_bank": 0,
+        "callee_bank": 1,
+        "kind": "bank_thunk",
+        "via_thunk": true,
+        "via_farcall": false,
+        "count": 1,
+        "last_source": "<unknown> (line 1, column 1)"
+      }
+    ],
+    "aggregate_copies": [],
+    "abi_issues": [],
+    "bank_usage": [
+      {
+        "bank": 0,
+        "used_bytes": 451,
+        "free_bytes": 15933
+      },
+      {
+        "bank": 1,
+        "used_bytes": 21,
+        "free_bytes": 16363
+      },
+      {
+        "bank": 2,
+        "used_bytes": 9,
+        "free_bytes": 16375
+      }
+    ]
+  },
+  "build_report": {
+    "schema_version": "1",
+    "output_rom": "<STEM>.gb",
+    "output_sha256": "a7badfe99b540fe34fea78a05b2f335d415072a19f6ad875ba77025339bb0d7b",
+    "rom_size_bytes": 49152,
+    "used_bytes": 32777,
+    "abi_mode": "legacy",
+    "function_count": 5,
+    "call_edge_count": 2,
+    "aggregate_copy_count": 0,
+    "optimizer_pass_count": 4,
+    "abi_issue_count": 0,
+    "cross_bank_call_count": 2,
+    "source_files": [
+      "<SOURCES>/banked.c"
+    ],
+    "abi_issues": [],
+    "header": {
+      "title": "",
+      "cgb_flag": 128,
+      "cart_type": 25,
+      "rom_size_code": 2,
+      "ram_size_code": 0
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "hotspots": [
+      {
+        "name": "remote_word",
+        "incoming_calls": 1,
+        "size_bytes": 21,
+        "score": 21
+      },
+      {
+        "name": "remote",
+        "incoming_calls": 1,
+        "size_bytes": 9,
+        "score": 9
+      },
+      {
+        "name": "main",
+        "incoming_calls": 0,
+        "size_bytes": 35,
+        "score": 0
+      },
+      {
+        "name": "__kq_thunk_b1_remote_word",
+        "incoming_calls": 0,
+        "size_bytes": 32,
+        "score": 0
+      },
+      {
+        "name": "__kq_thunk_b2_remote",
+        "incoming_calls": 0,
+        "size_bytes": 32,
+        "score": 0
+      }
+    ],
+    "cross_bank_edges": [
+      {
+        "caller": "main",
+        "callee": "remote",
+        "caller_bank": 0,
+        "callee_bank": 2,
+        "count": 1,
+        "kind": "bank_thunk",
+        "via_thunk": true,
+        "via_farcall": false
+      },
+      {
+        "caller": "main",
+        "callee": "remote_word",
+        "caller_bank": 0,
+        "callee_bank": 1,
+        "count": 1,
+        "kind": "bank_thunk",
+        "via_thunk": true,
+        "via_farcall": false
+      }
+    ],
+    "aggregate_copies": [],
+    "notes": [
+      "dbg2.json is emitted alongside the ROM so KOKURA can load richer source-aware metadata directly.",
+      "source_map.txt is emitted alongside the ROM for lightweight line-level lookup without requiring the full JSON payload.",
+      "static_estimates are currently structural estimates driven by codegen/call topology and function size, not cycle-perfect timing."
+    ]
+  },
+  "ai": {
+    "schema": "kitaqgb-ai-build-metadata",
+    "schema_version": 1,
+    "producer": "KITAQGB",
+    "platform": "gb",
+    "build_id": "a7badfe99b540fe34fea78a05b2f335d415072a19f6ad875ba77025339bb0d7b",
+    "rom": {
+      "path": "<STEM>.gb",
+      "hash": "a7badfe99b540fe34fea78a05b2f335d415072a19f6ad875ba77025339bb0d7b",
+      "sha256": "a7badfe99b540fe34fea78a05b2f335d415072a19f6ad875ba77025339bb0d7b",
+      "target": "gb",
+      "size_bytes": 49152
+    },
+    "source_files": [
+      "<SOURCES>/banked.c"
+    ],
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "compiler": {
+      "abi": "legacy",
+      "opt_level": 1,
+      "function_count": 5,
+      "call_edge_count": 2,
+      "aggregate_copy_count": 0,
+      "abi_issue_count": 0
+    },
+    "artifacts": {
+      "dbg2_json": "<STEM>.dbg2.json",
+      "build_report_json": "<STEM>.build_report.json",
+      "source_map": "<STEM>.source_map.txt"
+    },
+    "notes": [
+      "Metadata is a compact SARAKURA/KOKURA handoff view; detailed symbols remain in dbg2.json.",
+      "ROM hash is the build_id so emitter output can be joined to this compiler artifact."
+    ]
+  }
+}

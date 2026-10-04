@@ -16,7 +16,7 @@ The HTML guides contain a program flowchart, the snake-following algorithm, libr
 
 ### Build on Windows
 
-You need Windows, .NET Framework 4.8, PowerShell, and a complete checkout or ZIP of this repository. Keep the root compiler files and `lib/` together. The exported graphics and audio are supplied as C arrays; no asset editor is needed.
+Build the compiler and all helper tools on Windows, Linux, macOS ARM or macOS Intel with Rust 1.85 or later. The native executables run without .NET; production asset tools also run without Python or Pillow. PowerShell build scripts use the root Windows executable. For Linux/macOS use the native compiler command with the same C inputs and options, or PowerShell 7. Graphics CHR and C source are separate inputs; font.chr keeps the original sample font.
 
 From the repository root:
 
@@ -65,7 +65,7 @@ HTML解説にはフローチャート、白ヘビの追従アルゴリズム、�
 
 ### Windowsでのビルド
 
-Windows、.NET Framework 4.8、PowerShellと、このリポジトリ一式を用意してください。直下のコンパイラ関連ファイルと`lib/`は一緒に置きます。画像・音声はC配列として付属しているため、素材エディタは不要です。
+Rust 1.85以降で、Windows・Linux・macOS ARM・macOS Intel用のコンパイラと全補助ツールをビルドできます。ネイティブ実行ファイルの動作に.NETは不要です。素材処理用の補助ツールもPythonやPillowを必要としません。 PowerShellのサンプルビルドは直下のWindows用EXEを使用します。Linux/macOSでは同じC入力とオプションをネイティブコンパイラに渡すか、PowerShell 7を使用します。CHR画像とCソースは別の入力です。font.chrには元のサンプルフォントを保持しています。
 
 リポジトリ直下から実行します。
 

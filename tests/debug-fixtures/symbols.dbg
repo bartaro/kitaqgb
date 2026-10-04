@@ -1,0 +1,4 @@
+sym	id=0,name="foo",val=0xC000,size=2,bank=0,region="WRAM0"
+sym	id=1,name="BAR",val=0x4010,size=5,wbank=3,bank=1
+sym	id=2,name="quoted,\"name",val=0xFF80
+seg	id=4,name="skip"

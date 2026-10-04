@@ -1,0 +1,118 @@
+{
+  "flags": [
+    "--profile=release"
+  ],
+  "diagnostics": {
+    "exit_code": 0,
+    "errors": 0,
+    "warnings": 10,
+    "output": "<STEM>.gb",
+    "diagnostics": [
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__a': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 3,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__b': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 4,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__c': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 5,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__d': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 6,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__e': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 7,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__f': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 8,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__g': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 9,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in '__h': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 10,
+        "column": 25
+      },
+      {
+        "severity": "warning",
+        "code": "KQ2418",
+        "message": "implicit narrowing in return in 'ordinary': uint16 -> uint8; cast explicitly to silence",
+        "suggestion": "If narrowing is intentional, add an explicit cast.",
+        "file": "<SOURCES>/main.c",
+        "line": 11,
+        "column": 30
+      },
+      {
+        "severity": "warning",
+        "code": "KQ0000",
+        "message": "warning: ROM size 32768 bytes smaller than --romsize (131072 bytes); padding with 0xFF",
+        "suggestion": "",
+        "file": "",
+        "line": 0,
+        "column": 0
+      }
+    ]
+  },
+  "paths": {
+    "exit_code": 0,
+    "banks_txt": "<STEM>.banks.txt",
+    "build_report_json": "<STEM>.build_report.json",
+    "dbc": "<STEM>.dbc",
+    "dbg": "<STEM>.dbg",
+    "dbg2_json": "<STEM>.dbg2.json",
+    "diag_json": "<DIAG>",
+    "funcsizes_txt": "<STEM>.funcsizes.txt",
+    "map": "<STEM>.map",
+    "output_rom": "<STEM>.gb",
+    "source_map": "<STEM>.source_map.txt"
+  },
+  "files": {},
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17"
+}

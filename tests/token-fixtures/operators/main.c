@@ -1,0 +1,1 @@
+void main(){ int x=0; x+=1; x-=2; x*=3; x/=4; x%=5; x<<=2; x>>=1; x&=15; x|=16; x^=32; if(x!=1 && x==2 || x<=3 && x>=4){x++;--x;} x=x<4?x:~x; ptr->field; values[0]; 'A'; 0x7fff; $ABCD; 0b11001; 4294967295; }

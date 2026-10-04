@@ -1,8 +1,6 @@
 # KITAQGB 라이브러리
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
+
 
 <!-- local-library-20261003:start -->
 ## 2026-10-03 로컬 라이브러리 변경 사항과 검증
@@ -273,3 +271,33 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 당구 같은 게임에는 AABB보다 `physics2d_circle.*`가 적합합니다.
 - 현재 구성에서는 별도의 `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game`, `simple_physics` 라이브러리를 추가하지 마세요. 각각 `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg`, `physics2d`를 사용합니다.
 - `scene.c`와 `entity.c`는 함수 포인터 호출에 포인터 크기의 인수를 넘기지 않습니다. 현재 KITAQGB의 함수 포인터 호출 경로는 인수가 없거나 1바이트 ID를 전달할 때 가장 안정적입니다.
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## 네이티브 컴파일러로 라이브러리 사용
+
+lib/는 콘솔 ROM에 컴파일되는 C 헤더와 소스입니다. PC용 컴파일러와 보조 도구는 Rust로 구현되었으며 게임 소스, 대상 콘솔 라이브러리 및 API는 C로 사용합니다. 제공된 SOURCE_MANIFEST.json과 LIBRARY_MERGE.json은 선택한 라이브러리 소스를 기록합니다.
+
+Windows, Linux, macOS ARM 및 macOS Intel에서 네이티브 빌드와 실행 검증이 성공했습니다. KITAQGB는 환경별 테스트 48개와 보조 도구 검사 395개, KITAQFC는 55개와 401개를 통과했습니다. Rust 1.85도 검증했습니다. PUBLIC_DISTRIBUTION.json은 배치한 바이너리의 해시와 검증 출처를 기록합니다. 공개 GitHub Actions는 이 소스를 독립적으로 빌드하고 검증합니다.
+
+저장된 참조 출력으로 ROM 바이트, 진단 및 보조 도구 형식을 검사합니다. 이전 C# 에뮬레이터 검증은 원래 소스 지문에 해당하는 과거 기록입니다. 모든 Rust API, 실제 하드웨어 또는 FDS BIOS를 통한 완전한 게임 시작을 입증하지는 않습니다. 원본 PNG 변환 스크립트는 없어 사양으로 재구현했으며 원본과의 바이트 일치는 확인할 수 없습니다.
+
+[Rust 네이티브 컴파일러와 보조 도구](../tools/README.ko.md)
+
+<!-- rust-native-20261004:end -->

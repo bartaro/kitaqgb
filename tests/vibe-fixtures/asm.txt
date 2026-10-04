@@ -1,0 +1,10 @@
+; function foo:
+foo:
+ld a, 7
+; ignore
+ret
+; FUNCTION bar
+bar:
+; none
+; function foo:
+.db 0

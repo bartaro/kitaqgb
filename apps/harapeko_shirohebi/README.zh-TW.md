@@ -14,7 +14,7 @@ HTML 解說包含程式流程圖、白蛇身體的跟隨演算法、程式庫範
 
 ## 在 Windows 上建置
 
-需要 Windows、.NET Framework 4.8、PowerShell，以及本儲存庫的完整簽出內容或 ZIP。請將根目錄的編譯器相關檔案與 `lib/` 保持在一起。圖像與音訊已以 C 陣列提供，不需要素材編輯器。
+使用 Rust 1.85 或更新版本，可為 Windows、Linux、macOS ARM 和 macOS Intel 建置編譯器及所有輔助工具。原生程式執行不需要 .NET，素材處理工具也不需要 Python 或 Pillow。 PowerShell 範例建置使用根目錄的 Windows 程式。在 Linux/macOS 使用原生編譯器並傳入相同的 C 輸入及選項，或使用 PowerShell 7。CHR 圖像與 C 原始碼是不同輸入；font.chr 保留原範例字型。
 
 從儲存庫根目錄執行：
 

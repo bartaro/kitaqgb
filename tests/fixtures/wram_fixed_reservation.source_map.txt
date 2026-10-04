@@ -1,0 +1,3 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+01:4000 C:\kitaqgb_project\integration_test\cases\wram_fixed_reservation.c:5 symbol=main

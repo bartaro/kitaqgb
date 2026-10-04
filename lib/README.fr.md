@@ -4,9 +4,7 @@
 
 [Guide du moteur commun (anglais)](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
+
 
 <!-- local-library-20261003:start -->
 ## Bibliothèque locale : changements et vérification du 2026-10-03
@@ -273,3 +271,33 @@ Les huit derniers indices de notes réutilisent les fréquences de l’octave pr
 - `scene.c` et `entity.c` évitent les arguments de rappel de taille pointeur : le chemin d'appel actuel de KITAQGB est surtout adapté aux rappels sans argument ou recevant un identifiant sur un octet.
 
 Pour la file de transfert VRAM, `vram_get_queue_capacity()` donne la capacité totale en emplacements de commande, `vram_get_queue_free()` le nombre libre et `vram_get_queue_used()` le nombre occupé. Il ne s'agit pas d'une mesure de l'espace libre de la VRAM matérielle.
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Utiliser la bibliothèque avec le compilateur natif
+
+lib/ contient les en-têtes et sources C compilés dans la ROM de la console. Le compilateur pour PC et les outils auxiliaires sont en Rust ; les sources de jeux, bibliothèques cibles et API restent en C. SOURCE_MANIFEST.json et LIBRARY_MERGE.json consignent les sources retenues lorsqu'ils sont fournis.
+
+Les constructions natives et vérifications d'exécution ont réussi sous Windows, Linux, macOS ARM et macOS Intel. KITAQGB a passé 48 tests et 395 vérifications d'outils par environnement ; KITAQFC en a passé 55 et 401. Rust 1.85 a également été testé. PUBLIC_DISTRIBUTION.json consigne les empreintes des binaires installés et la provenance des validations. Les workflows GitHub Actions publics reconstruisent et testent ces sources indépendamment.
+
+Les sorties de référence conservées vérifient les octets ROM, les diagnostics et les formats des outils. Les anciennes preuves d'émulation C# restent des résultats historiques liés à leurs empreintes sources. Elles ne prouvent pas automatiquement toutes les API Rust, le matériel réel ou le démarrage complet d'un jeu par le BIOS FDS. Le script PNG d'origine, indisponible, a été réimplémenté d'après sa spécification ; l'identité des octets avec ce script ne peut être affirmée.
+
+[Compilateur natif Rust et outils auxiliaires](../tools/README.fr.md)
+
+<!-- rust-native-20261004:end -->

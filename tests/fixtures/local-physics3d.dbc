@@ -1,0 +1,1627 @@
+; [KITAQGB] injected bank0 banking helpers
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; for
+; assign
+NOP
+; assign
+NOP
+; post_increment
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; for
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; asm
+NOP
+; label
+; asm
+NOP
+; assign
+NOP
+; call
+NOP
+; return
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; call
+NOP
+; call
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; return
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; variable
+; variable
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; if
+NOP
+; return
+NOP
+; if
+NOP
+; return
+NOP
+; return
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; for
+; assign
+NOP
+; post_increment
+NOP
+; assign
+NOP
+; assign
+NOP
+; return
+NOP
+; if
+NOP
+; return
+NOP
+; if
+NOP
+; return
+NOP
+; return
+NOP
+; variable
+; variable
+; variable
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; call
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; for
+; assign
+NOP
+; post_increment
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; variable
+; variable
+; variable
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; call
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; call
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; call
+NOP
+; if
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; call
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; call
+NOP
+; variable
+; variable
+; if
+NOP
+; return
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; variable
+; variable
+; variable
+; variable
+; if
+NOP
+; return
+NOP
+; assign
+NOP
+; if
+NOP
+; return
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; for
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; assign
+NOP
+; if
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; call
+NOP
+; assign
+NOP
+; post_increment
+NOP
+; variable
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; variable
+; for
+; assign
+NOP
+; for
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; variable
+; for
+; assign
+NOP
+; variable
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; assign
+NOP
+; assign
+NOP
+; if
+NOP
+; post_increment
+NOP
+; continue
+NOP
+; call
+NOP
+; post_increment
+NOP
+; post_increment
+NOP
+; post_increment
+NOP
+; return
+NOP

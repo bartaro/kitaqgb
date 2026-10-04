@@ -1,0 +1,4 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+00:0160 C:\kitaqgb_project\integration_test\cases\lang_arithmetic_runtime_matrix.c:6 symbol=put16
+00:0197 C:\kitaqgb_project\integration_test\cases\lang_arithmetic_runtime_matrix.c:11 symbol=main

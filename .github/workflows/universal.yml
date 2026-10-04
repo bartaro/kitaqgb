@@ -1,0 +1,62 @@
+name: Native macOS Universal execution
+on:
+  workflow_dispatch:
+    inputs:
+      native-run-id:
+        description: Successful native KITAQGB build workflow run ID
+        required: true
+        type: string
+  workflow_run:
+    workflows: [Native build and differential tests]
+    types: [completed]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  universal:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, macos-15-intel]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get SDK-built ARM binary
+        uses: actions/download-artifact@v4
+        with:
+          name: kitaqgb-macOS-ARM64
+          path: thin/arm64
+          run-id: ${{ github.event.workflow_run.id || inputs.native-run-id }}
+          github-token: ${{ github.token }}
+      - name: Get SDK-built Intel binary
+        uses: actions/download-artifact@v4
+        with:
+          name: kitaqgb-macOS-X64
+          path: thin/x86_64
+          run-id: ${{ github.event.workflow_run.id || inputs.native-run-id }}
+          github-token: ${{ github.token }}
+      - name: Merge verify and execute
+        run: |
+          mkdir -p target/release
+          for program in kitaqgb kitaqgb-zx0 kitaqgb-patch-vblank; do
+            lipo -create thin/arm64/target/release/$program thin/x86_64/target/release/$program -output target/release/$program
+            chmod +x target/release/$program
+            lipo target/release/$program -verify_arch arm64 x86_64
+          done
+          python3 tools/platform_smoke.py --compiler target/release/kitaqgb --receipt native-platform-universal.json
+          python3 tools/auxiliary_smoke.py --kind gb --bin-dir target/release --receipt auxiliary-platform-universal.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kitaqgb-macOS-Universal-${{ runner.arch }}
+          retention-days: 14
+          path: |
+            target/release/kitaqgb
+            target/release/kitaqgb-zx0
+            target/release/kitaqgb-patch-vblank
+            native-platform-universal.json
+            auxiliary-platform-universal.json
+      - name: Remove merger intermediates
+        if: always()
+        run: rm -rf thin target

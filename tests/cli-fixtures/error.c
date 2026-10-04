@@ -1,0 +1,2 @@
+#error hello
+void main(){}

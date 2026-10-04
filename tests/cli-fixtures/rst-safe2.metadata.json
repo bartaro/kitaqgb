@@ -1,0 +1,1077 @@
+{
+  "fixture": "rst-safe.c",
+  "flags": [
+    "--rst-safe"
+  ],
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17",
+  "dbg2": {
+    "schema_version": "1",
+    "rom": {
+      "path": "<STEM>.gb",
+      "sha256": "3d71f43f4d21938140a96e5924758cc4c9443f72b27b8ba88ecf34f21345ae01",
+      "size_bytes": 32768
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "symbols": [
+      {
+        "name": "__rom_bank",
+        "bank": 0,
+        "start": 65410,
+        "end": 65411,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "bank": 0,
+        "start": 65411,
+        "end": 65412,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "bank": 0,
+        "start": 65412,
+        "end": 65413,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "bank": 0,
+        "start": 65414,
+        "end": 65415,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "bank": 0,
+        "start": 65415,
+        "end": 65416,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "bank": 0,
+        "start": 65423,
+        "end": 65424,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "bank": 0,
+        "start": 65431,
+        "end": 65432,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "bank": 0,
+        "start": 65439,
+        "end": 65440,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "bank": 0,
+        "start": 65440,
+        "end": 65441,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "bank": 0,
+        "start": 65441,
+        "end": 65442,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "state",
+        "bank": 0,
+        "start": 49152,
+        "end": 49153,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "__a",
+        "bank": 0,
+        "start": 352,
+        "end": 361,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__b",
+        "bank": 0,
+        "start": 361,
+        "end": 370,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__c",
+        "bank": 0,
+        "start": 370,
+        "end": 379,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__d",
+        "bank": 0,
+        "start": 379,
+        "end": 388,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__e",
+        "bank": 0,
+        "start": 388,
+        "end": 397,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__f",
+        "bank": 0,
+        "start": 397,
+        "end": 406,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__g",
+        "bank": 0,
+        "start": 406,
+        "end": 415,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__h",
+        "bank": 0,
+        "start": 415,
+        "end": 424,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "ordinary",
+        "bank": 0,
+        "start": 424,
+        "end": 433,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__io",
+        "bank": 0,
+        "start": 433,
+        "end": 458,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__viaio",
+        "bank": 0,
+        "start": 458,
+        "end": 462,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__interrupt",
+        "bank": 0,
+        "start": 462,
+        "end": 464,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 464,
+        "end": 652,
+        "kind": "symbol",
+        "region": "ROM"
+      }
+    ],
+    "source_locations": [
+      {
+        "bank": 0,
+        "addr": 352,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 3,
+        "symbol": "__a"
+      },
+      {
+        "bank": 0,
+        "addr": 361,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 4,
+        "symbol": "__b"
+      },
+      {
+        "bank": 0,
+        "addr": 370,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 5,
+        "symbol": "__c"
+      },
+      {
+        "bank": 0,
+        "addr": 379,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 6,
+        "symbol": "__d"
+      },
+      {
+        "bank": 0,
+        "addr": 388,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 7,
+        "symbol": "__e"
+      },
+      {
+        "bank": 0,
+        "addr": 397,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 8,
+        "symbol": "__f"
+      },
+      {
+        "bank": 0,
+        "addr": 406,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 9,
+        "symbol": "__g"
+      },
+      {
+        "bank": 0,
+        "addr": 415,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 10,
+        "symbol": "__h"
+      },
+      {
+        "bank": 0,
+        "addr": 424,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 11,
+        "symbol": "ordinary"
+      },
+      {
+        "bank": 0,
+        "addr": 433,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 12,
+        "symbol": "__io"
+      },
+      {
+        "bank": 0,
+        "addr": 458,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 13,
+        "symbol": "__viaio"
+      },
+      {
+        "bank": 0,
+        "addr": 462,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 14,
+        "symbol": "__interrupt"
+      },
+      {
+        "bank": 0,
+        "addr": 464,
+        "path": "<SOURCES>/rst-safe.c",
+        "line": 15,
+        "symbol": "main"
+      }
+    ],
+    "functions": [
+      {
+        "name": "__a",
+        "bank": 0,
+        "start": 352,
+        "end": 361,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__b",
+        "bank": 0,
+        "start": 361,
+        "end": 370,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__c",
+        "bank": 0,
+        "start": 370,
+        "end": 379,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__d",
+        "bank": 0,
+        "start": 379,
+        "end": 388,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__e",
+        "bank": 0,
+        "start": 388,
+        "end": 397,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__f",
+        "bank": 0,
+        "start": 397,
+        "end": 406,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__g",
+        "bank": 0,
+        "start": 406,
+        "end": 415,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__h",
+        "bank": 0,
+        "start": 415,
+        "end": 424,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "ordinary",
+        "bank": 0,
+        "start": 424,
+        "end": 433,
+        "size_bytes": 9,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__io",
+        "bank": 0,
+        "start": 433,
+        "end": 458,
+        "size_bytes": 25,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "__viaio",
+        "bank": 0,
+        "start": 458,
+        "end": 462,
+        "size_bytes": 4,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "__interrupt",
+        "bank": 0,
+        "start": 462,
+        "end": 464,
+        "size_bytes": 2,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 464,
+        "end": 652,
+        "size_bytes": 188,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      }
+    ],
+    "variables": [
+      {
+        "name": "__rom_bank",
+        "address": 65410,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "address": 65411,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "address": 65412,
+        "size": 2,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "address": 65414,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "address": 65415,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "address": 65423,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "address": 65431,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "address": 65439,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "address": 65440,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "address": 65441,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "state",
+        "address": 49152,
+        "size": 1,
+        "region": "WRAM0"
+      }
+    ],
+    "static_estimates": [
+      {
+        "name": "__a",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 4,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__b",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 3,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__c",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__d",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__e",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__f",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__g",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__h",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "ordinary",
+        "bank": 0,
+        "size_bytes": 9,
+        "incoming_call_count": 3,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": true,
+        "return_size": 1,
+        "param_sizes": [
+          1
+        ]
+      },
+      {
+        "name": "__io",
+        "bank": 0,
+        "size_bytes": 25,
+        "incoming_call_count": 3,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "__viaio",
+        "bank": 0,
+        "size_bytes": 4,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 1,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "__interrupt",
+        "bank": 0,
+        "size_bytes": 2,
+        "incoming_call_count": 2,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "size_bytes": 188,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 28,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      }
+    ],
+    "call_edges": [
+      {
+        "caller": "__viaio",
+        "callee": "__io",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 1,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__a",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 4,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__b",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 3,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__c",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__d",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__e",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__f",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__g",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__h",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__interrupt",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__io",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "__viaio",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "ordinary",
+        "caller_bank": 0,
+        "callee_bank": 0,
+        "kind": "direct",
+        "via_thunk": false,
+        "via_farcall": false,
+        "count": 3,
+        "last_source": "<unknown> (line 1, column 1)"
+      }
+    ],
+    "aggregate_copies": [],
+    "abi_issues": [],
+    "bank_usage": [
+      {
+        "bank": 0,
+        "used_bytes": 652,
+        "free_bytes": 15732
+      },
+      {
+        "bank": 1,
+        "used_bytes": 0,
+        "free_bytes": 16384
+      }
+    ]
+  },
+  "build_report": {
+    "schema_version": "1",
+    "output_rom": "<STEM>.gb",
+    "output_sha256": "3d71f43f4d21938140a96e5924758cc4c9443f72b27b8ba88ecf34f21345ae01",
+    "rom_size_bytes": 32768,
+    "used_bytes": 16384,
+    "abi_mode": "legacy",
+    "function_count": 13,
+    "call_edge_count": 13,
+    "aggregate_copy_count": 0,
+    "optimizer_pass_count": 3,
+    "abi_issue_count": 0,
+    "cross_bank_call_count": 0,
+    "source_files": [
+      "<SOURCES>/rst-safe.c"
+    ],
+    "abi_issues": [],
+    "header": {
+      "title": "",
+      "cgb_flag": 128,
+      "cart_type": 25,
+      "rom_size_code": 2,
+      "ram_size_code": 0
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "hotspots": [
+      {
+        "name": "__io",
+        "incoming_calls": 3,
+        "size_bytes": 25,
+        "score": 75
+      },
+      {
+        "name": "__a",
+        "incoming_calls": 4,
+        "size_bytes": 9,
+        "score": 36
+      },
+      {
+        "name": "__b",
+        "incoming_calls": 3,
+        "size_bytes": 9,
+        "score": 27
+      },
+      {
+        "name": "ordinary",
+        "incoming_calls": 3,
+        "size_bytes": 9,
+        "score": 27
+      },
+      {
+        "name": "__c",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__d",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__e",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__f",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__g",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__h",
+        "incoming_calls": 2,
+        "size_bytes": 9,
+        "score": 18
+      },
+      {
+        "name": "__viaio",
+        "incoming_calls": 2,
+        "size_bytes": 4,
+        "score": 8
+      },
+      {
+        "name": "__interrupt",
+        "incoming_calls": 2,
+        "size_bytes": 2,
+        "score": 4
+      },
+      {
+        "name": "main",
+        "incoming_calls": 0,
+        "size_bytes": 188,
+        "score": 0
+      }
+    ],
+    "cross_bank_edges": [],
+    "aggregate_copies": [],
+    "notes": [
+      "dbg2.json is emitted alongside the ROM so KOKURA can load richer source-aware metadata directly.",
+      "source_map.txt is emitted alongside the ROM for lightweight line-level lookup without requiring the full JSON payload.",
+      "static_estimates are currently structural estimates driven by codegen/call topology and function size, not cycle-perfect timing."
+    ]
+  },
+  "ai": {
+    "schema": "kitaqgb-ai-build-metadata",
+    "schema_version": 1,
+    "producer": "KITAQGB",
+    "platform": "gb",
+    "build_id": "3d71f43f4d21938140a96e5924758cc4c9443f72b27b8ba88ecf34f21345ae01",
+    "rom": {
+      "path": "<STEM>.gb",
+      "hash": "3d71f43f4d21938140a96e5924758cc4c9443f72b27b8ba88ecf34f21345ae01",
+      "sha256": "3d71f43f4d21938140a96e5924758cc4c9443f72b27b8ba88ecf34f21345ae01",
+      "target": "gb",
+      "size_bytes": 32768
+    },
+    "source_files": [
+      "<SOURCES>/rst-safe.c"
+    ],
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "compiler": {
+      "abi": "legacy",
+      "opt_level": 0,
+      "function_count": 13,
+      "call_edge_count": 13,
+      "aggregate_copy_count": 0,
+      "abi_issue_count": 0
+    },
+    "artifacts": {
+      "dbg2_json": "<STEM>.dbg2.json",
+      "build_report_json": "<STEM>.build_report.json",
+      "source_map": "<STEM>.source_map.txt"
+    },
+    "notes": [
+      "Metadata is a compact SARAKURA/KOKURA handoff view; detailed symbols remain in dbg2.json.",
+      "ROM hash is the build_id so emitter output can be joined to this compiler artifact."
+    ]
+  }
+}

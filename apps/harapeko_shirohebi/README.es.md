@@ -14,7 +14,7 @@ La guía HTML contiene un diagrama de flujo, el algoritmo de seguimiento de la s
 
 ## Compilar en Windows
 
-Necesitas Windows, .NET Framework 4.8, PowerShell y una copia completa del repositorio obtenida mediante Git o en ZIP. Mantén juntos los archivos del compilador de la raíz y `lib/`. Los gráficos y el audio se incluyen como arrays de C; no hace falta un editor de recursos.
+Con Rust 1.85 o posterior puede compilar el compilador y todas las herramientas para Windows, Linux, macOS ARM y macOS Intel. Los ejecutables nativos no necesitan .NET; las herramientas de recursos tampoco requieren Python ni Pillow. Los scripts PowerShell usan el ejecutable Windows de la raíz. En Linux/macOS pase las mismas entradas C y opciones al compilador nativo, o use PowerShell 7. Los gráficos CHR y el código C son entradas distintas; font.chr conserva la fuente de los ejemplos.
 
 Desde la raíz del repositorio:
 

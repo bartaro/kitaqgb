@@ -1,8 +1,62 @@
 # KITAQGB
 
 <!-- readme-language-links:start -->
-[English](README.md#english) | [日本語](README.md#japanese) | [한국어](README.ko.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [kitaqgb](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) |
+| 日本語 | [kitaqgb](https://bartaro.github.io/kitaq-docs/kitaqgb.html) |
+| 한국어 | [kitaqgb](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) |
+| 简体中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) |
+| 繁體中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) |
+| Français | [kitaqgb](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) |
+| Español | [kitaqgb](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) |
+| Deutsch | [kitaqgb](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Rust 原生编译器与辅助工具
+
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 程序位于仓库根目录；Linux 和 macOS 程序位于下表所列的 bin/ 平台目录。请保留 lib/ 和许可声明。在 Linux/macOS 上下载后执行 chmod +x，并将目录加入 PATH，或使用完整路径运行。
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
+
+
+Windows、Linux、macOS ARM 和 macOS Intel 的原生构建及运行验证均成功。KITAQGB 在每个环境通过 48 项测试和 395 项辅助工具检查；KITAQFC 通过 55 项测试和 401 项检查，也验证了 Rust 1.85。PUBLIC_DISTRIBUTION.json 记录已放置程序的哈希及验证来源。公开 GitHub Actions 会独立构建和验证这些源码。
+
+保存的参考输出用于检查 ROM 字节、诊断和辅助工具格式。以前的 C# 模拟器验证保留为对应原始源码指纹的历史记录，并不自动证明全部 Rust API、真实硬件或完整的 FDS BIOS 游戏启动。原始 PNG 转换脚本无法取得，因此依据规格重新实现，不能声称与原脚本字节一致。
+
+[Rust 原生编译器与辅助工具](tools/README.zh-CN.md)
+
+<!-- rust-native-20261004:end -->
+
+
 
 [KITAQGB 简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) · [KITAQGB 库 简体中文手册](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
 
@@ -58,57 +112,101 @@ KITAQGB可生成Game Boy兼容软件、Game Boy Color兼容软件，以及明确
 
 ## 仓库结构
 
-编译器源码放在同名子目录 `kitaqgb/` 中。已构建的Release程序及运行时配置放在根目录；库和示例各有独立目录。
-
 ```text
-kitaqgb/                  # Repository root
-├─ kitaqgb/               # Compiler build sources
-│  ├─ *.cs
-│  ├─ app.config
-│  └─ kitaqgb.csproj
-├─ kitaqgb.exe            # Prebuilt Release compiler
-├─ kitaqgb.exe.config     # .NET Framework runtime configuration
-├─ lib/                # C support libraries
-├─ examples/           # Tutorial programs and original font
-├─ scripts/build.ps1   # Rebuild the Release executable
-├─ LICENSE
-└─ LICENSE.ja
+Cargo.toml / Cargo.lock
+src/                     # Rust compiler and native helper sources
+kitaqgb.exe             # Windows x64 compiler
+kitaqgb-*.exe           # Windows native helper tools
+bin/                     # Linux and macOS executables
+lib/                     # C libraries for console ROMs
+tests/                   # Frozen reference fixtures and Rust tests
+scripts/build.ps1
+scripts/build.sh
 ```
 
-运行所附编译器需要Windows和.NET Framework 4.8。请下载仓库ZIP，将程序、配置、库和许可声明一起保存。重新构建还需要.NET Framework 4.8 Developer Pack及Visual Studio Build Tools。请在仓库根目录运行：
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 程序位于仓库根目录；Linux 和 macOS 程序位于下表所列的 bin/ 平台目录。请保留 lib/ 和许可声明。在 Linux/macOS 上下载后执行 chmod +x，并将目录加入 PATH，或使用完整路径运行。
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
 .\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
 ```
 
-Release构建会将程序和配置复制到根目录。Debug构建保留在 `kitaqgb/bin/Debug`，不会覆盖已发布的Release编译器。发布内容不包含构建缓存和PDB文件。输入资料及SHA-256见[二进制构建记录](BINARY_BUILD.json)。
+```sh
+sh scripts/build.sh
+```
 
 ## 开发环境要求
 
-主要构建环境为Windows、.NET Framework 4.8目标引用文件，以及带MSBuild的Visual Studio或Visual Studio Build Tools。项目使用面向 `.NET Framework v4.8` 的传统C#项目格式。
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。
 
-其他系统可能可以通过Mono/MSBuild构建，具体取决于所安装的引用程序集；主要支持的构建路径仍是Windows与MSBuild。
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 程序位于仓库根目录；Linux 和 macOS 程序位于下表所列的 bin/ 平台目录。请保留 lib/ 和许可声明。在 Linux/macOS 上下载后执行 chmod +x，并将目录加入 PATH，或使用完整路径运行。
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
 
 ## 构建KITAQGB
 
-从仓库根目录运行：
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。
 
-```powershell
-msbuild kitaqgb\kitaqgb.csproj /p:Configuration=Release
+```sh
+cargo test --locked --tests
+cargo build --locked --release
 ```
 
-构建成功后，项目会将可执行文件复制到根目录：
+Windows 程序位于仓库根目录；Linux 和 macOS 程序位于下表所列的 bin/ 平台目录。请保留 lib/ 和许可声明。在 Linux/macOS 上下载后执行 chmod +x，并将目录加入 PATH，或使用完整路径运行。
 
-```text
-kitaqgb.exe
-```
-
-随后可以检查命令行帮助：
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
+.\scripts\build.ps1
 .\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## 快速开始
@@ -371,12 +469,31 @@ Copyright (c) 2026 DAISUKE OBA
 
 ## 构建与首次使用
 
-在Windows中使用.NET Framework 4.8 Developer Pack及Visual Studio Build Tools的MSBuild。请在Developer PowerShell中运行：
+使用 Rust 1.85 或更高版本，可为 Windows、Linux、macOS ARM 和 macOS Intel 构建编译器及全部辅助工具。原生程序运行不需要 .NET，素材处理工具也不需要 Python 或 Pillow。
+
+```sh
+cargo test --locked --tests
+cargo build --locked --release
+```
+
+Windows 程序位于仓库根目录；Linux 和 macOS 程序位于下表所列的 bin/ 平台目录。请保留 lib/ 和许可声明。在 Linux/macOS 上下载后执行 chmod +x，并将目录加入 PATH，或使用完整路径运行。
+
+| OS | kitaqgb |
+| --- | --- |
+| Windows x64 | `./kitaqgb.exe` |
+| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
+| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
+| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
+| macOS Intel | `bin/macos-x86_64/kitaqgb` |
+| macOS Universal | `bin/macos-universal/kitaqgb` |
 
 ```powershell
-MSBuild.exe .\kitaqgb\kitaqgb.csproj /t:Build /p:Configuration=Release
+.\scripts\build.ps1
 .\kitaqgb.exe --help
-.\examples\build.ps1
+```
+
+```sh
+sh scripts/build.sh
 ```
 
 ## 手册与许可证

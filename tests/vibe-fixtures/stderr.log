@@ -1,0 +1,3 @@
+demo.c (line 3, column 4) warning KQ2418: implicit narrowing
+fatal KQ0000: unknown option: --oops
+error KQ2501: extern not defined

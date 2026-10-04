@@ -1,0 +1,6 @@
+# KITAQGB function size report
+# name, bank, cpu_addr, start_file, end_file, size
+main, 0, 0x0160, 0x00160, 0x00165, 5
+__kq_serial_vector, 0, 0x0166, 0x00166, 0x00167, 1
+__kq_vblank_vector, 0, 0x0165, 0x00165, 0x00166, 1
+helper, 0, 0x0167, 0x00167, 0x00168, 1

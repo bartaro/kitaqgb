@@ -1,0 +1,30 @@
+{
+  "date": "2026-10-04",
+  "source_helpers": [
+    {
+      "path": "scripts/patch_gb_vblank_irq.ps1",
+      "git_blob": "b3d0d8269177b353964e9604a96fb2f2f6444d1b",
+      "role": "host helper",
+      "sha256": "2685b001287a873a6bdd505f13fe16a5669dd837824a6e8330a87b9243bd7b22",
+      "bytes": 3072,
+      "repository": "bartaro/kitaqgb",
+      "local_source": null,
+      "public_commit": "096dbfb728123d8767dec2d60d4814eed7d52256",
+      "native_binary": "kitaqgb-patch-vblank"
+    },
+    {
+      "path": "tools/zx0/KitaqZx0.cs",
+      "git_blob": "45f1bb30e8adea7dabc504f78a93bf92447bb17d",
+      "role": "host helper",
+      "sha256": "7d5e9d9e678af5748357e6a83cb9985112f5e08e56ab5e1d33f1f5be00b4baf1",
+      "bytes": 12533,
+      "repository": "bartaro/kitaqgb",
+      "local_source": null,
+      "public_commit": "096dbfb728123d8767dec2d60d4814eed7d52256",
+      "native_binary": "kitaqgb-zx0"
+    }
+  ],
+  "orchestration_scripts": "Build and test drivers remain orchestration; all shipped helper transformations execute in Rust.",
+  "runtime_requires_csharp": false,
+  "runtime_requires_python": false
+}

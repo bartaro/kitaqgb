@@ -2,9 +2,7 @@
 
 [简体中文](README.zh-CN.md) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
 
-<!-- readme-language-links:start -->
-[English](README.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
+
 
 <!-- local-library-20261003:start -->
 ## 2026-10-03 ローカル版ライブラリの差分と検証
@@ -274,3 +272,33 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - ビリヤードのようなゲームでは、AABB用より `physics2d_circle.*` が適しています。
 - 現在の構成では、`random`、`collision`、`ui`、`tilemap`、`dialog`、`board_game`、`simple_physics` という別ライブラリを追加する必要はありません。順に `rng`、`physics2d`、`text`/`menu`、`map`、`script`、`slg`、`physics2d` を使います。
 - `scene.c` と `entity.c` は、ポインターサイズの引数を関数ポインター経由で渡すことを避けています。現在のKITAQGBでは、引数なし、または1バイトのIDを渡す形式が最も安定しています。
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Rust製コンパイラでのライブラリ利用
+
+lib/はゲーム機のROMに組み込むCヘッダーとCソースです。PC用コンパイラと補助ツールはRust製で、ゲームのソース、対象機のライブラリとAPIはCのまま使用します。収録するSOURCE_MANIFEST.jsonとLIBRARY_MERGE.jsonにはライブラリの選択元を記録しています。
+
+Windows・Linux・macOS ARM・macOS Intelでネイティブビルドと実行検証が成功しています。KITAQGBは各環境48件のテストと395件の補助ツール検証、KITAQFCは55件と401件が成功しました。Rust 1.85でも確認済みです。PUBLIC_DISTRIBUTION.jsonに配置済みバイナリのハッシュと検証の出典を記録しています。公開GitHub Actionsでもこのソースを独立してビルド・検証します。
+
+保存済みの比較データでROMのバイト列、診断と補助ツールの形式を検証しています。以前のC#版によるエミュレータ検証は、そのソース指紋に対応する過去の記録として残しています。これだけでRust版の全API、実機動作、FDSのBIOS経由のゲーム起動を保証するものではありません。元のPNG変換スクリプトは入手できないため仕様から再実装し、元スクリプトとのバイト一致は確認できません。
+
+[Rust製コンパイラと補助ツール](../tools/README.ja.md)
+
+<!-- rust-native-20261004:end -->

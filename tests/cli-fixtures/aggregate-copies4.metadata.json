@@ -1,0 +1,679 @@
+{
+  "fixture": "aggregate-copies.c",
+  "flags": [],
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17",
+  "dbg2": {
+    "schema_version": "1",
+    "rom": {
+      "path": "<STEM>.gb",
+      "sha256": "e37f87c866e2d7f2601338653395196c194d00a36cf2b0a71665601700967468",
+      "size_bytes": 32768
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "symbols": [
+      {
+        "name": "__rom_bank",
+        "bank": 0,
+        "start": 65410,
+        "end": 65411,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "bank": 0,
+        "start": 65411,
+        "end": 65412,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "bank": 0,
+        "start": 65412,
+        "end": 65413,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "bank": 0,
+        "start": 65414,
+        "end": 65415,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "bank": 0,
+        "start": 65415,
+        "end": 65416,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "bank": 0,
+        "start": 65423,
+        "end": 65424,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "bank": 0,
+        "start": 65431,
+        "end": 65432,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "bank": 0,
+        "start": 65439,
+        "end": 65440,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "bank": 0,
+        "start": 65440,
+        "end": 65441,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "bank": 0,
+        "start": 65441,
+        "end": 65442,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "t1",
+        "bank": 0,
+        "start": 49152,
+        "end": 49153,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "t2",
+        "bank": 0,
+        "start": 49153,
+        "end": 49154,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "p1",
+        "bank": 0,
+        "start": 49154,
+        "end": 49155,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "p2",
+        "bank": 0,
+        "start": 49156,
+        "end": 49157,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "s1",
+        "bank": 0,
+        "start": 49158,
+        "end": 49159,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "s2",
+        "bank": 0,
+        "start": 49173,
+        "end": 49174,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "m1",
+        "bank": 0,
+        "start": 49188,
+        "end": 49189,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "m2",
+        "bank": 0,
+        "start": 49207,
+        "end": 49208,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "w1",
+        "bank": 0,
+        "start": 49226,
+        "end": 49227,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "w2",
+        "bank": 0,
+        "start": 49306,
+        "end": 49307,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "l1",
+        "bank": 0,
+        "start": 49386,
+        "end": 49387,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "l2",
+        "bank": 0,
+        "start": 49646,
+        "end": 49647,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "objects",
+        "bank": 0,
+        "start": 49906,
+        "end": 49907,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "pointer",
+        "bank": 0,
+        "start": 49936,
+        "end": 49937,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "holder",
+        "bank": 0,
+        "start": 49938,
+        "end": 49939,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "main",
+        "bank": 1,
+        "start": 16384,
+        "end": 16822,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "aggcpy_loop_0",
+        "bank": 1,
+        "start": 16474,
+        "end": 16475,
+        "kind": "label",
+        "region": "ROM"
+      },
+      {
+        "name": "aggcpy_loop_1",
+        "bank": 1,
+        "start": 16519,
+        "end": 16520,
+        "kind": "label",
+        "region": "ROM"
+      },
+      {
+        "name": "aggcpy16_loop_2",
+        "bank": 1,
+        "start": 16581,
+        "end": 16582,
+        "kind": "label",
+        "region": "ROM"
+      }
+    ],
+    "source_locations": [
+      {
+        "bank": 1,
+        "addr": 16384,
+        "path": "<SOURCES>/aggregate-copies.c",
+        "line": 12,
+        "symbol": "main"
+      }
+    ],
+    "functions": [
+      {
+        "name": "main",
+        "bank": 1,
+        "start": 16384,
+        "end": 16822,
+        "size_bytes": 438,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      }
+    ],
+    "variables": [
+      {
+        "name": "__rom_bank",
+        "address": 65410,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "address": 65411,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "address": 65412,
+        "size": 2,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "address": 65414,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "address": 65415,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "address": 65423,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "address": 65431,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "address": 65439,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "address": 65440,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "address": 65441,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "t1",
+        "address": 49152,
+        "size": 1,
+        "region": "WRAM0"
+      },
+      {
+        "name": "t2",
+        "address": 49153,
+        "size": 1,
+        "region": "WRAM0"
+      },
+      {
+        "name": "p1",
+        "address": 49154,
+        "size": 2,
+        "region": "WRAM0"
+      },
+      {
+        "name": "p2",
+        "address": 49156,
+        "size": 2,
+        "region": "WRAM0"
+      },
+      {
+        "name": "s1",
+        "address": 49158,
+        "size": 15,
+        "region": "WRAM0"
+      },
+      {
+        "name": "s2",
+        "address": 49173,
+        "size": 15,
+        "region": "WRAM0"
+      },
+      {
+        "name": "m1",
+        "address": 49188,
+        "size": 19,
+        "region": "WRAM0"
+      },
+      {
+        "name": "m2",
+        "address": 49207,
+        "size": 19,
+        "region": "WRAM0"
+      },
+      {
+        "name": "w1",
+        "address": 49226,
+        "size": 80,
+        "region": "WRAM0"
+      },
+      {
+        "name": "w2",
+        "address": 49306,
+        "size": 80,
+        "region": "WRAM0"
+      },
+      {
+        "name": "l1",
+        "address": 49386,
+        "size": 260,
+        "region": "WRAM0"
+      },
+      {
+        "name": "l2",
+        "address": 49646,
+        "size": 260,
+        "region": "WRAM0"
+      },
+      {
+        "name": "objects",
+        "address": 49906,
+        "size": 30,
+        "region": "WRAM0"
+      },
+      {
+        "name": "pointer",
+        "address": 49936,
+        "size": 2,
+        "region": "WRAM0"
+      },
+      {
+        "name": "holder",
+        "address": 49938,
+        "size": 18,
+        "region": "WRAM0"
+      }
+    ],
+    "static_estimates": [
+      {
+        "name": "main",
+        "bank": 1,
+        "size_bytes": 438,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      }
+    ],
+    "call_edges": [],
+    "aggregate_copies": [
+      {
+        "function": "main",
+        "type": "struct Pair",
+        "size_bytes": 2,
+        "strategy": "scalar",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 15)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 21)"
+      },
+      {
+        "function": "main",
+        "type": "struct Medium",
+        "size_bytes": 19,
+        "strategy": "__memcpy_small",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 27)"
+      },
+      {
+        "function": "main",
+        "type": "struct Wide",
+        "size_bytes": 80,
+        "strategy": "__memcpy_small",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 33)"
+      },
+      {
+        "function": "main",
+        "type": "struct Large",
+        "size_bytes": 260,
+        "strategy": "__memcpy",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 39)"
+      },
+      {
+        "function": "main",
+        "type": "struct Tiny",
+        "size_bytes": 1,
+        "strategy": "scalar",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 9)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 14, column 26)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 14, column 49)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 15, column 18)"
+      }
+    ],
+    "abi_issues": [],
+    "bank_usage": [
+      {
+        "bank": 0,
+        "used_bytes": 352,
+        "free_bytes": 16032
+      },
+      {
+        "bank": 1,
+        "used_bytes": 438,
+        "free_bytes": 15946
+      }
+    ]
+  },
+  "build_report": {
+    "schema_version": "1",
+    "output_rom": "<STEM>.gb",
+    "output_sha256": "e37f87c866e2d7f2601338653395196c194d00a36cf2b0a71665601700967468",
+    "rom_size_bytes": 32768,
+    "used_bytes": 16822,
+    "abi_mode": "legacy",
+    "function_count": 1,
+    "call_edge_count": 0,
+    "aggregate_copy_count": 9,
+    "optimizer_pass_count": 3,
+    "abi_issue_count": 0,
+    "cross_bank_call_count": 0,
+    "source_files": [
+      "<SOURCES>/aggregate-copies.c"
+    ],
+    "abi_issues": [],
+    "header": {
+      "title": "",
+      "cgb_flag": 128,
+      "cart_type": 25,
+      "rom_size_code": 2,
+      "ram_size_code": 0
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "hotspots": [
+      {
+        "name": "main",
+        "incoming_calls": 0,
+        "size_bytes": 438,
+        "score": 0
+      }
+    ],
+    "cross_bank_edges": [],
+    "aggregate_copies": [
+      {
+        "function": "main",
+        "type": "struct Pair",
+        "size_bytes": 2,
+        "strategy": "scalar",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 15)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 21)"
+      },
+      {
+        "function": "main",
+        "type": "struct Medium",
+        "size_bytes": 19,
+        "strategy": "__memcpy_small",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 27)"
+      },
+      {
+        "function": "main",
+        "type": "struct Wide",
+        "size_bytes": 80,
+        "strategy": "__memcpy_small",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 33)"
+      },
+      {
+        "function": "main",
+        "type": "struct Large",
+        "size_bytes": 260,
+        "strategy": "__memcpy",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 39)"
+      },
+      {
+        "function": "main",
+        "type": "struct Tiny",
+        "size_bytes": 1,
+        "strategy": "scalar",
+        "source": "<SOURCES>/aggregate-copies.c (line 13, column 9)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 14, column 26)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 14, column 49)"
+      },
+      {
+        "function": "main",
+        "type": "struct Short",
+        "size_bytes": 15,
+        "strategy": "unrolled",
+        "source": "<SOURCES>/aggregate-copies.c (line 15, column 18)"
+      }
+    ],
+    "notes": [
+      "dbg2.json is emitted alongside the ROM so KOKURA can load richer source-aware metadata directly.",
+      "source_map.txt is emitted alongside the ROM for lightweight line-level lookup without requiring the full JSON payload.",
+      "static_estimates are currently structural estimates driven by codegen/call topology and function size, not cycle-perfect timing."
+    ]
+  },
+  "ai": {
+    "schema": "kitaqgb-ai-build-metadata",
+    "schema_version": 1,
+    "producer": "KITAQGB",
+    "platform": "gb",
+    "build_id": "e37f87c866e2d7f2601338653395196c194d00a36cf2b0a71665601700967468",
+    "rom": {
+      "path": "<STEM>.gb",
+      "hash": "e37f87c866e2d7f2601338653395196c194d00a36cf2b0a71665601700967468",
+      "sha256": "e37f87c866e2d7f2601338653395196c194d00a36cf2b0a71665601700967468",
+      "target": "gb",
+      "size_bytes": 32768
+    },
+    "source_files": [
+      "<SOURCES>/aggregate-copies.c"
+    ],
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "compiler": {
+      "abi": "legacy",
+      "opt_level": 0,
+      "function_count": 1,
+      "call_edge_count": 0,
+      "aggregate_copy_count": 9,
+      "abi_issue_count": 0
+    },
+    "artifacts": {
+      "dbg2_json": "<STEM>.dbg2.json",
+      "build_report_json": "<STEM>.build_report.json",
+      "source_map": "<STEM>.source_map.txt"
+    },
+    "notes": [
+      "Metadata is a compact SARAKURA/KOKURA handoff view; detailed symbols remain in dbg2.json.",
+      "ROM hash is the build_id so emitter output can be joined to this compiler artifact."
+    ]
+  }
+}

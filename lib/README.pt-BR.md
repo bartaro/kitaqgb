@@ -269,3 +269,33 @@ Os oito últimos índices de nota atualmente reutilizam as frequências da oitav
 - Para jogos semelhantes a bilhar, prefira `physics2d_circle.*` à biblioteca AABB.
 - Na organização atual, não crie bibliotecas separadas chamadas `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game` ou `simple_physics`. Use, respectivamente, `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg` e `physics2d`.
 - `scene.c` e `entity.c` evitam argumentos do tamanho de ponteiros nas chamadas indiretas. O caminho atual de chamadas por ponteiro de função da KITAQGB é mais confiável sem argumentos ou com IDs de um byte.
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Uso da biblioteca com o compilador nativo
+
+lib/ contém cabeçalhos e fontes C compilados na ROM do console. O compilador de PC e as ferramentas usam Rust; fontes de jogos, bibliotecas de destino e APIs continuam em C. SOURCE_MANIFEST.json e LIBRARY_MERGE.json registram a seleção de fontes quando fornecidos.
+
+As compilações nativas e verificações de execução passaram no Windows, Linux, macOS ARM e macOS Intel. KITAQGB passou 48 testes e 395 verificações de ferramentas por ambiente; KITAQFC, 55 e 401. Rust 1.85 também foi testado. PUBLIC_DISTRIBUTION.json registra os hashes dos binários instalados e a origem da validação. Os workflows públicos do GitHub Actions compilam e testam essas fontes de forma independente.
+
+Saídas de referência preservadas verificam bytes de ROM, diagnósticos e formatos das ferramentas. As antigas verificações C# em emulador continuam como registros históricos ligados às fontes originais. Não comprovam automaticamente todas as APIs Rust, hardware real nem a inicialização completa de jogos pelo BIOS FDS. O script PNG original não está disponível e foi refeito com base na especificação; não se pode afirmar igualdade de bytes com ele.
+
+[Compilador nativo Rust e ferramentas auxiliares](../tools/README.pt.md)
+
+<!-- rust-native-20261004:end -->

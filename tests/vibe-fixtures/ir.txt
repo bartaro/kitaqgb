@@ -1,0 +1,5 @@
+($function foo)
+($function_decl bar)
+($bank 1)
+($call foo)($call bar)
+($variable u8)

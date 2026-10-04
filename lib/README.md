@@ -6,22 +6,9 @@
 
 [Shared renderer guide](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
-| 日本語 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Français | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Español | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Deutsch | [KITAQGB Library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
-<!-- manual-language-links:end -->
 
-<!-- readme-language-links:start -->
-**English** | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
+
+
 
 <!-- local-library-20261003:start -->
 ## Local library changes and verification, 2026-10-03
@@ -302,3 +289,33 @@ The final eight audio note indices currently reuse the preceding octave's freque
 - For billiards-like games, prefer `physics2d_circle.*` over the AABB library.
 - Do not add separate `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game`, or `simple_physics` libraries for the current shape. Use `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg`, and `physics2d` respectively.
 - `scene.c` and `entity.c` avoid pointer-sized function-pointer arguments because the current KITAQGB function-pointer call path is most reliable with no-arg calls or one-byte ids.
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Library use with the native compiler
+
+lib/ contains C headers and sources compiled into the console ROM. The desktop compiler and helper tools are Rust; game sources, target libraries and their APIs remain C. SOURCE_MANIFEST.json and LIBRARY_MERGE.json record the selected library sources where provided.
+
+Native builds and executable checks passed on Windows, Linux, macOS ARM and macOS Intel. KITAQGB passed 48 tests and 395 helper checks per platform; KITAQFC passed 55 tests and 401 helper checks. Rust 1.85 was also tested. PUBLIC_DISTRIBUTION.json records the installed binary hashes and validation provenance. The public GitHub Actions workflows rebuild and test this source independently.
+
+Frozen reference outputs test ROM bytes, diagnostics and helper formats. Earlier C# emulator evidence remains historical evidence with its original source fingerprints. It does not automatically prove every Rust API, real hardware or complete FDS BIOS/game startup. The unavailable original PNG conversion script was reconstructed from its specification; byte parity with that missing script cannot be claimed.
+
+[Native Rust compiler and helper tools](../tools/README.en.md)
+
+<!-- rust-native-20261004:end -->

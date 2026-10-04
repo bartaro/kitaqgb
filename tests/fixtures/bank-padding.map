@@ -1,0 +1,4 @@
+; KITAQGB symbol map
+; Addr(CPU) Bank  Off   Kind Region Name
+4000     1  0000   S    ROM      blob
+4000     2  0000   S    ROM      main

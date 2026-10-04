@@ -1,0 +1,44 @@
+name: Native portable Linux musl validation
+on:
+  push:
+    paths:
+      - '.github/workflows/portable-linux.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux-musl:
+    timeout-minutes: 25
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          rustup toolchain install 1.93.1 --profile minimal
+          rustup default 1.93.1
+          rustup target add x86_64-unknown-linux-musl
+          sudo apt-get update -qq
+          sudo apt-get install -y musl-tools
+      - name: Native musl differential tests
+        run: cargo test --locked --target x86_64-unknown-linux-musl
+      - name: Portable release
+        run: cargo build --locked --release --target x86_64-unknown-linux-musl
+      - name: Native portable CLI execution
+        run: python3 tools/platform_smoke.py --compiler target/x86_64-unknown-linux-musl/release/kitaqgb --receipt native-platform-musl.json
+      - name: Native portable helper execution
+        run: python3 tools/auxiliary_smoke.py --kind gb --bin-dir target/x86_64-unknown-linux-musl/release --receipt auxiliary-platform-musl.json
+      - name: Save portable executable and evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: kitaqgb-Linux-musl-X64
+          retention-days: 14
+          path: |
+            target/x86_64-unknown-linux-musl/release/kitaqgb
+            target/x86_64-unknown-linux-musl/release/kitaqgb-zx0
+            target/x86_64-unknown-linux-musl/release/kitaqgb-patch-vblank
+            native-platform-musl.json
+            auxiliary-platform-musl.json
+            lib/
+      - name: Remove build intermediates
+        if: always()
+        run: cargo clean

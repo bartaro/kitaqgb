@@ -1,0 +1,65 @@
+; return
+NOP
+; variable
+; variable
+; variable
+; variable
+; variable
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; variable
+; assign
+NOP
+; static_assert
+; static_assert
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign_modify
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign_modify
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; assign
+NOP
+; for
+NOP

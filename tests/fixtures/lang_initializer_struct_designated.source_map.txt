@@ -1,0 +1,3 @@
+# KITAQGB source map
+# bank:addr path:line:column symbol=... section=...
+01:400A C:\kitaqgb_project\integration_test\cases\lang_initializer_struct_designated.c:17 symbol=main

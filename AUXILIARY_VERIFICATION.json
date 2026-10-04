@@ -1,0 +1,263 @@
+{
+  "date": "2026-10-04",
+  "status": "complete",
+  "passed": true,
+  "implementation_ci_commit": "50c48583cc867b20a1c69a84fa47277029b0c978",
+  "private_repository": "bartaro/kitaqgb-rust-validation-20261004",
+  "native_helper_binaries": [
+    "kitaqgb-patch-vblank",
+    "kitaqgb-zx0"
+  ],
+  "full_tests_per_environment": 48,
+  "codec_reference_inputs": 60,
+  "malformed_stream_cases": 33,
+  "runtime_requires_dotnet": false,
+  "runtime_requires_python": false,
+  "all_source_helpers_accounted_for": true,
+  "source_manifest": "AUXILIARY_SOURCE_MANIFEST.json",
+  "native_validation": [
+    {
+      "artifact": "kitaqgb-macOS-X64",
+      "system": "Darwin",
+      "machine": "x86_64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+    },
+    {
+      "artifact": "kitaqgb-macOS-ARM64",
+      "system": "Darwin",
+      "machine": "arm64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+    },
+    {
+      "artifact": "kitaqgb-Windows-X64",
+      "system": "Windows",
+      "machine": "AMD64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+    },
+    {
+      "artifact": "kitaqgb-Linux-X64",
+      "system": "Linux",
+      "machine": "x86_64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37169762319"
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-X64",
+      "system": "Darwin",
+      "machine": "x86_64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-ARM64",
+      "system": "Darwin",
+      "machine": "arm64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170086584"
+    },
+    {
+      "artifact": "kitaqgb-Linux-musl-X64",
+      "system": "Linux",
+      "machine": "x86_64",
+      "helper_checks": 395,
+      "ci_url": "https://github.com/bartaro/kitaqgb-rust-validation-20261004/actions/runs/37170055811"
+    }
+  ],
+  "executables": [
+    {
+      "artifact": "kitaqgb-macOS-X64",
+      "name": "kitaqgb",
+      "sha256": "979e5a82a0a269f22c8296ff96f6f121483960475a48e7b789dac5d938f6dbea",
+      "bytes": 5102000,
+      "format": "Mach-O 64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-X64",
+      "name": "kitaqgb-zx0",
+      "sha256": "a9f413ba2ade2b1547c50c0d53dea0a262c1e692496c890ecda32392dcaf787c",
+      "bytes": 430520,
+      "format": "Mach-O 64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-X64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "44cb228242300fe248fdc13588f2036104f0d973b3367d834425b6e1b6086400",
+      "bytes": 1846904,
+      "format": "Mach-O 64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-ARM64",
+      "name": "kitaqgb",
+      "sha256": "88aac9dcbaf61cb5c59ef5ff6f4cdcdff22ff9d6ba6ff53110ee91e45ce0076b",
+      "bytes": 4496976,
+      "format": "Mach-O 64",
+      "architecture": "arm64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-ARM64",
+      "name": "kitaqgb-zx0",
+      "sha256": "0936d271b3d1d40533d05e0524bfd2aa8a2ff57a06444a52f4a4a728655385ae",
+      "bytes": 442528,
+      "format": "Mach-O 64",
+      "architecture": "arm64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-ARM64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "e049ff0aed6a47002911539e865ae37d83c4746e4a1a90ed018f5a159d51cacc",
+      "bytes": 1749504,
+      "format": "Mach-O 64",
+      "architecture": "arm64"
+    },
+    {
+      "artifact": "kitaqgb-Windows-X64",
+      "name": "kitaqgb.exe",
+      "sha256": "caadee2356a50725928c3c86e948b882ea147e4355f641d2ef15488ee2060e00",
+      "bytes": 5427712,
+      "format": "PE32+",
+      "architecture": "x86_64",
+      "managed_clr_header": false
+    },
+    {
+      "artifact": "kitaqgb-Windows-X64",
+      "name": "kitaqgb-zx0.exe",
+      "sha256": "1b9e54392a414cccd39fc6d7eddc8d5d891257191a2617be0bf30c041ace5e22",
+      "bytes": 184320,
+      "format": "PE32+",
+      "architecture": "x86_64",
+      "managed_clr_header": false
+    },
+    {
+      "artifact": "kitaqgb-Windows-X64",
+      "name": "kitaqgb-patch-vblank.exe",
+      "sha256": "1ae48aab95ddcf0257e9a9c223f7f3c4fb4c669a001a642aa42dd91f96ff209a",
+      "bytes": 1594880,
+      "format": "PE32+",
+      "architecture": "x86_64",
+      "managed_clr_header": false
+    },
+    {
+      "artifact": "kitaqgb-Linux-X64",
+      "name": "kitaqgb",
+      "sha256": "415b0402c405e4ded036376d646f0dab32cbaed477b164c2bb5ab617c0a046e7",
+      "bytes": 5535024,
+      "format": "ELF64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-Linux-X64",
+      "name": "kitaqgb-zx0",
+      "sha256": "261945e527007e158d08df7ebdd4d7dbf59e6035fd7ae2397f2650e26c764850",
+      "bytes": 455776,
+      "format": "ELF64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-Linux-X64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "55b678516171439a4a9793601c09dd93497654620873b2d6a0de6a2e34a013cb",
+      "bytes": 2122744,
+      "format": "ELF64",
+      "architecture": "x86_64"
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-X64",
+      "name": "kitaqgb",
+      "sha256": "289b7bbd640bbe8f88198070bab26205d2b15d0a2008c796920542b95e72f4fd",
+      "bytes": 9608784,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-X64",
+      "name": "kitaqgb-zx0",
+      "sha256": "dc6ee1e162840cd4606adffe38fd4aaed27457ec0d708f344b49b26403b8138e",
+      "bytes": 884896,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-X64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "69638e6ccf6fd7246ae9e84ea8584620d079ec2f003fc424f5fb2bdc28fac54a",
+      "bytes": 3617280,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-ARM64",
+      "name": "kitaqgb",
+      "sha256": "289b7bbd640bbe8f88198070bab26205d2b15d0a2008c796920542b95e72f4fd",
+      "bytes": 9608784,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-ARM64",
+      "name": "kitaqgb-zx0",
+      "sha256": "dc6ee1e162840cd4606adffe38fd4aaed27457ec0d708f344b49b26403b8138e",
+      "bytes": 884896,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-macOS-Universal-ARM64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "69638e6ccf6fd7246ae9e84ea8584620d079ec2f003fc424f5fb2bdc28fac54a",
+      "bytes": 3617280,
+      "format": "Mach-O Universal",
+      "architectures": [
+        "arm64",
+        "x86_64"
+      ]
+    },
+    {
+      "artifact": "kitaqgb-Linux-musl-X64",
+      "name": "kitaqgb",
+      "sha256": "27a2cd41b5e97060d29d2f161edb94b531371898f9ecdf122e165e812d836939",
+      "bytes": 5645784,
+      "format": "ELF64",
+      "architecture": "x86_64",
+      "static_no_interpreter": true
+    },
+    {
+      "artifact": "kitaqgb-Linux-musl-X64",
+      "name": "kitaqgb-zx0",
+      "sha256": "7e2ef97b6aea912ac20bd38bbc67aac188e4dc5470c9332ec60825a37945960a",
+      "bytes": 569592,
+      "format": "ELF64",
+      "architecture": "x86_64",
+      "static_no_interpreter": true
+    },
+    {
+      "artifact": "kitaqgb-Linux-musl-X64",
+      "name": "kitaqgb-patch-vblank",
+      "sha256": "d10dcff00b892e1feb34fc29e5af0a24673b933065356b15f299c22bb5581228",
+      "bytes": 2231416,
+      "format": "ELF64",
+      "architecture": "x86_64",
+      "static_no_interpreter": true
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+; KITAQGB symbol map
+; Addr(CPU) Bank  Off   Kind Region Name
+FF82     0  0002   S    HRAM     __rom_bank
+FF83     0  0003   S    HRAM     __rom_bank_saved
+FF84     0  0004   S    HRAM     __kq_sret_ptr
+FF86     0  0006   S    HRAM     __kq_thunk_sp
+FF87     0  0007   S    HRAM     __kq_thunk_bank_stack
+FF8F     0  000F   S    HRAM     __kq_thunk_retlo_stack
+FF97     0  0017   S    HRAM     __kq_thunk_rethi_stack
+FF9F     0  001F   S    HRAM     __kq_critical_depth
+FFA0     0  0020   S    HRAM     __kq_rng_lo
+FFA1     0  0021   S    HRAM     __kq_rng_hi
+0160     0  0160   S    ROM      main
+0233     0  0233   L    ROM      loop_top_0
+0235     0  0235   L    ROM      loop_end_1
+C000     0  0000   S    WRAM0    points
+C020     0  0020   S    WRAM0    sink

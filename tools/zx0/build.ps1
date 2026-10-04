@@ -1,5 +1,4 @@
 $ErrorActionPreference = 'Stop'
-$toolDirectory = $PSScriptRoot
-$compilerPath = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
-& $compilerPath /nologo /optimize+ /target:exe "/out:$toolDirectory\..\..\kitaqgb-zx0.exe" "$toolDirectory\KitaqZx0.cs"
-if ($LASTEXITCODE -ne 0) { throw 'ZX0 asset tool build failed.' }
+$projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '../..')).Path
+& cargo build --locked --release --manifest-path (Join-Path $projectRoot 'Cargo.toml') --bin kitaqgb-zx0
+if ($LASTEXITCODE -ne 0) { throw 'ZX0 native build failed.' }

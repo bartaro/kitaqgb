@@ -1,8 +1,6 @@
 # KITAQGB-Bibliotheken
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Deutsch**
-<!-- readme-language-links:end -->
+
 
 <!-- local-library-20261003:start -->
 ## Lokale Bibliothek: Änderungen und Prüfung vom 2026-10-03
@@ -271,3 +269,33 @@ Die letzten acht Notenindizes verwenden die Frequenzen der vorigen Oktave erneut
 - Für billardähnliche Spiele eignet sich `physics2d_circle.*` besser als die AABB-Bibliothek.
 - Ergänzen Sie für den derzeitigen Aufbau keine getrennten Bibliotheken `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game` oder `simple_physics`. Verwenden Sie dafür `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg` beziehungsweise `physics2d`.
 - `scene.c` und `entity.c` vermeiden Funktionszeigerargumente in Zeigerbreite: Der aktuelle KITAQGB-Aufrufpfad ist für Aufrufe ohne Argumente oder mit einer Byte-ID am zuverlässigsten.
+
+<!-- readme-language-links:start -->
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
+<!-- readme-language-links:end -->
+
+<!-- manual-language-links:start -->
+| Language / 言語 | HTML |
+| --- | --- |
+| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
+| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
+| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
+| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
+| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
+| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
+| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
+| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
+<!-- manual-language-links:end -->
+
+<!-- rust-native-20261004:start -->
+## Bibliotheken mit dem nativen Compiler verwenden
+
+lib/ enthält C-Header und C-Quellen, die in das Konsolen-ROM übersetzt werden. PC-Compiler und Hilfswerkzeuge sind in Rust geschrieben; Spielquellen, Zielbibliotheken und ihre APIs bleiben C. Die mitgelieferten SOURCE_MANIFEST.json und LIBRARY_MERGE.json dokumentieren die Auswahl der Bibliotheksquellen.
+
+Native Builds und Ausführungsprüfungen waren unter Windows, Linux, macOS ARM und macOS Intel erfolgreich. KITAQGB bestand pro Umgebung 48 Tests und 395 Werkzeugprüfungen, KITAQFC 55 und 401. Rust 1.85 wurde ebenfalls getestet. PUBLIC_DISTRIBUTION.json enthält die Hashwerte der installierten Programme und die Herkunft der Prüfergebnisse. Die öffentlichen GitHub-Actions-Workflows bauen und testen diese Quellen unabhängig.
+
+Gespeicherte Referenzausgaben prüfen ROM-Bytes, Diagnosen und Werkzeugformate. Frühere C#-Emulatorprüfungen bleiben historische Nachweise mit ihren ursprünglichen Quellfingerabdrücken. Sie belegen nicht automatisch sämtliche Rust-APIs, echte Hardware oder einen vollständigen Spielstart über das FDS-BIOS. Das nicht verfügbare ursprüngliche PNG-Skript wurde nach seiner Spezifikation neu implementiert; Bytegleichheit mit ihm kann nicht bestätigt werden.
+
+[Nativer Rust-Compiler und Hilfswerkzeuge](../tools/README.de.md)
+
+<!-- rust-native-20261004:end -->

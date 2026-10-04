@@ -1,0 +1,17 @@
+version	major=2,minor=0
+info	csym=0,file=1,lib=0,line=0,mod=0,scope=0,seg=3,span=6,sym=5,type=0
+file	id=0,name="sections-vectors.dbc"
+seg	id=0,start=0x0000,size=0x8000,type=ro,ooffs=16
+seg	id=3,start=0xC000,size=0x2000,type=rw
+seg	id=6,start=0xFF00,size=0x0100,type=rw
+span	id=0,seg=0,start=352,size=2
+span	id=1,seg=0,start=354,size=2
+span	id=2,seg=0,start=356,size=1
+span	id=3,seg=0,start=357,size=1
+span	id=4,seg=0,start=358,size=1
+span	id=5,seg=0,start=359,size=1
+sym	id=0,name="main",size=1,val=0x0160,seg=0,region="ROM",bank=0
+sym	id=1,name="finish",size=1,val=0x0164,seg=0,region="ROM",bank=0
+sym	id=2,name="__kq_vblank_vector",size=1,val=0x0165,seg=0,region="ROM",bank=0
+sym	id=3,name="__kq_serial_vector",size=1,val=0x0166,seg=0,region="ROM",bank=0
+sym	id=4,name="helper",size=1,val=0x0167,seg=0,region="ROM",bank=0

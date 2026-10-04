@@ -1,0 +1,5 @@
+# KITAQGB bank size report
+# bank, start, end, used, free
+ 0, 0x0000, 0x4000,   352, 16032
+ 1, 0x4000, 0x8000, 16383,     1
+ 2, 0x8000, 0xC000,     3, 16381

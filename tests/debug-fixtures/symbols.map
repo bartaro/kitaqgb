@@ -1,0 +1,6 @@
+; test map
+C000 0 0000 S WRAM0 foo
+4010 1 0010 S ROM BAR
+4012 1 0012 L ROM foobar
+FF80 0000 S HRAM fast
+invalid row

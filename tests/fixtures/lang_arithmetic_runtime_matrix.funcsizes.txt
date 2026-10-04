@@ -1,0 +1,4 @@
+# KITAQGB function size report
+# name, bank, cpu_addr, start_file, end_file, size
+main, 0, 0x0197, 0x00197, 0x0086F, 1752
+put16, 0, 0x0160, 0x00160, 0x00197, 55

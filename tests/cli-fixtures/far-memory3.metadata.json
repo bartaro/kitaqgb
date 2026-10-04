@@ -1,0 +1,644 @@
+{
+  "fixture": "far-memory.c",
+  "flags": [],
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17",
+  "dbg2": {
+    "schema_version": "1",
+    "rom": {
+      "path": "<STEM>.gb",
+      "sha256": "9b4e0ae091cd85971648300734d387a7f271571a439eaed1ad839cf0a1d321d1",
+      "size_bytes": 65536
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "symbols": [
+      {
+        "name": "__kq_far_memcpy_bank0",
+        "bank": 0,
+        "start": 352,
+        "end": 381,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_far_memcpy_loop",
+        "bank": 0,
+        "start": 363,
+        "end": 364,
+        "kind": "label",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_far_memcpy_done",
+        "bank": 0,
+        "start": 373,
+        "end": 374,
+        "kind": "label",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_farcall_pointer_bank0",
+        "bank": 0,
+        "start": 381,
+        "end": 413,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_farcall_pointer_return",
+        "bank": 0,
+        "start": 398,
+        "end": 399,
+        "kind": "label",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_farcall_number",
+        "bank": 0,
+        "start": 413,
+        "end": 443,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__kq_thunk_b3_number",
+        "bank": 0,
+        "start": 443,
+        "end": 475,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "__rom_bank",
+        "bank": 0,
+        "start": 65410,
+        "end": 65411,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "bank": 0,
+        "start": 65411,
+        "end": 65412,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "bank": 0,
+        "start": 65412,
+        "end": 65413,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "bank": 0,
+        "start": 65414,
+        "end": 65415,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "bank": 0,
+        "start": 65415,
+        "end": 65416,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "bank": 0,
+        "start": 65423,
+        "end": 65424,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "bank": 0,
+        "start": 65431,
+        "end": 65432,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "bank": 0,
+        "start": 65439,
+        "end": 65440,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "bank": 0,
+        "start": 65440,
+        "end": 65441,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "bank": 0,
+        "start": 65441,
+        "end": 65442,
+        "kind": "symbol",
+        "region": "HRAM"
+      },
+      {
+        "name": "bytes",
+        "bank": 0,
+        "start": 49152,
+        "end": 49153,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "bank",
+        "bank": 0,
+        "start": 49160,
+        "end": 49161,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "result",
+        "bank": 0,
+        "start": 49162,
+        "end": 49163,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "pointer",
+        "bank": 0,
+        "start": 49164,
+        "end": 49165,
+        "kind": "symbol",
+        "region": "WRAM0"
+      },
+      {
+        "name": "table",
+        "bank": 0,
+        "start": 475,
+        "end": 476,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 479,
+        "end": 710,
+        "kind": "symbol",
+        "region": "ROM"
+      },
+      {
+        "name": "number",
+        "bank": 3,
+        "start": 16384,
+        "end": 16388,
+        "kind": "symbol",
+        "region": "ROM"
+      }
+    ],
+    "source_locations": [
+      {
+        "bank": 0,
+        "addr": 479,
+        "path": "<SOURCES>/far-memory.c",
+        "line": 7,
+        "symbol": "main"
+      },
+      {
+        "bank": 3,
+        "addr": 16384,
+        "path": "<SOURCES>/far-memory.c",
+        "line": 3,
+        "symbol": "number"
+      }
+    ],
+    "functions": [
+      {
+        "name": "__kq_far_memcpy_bank0",
+        "bank": 0,
+        "start": 352,
+        "end": 381,
+        "size_bytes": 29
+      },
+      {
+        "name": "__kq_farcall_pointer_bank0",
+        "bank": 0,
+        "start": 381,
+        "end": 413,
+        "size_bytes": 32
+      },
+      {
+        "name": "__kq_farcall_number",
+        "bank": 0,
+        "start": 413,
+        "end": 443,
+        "size_bytes": 30
+      },
+      {
+        "name": "__kq_thunk_b3_number",
+        "bank": 0,
+        "start": 443,
+        "end": 475,
+        "size_bytes": 32
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "start": 479,
+        "end": 710,
+        "size_bytes": 231,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "number",
+        "bank": 3,
+        "start": 16384,
+        "end": 16388,
+        "size_bytes": 4,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "has_fixed_bank": false,
+        "has_fixed_order": false,
+        "return_size": 2,
+        "param_sizes": []
+      }
+    ],
+    "variables": [
+      {
+        "name": "__rom_bank",
+        "address": 65410,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__rom_bank_saved",
+        "address": 65411,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_sret_ptr",
+        "address": 65412,
+        "size": 2,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_sp",
+        "address": 65414,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_bank_stack",
+        "address": 65415,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_retlo_stack",
+        "address": 65423,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_thunk_rethi_stack",
+        "address": 65431,
+        "size": 8,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_critical_depth",
+        "address": 65439,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_lo",
+        "address": 65440,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "__kq_rng_hi",
+        "address": 65441,
+        "size": 1,
+        "region": "HRAM"
+      },
+      {
+        "name": "bytes",
+        "address": 49152,
+        "size": 8,
+        "region": "WRAM0"
+      },
+      {
+        "name": "bank",
+        "address": 49160,
+        "size": 1,
+        "region": "WRAM0"
+      },
+      {
+        "name": "result",
+        "address": 49162,
+        "size": 2,
+        "region": "WRAM0"
+      },
+      {
+        "name": "pointer",
+        "address": 49164,
+        "size": 2,
+        "region": "WRAM0"
+      },
+      {
+        "name": "table",
+        "address": 475,
+        "size": 4,
+        "region": "ROM",
+        "bank": 0
+      }
+    ],
+    "static_estimates": [
+      {
+        "name": "__kq_far_memcpy_bank0",
+        "bank": 0,
+        "size_bytes": 29,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "__kq_farcall_pointer_bank0",
+        "bank": 0,
+        "size_bytes": 32,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "__kq_farcall_number",
+        "bank": 0,
+        "size_bytes": 30,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "__kq_thunk_b3_number",
+        "bank": 0,
+        "size_bytes": 32,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0
+      },
+      {
+        "name": "main",
+        "bank": 0,
+        "size_bytes": 231,
+        "incoming_call_count": 0,
+        "outgoing_call_count": 4,
+        "cross_bank_outgoing_count": 3,
+        "far_call_count": 4,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 0,
+        "param_sizes": []
+      },
+      {
+        "name": "number",
+        "bank": 3,
+        "size_bytes": 4,
+        "incoming_call_count": 3,
+        "outgoing_call_count": 0,
+        "cross_bank_outgoing_count": 0,
+        "far_call_count": 0,
+        "is_stack_call": false,
+        "is_fast_call": false,
+        "return_size": 2,
+        "param_sizes": []
+      }
+    ],
+    "call_edges": [
+      {
+        "caller": "main",
+        "callee": "<indirect-far>",
+        "caller_bank": 0,
+        "callee_bank": -1,
+        "kind": "farcall_pointer",
+        "via_thunk": true,
+        "via_farcall": true,
+        "count": 1,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "number",
+        "caller_bank": 0,
+        "callee_bank": 3,
+        "kind": "farcall_bank_thunk",
+        "via_thunk": true,
+        "via_farcall": true,
+        "count": 2,
+        "last_source": "<unknown> (line 1, column 1)"
+      },
+      {
+        "caller": "main",
+        "callee": "number",
+        "caller_bank": 0,
+        "callee_bank": 3,
+        "kind": "farcall_intrinsic",
+        "via_thunk": true,
+        "via_farcall": true,
+        "count": 1,
+        "last_source": "<unknown> (line 1, column 1)"
+      }
+    ],
+    "aggregate_copies": [],
+    "abi_issues": [],
+    "bank_usage": [
+      {
+        "bank": 0,
+        "used_bytes": 710,
+        "free_bytes": 15674
+      },
+      {
+        "bank": 1,
+        "used_bytes": 0,
+        "free_bytes": 16384
+      },
+      {
+        "bank": 2,
+        "used_bytes": 0,
+        "free_bytes": 16384
+      },
+      {
+        "bank": 3,
+        "used_bytes": 4,
+        "free_bytes": 16380
+      }
+    ]
+  },
+  "build_report": {
+    "schema_version": "1",
+    "output_rom": "<STEM>.gb",
+    "output_sha256": "9b4e0ae091cd85971648300734d387a7f271571a439eaed1ad839cf0a1d321d1",
+    "rom_size_bytes": 65536,
+    "used_bytes": 49156,
+    "abi_mode": "legacy",
+    "function_count": 6,
+    "call_edge_count": 3,
+    "aggregate_copy_count": 0,
+    "optimizer_pass_count": 3,
+    "abi_issue_count": 0,
+    "cross_bank_call_count": 2,
+    "source_files": [
+      "<SOURCES>/far-memory.c"
+    ],
+    "abi_issues": [],
+    "header": {
+      "title": "",
+      "cgb_flag": 128,
+      "cart_type": 25,
+      "rom_size_code": 2,
+      "ram_size_code": 0
+    },
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "hotspots": [
+      {
+        "name": "number",
+        "incoming_calls": 3,
+        "size_bytes": 4,
+        "score": 12
+      },
+      {
+        "name": "main",
+        "incoming_calls": 0,
+        "size_bytes": 231,
+        "score": 0
+      },
+      {
+        "name": "__kq_farcall_pointer_bank0",
+        "incoming_calls": 0,
+        "size_bytes": 32,
+        "score": 0
+      },
+      {
+        "name": "__kq_thunk_b3_number",
+        "incoming_calls": 0,
+        "size_bytes": 32,
+        "score": 0
+      },
+      {
+        "name": "__kq_farcall_number",
+        "incoming_calls": 0,
+        "size_bytes": 30,
+        "score": 0
+      },
+      {
+        "name": "__kq_far_memcpy_bank0",
+        "incoming_calls": 0,
+        "size_bytes": 29,
+        "score": 0
+      }
+    ],
+    "cross_bank_edges": [
+      {
+        "caller": "main",
+        "callee": "number",
+        "caller_bank": 0,
+        "callee_bank": 3,
+        "count": 2,
+        "kind": "farcall_bank_thunk",
+        "via_thunk": true,
+        "via_farcall": true
+      },
+      {
+        "caller": "main",
+        "callee": "number",
+        "caller_bank": 0,
+        "callee_bank": 3,
+        "count": 1,
+        "kind": "farcall_intrinsic",
+        "via_thunk": true,
+        "via_farcall": true
+      }
+    ],
+    "aggregate_copies": [],
+    "notes": [
+      "dbg2.json is emitted alongside the ROM so KOKURA can load richer source-aware metadata directly.",
+      "source_map.txt is emitted alongside the ROM for lightweight line-level lookup without requiring the full JSON payload.",
+      "static_estimates are currently structural estimates driven by codegen/call topology and function size, not cycle-perfect timing."
+    ]
+  },
+  "ai": {
+    "schema": "kitaqgb-ai-build-metadata",
+    "schema_version": 1,
+    "producer": "KITAQGB",
+    "platform": "gb",
+    "build_id": "9b4e0ae091cd85971648300734d387a7f271571a439eaed1ad839cf0a1d321d1",
+    "rom": {
+      "path": "<STEM>.gb",
+      "hash": "9b4e0ae091cd85971648300734d387a7f271571a439eaed1ad839cf0a1d321d1",
+      "sha256": "9b4e0ae091cd85971648300734d387a7f271571a439eaed1ad839cf0a1d321d1",
+      "target": "gb",
+      "size_bytes": 65536
+    },
+    "source_files": [
+      "<SOURCES>/far-memory.c"
+    ],
+    "stack_policy": {
+      "bank": "fixed",
+      "top": 53247,
+      "reserve": 512,
+      "auto_limit": 52735,
+      "reserved_begin": 52736,
+      "reserved_end": 53247
+    },
+    "compiler": {
+      "abi": "legacy",
+      "opt_level": 0,
+      "function_count": 6,
+      "call_edge_count": 3,
+      "aggregate_copy_count": 0,
+      "abi_issue_count": 0
+    },
+    "artifacts": {
+      "dbg2_json": "<STEM>.dbg2.json",
+      "build_report_json": "<STEM>.build_report.json",
+      "source_map": "<STEM>.source_map.txt"
+    },
+    "notes": [
+      "Metadata is a compact SARAKURA/KOKURA handoff view; detailed symbols remain in dbg2.json.",
+      "ROM hash is the build_id so emitter output can be joined to this compiler artifact."
+    ]
+  }
+}

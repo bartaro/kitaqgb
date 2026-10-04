@@ -1,0 +1,38 @@
+{
+  "flags": [
+    "--strict",
+    "--max-errors=2"
+  ],
+  "diagnostics": {
+    "exit_code": 1,
+    "errors": 2,
+    "warnings": 0,
+    "output": "<STEM>.gb",
+    "diagnostics": [
+      {
+        "severity": "error",
+        "code": "KQ2417",
+        "message": "unused local variable 'a' in function 'main'",
+        "suggestion": "The symbol is unused. Remove it or add a real use-site.",
+        "file": "<SOURCES>/main.c",
+        "line": 1,
+        "column": 21
+      },
+      {
+        "severity": "error",
+        "code": "KQ2417",
+        "message": "unused local variable 'b' in function 'main'",
+        "suggestion": "The symbol is unused. Remove it or add a real use-site.",
+        "file": "<SOURCES>/main.c",
+        "line": 1,
+        "column": 26
+      }
+    ]
+  },
+  "paths": {
+    "exit_code": 1,
+    "diag_json": "<DIAG>"
+  },
+  "files": {},
+  "csharp_exe_sha256": "6d171b35eba1a0a2cf634d3b4a72e7e5afa0f1a9849f32a66d21111a6aa5ac17"
+}
