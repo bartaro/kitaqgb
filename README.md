@@ -1073,3 +1073,13 @@ sh scripts/build.sh
 - [ライセンス英語原文](LICENSE) / [日本語参考訳](LICENSE.ja)
 
 プロジェクトのライセンスは、第三者のフォント、依存ライブラリ、ロゴ、商標に関する条件を置き換えるものではありません。再配布時は付属の権利表記も保持してください。
+
+<!-- wire3d-feedback:start -->
+
+Wire3D timing, 88-row profiles and independent clocks
+
+DMG accepts WIRE3D_DMG_HEIGHT 88, 96 or 120; CGB accepts WIRE3DCGB_HEIGHT 88 or 96. Defaults remain DMG 120 and CGB 96. The 88-row viewport is 128×88 with center Y=44. Use the same setting in the library and caller, compiling wire3d_dmg_88.c / wire3d_cgb_88.c instead of the normal entry. DMG 88 shares the 96-row model layout and 16-edge limit. CGB 160×144 mode is unchanged.
+
+[Verification results and examples](https://bartaro.github.io/kitaq-docs/en/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

@@ -64,7 +64,11 @@ extern __wram u8 AudioVBlank_QueueReadIndex;
 extern __wram u8 AudioVBlank_QueueWriteIndex;
 extern __wram u8 AudioVBlank_QueueCount;
 extern __wram u8 AudioVBlank_QueueUnderruns;
+#ifdef AUDIO_VBLANK_QUEUE_WRAM0
+extern __wram u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
+#else
 extern __wramx_bank(1) u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
+#endif
 extern __wram AudioVBlankFrameHook AudioVBlank_FrameHook;
 
 void AudioVBlank_Init();

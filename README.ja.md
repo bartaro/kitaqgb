@@ -527,3 +527,13 @@ sh scripts/build.sh
 - [ライセンス英語原文](LICENSE) / [日本語参考訳](LICENSE.ja)
 
 プロジェクトのライセンスは、第三者のフォント、依存ライブラリ、ロゴ、商標に関する条件を置き換えるものではありません。再配布時は付属の権利表記も保持してください。
+
+<!-- wire3d-feedback:start -->
+
+Wire3Dの描画時間・88行プロファイル・独立した更新時計
+
+DMGはWIRE3D_DMG_HEIGHTを88・96・120から選択できます。CGBはWIRE3DCGB_HEIGHTを88・96から選択します。既定値はDMG 120、CGB 96です。88行は128×88、中心Y=44です。ライブラリと呼び出し側で同じ設定を使い、wire3d_dmg_88.c / wire3d_cgb_88.cを通常のエントリの代わりにコンパイルします。DMGの88行は96行と同じモデル構造・16辺制限です。CGBの160×144モードは変わりません。
+
+[検証結果と実行例](https://bartaro.github.io/kitaq-docs/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

@@ -529,3 +529,13 @@ sh scripts/build.sh
 - [Licence](LICENSE) / [Traduction japonaise à titre de référence](LICENSE.ja)
 
 La licence du projet ne remplace pas les conditions de tiers relatives aux polices, dépendances, logos ou marques. Conservez les mentions jointes lors de la redistribution.
+
+<!-- wire3d-feedback:start -->
+
+Mesure Wire3D, profils de 88 lignes et horloges indépendantes
+
+WIRE3D_DMG_HEIGHT accepte 88, 96 ou 120 ; WIRE3DCGB_HEIGHT accepte 88 ou 96. Les valeurs par défaut restent DMG 120 et CGB 96. Le profil de 88 lignes mesure 128×88, avec Y central=44. Utilisez le même réglage dans la bibliothèque et le programme ; compilez wire3d_dmg_88.c / wire3d_cgb_88.c à la place de l’entrée normale. DMG 88 garde la structure des modèles à 96 lignes et la limite de 16 arêtes. Le mode CGB 160×144 reste inchangé.
+
+[Résultats de vérification et exemples](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

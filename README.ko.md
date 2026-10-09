@@ -501,3 +501,13 @@ sh scripts/build.sh
 - [컴파일러 설명서](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) · [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
 - [오프라인 열람용 설명서 소스](https://github.com/bartaro/kitaq-docs)
 - [라이선스](LICENSE) / [일본어 참고 번역](LICENSE.ja)
+
+<!-- wire3d-feedback:start -->
+
+Wire3D 시간 측정, 88행 프로파일과 독립 시계
+
+DMG의 WIRE3D_DMG_HEIGHT는 88·96·120, CGB의 WIRE3DCGB_HEIGHT는 88·96을 지원합니다. 기본값은 DMG 120, CGB 96입니다. 88행 화면은 128×88이며 중심 Y=44입니다. 라이브러리와 호출 코드의 설정을 맞추고 일반 진입점 대신 wire3d_dmg_88.c / wire3d_cgb_88.c를 컴파일합니다. DMG 88은 96행의 모델 구조와 16개 변 제한을 사용합니다. CGB 160×144 모드는 그대로입니다.
+
+[검증 결과와 예제](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

@@ -4,7 +4,32 @@
 #define KITAQGB_WIRE3D_CGB_H
 
 #define WIRE3DCGB_SCREEN_W 128
-#define WIRE3DCGB_SCREEN_H 96
+#ifndef WIRE3DCGB_HEIGHT
+#define WIRE3DCGB_HEIGHT 96
+#endif
+#if WIRE3DCGB_HEIGHT != 88 && WIRE3DCGB_HEIGHT != 96
+#error WIRE3DCGB_HEIGHT must be 88 or 96
+#endif
+#define WIRE3DCGB_SCREEN_H WIRE3DCGB_HEIGHT
+#if WIRE3DCGB_HEIGHT == 88
+#define WIRE3DCGB_TILE_ROWS 11
+#define WIRE3DCGB_TILE_COUNT 176
+#define WIRE3DCGB_COLUMN_BYTES 176
+#define WIRE3DCGB_NEG_COLUMN_BYTES 0xFF50
+#define WIRE3DCGB_STAGE_RIGHT 0xDD50
+#define WIRE3DCGB_STAGE_BOTTOM 0xD3AE
+#define WIRE3DCGB_SECOND_DMA 0xAF
+#else
+#define WIRE3DCGB_TILE_ROWS 12
+#define WIRE3DCGB_TILE_COUNT 192
+#define WIRE3DCGB_COLUMN_BYTES 192
+#define WIRE3DCGB_NEG_COLUMN_BYTES 0xFF40
+#define WIRE3DCGB_STAGE_RIGHT 0xDE40
+#define WIRE3DCGB_STAGE_BOTTOM 0xD3BE
+#define WIRE3DCGB_SECOND_DMA 0xBF
+#endif
+// Reserve 3072 bytes in either profile for full-screen compatibility.
+#define WIRE3DCGB_UPLOAD_BYTES (WIRE3DCGB_TILE_COUNT * 16)
 #define WIRE3DCGB_FULL_SCREEN_W 160
 #define WIRE3DCGB_FULL_SCREEN_H 144
 #define WIRE3DCGB_FULL_TILE_LIMIT 127
@@ -138,6 +163,9 @@ void Wire3DCGB_FastMapCell(w3dcgb_u8 tx, w3dcgb_u8 ty, w3dcgb_u8 color, w3dcgb_u
 void Wire3DCGB_FastMapRect(w3dcgb_u8 tx0, w3dcgb_u8 ty0, w3dcgb_u8 tx1, w3dcgb_u8 ty1, w3dcgb_u8 color, w3dcgb_u8 sides);
 void Wire3DCGB_FastMapFlush();
 void Wire3DCGB_FastMapFlushTilesOnly();
+// Project camera-space coordinates without subtracting/rotating the camera.
+// Depth 8..255; outputs unchanged on rejection. Shared scratch: no ISR calls.
+w3dcgb_u8 Wire3DCGB_ProjectCameraPoint(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_u8* sx, w3dcgb_u8* sy);
 w3dcgb_u8 Wire3DCGB_ProjectPoint(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_u8* sx, w3dcgb_u8* sy);
 /* Fast path for games whose camera pitch, yaw, and roll stay at zero. */
 w3dcgb_u8 Wire3DCGB_ProjectPointNoRotation(w3dcgb_i16 x, w3dcgb_i16 y, w3dcgb_i16 z, w3dcgb_u8* sx, w3dcgb_u8* sy);

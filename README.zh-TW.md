@@ -501,3 +501,13 @@ sh scripts/build.sh
 - [編譯器手冊](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) · [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)
 - [可供離線閱讀的手冊原始檔](https://github.com/bartaro/kitaq-docs)
 - [授權條款](LICENSE)／[日文參考譯文](LICENSE.ja)
+
+<!-- wire3d-feedback:start -->
+
+Wire3D耗時、88列設定與獨立時鐘
+
+DMG的WIRE3D_DMG_HEIGHT可選88、96、120；CGB的WIRE3DCGB_HEIGHT可選88、96。預設仍為DMG 120、CGB 96。88列視口為128×88，中心Y=44。程式庫與呼叫端須採相同設定，以wire3d_dmg_88.c / wire3d_cgb_88.c替代一般入口編譯。DMG 88沿用96列的模型結構與16條邊限制。CGB 160×144模式維持不變。
+
+[驗證結果與範例](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

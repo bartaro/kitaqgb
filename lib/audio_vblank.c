@@ -47,7 +47,13 @@ __wram u8 AudioVBlank_QueueCount;
 __wram u8 AudioVBlank_QueueUnderruns;
 // The ISR selects SVBK=1 before consuming the queue. Keep only the large
 // payload in switchable WRAM so existing fixed-WRAM control ABI is unchanged.
+#ifdef AUDIO_VBLANK_QUEUE_WRAM0
+// Fixed WRAM avoids the DMG renderer's complete D000..DFFF reservation.
+// The ISR's SVBK selection does not affect this fixed 80-byte queue.
+__wram u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
+#else
 __wramx_bank(1) u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
+#endif
 __wram AudioVBlankFrameHook AudioVBlank_FrameHook;
 
 __prg_rom u8 AudioVBlank_FreqLo[68] = {

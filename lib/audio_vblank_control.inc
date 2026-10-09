@@ -1,4 +1,9 @@
+#ifdef AUDIO_VBLANK_CONTROL_BANK5
+#pragma bank 5
+#pragma fixed_bank 5
+#else
 #pragma fixed_bank 1
+#endif
 
 void AudioVBlank_Init()
 {

@@ -3,7 +3,7 @@
 #include "wire3d_dmg.h"
 
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // ROM bank 1 contains the C renderer; the low-level transfer/plot helpers below
 // use explicit fixed-bank placement. This module owns shared drawing state and
 // is not reentrant. It neither saves nor changes the caller's SVBK/VRAM bank.
@@ -15,9 +15,14 @@
 #pragma bank 1
 
 #define WIRE3D_DMG_TILE_W ((w3ddmg_u8)16)
-#if WIRE3D_DMG_HEIGHT == 96
-#define WIRE3D_DMG_TILE_H ((w3ddmg_u8)12)
-#define WIRE3D_DMG_ROW_BYTES ((w3ddmg_u8)0x60)
+#if WIRE3D_DMG_HEIGHT != 120
+#if WIRE3D_DMG_HEIGHT == 88
+#define WIRE3D_DMG_TILE_ROWS 11
+#else
+#define WIRE3D_DMG_TILE_ROWS 12
+#endif
+#define WIRE3D_DMG_TILE_H ((w3ddmg_u8)WIRE3D_DMG_TILE_ROWS)
+#define WIRE3D_DMG_ROW_BYTES ((w3ddmg_u8)WIRE3D_DMG_HEIGHT)
 #else
 #define WIRE3D_DMG_TILE_H ((w3ddmg_u8)15)
 #define WIRE3D_DMG_ROW_BYTES ((w3ddmg_u8)0x78)
@@ -25,14 +30,14 @@
 #define WIRE3D_DMG_NEAR_Z ((w3ddmg_i16)8)
 #define WIRE3D_DMG_FAR_Z ((w3ddmg_i16)255)
 #define WIRE3D_DMG_CENTER_X ((w3ddmg_i16)64)
-#if WIRE3D_DMG_HEIGHT == 96
-#define WIRE3D_DMG_CENTER_Y ((w3ddmg_i16)48)
+#if WIRE3D_DMG_HEIGHT != 120
+#define WIRE3D_DMG_CENTER_Y ((w3ddmg_i16)(WIRE3D_DMG_HEIGHT / 2))
 #else
 #define WIRE3D_DMG_CENTER_Y ((w3ddmg_i16)60)
 #endif
 #define WIRE3D_DMG_TRANSFORM_LIMIT ((w3ddmg_i16)220)
 #define WIRE3D_DMG_PROJECT_LIMIT ((w3ddmg_i16)120)
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #define WIRE3D_DMG_HUD_TILE_BASE ((w3ddmg_u8)0x80)
 #define WIRE3D_DMG_HUD_TILE_BLANK ((w3ddmg_u8)0x8A)
 #define WIRE3D_DMG_HUD_TILE_COUNT ((w3ddmg_u8)14)
@@ -49,7 +54,7 @@ __location(0xFF43) w3ddmg_u8 w3ddmg_reg_scx;
 __location(0xFF44) w3ddmg_u8 w3ddmg_reg_ly;
 __location(0xFF47) w3ddmg_u8 w3ddmg_reg_bgp;
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // The renderer owns tile VRAM 0x8000..0x97FF and map 0x9800..0x9BFF.
 // The 4096-byte WRAM stage uses column pages with 96 live bytes per page.
 // Keep these fixed regions separate from other graphics and banked RAM users.
@@ -62,7 +67,7 @@ __prg_rom w3ddmg_u8 w3ddmg_bit_mask[8] = {
     0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01
 };
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // HUD glyphs 0123456789, space, S, L and V come from DAISUKE OBA
 // original ASCII font under MIT, using the supplied GB tile conversion.
 __prg_rom w3ddmg_u8 w3ddmg_hud_tiles[224] = {
@@ -83,7 +88,7 @@ __prg_rom w3ddmg_u8 w3ddmg_hud_tiles[224] = {
 };
 #endif
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Sixteen evenly spaced orientations use signed Q6 coefficients: 64 is unity.
 #else
 
@@ -98,7 +103,7 @@ __prg_rom w3ddmg_i8 w3ddmg_cos_q6[16] = {
     -64, -59, -45, -24,   0,  24,  45,  59
 };
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Quantized perspective lookup, approximately 1536/Z where representable.
 // The projection path rejects indices below 8 and above 255.
 #endif
@@ -124,7 +129,7 @@ __prg_rom w3ddmg_u8 w3ddmg_inv_depth[256] = {
 w3ddmg_i16 w3ddmg_cam_x;
 w3ddmg_i16 w3ddmg_cam_y;
 w3ddmg_i16 w3ddmg_cam_z;
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 w3ddmg_i8 w3ddmg_cam_pitch;
 w3ddmg_i8 w3ddmg_cam_yaw;
 w3ddmg_i8 w3ddmg_cam_roll;
@@ -149,7 +154,7 @@ w3ddmg_u8 w3ddmg_line_sx;
 w3ddmg_u8 w3ddmg_line_sy;
 w3ddmg_u8 w3ddmg_line_err;
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Projection, visibility, line and scene scratch belong to the most recent draw.
 // Do not interleave another model transform or interrupt-driven renderer call.
 #endif
@@ -157,7 +162,7 @@ w3ddmg_u8 w3ddmg_screen_x[WIRE3D_DMG_MODEL_VERTEX_LIMIT];
 w3ddmg_u8 w3ddmg_screen_y[WIRE3D_DMG_MODEL_VERTEX_LIMIT];
 w3ddmg_u8 w3ddmg_screen_visible[WIRE3D_DMG_MODEL_VERTEX_LIMIT];
 w3ddmg_u8 w3ddmg_face_visible[WIRE3D_DMG_MODEL_FACE_LIMIT];
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 w3ddmg_u8 w3ddmg_edge_flags[WIRE3D_DMG_MODEL_EDGE_LIMIT];
 w3ddmg_u8 w3ddmg_occlusion_mask[1536];
 #else
@@ -204,7 +209,7 @@ void w3ddmg_transfer_stage_aux_asm();
 
 static w3ddmg_i16 w3ddmg_clamp_i16(w3ddmg_i16 v, w3ddmg_i16 lo, w3ddmg_i16 hi);
 static w3ddmg_u8 w3ddmg_clamp_screen(w3ddmg_i16 v, w3ddmg_u8 max);
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 static w3ddmg_i8 w3ddmg_neg_angle(w3ddmg_i8 v);
 static void w3ddmg_rotate_y(w3ddmg_i16* px, w3ddmg_i16* pz, w3ddmg_i8 angle);
 static void w3ddmg_rotate_x(w3ddmg_i16* py, w3ddmg_i16* pz, w3ddmg_i8 angle);
@@ -219,7 +224,7 @@ static void w3ddmg_rotate_z(w3ddmg_i16* px, w3ddmg_i16* py, w3ddmg_u8 angle);
 static w3ddmg_u8 w3ddmg_project_camera_space(w3ddmg_i16 vx, w3ddmg_i16 vy, w3ddmg_i16 vz, w3ddmg_u8* sx, w3ddmg_u8* sy);
 static w3ddmg_u8 w3ddmg_project_world(w3ddmg_i16 wx, w3ddmg_i16 wy, w3ddmg_i16 wz, w3ddmg_u8* sx, w3ddmg_u8* sy);
 w3ddmg_u8 Wire3DDMG_ProjectPoint(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8* sx, w3ddmg_u8* sy);
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 static void w3ddmg_load_hud_tiles();
 #else
 void Wire3DDMG_RotatePoint(w3ddmg_i16* x, w3ddmg_i16* y, w3ddmg_i16* z, w3ddmg_u8 rx, w3ddmg_u8 ry, w3ddmg_u8 rz);
@@ -249,7 +254,7 @@ static void w3ddmg_mark_triangle(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddm
 static void w3ddmg_clear_triangle(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddmg_u8 by, w3ddmg_u8 cx, w3ddmg_u8 cy);
 static void w3ddmg_build_face_visibility(const Wire3DDMG_Model* model, w3ddmg_u8 count, w3ddmg_u8 face_count);
 static w3ddmg_u8 w3ddmg_is_edge_visible(const Wire3DDMG_Model* model, w3ddmg_u8 edge_index, w3ddmg_u8 face_count);
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 w3ddmg_u16 Wire3DDMG_SelectEdgeMask(const Wire3DDMG_Model* model, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz);
 static void w3ddmg_build_edge_flags(const Wire3DDMG_Model* model, w3ddmg_u8 edge_count, w3ddmg_u8 face_count, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz);
 #endif
@@ -270,7 +275,7 @@ void w3ddmg_transfer_stage_aux_asm();
 #endif
 void Wire3DDMG_Init();
 void Wire3DDMG_BeginFrame();
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 pitch, w3ddmg_i8 yaw, w3ddmg_i8 roll);
 #else
 void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 pitch, w3ddmg_u8 yaw, w3ddmg_u8 roll);
@@ -278,7 +283,7 @@ void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 pit
 void Wire3DDMG_DrawLine2D(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddmg_u8 by);
 void Wire3DDMG_DrawScene(Wire3DDMG_Object* objects, w3ddmg_u8 count);
 void Wire3DDMG_DrawLine3D(w3ddmg_i16 ax, w3ddmg_i16 ay, w3ddmg_i16 az, w3ddmg_i16 bx, w3ddmg_i16 by, w3ddmg_i16 bz);
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_DrawModel(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz);
 void Wire3DDMG_EraseModelFaces(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz, w3ddmg_i16 scale_q8);
 #else
@@ -287,7 +292,7 @@ void Wire3DDMG_EraseModelFaces(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
 #endif
 void Wire3DDMG_EraseTriangle2D(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddmg_u8 by, w3ddmg_u8 cx, w3ddmg_u8 cy);
 void Wire3DDMG_EraseSpan2D(w3ddmg_u8 y, w3ddmg_u8 x0, w3ddmg_u8 x1);
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz, w3ddmg_i16 scale_q8);
 #else
 void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 rx, w3ddmg_u8 ry, w3ddmg_u8 rz, w3ddmg_i16 scale_q8);
@@ -299,6 +304,7 @@ void Wire3DDMG_TransferMainNow();
 void Wire3DDMG_TransferAuxNow();
 #endif
 void Wire3DDMG_EndFrame();
+void Wire3DDMG_EndFrameNow();
 
 
 #pragma bank 1
@@ -326,7 +332,7 @@ static w3ddmg_u8 w3ddmg_clamp_screen(w3ddmg_i16 v, w3ddmg_u8 max)
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Negate the stored angle; rotation helpers subsequently use only its low four bits.
 static w3ddmg_i8 w3ddmg_neg_angle(w3ddmg_i8 v)
 #else
@@ -334,7 +340,7 @@ static w3ddmg_i8 w3ddmg_neg_angle(w3ddmg_i8 v)
 static w3ddmg_u8 w3ddmg_neg_angle(w3ddmg_u8 v)
 #endif
 {
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     return (w3ddmg_i8)(0 - v);
 #else
     v = w3ddmg_angle_index(v);
@@ -346,7 +352,7 @@ static w3ddmg_u8 w3ddmg_neg_angle(w3ddmg_u8 v)
 #pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Rotate X/Z using a 16-step full-turn angle and Q6 sine/cosine tables.
 // Clamp each input to +/-220 before multiplying; write both results in place.
 // Pointers must be valid and distinct to preserve both returned components.
@@ -365,7 +371,7 @@ static void w3ddmg_rotate_y(w3ddmg_i16* px, w3ddmg_i16* pz, w3ddmg_u8 angle)
     w3ddmg_i16 out_x;
     w3ddmg_i16 out_z;
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     ai = (w3ddmg_u8)angle;
     ai = (w3ddmg_u8)(ai & 15);
 #else
@@ -393,7 +399,7 @@ static void w3ddmg_rotate_y(w3ddmg_i16* px, w3ddmg_i16* pz, w3ddmg_u8 angle)
 #pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Rotate Y/Z using the low four angle bits and Q6 coefficients. Clamp inputs
 // to +/-220 before the products; valid distinct pointers receive both components.
 static void w3ddmg_rotate_x(w3ddmg_i16* py, w3ddmg_i16* pz, w3ddmg_i8 angle)
@@ -411,7 +417,7 @@ static void w3ddmg_rotate_x(w3ddmg_i16* py, w3ddmg_i16* pz, w3ddmg_u8 angle)
     w3ddmg_i16 out_y;
     w3ddmg_i16 out_z;
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     ai = (w3ddmg_u8)angle;
     ai = (w3ddmg_u8)(ai & 15);
 #else
@@ -439,7 +445,7 @@ static void w3ddmg_rotate_x(w3ddmg_i16* py, w3ddmg_i16* pz, w3ddmg_u8 angle)
 #pragma bank 2
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Rotate X/Y using the low four angle bits and Q6 coefficients. Clamp inputs
 // to +/-220 before the products; valid distinct pointers receive both components.
 static void w3ddmg_rotate_z(w3ddmg_i16* px, w3ddmg_i16* py, w3ddmg_i8 angle)
@@ -457,7 +463,7 @@ static void w3ddmg_rotate_z(w3ddmg_i16* px, w3ddmg_i16* py, w3ddmg_u8 angle)
     w3ddmg_i16 out_x;
     w3ddmg_i16 out_y;
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     ai = (w3ddmg_u8)angle;
     ai = (w3ddmg_u8)(ai & 15);
 #else
@@ -485,29 +491,154 @@ static void w3ddmg_rotate_z(w3ddmg_i16* px, w3ddmg_i16* py, w3ddmg_u8 angle)
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
+// Exact fixed-point axis projection shared by both DMG profiles.
+// Signed products use floor division by 32, matching arithmetic C shifts.
+w3ddmg_i16 w3ddmg_fp_input;
+w3ddmg_u8 w3ddmg_fp_factor;
+w3ddmg_u8 w3ddmg_fp_center;
+w3ddmg_u8 w3ddmg_fp_limit;
+w3ddmg_u8 w3ddmg_fp_invert;
+w3ddmg_u8 w3ddmg_fp_negative;
+w3ddmg_u8 w3ddmg_fp_remainder;
+w3ddmg_u8 w3ddmg_fp_result;
+#pragma bank 0
+#pragma fixed_bank 0
+__unsafe void w3ddmg_project_axis_asm()
+{
+ __asm {
+  XOR_A
+  LD_MEM_A w3ddmg_fp_negative
+  LD_A_MEM w3ddmg_fp_input
+  LD_E_A
+  LD_A_MEM w3ddmg_fp_input+1
+  OR_A
+  JR_Z wf_positive
+  CP_IMM 255
+  JR_Z wf_negative
+  AND_IMM 128
+  JR_Z wf_large_positive
+  LD_A_IMM 1
+  LD_MEM_A w3ddmg_fp_negative
+  LD_E_IMM 120
+  JR wf_multiply
+wf_large_positive:
+  LD_E_IMM 120
+  JR wf_multiply
+wf_negative:
+  LD_A_IMM 1
+  LD_MEM_A w3ddmg_fp_negative
+  XOR_A
+  SUB_E
+  LD_E_A
+  JR_Z wf_large_positive
+wf_positive:
+  LD_A_E
+  CP_IMM 121
+  JR_C wf_multiply
+  LD_E_IMM 120
+wf_multiply:
+  LD_D_IMM 0
+  LD_A_MEM w3ddmg_fp_factor
+  LD_B_A
+  LD_HL_IMM 0
+  LD_C_IMM 8
+wf_mul_loop:
+  LD_A_B
+  OR_A
+  RRA
+  LD_B_A
+  JR_NC wf_no_add
+  ADD_HL_DE
+wf_no_add:
+  LD_A_E
+  ADD_E
+  LD_E_A
+  LD_A_D
+  RLA
+  LD_D_A
+  DEC_C
+  JR_NZ wf_mul_loop
+  LD_A_L
+  AND_IMM 31
+  LD_MEM_A w3ddmg_fp_remainder
+  LD_C_IMM 5
+wf_shift_loop:
+  LD_A_H
+  OR_A
+  RRA
+  LD_H_A
+  LD_A_L
+  RRA
+  LD_L_A
+  DEC_C
+  JR_NZ wf_shift_loop
+  LD_A_MEM w3ddmg_fp_negative
+  OR_A
+  JR_Z wf_rounded
+  LD_A_MEM w3ddmg_fp_remainder
+  OR_A
+  JR_Z wf_rounded
+  INC_HL
+wf_rounded:
+  LD_A_MEM w3ddmg_fp_invert
+  LD_B_A
+  LD_A_MEM w3ddmg_fp_negative
+  XOR_B
+  OR_A
+  JR_Z wf_add
+  LD_A_H
+  OR_A
+  JR_NZ wf_zero
+  LD_A_MEM w3ddmg_fp_center
+  SUB_L
+  JR_C wf_zero
+  JR wf_store
+wf_add:
+  LD_A_H
+  OR_A
+  JR_NZ wf_limit
+  LD_A_MEM w3ddmg_fp_center
+  ADD_L
+  JR_C wf_limit
+  LD_B_A
+  LD_A_MEM w3ddmg_fp_limit
+  CP_B
+  JR_C wf_limit
+  LD_A_B
+  JR wf_store
+wf_limit:
+  LD_A_MEM w3ddmg_fp_limit
+  JR wf_store
+wf_zero:
+  XOR_A
+wf_store:
+  LD_MEM_A w3ddmg_fp_result
+  RET
+ }
+}
+#pragma bank 1
+#pragma fixed_bank -1
+#pragma fixed_order -1
 // Reject Z outside 8..255 without writing outputs; otherwise clamp X/Y to
 // +/-120, project with a reciprocal table and pin coordinates to 0..127 by 0..119.
 // Both output pointers must be writable. This screen clamp is not line clipping.
 static w3ddmg_u8 w3ddmg_project_camera_space(w3ddmg_i16 vx, w3ddmg_i16 vy, w3ddmg_i16 vz, w3ddmg_u8* sx, w3ddmg_u8* sy)
 {
-    w3ddmg_u8 iz;
-    w3ddmg_i16 px;
-    w3ddmg_i16 py;
-    w3ddmg_i16 ox;
-    w3ddmg_i16 oy;
-
     if (vz < WIRE3D_DMG_NEAR_Z) return 0;
     if (vz > WIRE3D_DMG_FAR_Z) return 0;
-
-    px = w3ddmg_clamp_i16(vx, (w3ddmg_i16)(0 - WIRE3D_DMG_PROJECT_LIMIT), WIRE3D_DMG_PROJECT_LIMIT);
-    py = w3ddmg_clamp_i16(vy, (w3ddmg_i16)(0 - WIRE3D_DMG_PROJECT_LIMIT), WIRE3D_DMG_PROJECT_LIMIT);
-    iz = w3ddmg_inv_depth[(__safe_index w3ddmg_u8)((w3ddmg_u8)vz)];
-
-    ox = (w3ddmg_i16)((px * (w3ddmg_i16)iz) >> 5);
-    oy = (w3ddmg_i16)((py * (w3ddmg_i16)iz) >> 5);
-
-    *sx = w3ddmg_clamp_screen((w3ddmg_i16)(WIRE3D_DMG_CENTER_X + ox), (w3ddmg_u8)(WIRE3D_DMG_SCREEN_W - 1));
-    *sy = w3ddmg_clamp_screen((w3ddmg_i16)(WIRE3D_DMG_CENTER_Y - oy), (w3ddmg_u8)(WIRE3D_DMG_SCREEN_H - 1));
+    w3ddmg_fp_factor = w3ddmg_inv_depth[(__safe_index w3ddmg_u8)((w3ddmg_u8)vz)];
+    w3ddmg_fp_input = vx;
+    w3ddmg_fp_center = 64;
+    w3ddmg_fp_limit = 127;
+    w3ddmg_fp_invert = 0;
+    w3ddmg_project_axis_asm();
+    *sx = w3ddmg_fp_result;
+    w3ddmg_fp_input = vy;
+    w3ddmg_fp_center = (w3ddmg_u8)WIRE3D_DMG_CENTER_Y;
+    w3ddmg_fp_limit = (w3ddmg_u8)(WIRE3D_DMG_SCREEN_H - 1);
+    w3ddmg_fp_invert = 1;
+    w3ddmg_project_axis_asm();
+    *sy = w3ddmg_fp_result;
     return 1;
 }
 
@@ -527,7 +658,15 @@ static w3ddmg_u8 w3ddmg_project_world(w3ddmg_i16 wx, w3ddmg_i16 wy, w3ddmg_i16 w
     vy = (w3ddmg_i16)(wy - w3ddmg_cam_y);
     vz = (w3ddmg_i16)(wz - w3ddmg_cam_z);
 
-#if WIRE3D_DMG_HEIGHT == 96
+    // Zero-angle projection preserves the original cardinal clamps while avoiding
+    // three banked rotations. X/Y receive their stricter projection clamps below.
+    if (w3ddmg_cam_yaw == 0 && w3ddmg_cam_pitch == 0 && w3ddmg_cam_roll == 0)
+    {
+        vz = w3ddmg_clamp_i16(vz, (w3ddmg_i16)(0 - WIRE3D_DMG_TRANSFORM_LIMIT), WIRE3D_DMG_TRANSFORM_LIMIT);
+        return w3ddmg_project_camera_space(vx, vy, vz, sx, sy);
+    }
+
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_rotate_y(&vx, &vz, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_yaw));
     w3ddmg_rotate_x(&vy, &vz, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_pitch));
     w3ddmg_rotate_z(&vx, &vy, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_roll));
@@ -551,7 +690,7 @@ w3ddmg_u8 Wire3DDMG_ProjectPoint(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddm
     return w3ddmg_project_world(x, y, z, sx, sy);
 }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
@@ -572,6 +711,16 @@ static void w3ddmg_load_hud_tiles()
     }
 }
 #endif
+
+#pragma bank 1
+#pragma fixed_bank -1
+#pragma fixed_order -1
+// Project coordinates already in camera space, avoiding a redundant camera transform.
+// Depth is validated without the world-transform +/-220 clamp.
+w3ddmg_u8 Wire3DDMG_ProjectCameraPoint(w3ddmg_i16 x,w3ddmg_i16 y,w3ddmg_i16 z,w3ddmg_u8* sx,w3ddmg_u8* sy)
+{
+ return w3ddmg_project_camera_space(x,y,z,sx,sy);
+}
 
 #pragma bank 1
 #pragma fixed_bank -1
@@ -639,7 +788,7 @@ static w3ddmg_i16 w3ddmg_scene_object_depth(const Wire3DDMG_Object* obj)
     vy = (w3ddmg_i16)(obj->y - w3ddmg_cam_y);
     vz = (w3ddmg_i16)(obj->z - w3ddmg_cam_z);
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_rotate_y(&vx, &vz, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_yaw));
     w3ddmg_rotate_x(&vy, &vz, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_pitch));
     w3ddmg_rotate_z(&vx, &vy, (w3ddmg_i8)w3ddmg_neg_angle(w3ddmg_cam_roll));
@@ -737,7 +886,7 @@ static void w3ddmg_stage_clear_pixel(w3ddmg_u8 x, w3ddmg_u8 y)
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Clear an inclusive span using individual edge bits and whole middle bytes.
 // The caller must supply ordered X coordinates in 0..127; invalid Y is ignored.
 // This helper does not clip arbitrary byte-sized X inputs.
@@ -1098,7 +1247,7 @@ static w3ddmg_u8 w3ddmg_is_edge_visible(const Wire3DDMG_Model* model, w3ddmg_u8 
     return 0;
 }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
@@ -1131,7 +1280,7 @@ w3ddmg_u16 Wire3DDMG_SelectEdgeMask(const Wire3DDMG_Model* model, w3ddmg_i8 rx, 
 }
 #endif
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
@@ -1277,7 +1426,7 @@ w3ddmgcv_loop:
     }
 }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank 1
 #pragma fixed_order 94
@@ -1331,7 +1480,7 @@ w3ddmgfb_loop:
 }
 #endif
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank 1
 #pragma fixed_order 96
@@ -1406,12 +1555,13 @@ w3ddmgbg_enter:
     }
 }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank 1
 #pragma fixed_order 100
 // Clear only the 96 used bytes in each of 16 pages at 0xD000..0xDFFF.
 // Leave the unused page tails unchanged; this routine does not select a WRAM bank.
+#if WIRE3D_DMG_HEIGHT == 88
 void w3ddmg_clear_stage_asm()
 {
     __asm {
@@ -1422,9 +1572,16 @@ w3ddmgcs_enter:
 
 w3ddmgcs_outer:
         LD_L_IMM 0
-        LD_B_IMM 0x60
+        LD_B_IMM 11
 
 w3ddmgcs_inner:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
         LDI_HL_A
         DEC_B
         JR_NZ w3ddmgcs_inner
@@ -1434,6 +1591,37 @@ w3ddmgcs_inner:
         RET
     }
 }
+#else
+void w3ddmg_clear_stage_asm()
+{
+    __asm {
+w3ddmgcs_enter:
+        LD_A_IMM 0
+        LD_H_IMM 0xD0
+        LD_C_IMM 16
+
+w3ddmgcs_outer:
+        LD_L_IMM 0
+        LD_B_IMM 12
+
+w3ddmgcs_inner:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        DEC_B
+        JR_NZ w3ddmgcs_inner
+        INC_H
+        DEC_C
+        JR_NZ w3ddmgcs_outer
+        RET
+    }
+}
+#endif
 #else
 #pragma bank 1
 #pragma fixed_bank 1
@@ -1451,9 +1639,16 @@ w3ddmgcs_enter:
 
 w3ddmgcs_outer:
         LD_L_IMM 0
-        LD_B_IMM 0x78
+        LD_B_IMM 15
 
 w3ddmgcs_inner:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
         LDI_HL_A
         DEC_B
         JR_NZ w3ddmgcs_inner
@@ -1465,13 +1660,14 @@ w3ddmgcs_inner:
 }
 #endif
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 #pragma bank 1
 #pragma fixed_bank 1
 #pragma fixed_order 110
 // Bounds-check shared X/Y and OR the corresponding 1bpp bit into the stage.
 // High address byte selects an eight-pixel column; low byte selects its scanline.
 // The caller supplies the expected WRAM mapping; shared registers/state are clobbered.
+#if WIRE3D_DMG_HEIGHT == 88
 void w3ddmg_plot_stage_asm()
 {
     __asm {
@@ -1481,7 +1677,7 @@ w3ddmgps_enter:
         JP_NC w3ddmgps_ret
 
         LD_A_MEM w3ddmg_plot_y
-        CP_IMM 0x60
+        CP_IMM 88
         JP_NC w3ddmgps_ret
 
         LD_A_MEM w3ddmg_plot_x
@@ -1535,6 +1731,71 @@ w3ddmgps_ret:
         RET
     }
 }
+#else
+void w3ddmg_plot_stage_asm()
+{
+    __asm {
+w3ddmgps_enter:
+        LD_A_MEM w3ddmg_plot_x
+        CP_IMM 0x80
+        JP_NC w3ddmgps_ret
+
+        LD_A_MEM w3ddmg_plot_y
+        CP_IMM 96
+        JP_NC w3ddmgps_ret
+
+        LD_A_MEM w3ddmg_plot_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_MEM_A w3ddmg_plot_tx
+
+        LD_A_MEM w3ddmg_plot_tx
+        LD_B_A
+        LD_A_IMM 0xD0
+        ADD_B
+        LD_H_A
+
+        LD_A_MEM w3ddmg_plot_y
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_B_A
+
+        LD_A_MEM w3ddmg_plot_y
+        AND_IMM 7
+        ADD_B
+        LD_L_A
+
+        LD_A_MEM w3ddmg_plot_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        PUSH_HL
+        LD_HL_IMM w3ddmg_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+
+        LD_A_HL
+        OR_B
+        LD_HL_A
+
+w3ddmgps_ret:
+        RET
+    }
+}
+#endif
 #else
 #pragma bank 1
 #pragma fixed_bank 1
@@ -1966,7 +2227,7 @@ w3ddmgfast_up:
     }
 }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT == 88
 #pragma bank 1
 #pragma fixed_bank 1
 #pragma fixed_order 130
@@ -1978,6 +2239,482 @@ w3ddmgfast_up:
 // two pixels while their source bytes are consumed. Unrolled pairs reduce
 // loop overhead; STAT is checked before each pair. This uses more ROM
 // bytes in exchange for lower transfer time, without extra RAM or DMA.
+#if WIRE3D_DMG_HEIGHT == 88
+void w3ddmg_transfer_stage_asm()
+{
+    __asm {
+        LD_HL_IMM w3ddmg_stage
+        LD_DE_IMM 0x8901
+w3ddmg_pair_block:
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_0:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_0
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_1:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_1
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_2:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_2
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_3:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_3
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_L
+        CP_IMM 88
+        JP_C w3ddmg_pair_block
+        INC_H
+        LD_L_IMM 0
+        LD_A_H
+        CP_IMM 0xE0
+        JP_C w3ddmg_pair_block
+        RET
+    }
+}
+#else
+void w3ddmg_transfer_stage_asm()
+{
+    __asm {
+        LD_HL_IMM w3ddmg_stage
+        LD_DE_IMM 0x8901
+w3ddmg_pair_block:
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_0:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_0
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_1:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_1
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_2:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_2
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_3:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_3
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_L
+        CP_IMM 96
+        JP_C w3ddmg_pair_block
+        INC_H
+        LD_L_IMM 0
+        LD_A_H
+        CP_IMM 0xE0
+        JP_C w3ddmg_pair_block
+        RET
+    }
+}
+#endif
+#elif WIRE3D_DMG_HEIGHT == 96
+#pragma bank 1
+#pragma fixed_bank 1
+#pragma fixed_order 130
+// Copy 1536 staged row bytes into the high bitplane of tiles at 0x8900,
+// leaving their low bitplanes unchanged. Transfer two source bytes per STAT
+// access window and consume each pair while copying. No bank or interrupt state
+// is saved; the caller must preserve the expected mapping and access timing.
+// Paired uploads keep the source in HL and destination in DE. B/C hold
+// two pixels while their source bytes are consumed. Unrolled pairs reduce
+// loop overhead; STAT is checked before each pair. This uses more ROM
+// bytes in exchange for lower transfer time, without extra RAM or DMA.
+#if WIRE3D_DMG_HEIGHT == 88
+void w3ddmg_transfer_stage_asm()
+{
+    __asm {
+        LD_HL_IMM w3ddmg_stage
+        LD_DE_IMM 0x8901
+w3ddmg_pair_block:
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_0:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_0
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_1:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_1
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_2:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_2
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_3:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_3
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_4:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_4
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_5:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_5
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_6:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_6
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_7:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_7
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_8:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_8
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_9:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_9
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_10:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_10
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_11:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_11
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_12:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_12
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_13:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_13
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_14:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_14
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        XOR_A
+        LD_B_HL
+        LDI_HL_A
+        LD_C_HL
+        LDI_HL_A
+w3ddmg_pair_wait_15:
+        LDH_A_MEM 65
+        AND_IMM 2
+        JR_NZ w3ddmg_pair_wait_15
+        LD_A_B
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_C
+        LD_DE_A
+        INC_DE
+        INC_DE
+        LD_A_L
+        CP_IMM 88
+        JP_C w3ddmg_pair_block
+        INC_H
+        LD_L_IMM 0
+        LD_A_H
+        CP_IMM 0xE0
+        JP_C w3ddmg_pair_block
+        RET
+    }
+}
+#else
 void w3ddmg_transfer_stage_asm()
 {
     __asm {
@@ -2267,6 +3004,7 @@ w3ddmg_pair_wait_15:
         RET
     }
 }
+#endif
 #else
 #pragma bank 1
 #pragma fixed_bank 1
@@ -2556,7 +3294,7 @@ w3ddmg_pair_main_wait_14:
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Take over the LCD: wait for VBlank, switch it off, clear 6144 tile bytes and
 // the BG map, install HUD tiles and the 128x96 signed-tile viewport, then enable
 // BG display with scroll zero and BGP=0xB4. Reset camera, BG queue and stage.
@@ -2580,7 +3318,7 @@ void Wire3DDMG_Init()
     w3ddmg_reg_lcdc = 0;
 
     w3ddmg_clear_vram_asm();
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_load_hud_tiles();
 #endif
     w3ddmg_fill_bg_map_asm();
@@ -2589,7 +3327,7 @@ void Wire3DDMG_Init()
     tid = 0x90;
     while (row < WIRE3D_DMG_TILE_H)
     {
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
         off = (w3ddmg_u16)((w3ddmg_u16)row << 5);
 #else
         off = (w3ddmg_u16)(0x23 + ((w3ddmg_u16)row << 5));
@@ -2605,7 +3343,7 @@ void Wire3DDMG_Init()
         tid = (w3ddmg_u8)(0x90 + row);
     }
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_reg_scx = 0;
 #else
     w3ddmg_reg_scx = 8;
@@ -2619,7 +3357,7 @@ void Wire3DDMG_Init()
     w3ddmg_dirty_transfer_enabled = 0;
 #endif
 
-    Wire3DDMG_SetCamera(0, 0, 0, 0, 0, 0);
+    Wire3DDMG_SetCamera((w3ddmg_i16)0, (w3ddmg_i16)0, (w3ddmg_i16)0, (w3ddmg_u8)0, (w3ddmg_u8)0, (w3ddmg_u8)0);
     w3ddmg_clear_stage_asm();
 #if WIRE3D_DMG_HEIGHT == 120
     w3ddmg_clear_stage_aux_asm();
@@ -2630,7 +3368,7 @@ void Wire3DDMG_Init()
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Clear staged pixels and occlusion mask and disable occlusion filtering.
 // This leaves the displayed VRAM frame and pending BG tile queue unchanged.
 #else
@@ -2640,7 +3378,7 @@ void Wire3DDMG_Init()
 #endif
 void Wire3DDMG_BeginFrame()
 {
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_clear_stage_asm();
     w3ddmg_clear_occlusion_mask();
 #else
@@ -2655,7 +3393,7 @@ void Wire3DDMG_BeginFrame()
 #pragma fixed_order -1
 // Store camera position and angles for later draws; a full turn is 16 angle
 // steps. No existing drawing is reprojected and no input range validation occurs.
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 pitch, w3ddmg_i8 yaw, w3ddmg_i8 roll)
 #else
 void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 pitch, w3ddmg_u8 yaw, w3ddmg_u8 roll)
@@ -2672,7 +3410,7 @@ void Wire3DDMG_SetCamera(w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 pit
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Draw a connected line into the 128x96 stage, including endpoints. During
 // DrawScene, use the coarse five-sample occlusion rejection; otherwise draw directly.
 // Supply viewport coordinates. VRAM is updated only by EndFrame.
@@ -2707,7 +3445,7 @@ void Wire3DDMG_DrawLine2D(w3ddmg_u8 ax, w3ddmg_u8 ay, w3ddmg_u8 bx, w3ddmg_u8 by
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Process at most the first eight objects, sorted near to far by transformed
 // origin depth. Draw visible valid models, then mark their front-face bounding
 // rectangles to reject fully sampled later lines. This approximates inter-object
@@ -2753,7 +3491,7 @@ void Wire3DDMG_DrawScene(Wire3DDMG_Object* objects, w3ddmg_u8 count)
             oi = w3ddmg_scene_order[(__safe_index w3ddmg_u8)i];
             oj = w3ddmg_scene_order[(__safe_index w3ddmg_u8)j];
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
             // Put the nearer origin first so its face bounds can suppress later lines.
             // The array itself stays in caller order; only the scratch index list is sorted.
 #endif
@@ -2768,7 +3506,7 @@ void Wire3DDMG_DrawScene(Wire3DDMG_Object* objects, w3ddmg_u8 count)
     }
 
     w3ddmg_clear_occlusion_mask();
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_occlusion_active = 1;
 #else
     w3ddmg_occlusion_active = 0;
@@ -2781,7 +3519,7 @@ void Wire3DDMG_DrawScene(Wire3DDMG_Object* objects, w3ddmg_u8 count)
         obj = &objects[(__safe_index w3ddmg_u8)w3ddmg_scene_order[(__safe_index w3ddmg_u8)i]];
         if ((obj->visible != 0) && (obj->model != 0))
         {
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
             Wire3DDMG_DrawModelScaled(obj->model, obj->x, obj->y, obj->z, (w3ddmg_i8)obj->rx, (w3ddmg_i8)obj->ry, (w3ddmg_i8)obj->rz, obj->scale_q8);
             w3ddmg_mark_model_occluder(obj->model);
 #else
@@ -2821,7 +3559,7 @@ void Wire3DDMG_DrawLine3D(w3ddmg_i16 ax, w3ddmg_i16 ay, w3ddmg_i16 az, w3ddmg_i1
 #pragma fixed_bank -1
 #pragma fixed_order -1
 // Draw an unscaled model by delegating to DrawModelScaled with scale 256.
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_DrawModel(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz)
 #else
 void Wire3DDMG_DrawModel(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 rx, w3ddmg_u8 ry, w3ddmg_u8 rz)
@@ -2837,7 +3575,7 @@ void Wire3DDMG_DrawModel(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 
 // the stage for a model with hidden-line flags and face data. Nonpositive scale
 // means 256 (unity). Up to 16 faces are considered; depth-crossing faces are
 // skipped. This also replaces shared projection caches, but does not update VRAM.
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 void Wire3DDMG_EraseModelFaces(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_i8 rx, w3ddmg_i8 ry, w3ddmg_i8 rz, w3ddmg_i16 scale_q8)
 #else
 void Wire3DDMG_EraseModelFaces(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddmg_i16 y, w3ddmg_i16 z, w3ddmg_u8 rx, w3ddmg_u8 ry, w3ddmg_u8 rz, w3ddmg_i16 scale_q8)
@@ -2871,7 +3609,7 @@ void Wire3DDMG_EraseModelFaces(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
         vy = (w3ddmg_i16)((v->y * scale_q8) >> 8);
         vz = (w3ddmg_i16)((v->z * scale_q8) >> 8);
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
         w3ddmg_rotate_y(&vx, &vz, (w3ddmg_i8)ry);
         w3ddmg_rotate_x(&vy, &vz, (w3ddmg_i8)rx);
         w3ddmg_rotate_z(&vx, &vy, (w3ddmg_i8)rz);
@@ -2956,7 +3694,7 @@ void Wire3DDMG_EraseSpan2D(w3ddmg_u8 y, w3ddmg_u8 x0, w3ddmg_u8 x1)
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Scale, rotate in Y/X/Z order, translate and project at most 24 vertices;
 // then draw up to 16 edges filtered by yaw masks and optional front-facing faces.
 // Nonpositive scale becomes unity (256). Null model/vertex/edge pointers are
@@ -3000,7 +3738,7 @@ void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
         vy = (w3ddmg_i16)((v->y * scale_q8) >> 8);
         vz = (w3ddmg_i16)((v->z * scale_q8) >> 8);
 
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
         w3ddmg_rotate_y(&vx, &vz, (w3ddmg_i8)ry);
         w3ddmg_rotate_x(&vy, &vz, (w3ddmg_i8)rx);
         w3ddmg_rotate_z(&vx, &vy, (w3ddmg_i8)rz);
@@ -3035,7 +3773,7 @@ void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
     }
 
     edge_count = model->edge_count;
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     if (edge_count > WIRE3D_DMG_MODEL_EDGE_LIMIT) edge_count = WIRE3D_DMG_MODEL_EDGE_LIMIT;
     w3ddmg_build_edge_flags(model, edge_count, face_count, rx, ry, rz);
 #endif
@@ -3048,7 +3786,7 @@ void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
         {
             if (w3ddmg_screen_visible[(__safe_index w3ddmg_u8)e->a] &&
                 w3ddmg_screen_visible[(__safe_index w3ddmg_u8)e->b] &&
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
                 w3ddmg_edge_flags[(__safe_index w3ddmg_u8)i])
 #else
                 w3ddmg_is_edge_visible(model, i, face_count))
@@ -3068,7 +3806,7 @@ void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
 #pragma bank 1
 #pragma fixed_bank -1
 #pragma fixed_order -1
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
 // Wait for the next VBlank, flush pending BG map writes, then copy the stage
 // to VRAM while polling access windows. Copying consumes the staged pixels.
 // The transfer may extend beyond VBlank; this is not an atomic frame swap.
@@ -3081,8 +3819,14 @@ void Wire3DDMG_DrawModelScaled(const Wire3DDMG_Model* model, w3ddmg_i16 x, w3ddm
 void Wire3DDMG_EndFrame()
 {
     w3ddmg_wait_vblank_start();
+    Wire3DDMG_EndFrameNow();
+}
+
+// Complete a frame while preserving queued HUD writes and dirty histories.
+void Wire3DDMG_EndFrameNow()
+{
     w3ddmg_flush_bg_queue();
-#if WIRE3D_DMG_HEIGHT == 96
+#if WIRE3D_DMG_HEIGHT != 120
     w3ddmg_transfer_stage_asm();
 #else
     if (w3ddmg_aux_transfer_enabled)

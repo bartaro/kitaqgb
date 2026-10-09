@@ -7,13 +7,13 @@
 #pragma bank 1
 
 #define W3DCGB_TILE_W ((w3dcgb_u8)16)
-#define W3DCGB_TILE_H ((w3dcgb_u8)12)
-#define W3DCGB_ROW_BYTES ((w3dcgb_u8)0x60)
+#define W3DCGB_TILE_H ((w3dcgb_u8)WIRE3DCGB_TILE_ROWS)
+#define W3DCGB_ROW_BYTES ((w3dcgb_u8)WIRE3DCGB_HEIGHT)
 #define W3DCGB_STAGE_PLANE_STRIDE ((w3dcgb_u16)0x80)
 #define W3DCGB_NEAR_Z ((w3dcgb_i16)8)
 #define W3DCGB_FAR_Z ((w3dcgb_i16)255)
 #define W3DCGB_CENTER_X ((w3dcgb_i16)64)
-#define W3DCGB_CENTER_Y ((w3dcgb_i16)48)
+#define W3DCGB_CENTER_Y ((w3dcgb_i16)(WIRE3DCGB_HEIGHT / 2))
 #define W3DCGB_TRANSFORM_LIMIT ((w3dcgb_i16)220)
 #define W3DCGB_PROJECT_LIMIT ((w3dcgb_i16)120)
 #define W3DCGB_HUD_TILE_BASE ((w3dcgb_u8)0x80)
@@ -27,7 +27,7 @@
 #define W3DCGB_FAST_ATTR_OFFSET ((w3dcgb_u16)512)
 #define W3DCGB_FAST_MAP_BYTES ((w3dcgb_u16)384)
 #define W3DCGB_BG_QUEUE_LIMIT ((w3dcgb_u8)48)
-#define W3DCGB_DIRTY_TILE_LIMIT ((w3dcgb_u8)192)
+#define W3DCGB_DIRTY_TILE_LIMIT ((w3dcgb_u8)WIRE3DCGB_TILE_COUNT)
 
 __location(0xFF40) w3dcgb_u8 w3dcgb_reg_lcdc;
 __location(0xFF42) w3dcgb_u8 w3dcgb_reg_scy;
@@ -393,29 +393,165 @@ static void w3dcgb_rotate_z(w3dcgb_i16* px, w3dcgb_i16* py, w3dcgb_i8 angle)
 // +/-120, project with the reciprocal-depth table, and clamp pixels to 128x96.
 // This pins off-screen points to the border rather than geometrically clipping
 // their edges. Both output pointers must be writable; success returns one.
+#pragma bank 0
+#pragma fixed_bank 0
+__prg_rom w3dcgb_u8 w3dcgb_column_tiles[16] = {
+    0, WIRE3DCGB_TILE_ROWS, WIRE3DCGB_TILE_ROWS*2, WIRE3DCGB_TILE_ROWS*3,
+    WIRE3DCGB_TILE_ROWS*4, WIRE3DCGB_TILE_ROWS*5, WIRE3DCGB_TILE_ROWS*6, WIRE3DCGB_TILE_ROWS*7,
+    WIRE3DCGB_TILE_ROWS*8, WIRE3DCGB_TILE_ROWS*9, WIRE3DCGB_TILE_ROWS*10, WIRE3DCGB_TILE_ROWS*11,
+    WIRE3DCGB_TILE_ROWS*12, WIRE3DCGB_TILE_ROWS*13, WIRE3DCGB_TILE_ROWS*14, WIRE3DCGB_TILE_ROWS*15
+};
+// Exact fixed-point axis projection shared by DMG and CGB profiles.
+// Signed products use floor division by 32, matching arithmetic C shifts.
+w3dcgb_i16 w3dcgb_fp_input;
+w3dcgb_u8 w3dcgb_fp_factor;
+w3dcgb_u8 w3dcgb_fp_center;
+w3dcgb_u8 w3dcgb_fp_limit;
+w3dcgb_u8 w3dcgb_fp_invert;
+w3dcgb_u8 w3dcgb_fp_negative;
+w3dcgb_u8 w3dcgb_fp_remainder;
+w3dcgb_u8 w3dcgb_fp_result;
+#pragma bank 0
+#pragma fixed_bank 0
+__unsafe void w3dcgb_project_axis_asm()
+{
+ __asm {
+  XOR_A
+  LD_MEM_A w3dcgb_fp_negative
+  LD_A_MEM w3dcgb_fp_input
+  LD_E_A
+  LD_A_MEM w3dcgb_fp_input+1
+  OR_A
+  JR_Z wc_fp_positive
+  CP_IMM 255
+  JR_Z wc_fp_negative
+  AND_IMM 128
+  JR_Z wc_fp_large_positive
+  LD_A_IMM 1
+  LD_MEM_A w3dcgb_fp_negative
+  LD_E_IMM 120
+  JR wc_fp_multiply
+wc_fp_large_positive:
+  LD_E_IMM 120
+  JR wc_fp_multiply
+wc_fp_negative:
+  LD_A_IMM 1
+  LD_MEM_A w3dcgb_fp_negative
+  XOR_A
+  SUB_E
+  LD_E_A
+  JR_Z wc_fp_large_positive
+wc_fp_positive:
+  LD_A_E
+  CP_IMM 121
+  JR_C wc_fp_multiply
+  LD_E_IMM 120
+wc_fp_multiply:
+  LD_D_IMM 0
+  LD_A_MEM w3dcgb_fp_factor
+  LD_B_A
+  LD_HL_IMM 0
+  LD_C_IMM 8
+wc_fp_mul_loop:
+  LD_A_B
+  OR_A
+  RRA
+  LD_B_A
+  JR_NC wc_fp_no_add
+  ADD_HL_DE
+wc_fp_no_add:
+  LD_A_E
+  ADD_E
+  LD_E_A
+  LD_A_D
+  RLA
+  LD_D_A
+  DEC_C
+  JR_NZ wc_fp_mul_loop
+  LD_A_L
+  AND_IMM 31
+  LD_MEM_A w3dcgb_fp_remainder
+  LD_C_IMM 5
+wc_fp_shift_loop:
+  LD_A_H
+  OR_A
+  RRA
+  LD_H_A
+  LD_A_L
+  RRA
+  LD_L_A
+  DEC_C
+  JR_NZ wc_fp_shift_loop
+  LD_A_MEM w3dcgb_fp_negative
+  OR_A
+  JR_Z wc_fp_rounded
+  LD_A_MEM w3dcgb_fp_remainder
+  OR_A
+  JR_Z wc_fp_rounded
+  INC_HL
+wc_fp_rounded:
+  LD_A_MEM w3dcgb_fp_invert
+  LD_B_A
+  LD_A_MEM w3dcgb_fp_negative
+  XOR_B
+  OR_A
+  JR_Z wc_fp_add
+  LD_A_H
+  OR_A
+  JR_NZ wc_fp_zero
+  LD_A_MEM w3dcgb_fp_center
+  SUB_L
+  JR_C wc_fp_zero
+  JR wc_fp_store
+wc_fp_add:
+  LD_A_H
+  OR_A
+  JR_NZ wc_fp_limit
+  LD_A_MEM w3dcgb_fp_center
+  ADD_L
+  JR_C wc_fp_limit
+  LD_B_A
+  LD_A_MEM w3dcgb_fp_limit
+  CP_B
+  JR_C wc_fp_limit
+  LD_A_B
+  JR wc_fp_store
+wc_fp_limit:
+  LD_A_MEM w3dcgb_fp_limit
+  JR wc_fp_store
+wc_fp_zero:
+  XOR_A
+wc_fp_store:
+  LD_MEM_A w3dcgb_fp_result
+  RET
+ }
+}
+#pragma bank 1
+#pragma fixed_bank -1
 static w3dcgb_u8 w3dcgb_project_camera_space(w3dcgb_i16 vx, w3dcgb_i16 vy, w3dcgb_i16 vz, w3dcgb_u8* sx, w3dcgb_u8* sy)
 {
-    w3dcgb_u8 iz;
-    w3dcgb_i16 limit;
-    w3dcgb_i16 px;
-    w3dcgb_i16 py;
-    w3dcgb_i16 ox;
-    w3dcgb_i16 oy;
-
     if (vz < W3DCGB_NEAR_Z) return 0;
     if (vz > W3DCGB_FAR_Z) return 0;
-
-    limit = W3DCGB_PROJECT_LIMIT;
-    px = w3dcgb_clamp_i16(vx, (w3dcgb_i16)(0 - limit), limit);
-    py = w3dcgb_clamp_i16(vy, (w3dcgb_i16)(0 - limit), limit);
-    iz = w3dcgb_inv_depth[(__safe_index w3dcgb_u8)((w3dcgb_u8)vz)];
-
-    ox = (w3dcgb_i16)((px * (w3dcgb_i16)iz) >> 5);
-    oy = (w3dcgb_i16)((py * (w3dcgb_i16)iz) >> 5);
-
-    *sx = w3dcgb_clamp_screen((w3dcgb_i16)(W3DCGB_CENTER_X + ox), (w3dcgb_u8)(WIRE3DCGB_SCREEN_W - 1));
-    *sy = w3dcgb_clamp_screen((w3dcgb_i16)(W3DCGB_CENTER_Y - oy), (w3dcgb_u8)(WIRE3DCGB_SCREEN_H - 1));
+    w3dcgb_fp_factor = w3dcgb_inv_depth[(__safe_index w3dcgb_u8)((w3dcgb_u8)vz)];
+    w3dcgb_fp_input = vx;
+    w3dcgb_fp_center = 64;
+    w3dcgb_fp_limit = 127;
+    w3dcgb_fp_invert = 0;
+    w3dcgb_project_axis_asm();
+    *sx = w3dcgb_fp_result;
+    w3dcgb_fp_input = vy;
+    w3dcgb_fp_center = (w3dcgb_u8)W3DCGB_CENTER_Y;
+    w3dcgb_fp_limit = (w3dcgb_u8)(WIRE3DCGB_SCREEN_H - 1);
+    w3dcgb_fp_invert = 1;
+    w3dcgb_project_axis_asm();
+    *sy = w3dcgb_fp_result;
     return 1;
+}
+
+// Camera-space path shares exact reciprocal, signed rounding and border clamps.
+w3dcgb_u8 Wire3DCGB_ProjectCameraPoint(w3dcgb_i16 x,w3dcgb_i16 y,w3dcgb_i16 z,w3dcgb_u8* sx,w3dcgb_u8* sy)
+{
+    return w3dcgb_project_camera_space(x,y,z,sx,sy);
 }
 
 #ifndef WIRE3DCGB_MINIMAL_RUNTIME
@@ -432,6 +568,13 @@ static w3dcgb_u8 w3dcgb_project_world(w3dcgb_i16 wx, w3dcgb_i16 wy, w3dcgb_i16 w
     vy = (w3dcgb_i16)(wy - w3dcgb_cam_y);
     vz = (w3dcgb_i16)(wz - w3dcgb_cam_z);
 
+    if (((w3dcgb_cam_yaw | w3dcgb_cam_pitch | w3dcgb_cam_roll) & 15) == 0)
+    {
+        vx = w3dcgb_clamp_i16(vx, (w3dcgb_i16)(0 - 220), (w3dcgb_i16)220);
+        vy = w3dcgb_clamp_i16(vy, (w3dcgb_i16)(0 - 220), (w3dcgb_i16)220);
+        vz = w3dcgb_clamp_i16(vz, (w3dcgb_i16)(0 - 220), (w3dcgb_i16)220);
+        return w3dcgb_project_camera_space(vx, vy, vz, sx, sy);
+    }
     w3dcgb_rotate_y(&vx, &vz, (w3dcgb_i8)w3dcgb_neg_angle(w3dcgb_cam_yaw));
     w3dcgb_rotate_x(&vy, &vz, (w3dcgb_i8)w3dcgb_neg_angle(w3dcgb_cam_pitch));
     w3dcgb_rotate_z(&vx, &vy, (w3dcgb_i8)w3dcgb_neg_angle(w3dcgb_cam_roll));
@@ -1195,6 +1338,7 @@ w3dcgb_u8 w3dcgb_older_dirty_max_tile;
 // 192 tiles and require an enabled LCD for the mode-2 path. The routine
 // re-enables interrupts after starting DMA rather than preserving IME; handlers
 // must keep SVBK/VBK stable until completion. Tile IDs >=192 return untouched.
+#if WIRE3DCGB_HEIGHT == 88
 void w3dcgb_transfer_dirty_tile_gdma_asm()
 {
     __asm {
@@ -1205,7 +1349,7 @@ w3dgma_enter:
         LDH_MEM_A 112
 
         LD_A_MEM w3dcgb_dma_tile
-        CP_IMM 0xC0
+        CP_IMM 176
         JP_NC w3dgma_ret
 
 w3dgma_safe:
@@ -1285,6 +1429,98 @@ w3dgma_ret:
         RET
     }
 }
+#else
+void w3dcgb_transfer_dirty_tile_gdma_asm()
+{
+    __asm {
+w3dgma_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+
+        LD_A_MEM w3dcgb_dma_tile
+        CP_IMM 192
+        JP_NC w3dgma_ret
+
+w3dgma_safe:
+
+        LD_A_MEM w3dcgb_dma_tile
+        LD_B_A
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_C_A
+        LDH_MEM_A 82
+        LDH_MEM_A 84
+
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_C_A
+        ADD_A_IMM 0xD3
+        LDH_MEM_A 81
+
+        LD_A_C
+        ADD_A_IMM 0x89
+        LDH_MEM_A 83
+
+        LD_A_MEM w3dcgb_dma_len
+        OR_A
+        JP_NZ w3dgma_len_ok
+        LD_A_IMM 1
+        LD_MEM_A w3dcgb_dma_len
+
+w3dgma_len_ok:
+        DI
+        /* 96 blocks take 3072 PPU dots. Starting on LY 144/145 leaves
+           at least a full scanline before the next visible frame. */
+        LD_A_MEM w3dcgb_dma_len
+        CP_IMM 97
+        JR_NC w3dgma_wait_not_hblank
+        LDH_A_MEM 68
+        CP_IMM 144
+        JR_C w3dgma_wait_not_hblank
+        CP_IMM 146
+        JR_NC w3dgma_wait_not_hblank
+        LD_A_MEM w3dcgb_dma_len
+        DEC_A
+        LDH_MEM_A 85
+        EI
+        JP w3dgma_wait_done
+        /* Never start HDMA in mode 0. Keep SVBK/VBK stable until complete. */
+w3dgma_wait_not_hblank:
+        LDH_A_MEM 65
+        AND_IMM 3
+        CP_IMM 2
+        JR_NZ w3dgma_wait_not_hblank
+w3dgma_start_safe:
+        LD_A_MEM w3dcgb_dma_len
+        DEC_A
+        OR_IMM 0x80
+        LDH_MEM_A 85
+        EI
+
+w3dgma_wait_done:
+        LDH_A_MEM 85
+        AND_IMM 0x80
+        JP_Z w3dgma_wait_done
+
+w3dgma_ret:
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#endif
 
 // Ignore invalid starting tile or zero length, cap length at 96, and invoke
 // the DMA helper. The caller ensures tile + length <=192, an enabled LCD,
@@ -2412,6 +2648,7 @@ w3dmss_single:
 // the D300 column-major stage. Adjacent tile columns are 0xC0 bytes apart.
 // Restore SVBK on return. Shared inputs must be ordered within 128x96; no
 // clipping, dirty marking, mask update or interrupt protection occurs here.
+#if WIRE3DCGB_HEIGHT == 88
 void w3dcgb_stage_clear_span_asm()
 {
     __asm {
@@ -2429,18 +2666,15 @@ w3dscs_enter:
         RRA
         OR_A
         RRA
-        LD_B_A
-        ADD_A
-        ADD_A
-        LD_C_A
-        LD_A_B
-        ADD_A
-        ADD_A
-        ADD_A
-        LD_B_A
-        LD_A_C
-        ADD_B
-        LD_C_A
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
 
         LD_A_MEM w3dcgb_mask_span_y
         LD_B_A
@@ -2516,7 +2750,7 @@ w3dscs_enter:
         LD_HL_A
         DEC_L
 
-        LD_DE_IMM 0x00C0
+        LD_DE_IMM 176
         ADD_HL_DE
         LD_A_MEM w3dcgb_mask_span_max_x
         OR_A
@@ -2607,6 +2841,200 @@ w3dscs_ret:
         RET
     }
 }
+#else
+void w3dcgb_stage_clear_span_asm()
+{
+    __asm {
+w3dscs_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+
+        /* HL = stage byte for min-x tile and requested scanline. */
+        LD_A_MEM w3dcgb_mask_span_min_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_mask_span_y
+        LD_B_A
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_C
+        LD_C_A
+
+        LD_A_C
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD3
+        LD_H_A
+        LD_A_C
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_C_A
+        LD_A_B
+        AND_IMM 7
+        ADD_A
+        ADD_C
+        LD_L_A
+
+        LD_A_MEM w3dcgb_mask_span_max_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_MEM w3dcgb_mask_span_min_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        CP_B
+        JP_Z w3dscs_single
+
+        /* Clear the first partial tile in both bitplanes. */
+        PUSH_HL
+        LD_A_MEM w3dcgb_mask_span_min_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_span_start_mask
+        ADD_HL_DE
+        LD_A_HL
+        CPL
+        LD_B_A
+        POP_HL
+        LD_A_HL
+        AND_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        AND_B
+        LD_HL_A
+        DEC_L
+
+        LD_DE_IMM 192
+        ADD_HL_DE
+        LD_A_MEM w3dcgb_mask_span_max_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_MEM w3dcgb_mask_span_min_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_C_A
+        LD_A_B
+        SUB_C
+        DEC_A
+        LD_B_A
+        OR_A
+        JP_Z w3dscs_last
+
+w3dscs_middle:
+        XOR_A
+        LD_HL_A
+        INC_L
+        LD_HL_A
+        DEC_L
+        ADD_HL_DE
+        DEC_B
+        JP_NZ w3dscs_middle
+
+w3dscs_last:
+        PUSH_HL
+        LD_A_MEM w3dcgb_mask_span_max_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_span_end_mask
+        ADD_HL_DE
+        LD_A_HL
+        CPL
+        LD_B_A
+        POP_HL
+        LD_A_HL
+        AND_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        AND_B
+        LD_HL_A
+        JP w3dscs_ret
+
+w3dscs_single:
+        PUSH_HL
+        LD_A_MEM w3dcgb_mask_span_min_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_span_start_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_C_A
+        LD_A_MEM w3dcgb_mask_span_max_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_span_end_mask
+        ADD_HL_DE
+        LD_A_HL
+        AND_C
+        CPL
+        LD_B_A
+        POP_HL
+        LD_A_HL
+        AND_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        AND_B
+        LD_HL_A
+
+w3dscs_ret:
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#endif
 
 #pragma fixed_order 98
 // Sort the shared vertices by Y, walk the long edge and each short edge with
@@ -3003,6 +3431,44 @@ w3dbg_enter:
 // Save SVBK, select WRAM bank 2, clear all 192 two-bitplane tiles (3072
 // bytes) starting at stage, and restore SVBK. No dirty flags or history are
 // updated. Interrupt handlers must not change the active stage mapping.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_clear_stage_asm()
+{
+    __asm {
+w3dcs_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+        LD_HL_IMM w3dcgb_stage
+        XOR_A
+        LD_B_IMM 176
+
+w3dcs_inner:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        DEC_B
+        JR_NZ w3dcs_inner
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#else
 void w3dcgb_clear_stage_asm()
 {
     __asm {
@@ -3039,6 +3505,7 @@ w3dcs_inner:
         RET
     }
 }
+#endif
 
 #pragma fixed_order 101
 // Save/select/restore WRAM bank 2 while clearing dma_len consecutive tiles
@@ -3124,6 +3591,7 @@ w3drhb_loop:
 #pragma fixed_order 104
 // Save SVBK, select bank 2, clear 384 bytes for the leftmost two tile
 // columns and restore SVBK. No dirty flags are updated.
+#if WIRE3DCGB_HEIGHT == 88
 void w3dcgb_erase_left_guard16_asm()
 {
     __asm {
@@ -3148,7 +3616,7 @@ w3deg_loop1:
         DEC_C
         JR_NZ w3deg_loop1
 
-        LD_C_IMM 0x80
+        LD_C_IMM 96
 w3deg_loop2:
         LDI_HL_A
         DEC_C
@@ -3158,10 +3626,84 @@ w3deg_loop2:
         RET
     }
 }
+#else
+void w3dcgb_erase_left_guard16_asm()
+{
+    __asm {
+w3deg_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+        LD_HL_IMM w3dcgb_stage
+        XOR_A
+        LD_B_IMM 0
+        LD_C_IMM 0x80
+
+w3deg_loop0:
+        LDI_HL_A
+        DEC_C
+        JR_NZ w3deg_loop0
+
+        LD_C_IMM 0x80
+w3deg_loop1:
+        LDI_HL_A
+        DEC_C
+        JR_NZ w3deg_loop1
+
+        LD_C_IMM 128
+w3deg_loop2:
+        LDI_HL_A
+        DEC_C
+        JR_NZ w3deg_loop2
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#endif
 
 #pragma fixed_order 106
 // Save SVBK, select bank 2, clear 576 bytes for the leftmost three tile
 // columns in unrolled groups and restore SVBK. No dirty flags are updated.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_erase_left_guard24_asm()
+{
+    __asm {
+w3deh_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+        LD_HL_IMM w3dcgb_stage
+        XOR_A
+        LD_B_IMM 33
+
+w3deh_loop:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        DEC_B
+        JR_NZ w3deh_loop
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#else
 void w3dcgb_erase_left_guard24_asm()
 {
     __asm {
@@ -3198,6 +3740,7 @@ w3deh_loop:
         RET
     }
 }
+#endif
 
 #pragma fixed_bank 1
 #pragma fixed_order 110
@@ -3205,6 +3748,7 @@ w3deh_loop:
 // pixel in both bitplanes. Active mask bits suppress writes; color zero
 // erases. Sparse mode sets the tile flag, but this helper does not expand
 // the sparse min/max range; the public point wrapper handles that range.
+#if WIRE3DCGB_HEIGHT == 88
 void w3dcgb_plot_stage_asm()
 {
     __asm {
@@ -3222,7 +3766,7 @@ w3dps_enter:
         CP_IMM 0x80
         JP_NC w3dps_ret
         LD_A_MEM w3dcgb_plot_y
-        CP_IMM 0x60
+        CP_IMM 88
         JP_NC w3dps_ret
 
         LD_A_MEM w3dcgb_plot_y
@@ -3278,7 +3822,7 @@ w3dps_bounds:
         JP_NC w3dps_ret
 
         LD_A_MEM w3dcgb_plot_y
-        CP_IMM 0x60
+        CP_IMM 88
         JP_NC w3dps_ret
 
 w3dps_inside:
@@ -3289,18 +3833,15 @@ w3dps_inside:
         RRA
         OR_A
         RRA
-        LD_B_A
-        ADD_A
-        ADD_A
-        LD_C_A
-        LD_A_B
-        ADD_A
-        ADD_A
-        ADD_A
-        LD_B_A
-        LD_A_C
-        ADD_B
-        LD_C_A
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
 
         LD_A_MEM w3dcgb_plot_y
         OR_A
@@ -3406,6 +3947,206 @@ w3dps_ret:
         RET
     }
 }
+#else
+void w3dcgb_plot_stage_asm()
+{
+    __asm {
+w3dps_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+
+        LD_A_MEM w3dcgb_occlusion_active
+        OR_A
+        JP_Z w3dps_bounds
+
+        LD_A_MEM w3dcgb_plot_x
+        CP_IMM 0x80
+        JP_NC w3dps_ret
+        LD_A_MEM w3dcgb_plot_y
+        CP_IMM 96
+        JP_NC w3dps_ret
+
+        LD_A_MEM w3dcgb_plot_y
+        LD_B_A
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_E_A
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_D_A
+        LD_HL_IMM w3dcgb_occlusion_mask
+        ADD_HL_DE
+
+        LD_A_MEM w3dcgb_plot_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_E_A
+        LD_D_IMM 0
+        ADD_HL_DE
+
+        PUSH_HL
+        LD_A_MEM w3dcgb_plot_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+        LD_A_HL
+        AND_B
+        JP_NZ w3dps_ret
+        JP w3dps_inside
+
+w3dps_bounds:
+        LD_A_MEM w3dcgb_plot_x
+        CP_IMM 0x80
+        JP_NC w3dps_ret
+
+        LD_A_MEM w3dcgb_plot_y
+        CP_IMM 96
+        JP_NC w3dps_ret
+
+w3dps_inside:
+        LD_A_MEM w3dcgb_plot_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_plot_y
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_C
+        ADD_B
+        LD_MEM_A w3dcgb_dirty_tile_tmp
+        LD_B_A
+
+        LD_A_MEM w3dcgb_full_frame_transfer
+        OR_A
+        JP_NZ w3dps_dirty_ready
+        LD_C_A
+        LD_A_B
+        LD_C_A
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_dirty_flags
+        ADD_HL_DE
+        LD_A_HL
+        OR_A
+        JP_NZ w3dps_dirty_ready
+        LD_A_IMM 1
+        LD_HL_A
+w3dps_dirty_ready:
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD3
+        LD_H_A
+
+        LD_A_B
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_B_A
+
+        LD_A_MEM w3dcgb_plot_y
+        AND_IMM 7
+        ADD_A
+        ADD_B
+        LD_L_A
+
+        LD_A_MEM w3dcgb_plot_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        PUSH_HL
+        LD_HL_IMM w3dcgb_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+
+        LD_A_B
+        CPL
+        LD_C_A
+
+        LD_A_HL
+        AND_C
+        LD_HL_A
+
+        INC_L
+        LD_A_HL
+        AND_C
+        LD_HL_A
+
+        LD_A_MEM w3dcgb_line_color
+        AND_IMM 1
+        JP_Z w3dps_skip_low
+
+        DEC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+
+w3dps_skip_low:
+        LD_A_MEM w3dcgb_line_color
+        AND_IMM 2
+        JP_Z w3dps_ret
+
+        LD_A_HL
+        OR_B
+        LD_HL_A
+
+w3dps_ret:
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#endif
 
 #pragma fixed_bank -1
 #pragma bank 4
@@ -3417,6 +4158,7 @@ w3dps_ret:
 // other values, including zero, set both planes. Overlapping colors combine.
 // Masked loops advance both stage and mask pointers; unmasked loops advance
 // only the stage pointer. Each selects the color planes once per line.
+#if WIRE3DCGB_HEIGHT == 88
 void w3dcgb_line_stage_asm()
 {
     __asm {
@@ -3479,18 +4221,15 @@ w3dls_fast_start:
         RRA
         OR_A
         RRA
-        LD_B_A
-        ADD_A
-        ADD_A
-        LD_C_A
-        LD_A_B
-        ADD_A
-        ADD_A
-        ADD_A
-        LD_B_A
-        LD_A_C
-        ADD_B
-        LD_C_A
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
 
         LD_A_MEM w3dcgb_line_y0
         LD_MEM_A w3dcgb_line_y
@@ -3963,7 +4702,7 @@ w3dls_unmasked_step_x:
         LD_B_A
         RET_NC
         LD_A_L
-        SUB_IMM 0xC0
+        SUB_IMM 176
         LD_L_A
         RET_NC
         DEC_H
@@ -3974,7 +4713,7 @@ w3dls_unmasked_right:
         LD_B_A
         RET_NC
         LD_A_L
-        ADD_A_IMM 0xC0
+        ADD_A_IMM 176
         LD_L_A
         RET_NC
         INC_H
@@ -4016,7 +4755,7 @@ w3dls_fast_step_x:
         JP_NZ w3dls_fast_step_x_done
         LD_B_IMM 1
         PUSH_DE
-        LD_DE_IMM 0xFF40
+        LD_DE_IMM 0xFF50
         ADD_HL_DE
         POP_DE
         DEC_DE
@@ -4031,7 +4770,7 @@ w3dls_fast_step_x_right:
         JP_NZ w3dls_fast_step_x_done
         LD_B_IMM 0x80
         PUSH_DE
-        LD_DE_IMM 0x00C0
+        LD_DE_IMM 176
         ADD_HL_DE
         POP_DE
         INC_DE
@@ -4189,18 +4928,15 @@ w3dls_horizontal_addr:
         RRA
         OR_A
         RRA
-        LD_B_A
-        ADD_A
-        ADD_A
-        LD_C_A
-        LD_A_B
-        ADD_A
-        ADD_A
-        ADD_A
-        LD_B_A
-        LD_A_C
-        ADD_B
-        LD_C_A
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
 
         LD_A_MEM w3dcgb_line_y0
         OR_A
@@ -4271,7 +5007,7 @@ w3dls_horizontal_loop:
 
 w3dls_horizontal_next_tile:
         LD_B_IMM 0x80
-        LD_DE_IMM 0x00C0
+        LD_DE_IMM 176
         ADD_HL_DE
         JP w3dls_horizontal_loop
 
@@ -4298,18 +5034,15 @@ w3dls_vertical_addr:
         RRA
         OR_A
         RRA
-        LD_B_A
-        ADD_A
-        ADD_A
-        LD_C_A
-        LD_A_B
-        ADD_A
-        ADD_A
-        ADD_A
-        LD_B_A
-        LD_A_C
-        ADD_B
-        LD_C_A
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
 
         LD_A_MEM w3dcgb_line_y
         OR_A
@@ -4424,12 +5157,1051 @@ w3dls_plot_both:
         RET
     }
 }
+#else
+void w3dcgb_line_stage_asm()
+{
+    __asm {
+w3dls_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+w3dls_masked_generic:
+        LD_A_MEM w3dcgb_line_x0
+        LD_B_A
+        LD_A_MEM w3dcgb_line_x1
+        CP_B
+        JP_C w3dls_x_reverse
+        SUB_B
+        LD_MEM_A w3dcgb_line_dx
+        LD_A_IMM 1
+        LD_MEM_A w3dcgb_line_sx
+        JP w3dls_y_start
+
+w3dls_x_reverse:
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3dcgb_line_dx
+        LD_A_IMM 255
+        LD_MEM_A w3dcgb_line_sx
+
+w3dls_y_start:
+        LD_A_MEM w3dcgb_line_y0
+        LD_B_A
+        LD_A_MEM w3dcgb_line_y1
+        CP_B
+        JP_C w3dls_y_reverse
+        SUB_B
+        LD_MEM_A w3dcgb_line_dy
+        LD_A_IMM 1
+        LD_MEM_A w3dcgb_line_sy
+        JP w3dls_branch
+
+w3dls_y_reverse:
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3dcgb_line_dy
+        LD_A_IMM 255
+        LD_MEM_A w3dcgb_line_sy
+
+w3dls_branch:
+        JP w3dls_fast_start
+
+// Maintain HL at the stage byte, DE at its row-major mask byte and B as
+// the current pixel bit; stepping avoids recomputing addresses per pixel.
+w3dls_fast_start:
+        LD_A_MEM w3dcgb_line_x0
+        LD_MEM_A w3dcgb_line_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_line_y0
+        LD_MEM_A w3dcgb_line_y
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_C
+        ADD_B
+        LD_B_A
+
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD3
+        LD_H_A
+
+        LD_A_B
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_C_A
+        LD_A_MEM w3dcgb_line_y0
+        AND_IMM 7
+        ADD_A
+        ADD_C
+        LD_L_A
+
+        PUSH_HL
+        LD_A_MEM w3dcgb_line_y0
+        LD_B_A
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_E_A
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_D_A
+        LD_HL_IMM w3dcgb_occlusion_mask
+        ADD_HL_DE
+        LD_A_MEM w3dcgb_line_x0
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_E_A
+        LD_D_IMM 0
+        ADD_HL_DE
+        LD_D_H
+        LD_E_L
+        POP_HL
+
+        PUSH_DE
+        LD_A_MEM w3dcgb_line_x0
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        PUSH_HL
+        LD_HL_IMM w3dcgb_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_occlusion_active
+        OR_A
+        JP_Z w3dls_fast_unmasked_branch
+
+// Occlusion is active throughout these loops. Select the color plane once,
+// then test one mask bit per pixel without a helper call or color dispatch.
+        LD_A_MEM w3dcgb_line_color
+        CP_IMM 1
+        JP_Z w3dls_masked_single_branch
+        CP_IMM 2
+        JP_NZ w3dls_masked_both_branch
+        INC_L
+w3dls_masked_single_branch:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        CP_C
+        JP_C w3dls_masked_single_shallow
+        JP_Z w3dls_masked_single_shallow
+        JP w3dls_masked_single_steep
+
+w3dls_masked_single_shallow:
+        LD_A_MEM w3dcgb_line_dx
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_single_shallow_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_single_shallow_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+w3dls_masked_single_shallow_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_single_shallow_no_y
+        CALL w3dls_fast_step_y
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_single_shallow_no_y:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_x
+        JP w3dls_masked_single_shallow_loop
+
+w3dls_masked_single_steep:
+        LD_A_MEM w3dcgb_line_dy
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_single_steep_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_single_steep_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+w3dls_masked_single_steep_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_single_steep_no_x
+        CALL w3dls_fast_step_x
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_single_steep_no_x:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_y
+        JP w3dls_masked_single_steep_loop
+
+w3dls_masked_both_branch:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        CP_C
+        JP_C w3dls_masked_both_shallow
+        JP_Z w3dls_masked_both_shallow
+        JP w3dls_masked_both_steep
+
+w3dls_masked_both_shallow:
+        LD_A_MEM w3dcgb_line_dx
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_shallow_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_both_shallow_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+w3dls_masked_both_shallow_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_both_shallow_no_y
+        CALL w3dls_fast_step_y
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_shallow_no_y:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_x
+        JP w3dls_masked_both_shallow_loop
+
+w3dls_masked_both_steep:
+        LD_A_MEM w3dcgb_line_dy
+        LD_MEM_A w3dcgb_line_remaining
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_steep_loop:
+        LD_A_DE
+        AND_B
+        JP_NZ w3dls_masked_both_steep_covered
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+w3dls_masked_both_steep_covered:
+        LD_A_MEM w3dcgb_line_remaining
+        OR_A
+        JP_Z w3dls_done
+        DEC_A
+        LD_MEM_A w3dcgb_line_remaining
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        CP_C
+        JP_NC w3dls_masked_both_steep_no_x
+        CALL w3dls_fast_step_x
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_C
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_masked_both_steep_no_x:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_err
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+        CALL w3dls_fast_step_y
+        JP w3dls_masked_both_steep_loop
+
+// Skip mask reads when occlusion is disabled; color 3 also bypasses
+// per-pixel color selection in its dedicated loop.
+w3dls_fast_unmasked_branch:
+        // Select the bitplane once per line. The high-only path keeps HL
+        // one byte above the low plane through all subsequent pointer steps.
+        LD_A_MEM w3dcgb_line_color
+        CP_IMM 1
+        JP_Z w3dls_fast_single_plane
+        CP_IMM 2
+        JP_NZ w3dls_fast_unmasked_both_branch
+        INC_L
+w3dls_fast_single_plane:
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        CP_C
+        JP_C w3dls_fast_unmasked_shallow
+        JP_Z w3dls_fast_unmasked_shallow
+        JP w3dls_fast_unmasked_steep
+
+w3dls_fast_unmasked_shallow:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dx
+        LD_D_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_D
+w3dls_fast_unmasked_shallow_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_D
+        JP_Z w3dls_done
+        LD_A_E
+        CP_C
+        JP_NC w3dls_fast_unmasked_shallow_skip
+        CALL w3dls_unmasked_step_y
+        LD_A_MEM w3dcgb_line_dx
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_shallow_skip:
+        LD_A_E
+        SUB_C
+        LD_E_A
+        CALL w3dls_unmasked_step_x
+        JP w3dls_fast_unmasked_shallow_loop
+
+w3dls_fast_unmasked_steep:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        LD_D_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_D
+w3dls_fast_unmasked_steep_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_D
+        JP_Z w3dls_done
+        LD_A_E
+        CP_C
+        JP_NC w3dls_fast_unmasked_steep_skip
+        CALL w3dls_unmasked_step_x
+        LD_A_MEM w3dcgb_line_dy
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_steep_skip:
+        LD_A_E
+        SUB_C
+        LD_E_A
+        CALL w3dls_unmasked_step_y
+        JP w3dls_fast_unmasked_steep_loop
+
+w3dls_fast_unmasked_both_branch:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        CP_C
+        JP_C w3dls_fast_unmasked_both_shallow
+        JP_Z w3dls_fast_unmasked_both_shallow
+        JP w3dls_fast_unmasked_both_steep
+
+w3dls_fast_unmasked_both_shallow:
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dx
+        LD_D_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_D
+w3dls_fast_unmasked_both_shallow_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        DEC_D
+        JP_Z w3dls_done
+        LD_A_E
+        CP_C
+        JP_NC w3dls_fast_unmasked_both_shallow_skip
+        CALL w3dls_unmasked_step_y
+        LD_A_MEM w3dcgb_line_dx
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_both_shallow_skip:
+        LD_A_E
+        SUB_C
+        LD_E_A
+        CALL w3dls_unmasked_step_x
+        JP w3dls_fast_unmasked_both_shallow_loop
+
+w3dls_fast_unmasked_both_steep:
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_MEM w3dcgb_line_dy
+        LD_D_A
+        OR_A
+        RRA
+        LD_E_A
+        INC_D
+w3dls_fast_unmasked_both_steep_loop:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        DEC_D
+        JP_Z w3dls_done
+        LD_A_E
+        CP_C
+        JP_NC w3dls_fast_unmasked_both_steep_skip
+        CALL w3dls_unmasked_step_x
+        LD_A_MEM w3dcgb_line_dy
+        ADD_E
+        LD_E_A
+w3dls_fast_unmasked_both_steep_skip:
+        LD_A_E
+        SUB_C
+        LD_E_A
+        CALL w3dls_unmasked_step_y
+        JP w3dls_fast_unmasked_both_steep_loop
+
+// No occlusion-mask address is needed by these unmasked pointer steps.
+w3dls_unmasked_step_y:
+        LD_A_MEM w3dcgb_line_sy
+        CP_IMM 1
+        JR_Z w3dls_unmasked_down
+        DEC_HL
+        DEC_HL
+        RET
+w3dls_unmasked_down:
+        INC_HL
+        INC_HL
+        RET
+w3dls_unmasked_step_x:
+        LD_A_MEM w3dcgb_line_sx
+        CP_IMM 1
+        JR_Z w3dls_unmasked_right
+        LD_A_B
+        RLCA
+        LD_B_A
+        RET_NC
+        LD_A_L
+        SUB_IMM 192
+        LD_L_A
+        RET_NC
+        DEC_H
+        RET
+w3dls_unmasked_right:
+        LD_A_B
+        RRCA
+        LD_B_A
+        RET_NC
+        LD_A_L
+        ADD_A_IMM 192
+        LD_L_A
+        RET_NC
+        INC_H
+        RET
+
+w3dls_fast_step_y:
+        LD_A_MEM w3dcgb_line_sy
+        CP_IMM 1
+        JP_Z w3dls_fast_step_y_down
+        DEC_HL
+        DEC_HL
+        LD_A_E
+        SUB_IMM 0x10
+        LD_E_A
+        JP_NC w3dls_fast_step_y_done
+        DEC_D
+        RET
+w3dls_fast_step_y_done:
+        RET
+w3dls_fast_step_y_down:
+        INC_HL
+        INC_HL
+        LD_A_E
+        ADD_A_IMM 0x10
+        LD_E_A
+        JP_NC w3dls_fast_step_y_done
+        INC_D
+        RET
+
+w3dls_fast_step_x:
+        LD_A_MEM w3dcgb_line_sx
+        CP_IMM 1
+        JP_Z w3dls_fast_step_x_right
+
+        LD_A_B
+        ADD_A
+        LD_B_A
+        OR_A
+        JP_NZ w3dls_fast_step_x_done
+        LD_B_IMM 1
+        PUSH_DE
+        LD_DE_IMM 0xFF40
+        ADD_HL_DE
+        POP_DE
+        DEC_DE
+        RET
+
+w3dls_fast_step_x_right:
+        LD_A_B
+        OR_A
+        RRA
+        LD_B_A
+        OR_A
+        JP_NZ w3dls_fast_step_x_done
+        LD_B_IMM 0x80
+        PUSH_DE
+        LD_DE_IMM 192
+        ADD_HL_DE
+        POP_DE
+        INC_DE
+w3dls_fast_step_x_done:
+        RET
+
+// These retained generic/axis loops are not selected by the active entry,
+// which jumps directly to w3dls_fast_start. They are not the active bounds checks.
+w3dls_shallow:
+        LD_A_MEM w3dcgb_line_x0
+        LD_MEM_A w3dcgb_line_x
+        LD_A_MEM w3dcgb_line_y0
+        LD_MEM_A w3dcgb_line_y
+        LD_A_MEM w3dcgb_line_dx
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_shallow_loop:
+        LD_A_MEM w3dcgb_line_x
+        LD_MEM_A w3dcgb_plot_x
+        LD_A_MEM w3dcgb_line_y
+        LD_MEM_A w3dcgb_plot_y
+        CALL w3dcgb_plot_stage_asm
+
+        LD_A_MEM w3dcgb_line_x
+        LD_B_A
+        LD_A_MEM w3dcgb_line_x1
+        CP_B
+        JP_Z w3dls_done
+
+        LD_A_MEM w3dcgb_line_dy
+        LD_B_A
+        LD_A_MEM w3dcgb_line_err
+        CP_B
+        JP_NC w3dls_shallow_skip_bridge
+
+        LD_A_MEM w3dcgb_line_y
+        LD_B_A
+        LD_A_MEM w3dcgb_line_sy
+        ADD_B
+        LD_MEM_A w3dcgb_line_y
+
+        LD_A_MEM w3dcgb_line_x
+        LD_MEM_A w3dcgb_plot_x
+        LD_A_MEM w3dcgb_line_y
+        LD_MEM_A w3dcgb_plot_y
+        CALL w3dcgb_plot_stage_asm
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_B_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_B
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_shallow_skip_bridge:
+        LD_A_MEM w3dcgb_line_err
+        LD_B_A
+        LD_A_MEM w3dcgb_line_dy
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+
+        LD_A_MEM w3dcgb_line_x
+        LD_B_A
+        LD_A_MEM w3dcgb_line_sx
+        ADD_B
+        LD_MEM_A w3dcgb_line_x
+        JP w3dls_shallow_loop
+
+w3dls_steep:
+        LD_A_MEM w3dcgb_line_x0
+        LD_MEM_A w3dcgb_line_x
+        LD_A_MEM w3dcgb_line_y0
+        LD_MEM_A w3dcgb_line_y
+        LD_A_MEM w3dcgb_line_dy
+        OR_A
+        RRA
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_steep_loop:
+        LD_A_MEM w3dcgb_line_x
+        LD_MEM_A w3dcgb_plot_x
+        LD_A_MEM w3dcgb_line_y
+        LD_MEM_A w3dcgb_plot_y
+        CALL w3dcgb_plot_stage_asm
+
+        LD_A_MEM w3dcgb_line_y
+        LD_B_A
+        LD_A_MEM w3dcgb_line_y1
+        CP_B
+        JP_Z w3dls_done
+
+        LD_A_MEM w3dcgb_line_dx
+        LD_B_A
+        LD_A_MEM w3dcgb_line_err
+        CP_B
+        JP_NC w3dls_steep_skip_bridge
+
+        LD_A_MEM w3dcgb_line_x
+        LD_B_A
+        LD_A_MEM w3dcgb_line_sx
+        ADD_B
+        LD_MEM_A w3dcgb_line_x
+
+        LD_A_MEM w3dcgb_line_x
+        LD_MEM_A w3dcgb_plot_x
+        LD_A_MEM w3dcgb_line_y
+        LD_MEM_A w3dcgb_plot_y
+        CALL w3dcgb_plot_stage_asm
+
+        LD_A_MEM w3dcgb_line_dy
+        LD_B_A
+        LD_A_MEM w3dcgb_line_err
+        ADD_B
+        LD_MEM_A w3dcgb_line_err
+
+w3dls_steep_skip_bridge:
+        LD_A_MEM w3dcgb_line_err
+        LD_B_A
+        LD_A_MEM w3dcgb_line_dx
+        LD_C_A
+        LD_A_B
+        SUB_C
+        LD_MEM_A w3dcgb_line_err
+
+        LD_A_MEM w3dcgb_line_y
+        LD_B_A
+        LD_A_MEM w3dcgb_line_sy
+        ADD_B
+        LD_MEM_A w3dcgb_line_y
+        JP w3dls_steep_loop
+
+w3dls_horizontal:
+        LD_A_MEM w3dcgb_line_x0
+        LD_B_A
+        LD_A_MEM w3dcgb_line_x1
+        CP_B
+        JP_C w3dls_horizontal_reverse
+        LD_A_B
+        LD_MEM_A w3dcgb_line_x
+        JP w3dls_horizontal_addr
+
+w3dls_horizontal_reverse:
+        LD_MEM_A w3dcgb_line_x
+        LD_A_B
+        LD_MEM_A w3dcgb_line_x1
+
+w3dls_horizontal_addr:
+        LD_A_MEM w3dcgb_line_x
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_line_y0
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_C
+        ADD_B
+        LD_B_A
+
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD3
+        LD_H_A
+
+        LD_A_B
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_B_A
+
+        LD_A_MEM w3dcgb_line_y0
+        AND_IMM 7
+        ADD_A
+        ADD_B
+        LD_L_A
+
+        LD_A_MEM w3dcgb_line_x
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        PUSH_HL
+        LD_HL_IMM w3dcgb_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+
+w3dls_horizontal_loop:
+        CALL w3dls_plot_hl
+        LD_A_MEM w3dcgb_line_x
+        LD_C_A
+        LD_A_MEM w3dcgb_line_x1
+        CP_C
+        JP_Z w3dls_done
+        LD_A_C
+        ADD_A_IMM 1
+        LD_MEM_A w3dcgb_line_x
+        LD_A_B
+        CP_IMM 1
+        JP_Z w3dls_horizontal_next_tile
+        OR_A
+        RRA
+        LD_B_A
+        JP w3dls_horizontal_loop
+
+w3dls_horizontal_next_tile:
+        LD_B_IMM 0x80
+        LD_DE_IMM 192
+        ADD_HL_DE
+        JP w3dls_horizontal_loop
+
+w3dls_vertical:
+        LD_A_MEM w3dcgb_line_y0
+        LD_B_A
+        LD_A_MEM w3dcgb_line_y1
+        CP_B
+        JP_C w3dls_vertical_reverse
+        LD_A_B
+        LD_MEM_A w3dcgb_line_y
+        JP w3dls_vertical_addr
+
+w3dls_vertical_reverse:
+        LD_MEM_A w3dcgb_line_y
+        LD_A_B
+        LD_MEM_A w3dcgb_line_y1
+
+w3dls_vertical_addr:
+        LD_A_MEM w3dcgb_line_x0
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        PUSH_DE
+        PUSH_HL
+        LD_E_A
+        LD_D_IMM 0
+        LD_HL_IMM w3dcgb_column_tiles
+        ADD_HL_DE
+        LD_C_HL
+        POP_HL
+        POP_DE
+
+        LD_A_MEM w3dcgb_line_y
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        LD_B_A
+        LD_A_C
+        ADD_B
+        LD_B_A
+
+        LD_A_B
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        OR_A
+        RRA
+        ADD_A_IMM 0xD3
+        LD_H_A
+
+        LD_A_B
+        AND_IMM 0x0F
+        ADD_A
+        ADD_A
+        ADD_A
+        ADD_A
+        LD_B_A
+
+        LD_A_MEM w3dcgb_line_y
+        AND_IMM 7
+        ADD_A
+        ADD_B
+        LD_L_A
+
+        LD_A_MEM w3dcgb_line_x0
+        AND_IMM 7
+        LD_E_A
+        LD_D_IMM 0
+        PUSH_HL
+        LD_HL_IMM w3dcgb_bit_mask
+        ADD_HL_DE
+        LD_A_HL
+        LD_B_A
+        POP_HL
+
+w3dls_vertical_loop:
+        CALL w3dls_plot_hl
+        LD_A_MEM w3dcgb_line_y
+        LD_C_A
+        LD_A_MEM w3dcgb_line_y1
+        CP_C
+        JP_Z w3dls_done
+        LD_A_C
+        ADD_A_IMM 1
+        LD_MEM_A w3dcgb_line_y
+        INC_HL
+        INC_HL
+        JP w3dls_vertical_loop
+
+w3dls_done:
+        POP_AF
+        LDH_MEM_A 112
+        RET
+
+// The normal line path accumulates coverage with OR. It does not clear the
+// other color plane, unlike the point and full-screen fast plotters.
+w3dls_plot_hl:
+        LD_A_MEM w3dcgb_line_color
+        CP_IMM 1
+        JP_Z w3dls_plot_low_only
+        CP_IMM 2
+        JP_Z w3dls_plot_high_only
+
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        RET
+
+w3dls_plot_low_only:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        RET
+
+w3dls_plot_high_only:
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        RET
+
+w3dls_plot_both:
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        INC_L
+        LD_A_HL
+        OR_B
+        LD_HL_A
+        DEC_L
+        RET
+    }
+}
+#endif
 
 #pragma fixed_bank 2
 #pragma bank 2
 #pragma fixed_order 129
 // During LCD-off setup, set the 16x12 viewport attributes to tile bank 1,
 // palette zero. Leave other attributes unchanged and VBK zero on return.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_select_blank_render_bank_asm()
+{
+    __asm {
+w3dsb_enter:
+        LD_A_IMM 1
+        LDH_MEM_A 79
+        LD_HL_IMM w3dcgb_bg_map_9800
+        LD_DE_IMM 16
+        LD_B_IMM 11
+        LD_A_IMM 8
+
+w3dsb_row:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        ADD_HL_DE
+        DEC_B
+        JR_NZ w3dsb_row
+
+        XOR_A
+        LDH_MEM_A 79
+        RET
+    }
+}
+#else
 void w3dcgb_select_blank_render_bank_asm()
 {
     __asm {
@@ -4467,6 +6239,7 @@ w3dsb_row:
         RET
     }
 }
+#endif
 
 #pragma fixed_order 130
 // Copy the complete 3072-byte bank-2 stage into the opposite VRAM tile bank.
@@ -4475,6 +6248,86 @@ w3dsb_row:
 // SVBK and leave VBK zero; pixels are not consumed. The LCD must remain
 // enabled. Each DMA start executes EI, so entry IME is not preserved and
 // handlers must retain the source/destination bank mapping during DMA.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_transfer_stage_asm()
+{
+    __asm {
+w3dtf_enter:
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+
+        LD_A_MEM w3dcgb_display_tile_bank
+        XOR_IMM 1
+        LD_MEM_A w3dcgb_pending_tile_bank
+        LDH_MEM_A 79
+
+        /* Full frames use HBlank HDMA so LCD fetches are never starved. */
+w3dtf_wait_start_vblank_end:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JP_NC w3dtf_wait_start_vblank_end
+
+w3dtf_wait_start_vblank:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JP_C w3dtf_wait_start_vblank
+
+        LD_A_IMM 0xD3
+        LDH_MEM_A 81
+        XOR_A
+        LDH_MEM_A 82
+        LD_A_IMM 0x89
+        LDH_MEM_A 83
+        XOR_A
+        LDH_MEM_A 84
+        DI
+w3dtf_arm_first:
+        LDH_A_MEM 65
+        AND_IMM 3
+        CP_IMM 2
+        JR_NZ w3dtf_arm_first
+        LD_A_IMM 0xFF
+        LDH_MEM_A 85
+        EI
+
+w3dtf_wait_first:
+        LDH_A_MEM 85
+        AND_IMM 0x80
+        JP_Z w3dtf_wait_first
+
+        LD_A_IMM 0xDB
+        LDH_MEM_A 81
+        XOR_A
+        LDH_MEM_A 82
+        LD_A_IMM 0x91
+        LDH_MEM_A 83
+        XOR_A
+        LDH_MEM_A 84
+        DI
+w3dtf_arm_second:
+        LDH_A_MEM 65
+        AND_IMM 3
+        CP_IMM 2
+        JR_NZ w3dtf_arm_second
+        LD_A_IMM 0xAF
+        LDH_MEM_A 85
+        EI
+
+w3dtf_wait_second:
+        LDH_A_MEM 85
+        AND_IMM 0x80
+        JP_Z w3dtf_wait_second
+
+        XOR_A
+        LDH_MEM_A 79
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#else
 void w3dcgb_transfer_stage_asm()
 {
     __asm {
@@ -4553,12 +6406,89 @@ w3dtf_wait_second:
         RET
     }
 }
+#endif
 
 #pragma fixed_order 131
 // Expose pending tile data during VBlank. Atomic-map mode can use the
 // current VBlank and flips LCDC map selection; normal mode waits for a fresh
 // VBlank and rewrites all 16x12 attributes to the pending bank with palette
 // zero. Record the displayed bank and leave VBK zero. The LCD must be enabled.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_present_stage_asm()
+{
+    __asm {
+        LD_A_MEM w3dcgb_atomic_maps
+        OR_A
+        JP_Z w3dpr_wait_vblank_end
+w3dpr_atomic_wait:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JR_C w3dpr_atomic_wait
+        LD_A_MEM w3dcgb_pending_tile_bank
+        LD_MEM_A w3dcgb_display_tile_bank
+        OR_A
+        LDH_A_MEM 64
+        JR_Z w3dpr_atomic_zero
+        OR_IMM 8
+        JR w3dpr_atomic_show
+w3dpr_atomic_zero:
+        AND_IMM 0xF7
+w3dpr_atomic_show:
+        LDH_MEM_A 64
+        XOR_A
+        LDH_MEM_A 79
+        RET
+w3dpr_wait_vblank_end:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JP_NC w3dpr_wait_vblank_end
+
+w3dpr_wait_vblank_start:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JP_C w3dpr_wait_vblank_start
+
+        LD_A_IMM 1
+        LDH_MEM_A 79
+        LD_A_MEM w3dcgb_pending_tile_bank
+        OR_A
+        JP_Z w3dpr_attr_value_ready
+        LD_A_IMM 8
+
+w3dpr_attr_value_ready:
+        LD_HL_IMM w3dcgb_bg_map_9800
+        LD_DE_IMM 16
+        LD_B_IMM 11
+
+w3dpr_attr_row:
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        LDI_HL_A
+        ADD_HL_DE
+        DEC_B
+        JR_NZ w3dpr_attr_row
+
+        LD_A_MEM w3dcgb_pending_tile_bank
+        LD_MEM_A w3dcgb_display_tile_bank
+        XOR_A
+        LDH_MEM_A 79
+        RET
+    }
+}
+#else
 void w3dcgb_present_stage_asm()
 {
     __asm {
@@ -4633,6 +6563,7 @@ w3dpr_attr_row:
         RET
     }
 }
+#endif
 
 #pragma fixed_order 132
 // Execute STOP after the caller has prepared KEY1, then return at the new
@@ -5902,6 +7833,82 @@ w3dff_select_overflow:
 // copy both banks of 9800 to 9C00, and assign viewport attributes to tile
 // banks 0/1 respectively. Restore LCDC with map 9C00 selected and VBK zero.
 // Both BG maps become reserved. Queued HUD tile numbers are mirrored.
+#if WIRE3DCGB_HEIGHT == 88
+void Wire3DCGB_EnableAtomicMaps()
+{
+    if ((w3dcgb_full_mode != 0) || (w3dcgb_atomic_maps != 0)) return;
+    __asm {
+w3dam_wait:
+        LDH_A_MEM 68
+        CP_IMM 144
+        JR_C w3dam_wait
+        LDH_A_MEM 64
+        PUSH_AF
+        XOR_A
+        LDH_MEM_A 64
+        LDH_MEM_A 79
+        LD_HL_IMM 0x9800
+        LD_DE_IMM 0x9C00
+        LD_B_IMM 4
+w3dam_copy_page:
+        LD_C_IMM 0
+w3dam_copy_byte:
+        LD_A_HL
+        INC_HL
+        LD_DE_A
+        INC_DE
+        DEC_C
+        JR_NZ w3dam_copy_byte
+        DEC_B
+        JR_NZ w3dam_copy_page
+        LDH_A_MEM 79
+        AND_IMM 1
+        JR_NZ w3dam_attrs
+        LD_A_IMM 1
+        LDH_MEM_A 79
+        LD_HL_IMM 0x9800
+        LD_DE_IMM 0x9C00
+        LD_B_IMM 4
+        JR w3dam_copy_page
+w3dam_attrs:
+        LD_HL_IMM 0x9800
+        LD_DE_IMM 0x9C00
+        LD_B_IMM 11
+w3dam_row:
+        LD_C_IMM 16
+w3dam_cell:
+        XOR_A
+        LDI_HL_A
+        LD_A_IMM 8
+        LD_DE_A
+        INC_DE
+        DEC_C
+        JR_NZ w3dam_cell
+        LD_A_L
+        ADD_A_IMM 16
+        LD_L_A
+        JR_NC w3dam_hl_ready
+        INC_H
+w3dam_hl_ready:
+        LD_A_E
+        ADD_A_IMM 16
+        LD_E_A
+        JR_NC w3dam_de_ready
+        INC_D
+w3dam_de_ready:
+        DEC_B
+        JR_NZ w3dam_row
+        LD_A_IMM 1
+        LD_MEM_A w3dcgb_atomic_maps
+        XOR_A
+        LDH_MEM_A 79
+        POP_AF
+        OR_IMM 8
+        LDH_MEM_A 64
+        RET
+    }
+}
+#else
 void Wire3DCGB_EnableAtomicMaps()
 {
     if ((w3dcgb_full_mode != 0) || (w3dcgb_atomic_maps != 0)) return;
@@ -5976,6 +7983,7 @@ w3dam_de_ready:
         RET
     }
 }
+#endif
 
 // Initialize the CGB-only 128x96 renderer: enable double speed, turn the
 // LCD off at VBlank, clear both tile banks, load HUD/generated tiles, and
@@ -6040,8 +8048,12 @@ void Wire3DCGB_Init()
     w3dcgb_prev_dirty_count = 0;
     w3dcgb_dirty_min_tile = 0xFF;
     w3dcgb_dirty_max_tile = 0;
-    w3dcgb_prev_dirty_min_tile = 0xFF;
-    w3dcgb_prev_dirty_max_tile = 0;
+    // Both back banks may contain generated fast-map/stamp tiles. Refresh
+    // the whole pixel viewport on their first sparse use, including empty rows.
+    w3dcgb_prev_dirty_min_tile = 0;
+    w3dcgb_prev_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
+    w3dcgb_older_dirty_min_tile = 0;
+    w3dcgb_older_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
     w3dcgb_display_tile_bank = 1;
     w3dcgb_pending_tile_bank = 1;
 
@@ -6163,9 +8175,9 @@ void Wire3DCGB_BeginFrame()
 void Wire3DCGB_BeginFrameFast()
 {
     w3dcgb_older_dirty_min_tile = 0;
-    w3dcgb_older_dirty_max_tile = 191;
+    w3dcgb_older_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
     w3dcgb_prev_dirty_min_tile = 0;
-    w3dcgb_prev_dirty_max_tile = 191;
+    w3dcgb_prev_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
     if (w3dcgb_full_mode != 0)
     {
         w3dcgb_full_begin_asm();
@@ -6295,7 +8307,7 @@ void Wire3DCGB_DrawPoint2D(w3dcgb_u8 x, w3dcgb_u8 y)
 #endif
 
 // Draw a six-pixel marker through the 128x96 plotter while preserving line
-// color. Centers outside X=3..124 or Y=3..92 are ignored. The low five turn
+// color. Centers outside X=3..124 or Y=3..HEIGHT-4 are ignored. The low five turn
 // bits select left/straight/right nose and tail offsets; this is not a general
 // 3D transform and does not dispatch to the full-screen renderer.
 void Wire3DCGB_DrawTinyModel2D(w3dcgb_u8 x, w3dcgb_u8 y,
@@ -6304,7 +8316,7 @@ void Wire3DCGB_DrawTinyModel2D(w3dcgb_u8 x, w3dcgb_u8 y,
     w3dcgb_u8 nose_x;
     w3dcgb_u8 tail_x;
     w3dcgb_u8 old_color;
-    if ((x < 3) || (x > 124) || (y < 3) || (y > 92)) return;
+    if ((x < 3) || (x > 124) || (y < 3) || (y > (w3dcgb_u8)(WIRE3DCGB_SCREEN_H - 4))) return;
 
     nose_x = x;
     tail_x = x;
@@ -7193,6 +9205,85 @@ void Wire3DCGB_EraseLeftGuard24Fast()
 // Save/select/restore WRAM bank 2 while replacing the outermost stage
 // pixels with two-bit color 2. Masked writes preserve interior pixels.
 // This does not change the palette or dirty history.
+#if WIRE3DCGB_HEIGHT == 88
+void w3dcgb_draw_white_border_asm()
+{
+    __asm {
+        LDH_A_MEM 112
+        PUSH_AF
+        LD_A_IMM 2
+        LDH_MEM_A 112
+        LD_HL_IMM w3dcgb_stage
+        LD_B_IMM 11
+
+w3dbw_left_tile:
+        LD_C_IMM 8
+w3dbw_left_row:
+        LD_A_HL
+        AND_IMM 0x7F
+        LDI_HL_A
+        LD_A_HL
+        LD_D_A
+        LD_A_IMM 0x80
+        OR_D
+        LDI_HL_A
+        DEC_C
+        JR_NZ w3dbw_left_row
+        DEC_B
+        JR_NZ w3dbw_left_tile
+
+        LD_HL_IMM 0xDD50
+        LD_B_IMM 11
+
+w3dbw_right_tile:
+        LD_C_IMM 8
+w3dbw_right_row:
+        LD_A_HL
+        AND_IMM 0xFE
+        LDI_HL_A
+        LD_A_HL
+        LD_D_A
+        LD_A_IMM 0x01
+        OR_D
+        LDI_HL_A
+        DEC_C
+        JR_NZ w3dbw_right_row
+        DEC_B
+        JR_NZ w3dbw_right_tile
+
+        LD_HL_IMM w3dcgb_stage
+        LD_DE_IMM 176
+        LD_B_IMM 16
+
+w3dbw_top_tile:
+        XOR_A
+        LDI_HL_A
+        LD_A_IMM 0xFF
+        LD_HL_A
+        DEC_HL
+        ADD_HL_DE
+        DEC_B
+        JR_NZ w3dbw_top_tile
+
+        LD_HL_IMM 0xD3AE
+        LD_DE_IMM 176
+        LD_B_IMM 16
+
+w3dbw_bottom_tile:
+        XOR_A
+        LDI_HL_A
+        LD_A_IMM 0xFF
+        LD_HL_A
+        DEC_HL
+        ADD_HL_DE
+        DEC_B
+        JR_NZ w3dbw_bottom_tile
+        POP_AF
+        LDH_MEM_A 112
+        RET
+    }
+}
+#else
 void w3dcgb_draw_white_border_asm()
 {
     __asm {
@@ -7239,7 +9330,7 @@ w3dbw_right_row:
         JR_NZ w3dbw_right_tile
 
         LD_HL_IMM w3dcgb_stage
-        LD_DE_IMM 0x00C0
+        LD_DE_IMM 192
         LD_B_IMM 16
 
 w3dbw_top_tile:
@@ -7253,7 +9344,7 @@ w3dbw_top_tile:
         JR_NZ w3dbw_top_tile
 
         LD_HL_IMM 0xD3BE
-        LD_DE_IMM 0x00C0
+        LD_DE_IMM 192
         LD_B_IMM 16
 
 w3dbw_bottom_tile:
@@ -7270,6 +9361,7 @@ w3dbw_bottom_tile:
         RET
     }
 }
+#endif
 
 // Write a one-pixel color-2 border around the normal stage, preserving
 // interior pixels and WRAM bank selection. Its visible color depends on the
@@ -7620,11 +9712,11 @@ w3dcgb_i16 Wire3DCGB_ProjectAxis48(w3dcgb_i16 value, w3dcgb_i16 z)
 void Wire3DCGB_InvalidateFrameHistory()
 {
     w3dcgb_dirty_min_tile = 0;
-    w3dcgb_dirty_max_tile = 191;
+    w3dcgb_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
     w3dcgb_prev_dirty_min_tile = 0;
-    w3dcgb_prev_dirty_max_tile = 191;
+    w3dcgb_prev_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
     w3dcgb_older_dirty_min_tile = 0;
-    w3dcgb_older_dirty_max_tile = 191;
+    w3dcgb_older_dirty_max_tile = (w3dcgb_u8)(WIRE3DCGB_TILE_COUNT - 1);
 }
 
 // Return left/right/top/bottom bits (1/2/4/8) for signed coordinates,
@@ -7661,7 +9753,7 @@ void Wire3DCGB_DrawLineClipped2D(w3dcgb_i16 x0, w3dcgb_i16 y0,
     w3dcgb_i16 y;
     c0 = 0;
     c1 = 0;
-    if ((((x0 | y0 | x1 | y1) & 0xFF80) != 0) || (y0 >= 96) || (y1 >= 96))
+    if ((((x0 | y0 | x1 | y1) & 0xFF80) != 0) || (y0 >= WIRE3DCGB_SCREEN_H) || (y1 >= WIRE3DCGB_SCREEN_H))
     {
         if ((x0 < -2047) || (x0 > 2047) || (y0 < -2047) || (y0 > 2047) ||
             (x1 < -2047) || (x1 > 2047) || (y1 < -2047) || (y1 > 2047)) return;

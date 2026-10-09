@@ -504,3 +504,13 @@ sh scripts/build.sh
 - [Lizenz](LICENSE) / [Japanische Übersetzung zur Orientierung](LICENSE.ja)
 
 Die Projektlizenz ersetzt keine Bedingungen Dritter für Schriften, Abhängigkeiten, Logos oder Marken. Bewahren Sie bei einer Weiterverteilung die beiliegenden Hinweise auf.
+
+<!-- wire3d-feedback:start -->
+
+Wire3D-Zeitmessung, Profile mit 88 Zeilen und unabhängige Takte
+
+WIRE3D_DMG_HEIGHT erlaubt 88, 96 oder 120; WIRE3DCGB_HEIGHT erlaubt 88 oder 96. Die Vorgaben bleiben DMG 120 und CGB 96. Das 88-Zeilen-Profil hat 128×88 Pixel mit Mittelpunkt Y=44. Bibliothek und Aufrufer benötigen denselben Wert; kompilieren Sie wire3d_dmg_88.c / wire3d_cgb_88.c statt des normalen Einstiegspunkts. DMG 88 verwendet die Modellstruktur des 96-Zeilen-Profils und dessen Grenze von 16 Kanten. CGB 160×144 bleibt unverändert.
+
+[Prüfergebnisse und Beispiele](https://bartaro.github.io/kitaq-docs/de/gb-library.html#wire3d-feedback-20261009)
+
+<!-- wire3d-feedback:end -->

@@ -71,3 +71,21 @@ Both presets and both compatibility entries were built and run in KOKURA. Transf
 At the tested VBlank entry, CPU cycles for the former transfer loops versus the new paired loops were 211,696 → 207,780 for the 120-line main stage, 36,312 → 34,928 for its auxiliary stage, and 168,656 → 164,164 for the 96-line stage. All eight tested entry conditions per routine improved. These are emulator measurements of transfer routines, not a whole-game frame-rate claim or a physical-hardware test.
 
 [日本語](wire3d_dmg_guide_ja.md)
+
+<!-- wire3d-feedback:start -->
+
+## 88-row profile, camera-space projection and independent clocks
+
+The new 128x88 profile uses `wire3d_dmg_88.c` with `WIRE3D_DMG_HEIGHT=88`, or `wire3d_cgb_88.c` with `WIRE3DCGB_HEIGHT=88`. Keep the same height in every caller. DMG 88 shares the compact 96-row model layout and 16-edge cap; the CGB full-screen 160x144 mode is unchanged.
+
+Active full uploads are 1408 monochrome bytes or 2816 CGB bytes. This reduces payload by 26.67% versus DMG 120 or 8.33% versus 96 rows. DMG still reserves D000..DFFF; CGB still reserves 3072 stage bytes in bank 2. Transfer payload savings are not an fps guarantee.
+
+`Wire3DDMG_ProjectCameraPoint` and `Wire3DCGB_ProjectCameraPoint` skip camera subtraction/rotation for already transformed signed coordinates. They reject depth outside 8..255 without changing the outputs. X/Y are saturated to +/-120, multiplied by floor(1536/Z), divided by 32 with signed floor rounding, then clamped to the screen. Center Y is 44 at height 88. Coordinate saturation is not geometric clipping. Generic world projection retains its transform clamps; CGB ProjectAxis48 keeps its distinct normalization/rounding contract.
+
+`Wire3DDMG_EndFrameNow` skips the initial wait while retaining queued BG writes, dirty history and auxiliary ordering. CGB sparse Now retains destination-bank history and required transfer/presentation waits; its first two frames refresh the entire viewport. Both are synchronous. DMG is not atomic. Low-level CGB DrawLine2D requires explicit sparse dirty registration.
+
+Use elapsed VBlank ticks for movement, and VBlank audio/gauge updates independent of render count. Do not call renderers from an ISR. Compile `wire3d_audio_vblank.c` instead of `audio_vblank.c` to put the 80-byte queue in fixed WRAM and audio controls in ROM bank 5. CGB example renderer entries select bank-2 allocation.
+
+See [clocked source examples](../examples/wire3d_clocked/README.md), [common fps reporter](../tools/wire3d_metrics.py), and [source-only runtime regression](../tools/wire3d_regression.py). Examples are original box/bar/four-note fixtures. Measurements report completed upload/presentation fps and mean/median/worst PPU intervals plus deadline misses; internal transfer waits are included. Normal library builds contain no instrumentation. Some intervals exceed four PPU frames, so these emulator checks do not guarantee slowdown-free operation or hardware performance.
+
+<!-- wire3d-feedback:end -->
