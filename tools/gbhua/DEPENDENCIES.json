@@ -1,0 +1,273 @@
+{
+  "target": "x86_64-pc-windows-msvc",
+  "package": "gbhua",
+  "scope": "Resolved normal/build dependency closure; excludes dev-only edges. Not a legal opinion.",
+  "packages": [
+    {
+      "name": "adler2",
+      "version": "2.0.1",
+      "license": "0BSD OR MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/adler2-2.0.1/LICENSE-0BSD",
+        "licenses/dependencies/adler2-2.0.1/LICENSE-APACHE",
+        "licenses/dependencies/adler2-2.0.1/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "autocfg",
+      "version": "1.5.1",
+      "license": "Apache-2.0 OR MIT",
+      "notices": [
+        "licenses/dependencies/autocfg-1.5.1/LICENSE-APACHE",
+        "licenses/dependencies/autocfg-1.5.1/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "bitflags",
+      "version": "2.13.1",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/bitflags-2.13.1/LICENSE-APACHE",
+        "licenses/dependencies/bitflags-2.13.1/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "bytemuck",
+      "version": "1.25.2",
+      "license": "Zlib OR Apache-2.0 OR MIT",
+      "notices": [
+        "licenses/dependencies/bytemuck-1.25.2/LICENSE-APACHE",
+        "licenses/dependencies/bytemuck-1.25.2/LICENSE-MIT",
+        "licenses/dependencies/bytemuck-1.25.2/LICENSE-ZLIB"
+      ]
+    },
+    {
+      "name": "byteorder-lite",
+      "version": "0.1.0",
+      "license": "Unlicense OR MIT",
+      "notices": [
+        "licenses/dependencies/byteorder-lite-0.1.0/LICENSE-MIT",
+        "licenses/dependencies/byteorder-lite-0.1.0/UNLICENSE"
+      ]
+    },
+    {
+      "name": "cfg-if",
+      "version": "1.0.4",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/cfg-if-1.0.4/LICENSE-APACHE",
+        "licenses/dependencies/cfg-if-1.0.4/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "crc32fast",
+      "version": "1.5.0",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/crc32fast-1.5.0/LICENSE-APACHE",
+        "licenses/dependencies/crc32fast-1.5.0/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "fdeflate",
+      "version": "0.3.7",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/fdeflate-0.3.7/LICENSE-APACHE",
+        "licenses/dependencies/fdeflate-0.3.7/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "flate2",
+      "version": "1.1.9",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/flate2-1.1.9/LICENSE-APACHE",
+        "licenses/dependencies/flate2-1.1.9/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "image",
+      "version": "0.25.10",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/image-0.25.10/LICENSE-APACHE",
+        "licenses/dependencies/image-0.25.10/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "itoa",
+      "version": "1.0.18",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/itoa-1.0.18/LICENSE-APACHE",
+        "licenses/dependencies/itoa-1.0.18/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "memchr",
+      "version": "2.8.3",
+      "license": "Unlicense OR MIT",
+      "notices": [
+        "licenses/dependencies/memchr-2.8.3/COPYING",
+        "licenses/dependencies/memchr-2.8.3/LICENSE-MIT",
+        "licenses/dependencies/memchr-2.8.3/UNLICENSE"
+      ]
+    },
+    {
+      "name": "miniz_oxide",
+      "version": "0.8.9",
+      "license": "MIT OR Zlib OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/miniz_oxide-0.8.9/LICENSE",
+        "licenses/dependencies/miniz_oxide-0.8.9/LICENSE-APACHE.md",
+        "licenses/dependencies/miniz_oxide-0.8.9/LICENSE-MIT.md",
+        "licenses/dependencies/miniz_oxide-0.8.9/LICENSE-ZLIB.md"
+      ]
+    },
+    {
+      "name": "moxcms",
+      "version": "0.8.1",
+      "license": "BSD-3-Clause OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/moxcms-0.8.1/LICENSE-APACHE.md",
+        "licenses/dependencies/moxcms-0.8.1/LICENSE.md"
+      ]
+    },
+    {
+      "name": "num-traits",
+      "version": "0.2.19",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/num-traits-0.2.19/LICENSE-APACHE",
+        "licenses/dependencies/num-traits-0.2.19/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "png",
+      "version": "0.18.1",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/png-0.18.1/LICENSE-APACHE",
+        "licenses/dependencies/png-0.18.1/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "proc-macro2",
+      "version": "1.0.107",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/proc-macro2-1.0.107/LICENSE-APACHE",
+        "licenses/dependencies/proc-macro2-1.0.107/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "pxfm",
+      "version": "0.1.29",
+      "license": "BSD-3-Clause OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/pxfm-0.1.29/LICENSE-APACHE.md",
+        "licenses/dependencies/pxfm-0.1.29/LICENSE.md"
+      ]
+    },
+    {
+      "name": "quote",
+      "version": "1.0.47",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/quote-1.0.47/LICENSE-APACHE",
+        "licenses/dependencies/quote-1.0.47/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "serde",
+      "version": "1.0.229",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/serde-1.0.229/LICENSE-APACHE",
+        "licenses/dependencies/serde-1.0.229/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "serde_core",
+      "version": "1.0.229",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/serde_core-1.0.229/LICENSE-APACHE",
+        "licenses/dependencies/serde_core-1.0.229/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "serde_derive",
+      "version": "1.0.229",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/serde_derive-1.0.229/LICENSE-APACHE",
+        "licenses/dependencies/serde_derive-1.0.229/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "serde_json",
+      "version": "1.0.151",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/serde_json-1.0.151/LICENSE-APACHE",
+        "licenses/dependencies/serde_json-1.0.151/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "simd-adler32",
+      "version": "0.3.10",
+      "license": "MIT",
+      "notices": [
+        "licenses/dependencies/simd-adler32-0.3.10/LICENSE.md"
+      ]
+    },
+    {
+      "name": "syn",
+      "version": "3.0.3",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/syn-3.0.3/LICENSE-APACHE",
+        "licenses/dependencies/syn-3.0.3/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "thiserror",
+      "version": "2.0.19",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/thiserror-2.0.19/LICENSE-APACHE",
+        "licenses/dependencies/thiserror-2.0.19/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "thiserror-impl",
+      "version": "2.0.19",
+      "license": "MIT OR Apache-2.0",
+      "notices": [
+        "licenses/dependencies/thiserror-impl-2.0.19/LICENSE-APACHE",
+        "licenses/dependencies/thiserror-impl-2.0.19/LICENSE-MIT"
+      ]
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.24",
+      "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
+      "notices": [
+        "licenses/dependencies/unicode-ident-1.0.24/LICENSE-APACHE",
+        "licenses/dependencies/unicode-ident-1.0.24/LICENSE-MIT",
+        "licenses/dependencies/unicode-ident-1.0.24/LICENSE-UNICODE"
+      ]
+    },
+    {
+      "name": "zmij",
+      "version": "1.0.23",
+      "license": "MIT",
+      "notices": [
+        "licenses/dependencies/zmij-1.0.23/LICENSE-MIT"
+      ]
+    }
+  ],
+  "missing_notices": []
+}

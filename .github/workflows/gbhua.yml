@@ -1,0 +1,36 @@
+name: GBHUA CLI
+on:
+  push:
+    paths:
+      - 'tools/gbhua/**'
+      - '.github/workflows/gbhua.yml'
+  pull_request:
+    paths:
+      - 'tools/gbhua/**'
+      - '.github/workflows/gbhua.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  standalone:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: tools/gbhua
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: |
+          rustup toolchain install 1.93.1 --profile minimal
+          rustup default 1.93.1
+      - name: Test independent CLI and image round trips
+        run: cargo test --locked
+      - name: Build release CLI
+        run: cargo build --release --locked
+      - name: CLI help
+        run: cargo run --release --locked -- --help

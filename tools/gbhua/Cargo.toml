@@ -1,0 +1,28 @@
+[workspace]
+resolver = "2"
+
+[package]
+name = "gbhua"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.92"
+license = "MIT"
+authors = ["DAISUKE OBA"]
+description = "GBHUA: headless Game Boy tile and map asset conversion"
+default-run = "gbhua"
+
+[lib]
+name = "gbhua_lib"
+
+[[bin]]
+name = "gbhua"
+path = "src/bin/gbhua.rs"
+
+[dependencies]
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(feature, values("gui", "python"))'] }

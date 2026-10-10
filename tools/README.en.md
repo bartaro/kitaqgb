@@ -2,7 +2,16 @@
 
 [en](README.en.md) · [ja](README.ja.md) · [ko](README.ko.md) · [zh-CN](README.zh-CN.md) · [zh-TW](README.zh-TW.md) · [fr](README.fr.md) · [es](README.es.md) · [de](README.de.md)
 
-All helper executables use Rust. Running them requires neither .NET nor Python/Pillow. Build all executables with `cargo build --locked --release`; on Windows append `.exe` to each command.
+The ZX0/VBlank helper executables use Rust. Running them requires neither .NET nor Python/Pillow. Build them with `cargo build --locked --release`; on Windows append `.exe` to each command.
+
+## GBHUA
+
+[GBHUA CLI](gbhua/) converts PNG artwork into GB/DMG and CGB tiles, palettes and maps. It supports `.gbh`, GBTD/GBTB and GBMB exchange, plus C and 2bpp export. Author: DAISUKE OBA. Original code: MIT. No GUI, GPU or Python is required.
+
+[English manual](gbhua/README.en.md) / [manuals in nine languages](gbhua/README.md).
+Build this independent package from the repository root with `cargo build --manifest-path tools/gbhua/Cargo.toml --locked --release`.
+
+## ZX0 / VBlank
 
 ```text
 kitaqgb-zx0 input.bin output.zx0

@@ -2,7 +2,16 @@
 
 [en](README.en.md) · [ja](README.ja.md) · [ko](README.ko.md) · [zh-CN](README.zh-CN.md) · [zh-TW](README.zh-TW.md) · [fr](README.fr.md) · [es](README.es.md) · [de](README.de.md)
 
-すべての補助実行ファイルはRust実装です。実行時に.NET・Python・Pillowは不要です。`cargo build --locked --release`で全実行ファイルをビルドします。Windowsでは各コマンド名に`.exe`を付けます。
+ZX0/VBlank補助実行ファイルはRust実装です。実行時に.NET・Python・Pillowは不要です。`cargo build --locked --release`でビルドします。Windowsでは各コマンド名に`.exe`を付けます。
+
+## GBHUA
+
+[GBHUA CLI](gbhua/) はPNGからGB/DMG・CGB用タイル、パレット、マップを作成する独立ツールです。`.gbh`・GBTD/GBTB・GBMBの入出力と、C・2bppへの書き出しに対応します。作者: DAISUKE OBA。独自コード: MIT。GUI・GPU・Pythonは不要です。
+
+[日本語説明書](gbhua/README.ja.md) / [9言語の説明書](gbhua/README.md)。
+リポジトリのルートから `cargo build --manifest-path tools/gbhua/Cargo.toml --locked --release` で別途ビルドします。
+
+## ZX0 / VBlank
 
 ```text
 kitaqgb-zx0 input.bin output.zx0
