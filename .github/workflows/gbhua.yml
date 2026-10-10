@@ -34,3 +34,46 @@ jobs:
         run: cargo build --release --locked
       - name: CLI help
         run: cargo run --release --locked -- --help
+  macos:
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+            package: macos-arm64
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            package: macos-x86_64
+    runs-on: ${{ matrix.os }}
+    env:
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+    defaults:
+      run:
+        working-directory: tools/gbhua
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native toolchain
+        run: |
+          rustup toolchain install 1.93.1 --profile minimal
+          rustup default 1.93.1
+          rustc --version --verbose
+      - name: Test release CLI on native macOS
+        run: cargo test --release --locked --target ${{ matrix.target }}
+      - name: Build release CLI
+        run: cargo build --release --locked --target ${{ matrix.target }}
+      - name: Package and execute the distributed binary
+        run: >-
+          python3 scripts/package_macos.py
+          --binary target/${{ matrix.target }}/release/gbhua
+          --target ${{ matrix.target }}
+          --source-commit ${{ github.sha }}
+          --out dist
+      - name: Save Mac executable, manuals and notices
+        uses: actions/upload-artifact@v4
+        with:
+          name: gbhua-${{ matrix.package }}
+          retention-days: 30
+          if-no-files-found: error
+          path: tools/gbhua/dist/*

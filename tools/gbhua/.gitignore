@@ -1,3 +1,4 @@
 /target/
+/dist/
 *.pyd
 __pycache__/

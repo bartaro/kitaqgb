@@ -14,6 +14,13 @@ cargo build --release --locked
 
 Windows: `target\release\gbhua.exe`. Rust >= 1.92.
 
+## macOS執行檔
+
+Apple Silicon和Intel Mac的CLI版本：[下載與啟動說明](MACOS.md)。
+解壓縮對應檔案，在終端機進入解壓縮後的資料夾，執行`./gbhua --help`。
+下方範例中的`./target/release/gbhua`請改為`./gbhua`。無須安裝Rust或Python。
+最低系統建置設定為macOS 11.0，執行測試使用macOS 15。未進行Apple Developer ID簽署或公證。
+
 ## 操作流程
 
 依序匯入PNG、查看精簡JSON報告、驗證、預覽、匯出。成功時輸出一個JSON物件。向AI提供檔案路徑與報告，不必貼上完整專案，可減少權杖用量。

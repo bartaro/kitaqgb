@@ -14,6 +14,13 @@ cargo build --release --locked
 
 Windows: `target\release\gbhua.exe`. Rust >= 1.92.
 
+## Ejecutables para macOS
+
+CLI para Apple Silicon e Intel: [descargas e inicio](MACOS.md).
+Extraiga el archivo adecuado, abra Terminal en esa carpeta y ejecute `./gbhua --help`.
+En los ejemplos use `./gbhua` en lugar de `./target/release/gbhua`. No necesita Rust ni Python.
+Objetivo mínimo de compilación: macOS 11.0; probado en macOS 15. Sin firma Apple Developer ID ni notarización.
+
 ## Flujo de trabajo
 
 Importe el PNG, consulte el informe JSON compacto, valide, previsualice y exporte. Cada comando correcto emite un objeto JSON. Para reducir tokens, dé a la IA la ruta y el informe, no el proyecto completo.

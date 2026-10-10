@@ -7,3 +7,7 @@ Game Boy tile and map CLI. Author: DAISUKE OBA. MIT.
 Start with the manual for your language. The CLI shares the local GUI and Python conversion core, without requiring a display server or GPU.
 
 Build: `cargo build --release --locked`. Run: `target/release/gbhua --help` (Windows: `target\release\gbhua.exe`).
+
+Prebuilt macOS CLI: [Apple Silicon / Intel downloads and instructions](MACOS.md).
+Includes the executable, multilingual manuals and dependency licenses. No Rust or
+Python installation is needed. These are CLI executables, not the GUI application.

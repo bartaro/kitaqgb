@@ -14,6 +14,13 @@ cargo build --release --locked
 
 Windows: `target\release\gbhua.exe`. Rust >= 1.92.
 
+## macOS 실행 파일
+
+Apple Silicon 및 Intel Mac용 CLI: [다운로드 및 실행 안내](MACOS.md).
+해당 압축 파일을 풀고 터미널에서 그 폴더로 이동하여 `./gbhua --help`를 실행합니다.
+아래 예제의 `./target/release/gbhua` 대신 `./gbhua`를 사용합니다. Rust와 Python 설치는 필요 없습니다.
+최소 OS 빌드 설정은 macOS 11.0이며 macOS 15에서 테스트합니다. Apple Developer ID 서명 및 공증은 없습니다.
+
 ## 작업 순서
 
 PNG 가져오기, JSON 보고서 확인, 검증, 미리 보기, 내보내기 순서로 사용합니다. 성공 시 JSON 객체 하나를 출력합니다. AI에는 프로젝트 전체 대신 파일 경로와 짧은 보고서를 전달하십시오.
