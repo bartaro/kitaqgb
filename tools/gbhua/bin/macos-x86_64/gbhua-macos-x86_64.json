@@ -1,0 +1,42 @@
+{
+  "application": "GBHUA CLI",
+  "target": "x86_64-apple-darwin",
+  "source_commit": "f6408a3df350b693f199f165674a38fadc89bc08",
+  "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)",
+  "built_on": {
+    "macos": "15.7.9",
+    "architecture": "x86_64"
+  },
+  "deployment_target": "11.0",
+  "developer_id_signed": false,
+  "notarized": false,
+  "binary_sha256": "99ad1f48d5c1cc648ddd1dcd0be333e83340c7d2cac92c657079bc3483f0ba09",
+  "binary_description": "Mach-O 64-bit executable x86_64",
+  "load_commands": "/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/gbhua-package-et2cqqxm/gbhua-macos-x86_64/gbhua:\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 11.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5",
+  "native_smoke_commands": [
+    "--help",
+    "import-image input.png --out dmg.gbh --mode dmg",
+    "inspect dmg.gbh",
+    "validate dmg.gbh",
+    "preview dmg.gbh --out dmg.png --mode dmg",
+    "export dmg.gbh --out dmg.c",
+    "export dmg.gbh --out dmg.2bpp",
+    "export dmg.gbh --out dmg.gbtb",
+    "export dmg.gbh --out dmg.gbmb",
+    "validate dmg.gbtb",
+    "validate dmg.gbmb",
+    "import-image input.png --out cgb.gbh --mode cgb",
+    "inspect cgb.gbh",
+    "validate cgb.gbh",
+    "preview cgb.gbh --out cgb.png --mode cgb",
+    "export cgb.gbh --out cgb.c",
+    "export cgb.gbh --out cgb.2bpp",
+    "export cgb.gbh --out cgb.gbtb",
+    "export cgb.gbh --out cgb.gbmb",
+    "validate cgb.gbtb",
+    "validate cgb.gbmb"
+  ],
+  "archive": "gbhua-macos-x86_64.tar.gz",
+  "archive_sha256": "28d75acec67fbe1856d5888f333149a418024d826d3f27a24470cf2afe7d2a0f",
+  "archive_bytes": 659529
+}

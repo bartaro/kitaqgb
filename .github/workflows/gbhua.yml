@@ -3,10 +3,12 @@ on:
   push:
     paths:
       - 'tools/gbhua/**'
+      - '!tools/gbhua/bin/**'
       - '.github/workflows/gbhua.yml'
   pull_request:
     paths:
       - 'tools/gbhua/**'
+      - '!tools/gbhua/bin/**'
       - '.github/workflows/gbhua.yml'
   workflow_dispatch:
 permissions:
