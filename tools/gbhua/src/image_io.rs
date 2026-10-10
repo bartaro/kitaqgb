@@ -167,6 +167,102 @@ fn tile_palette(pixels: &[[u8; 3]]) -> [[u8; 3]; 4] {
     colors.try_into().expect("four colors")
 }
 
+struct PaletteCandidate {
+    palette: [[u8; 3]; 4],
+    tile_count: usize,
+    colors: Vec<([u8; 3], u32)>,
+}
+
+impl PaletteCandidate {
+    fn error(&self, palette: &[[u8; 3]; 4]) -> u64 {
+        self.colors
+            .iter()
+            .map(|(color, count)| nearest(*color, palette).1 * u64::from(*count))
+            .sum()
+    }
+}
+
+fn automatic_palettes(tiles: &[Vec<[u8; 3]>], warnings: &mut Vec<String>) -> Vec<[[u8; 3]; 4]> {
+    let mut groups = BTreeMap::<[[u8; 3]; 4], (usize, BTreeMap<[u8; 3], u32>)>::new();
+    for pixels in tiles {
+        let (count, colors) = groups.entry(tile_palette(pixels)).or_default();
+        *count += 1;
+        for color in pixels {
+            *colors.entry(*color).or_default() += 1;
+        }
+    }
+    let mut candidates = groups
+        .into_iter()
+        .map(|(palette, (tile_count, colors))| PaletteCandidate {
+            palette,
+            tile_count,
+            colors: colors.into_iter().collect(),
+        })
+        .collect::<Vec<_>>();
+    candidates.sort_by_key(|c| (std::cmp::Reverse(c.tile_count), c.palette));
+    let baseline = candidates
+        .iter()
+        .take(8)
+        .map(|c| c.palette)
+        .collect::<Vec<_>>();
+    if candidates.len() <= 8 {
+        return baseline;
+    }
+    warnings.push(format!(
+        "{} candidate palettes reduced to 8; inspect the preview.",
+        candidates.len()
+    ));
+
+    // Give scarce palette slots to colors not represented yet, including rare
+    // highlights/outlines. Histogram weights retain the importance of large areas.
+    let intrinsic = candidates
+        .iter()
+        .map(|c| c.error(&c.palette))
+        .collect::<Vec<_>>();
+    let mut errors = candidates
+        .iter()
+        .map(|c| c.error(&candidates[0].palette))
+        .collect::<Vec<_>>();
+    let mut selected = vec![0];
+    while selected.len() < 8 {
+        let next = (0..candidates.len())
+            .filter(|i| !selected.contains(i))
+            .max_by_key(|&i| (errors[i].saturating_sub(intrinsic[i]), std::cmp::Reverse(i)))
+            .expect("more than eight candidates");
+        selected.push(next);
+        for (candidate, error) in candidates.iter().zip(&mut errors) {
+            *error = (*error).min(candidate.error(&candidates[next].palette));
+        }
+    }
+    let proposed = selected
+        .iter()
+        .map(|&i| candidates[i].palette)
+        .collect::<Vec<_>>();
+    let image_error = |palettes: &Vec<[[u8; 3]; 4]>| {
+        tiles
+            .iter()
+            .map(|pixels| {
+                palettes
+                    .iter()
+                    .map(|palette| {
+                        pixels
+                            .iter()
+                            .map(|color| nearest(*color, palette).1)
+                            .sum::<u64>()
+                    })
+                    .min()
+                    .expect("nonempty palettes")
+            })
+            .sum::<u64>()
+    };
+    // Compare real per-tile assignments so the new selection cannot increase MSE.
+    if image_error(&proposed) <= image_error(&baseline) {
+        proposed
+    } else {
+        baseline
+    }
+}
+
 pub fn import_png(
     path: impl AsRef<Path>,
     options: &ImportOptions,
@@ -228,25 +324,7 @@ pub fn import_rgba(
     }
     let palettes = match options.mode {
         ImageMode::Dmg => vec![[[255; 3], [170; 3], [85; 3], [0; 3]]],
-        ImageMode::Cgb => {
-            let mut counts = BTreeMap::new();
-            for pixels in &tiles_rgb {
-                *counts.entry(tile_palette(pixels)).or_insert(0usize) += 1;
-            }
-            let mut candidates = counts.into_iter().collect::<Vec<_>>();
-            candidates.sort_by_key(|(palette, count)| (std::cmp::Reverse(*count), *palette));
-            if candidates.len() > 8 {
-                warnings.push(format!(
-                    "{} candidate palettes reduced to 8; inspect the preview.",
-                    candidates.len()
-                ));
-            }
-            candidates
-                .into_iter()
-                .take(8)
-                .map(|entry| entry.0)
-                .collect()
-        }
+        ImageMode::Cgb => automatic_palettes(&tiles_rgb, &mut warnings),
     };
     let mut project = Project::new((width / 8) as u8, (height / 8) as u8, 1)?;
     project.name = name.to_string();
@@ -434,6 +512,57 @@ pub fn preview_png_bytes(project: &Project, mode: ImageMode, scale: u32) -> Stud
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn metallic_fixture(inverted: bool) -> RgbaImage {
+        RgbaImage::from_fn(64, 104, |x, y| {
+            let tile = (y / 8) * 8 + x / 8;
+            let shade = (x % 4) as usize;
+            let color = if tile == 96 {
+                [
+                    [255, 255, 255],
+                    [214, 230, 247],
+                    [115, 165, 214],
+                    [8, 16, 33],
+                ][shade]
+            } else {
+                let group = if tile < 96 { tile / 12 } else { 0 };
+                [
+                    group as u8 * 8 + shade as u8 * 8,
+                    8 + shade as u8 * 8,
+                    16 + shade as u8 * 8,
+                ]
+            };
+            let color = color.map(|v| if inverted { 255 - v } else { v });
+            image::Rgba([color[0], color[1], color[2], 255])
+        })
+    }
+
+    #[test]
+    fn cgb_palette_budget_preserves_rare_highlights_and_dark_outlines() {
+        for inverted in [false, true] {
+            let image = metallic_fixture(inverted);
+            let (project, report) =
+                import_rgba(&image, "metal", &ImportOptions::default()).unwrap();
+            let rendered = project.render_map_art_rgba();
+            let offset = (96 * 64) * 4;
+            let expected = image.get_pixel(0, 96).0;
+            let actual = &rendered[offset..offset + 3];
+            assert!(
+                actual.iter().zip(expected).all(|(&a, b)| a.abs_diff(b) <= 4),
+                "rare extreme was lost: inverted={inverted}, expected={expected:?}, actual={actual:?}, MSE={}",
+                report.mean_squared_error
+            );
+            assert_eq!(report.palette_count, 8);
+            assert!(
+                report.mean_squared_error < 100.0,
+                "{}",
+                report.mean_squared_error
+            );
+            assert!(validate(&project).valid);
+            let (again, _) = import_rgba(&image, "metal", &ImportOptions::default()).unwrap();
+            assert_eq!(project, again);
+        }
+    }
 
     #[test]
     fn dmg_deduplicates_and_encodes_two_bitplanes() {
