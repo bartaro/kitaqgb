@@ -1,7 +1,7 @@
 {
   "application": "GBHUA CLI",
   "target": "x86_64-apple-darwin",
-  "source_commit": "f6408a3df350b693f199f165674a38fadc89bc08",
+  "source_commit": "505aa135e8205988fb4265b17b89d263aad46c56",
   "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)",
   "built_on": {
     "macos": "15.7.9",
@@ -10,9 +10,9 @@
   "deployment_target": "11.0",
   "developer_id_signed": false,
   "notarized": false,
-  "binary_sha256": "99ad1f48d5c1cc648ddd1dcd0be333e83340c7d2cac92c657079bc3483f0ba09",
+  "binary_sha256": "3a0ff87e41d5bafc7e6e1e4a2e377ce42fbed77e394baaa5107f32e0bcaeae2f",
   "binary_description": "Mach-O 64-bit executable x86_64",
-  "load_commands": "/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/gbhua-package-et2cqqxm/gbhua-macos-x86_64/gbhua:\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 11.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5",
+  "load_commands": "/var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/gbhua-package-7ibxq367/gbhua-macos-x86_64/gbhua:\nLoad command 10\n      cmd LC_BUILD_VERSION\n  cmdsize 32\n platform MACOS\n    minos 11.0\n      sdk 15.5\n   ntools 1\n     tool LD\n  version 1167.5",
   "native_smoke_commands": [
     "--help",
     "import-image input.png --out dmg.gbh --mode dmg",
@@ -37,6 +37,6 @@
     "validate cgb.gbmb"
   ],
   "archive": "gbhua-macos-x86_64.tar.gz",
-  "archive_sha256": "28d75acec67fbe1856d5888f333149a418024d826d3f27a24470cf2afe7d2a0f",
-  "archive_bytes": 659529
+  "archive_sha256": "66c67a431cd91e54fe761139413a6c697b143aa4187242bcb4b8102b14ff1a7f",
+  "archive_bytes": 667165
 }
