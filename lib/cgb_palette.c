@@ -19,7 +19,8 @@ void cgb__write_color_bg_raw(u8 color_slot, u16 rgb15)
 
     if (__cgb_is_cgb() == 0) return;
 
-    byte_index = (u8)((color_slot & 31) << 1);
+    // Advance after the low byte so the high byte reaches the next address.
+    byte_index = (u8)(((color_slot & 31) << 1) | 128);
     __cgb_safe_set_bcps(byte_index);
     __cgb_safe_set_bcpd((u8)rgb15);
     __cgb_safe_set_bcpd((u8)(rgb15 >> 8));
@@ -31,7 +32,8 @@ void cgb__write_color_obj_raw(u8 color_slot, u16 rgb15)
 
     if (__cgb_is_cgb() == 0) return;
 
-    byte_index = (u8)((color_slot & 31) << 1);
+    // Advance after the low byte so the high byte reaches the next address.
+    byte_index = (u8)(((color_slot & 31) << 1) | 128);
     __cgb_safe_set_ocps(byte_index);
     __cgb_safe_set_ocpd((u8)rgb15);
     __cgb_safe_set_ocpd((u8)(rgb15 >> 8));
