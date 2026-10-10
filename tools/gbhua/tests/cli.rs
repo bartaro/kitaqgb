@@ -3,6 +3,7 @@ use std::{
     fs,
     path::PathBuf,
     process::{Command, Output},
+    sync::atomic::{AtomicUsize, Ordering},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -10,12 +11,17 @@ struct Fixture(PathBuf);
 
 impl Fixture {
     fn new() -> Self {
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let sequence = NEXT.fetch_add(1, Ordering::Relaxed);
         let suffix = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_nanos();
-        let dir = std::env::temp_dir().join(format!("gbhua-cli-{}-{suffix}", std::process::id()));
-        fs::create_dir_all(&dir).unwrap();
+        let dir = std::env::temp_dir().join(format!(
+            "gbhua-cli-{}-{suffix}-{sequence}",
+            std::process::id()
+        ));
+        fs::create_dir(&dir).unwrap();
         Self(dir)
     }
     fn run(&self, args: &[&str]) -> Output {
