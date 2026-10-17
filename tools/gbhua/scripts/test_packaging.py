@@ -1,13 +1,28 @@
 import tempfile
 import hashlib
 import json
+import os
+import zipfile
 import unittest
 from pathlib import Path
 
-from package_gui import LANGUAGES, license_files
+from package_gui import LANGUAGES, license_files, zip_bundle
 
 
 class PackagingTests(unittest.TestCase):
+    def test_zip_retains_epoch_dated_registry_notices(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            bundle = root / "gbhua"
+            bundle.mkdir()
+            notice = bundle / "LICENSE"
+            notice.write_text("upstream notice", encoding="utf-8")
+            os.utime(notice, (1, 1))
+            zip_bundle(bundle, root / "gui.zip")
+            with zipfile.ZipFile(root / "gui.zip") as archive:
+                self.assertEqual(archive.read("gbhua/LICENSE"), b"upstream notice")
+                self.assertEqual(archive.getinfo("gbhua/LICENSE").date_time[0], 1980)
+
     def test_license_supplements_match_their_source_hashes(self):
         root = Path(__file__).resolve().parents[1] / "licenses/overrides"
         records = json.loads((root / "SOURCES.json").read_text(encoding="utf-8-sig"))["files"]

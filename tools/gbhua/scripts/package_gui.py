@@ -36,6 +36,14 @@ def license_files(source):
             p.name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE", "UNLICENSE", "COPYRIGHT"))]
 
 
+def zip_bundle(bundle, archive):
+    # Registry archives may use the Unix epoch, before ZIP's 1980 lower bound.
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED, strict_timestamps=False) as stream:
+        for path in sorted(bundle.rglob("*")):
+            if path.is_file():
+                stream.write(path, path.relative_to(bundle.parent).as_posix())
+
+
 def collect_notices(root, bundle, target):
     metadata = json.loads(command("cargo", "metadata", "--locked", "--format-version", "1",
                                   "--features", "gui", "--filter-platform", target, cwd=root))
@@ -166,10 +174,7 @@ def main():
             "files": {p.relative_to(bundle).as_posix(): sha256(p)
                       for p in sorted(bundle.rglob("*")) if p.is_file()}}
         if system == "Windows":
-            with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as stream:
-                for path in sorted(bundle.rglob("*")):
-                    if path.is_file():
-                        stream.write(path, path.relative_to(temp).as_posix())
+            zip_bundle(bundle, archive)
         else:
             with tarfile.open(archive, "w:gz") as stream:
                 stream.add(bundle, arcname=name)
