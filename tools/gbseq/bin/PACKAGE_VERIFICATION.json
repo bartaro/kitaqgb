@@ -1,0 +1,102 @@
+{
+  "passed": true,
+  "source_commit": "084793fc8851a3db2356267ef933cbaecfb9ae10",
+  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/39060920212",
+  "packages": [
+    {
+      "platform": "macos-x86_64",
+      "archive": "gbseq-macos-x86_64.tar.gz",
+      "sha256": "ac84a88233e75a4abb6f44992f4613e8fa77fcbe8d60a99865f82fe38b03870a",
+      "file_count": 559,
+      "architectures": {
+        "gbseq": "Mach-O-x86_64",
+        "gbseq-cli": "Mach-O-x86_64",
+        "libgbseq.dylib": "Mach-O-x86_64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true
+    },
+    {
+      "platform": "linux-x86_64",
+      "archive": "gbseq-linux-x86_64.tar.gz",
+      "sha256": "4858fbf7f091c99224f450f53f12ae0e14469c4295b5096a68fbc15ddc779fea",
+      "file_count": 559,
+      "architectures": {
+        "gbseq": "ELF-x86_64",
+        "gbseq-cli": "ELF-x86_64",
+        "libgbseq.so": "ELF-x86_64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true
+    },
+    {
+      "platform": "windows-x86_64",
+      "archive": "gbseq-windows-x86_64.zip",
+      "sha256": "c74eeb5d9f27b84ae7d3f3980cd1de5c8c565e3ca2868faa7ee66d4455a8bf81",
+      "file_count": 559,
+      "architectures": {
+        "gbseq.exe": "PE-x86_64",
+        "gbseq-cli.exe": "PE-x86_64",
+        "gbseq.dll": "PE-x86_64"
+      },
+      "executable_modes": null,
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true
+    },
+    {
+      "platform": "macos-arm64",
+      "archive": "gbseq-macos-arm64.tar.gz",
+      "sha256": "966c42962b80a95416a5f6b6e1218fcf2ffc3f687ef233d995f21af2034d8e01",
+      "file_count": 559,
+      "architectures": {
+        "gbseq": "Mach-O-arm64",
+        "gbseq-cli": "Mach-O-arm64",
+        "libgbseq.dylib": "Mach-O-arm64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true
+    }
+  ],
+  "physical_hardware_tested": false,
+  "audio_device_output_tested": false
+}

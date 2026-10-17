@@ -12,7 +12,7 @@ requirements and unsigned macOS application approval.
 | macOS Apple Silicon | [tar.gz](gbseq-macos-arm64.tar.gz) |
 | macOS Intel | [tar.gz](gbseq-macos-x86_64.tar.gz) |
 
-[SHA-256 checksums](SHA256SUMS) · [Build and verification record](BUILD_VERIFICATION.json)
+[SHA-256 checksums](SHA256SUMS) · [Build and verification record](BUILD_VERIFICATION.json) · [Archive contents and CPU verification](PACKAGE_VERIFICATION.json)
 
 Run `gbseq.exe` or `./gbseq` for the GUI; use `gbseq-cli --help` for the CLI.
 The native library is optional. Binaries are built from the source commit in

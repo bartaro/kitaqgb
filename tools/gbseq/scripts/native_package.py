@@ -12,7 +12,12 @@ for name in ['LICENSE','THIRD_PARTY_NOTICES.md','LICENSE_AUDIT.json']:
     shutil.copy2(ROOT/name,dest/name)
 for name in ['licenses','assets','docs','python']:
     shutil.copytree(ROOT/name,dest/name,dirs_exist_ok=True,ignore=shutil.ignore_patterns('__pycache__'))
-for file in ROOT.glob('README*.md'):shutil.copy2(file,dest/file.name)
+for file in ROOT.glob('README*.md'):
+    # Source-relative download links must also work in an extracted package.
+    text=file.read_text(encoding='utf-8')
+    text=text.replace('](bin/)','](https://github.com/bartaro/kitaqgb/tree/main/tools/gbseq/bin)')
+    text=text.replace('](bin/README.md)','](https://github.com/bartaro/kitaqgb/tree/main/tools/gbseq/bin/README.md)')
+    (dest/file.name).write_text(text,encoding='utf-8')
 rustdocs=Path(subprocess.check_output(['rustc','--print','sysroot'],text=True).strip())/'share/doc/rust'
 for file in [rustdocs/'COPYRIGHT-library.html',*(rustdocs/'licenses').rglob('*')]:
     if file.is_file():
