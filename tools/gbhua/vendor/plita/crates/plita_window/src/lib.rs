@@ -1,4 +1,4 @@
-//! Window and event-loop layer for PLITA UI.
+//! Window and event-loop layer for plita UI.
 
 use std::{
     sync::Arc,
@@ -194,7 +194,7 @@ impl AuxiliaryWindowDescriptor {
     }
 }
 
-/// Trait implemented by custom PLITA applications.
+/// Trait implemented by custom plita applications.
 ///
 /// The window layer owns the OS event loop and renderer. A program owns its
 /// domain state, consumes normalized UI events, and emits a `DrawList`.
@@ -329,7 +329,7 @@ impl PlitaProgram for CreativeShell {
         let size = self.memory_window_size();
         vec![AuxiliaryWindowDescriptor::new(
             plita_ui::CREATIVE_MEMORY_WINDOW_ID,
-            "PLITA Memory Editor",
+            "plita Memory Editor",
             size.width.round() as u32,
             size.height.round() as u32,
         )]
@@ -372,7 +372,7 @@ where
     run_program(config, CreativeShell::new)
 }
 
-/// Launch a custom PLITA program in the native window loop.
+/// Launch a custom plita program in the native window loop.
 pub fn run_program<C, F, P>(config: C, factory: F) -> Result<(), WindowError>
 where
     C: Phase0Config,

@@ -1,4 +1,4 @@
-//! GPU renderer foundation for PLITA UI.
+//! GPU renderer foundation for plita UI.
 //!
 //! Phase 1 keeps the Phase 0 winit/wgpu/Vello foundation and adds a small GPU
 //! rectangle renderer for the first creative-app UI shell.

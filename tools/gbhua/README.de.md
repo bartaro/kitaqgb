@@ -1,5 +1,7 @@
 # GBHUA
 
+**[GUI-Handbuch und Downloads](docs/manual.de.md)** | [GUI](GUI.md)
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBHUA wandelt PNG-Dateien in Game-Boy-Kacheln, Paletten und Karten um. Autor: DAISUKE OBA. Eigener Programmcode: MIT.

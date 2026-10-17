@@ -1,5 +1,7 @@
 # GBHUA
 
+**[GUI 설명서 및 다운로드](docs/manual.ko.md)** | [GUI](GUI.md)
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBHUA는 PNG를 Game Boy 타일, 팔레트, 맵으로 변환합니다. 제작자: DAISUKE OBA. 자체 코드는 MIT 라이선스입니다.

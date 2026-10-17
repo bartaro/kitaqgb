@@ -1,5 +1,7 @@
 # GBHUA
 
+**[Manual GUI y descargas](docs/manual.es.md)** | [GUI](GUI.md)
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBHUA convierte PNG en tiles, paletas y mapas para Game Boy. Autor: DAISUKE OBA. Código original: MIT.

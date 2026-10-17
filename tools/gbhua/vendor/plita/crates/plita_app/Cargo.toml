@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Application builder and configuration for PLITA UI."
+description = "Application builder and configuration for plita UI."
 
 [dependencies]
 plita_window.workspace = true

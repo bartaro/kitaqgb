@@ -47,6 +47,8 @@ jobs:
         run: |
           rustup toolchain install 1.93.1 --profile minimal
           rustup default 1.93.1
+      - name: Packaging and translated manual checks
+        run: python -m unittest discover -s scripts -p test_packaging.py
       - name: GUI event, layout, clipboard, save and image tests
         run: cargo test --release --locked -p gbhua --features gui --target ${{ matrix.target }}
       - name: Build native GUI
@@ -54,7 +56,7 @@ jobs:
       - name: Python binding build and round trip
         run: |
           python -m pip install 'maturin>=1.8,<2'
-          python -m maturin build --release --locked --features python --out wheels
+          python -m maturin build --release --locked --features python --target ${{ matrix.target }} --out wheels
           python scripts/test_python.py wheels
       - name: Package application, fonts, nine manuals and native license closure
         run: >-

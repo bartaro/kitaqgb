@@ -1,5 +1,6 @@
 """Test the freshly built wheel using an isolated temporary install."""
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
@@ -19,4 +20,6 @@ with tempfile.TemporaryDirectory(prefix="gbhua-python-") as directory:
     restored = gbhua.Project.from_image(str(Path(directory) / "test.png"), mode="cgb")
     restored.save(str(Path(directory) / "restored.gbh"))
     assert (Path(directory) / "restored.gbh").stat().st_size > 0
-    print(restored.validate_json())
+    report = json.loads(restored.validate_json())
+    assert report["valid"] is True, report
+    print(json.dumps(report))

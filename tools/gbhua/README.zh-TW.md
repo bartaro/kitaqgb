@@ -1,5 +1,7 @@
 # GBHUA
 
+**[GUI說明書與下載](docs/manual.zh-TW.md)** | [GUI](GUI.md)
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBHUA將PNG轉換為Game Boy圖塊、調色盤與地圖。作者：DAISUKE OBA。原創程式碼採用MIT授權。

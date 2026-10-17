@@ -226,7 +226,7 @@ fn offscreen_desktop_benchmark() {
         "draw_commands": list.len(), "frames": times.len(),
         "median_ms": times[times.len()/2], "p95_ms": times[times.len()*95/100],
         "mean_ms": times.iter().sum::<f64>() / times.len() as f64,
-        "method": "production PLITA GPU draw path; offscreen; includes submit and GPU completion; excludes window present and emulation",
+        "method": "production plita GPU draw path; offscreen; includes submit and GPU completion; excludes window present and emulation",
     });
     std::fs::write(
         root.join("gpu.json"),

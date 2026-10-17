@@ -1,10 +1,10 @@
-//! Application configuration and startup builder for PLITA UI.
+//! Application configuration and startup builder for plita UI.
 
 use plita_render::ClearColor;
 use thiserror::Error;
 use tracing_subscriber::{fmt, EnvFilter};
 
-/// Result type used by the public PLITA application API.
+/// Result type used by the public plita application API.
 pub type Result<T> = std::result::Result<T, AppError>;
 
 /// Top-level application error.
@@ -65,7 +65,7 @@ impl plita_window::Phase0Config for AppConfig {
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            title: "PLITA UI v1.0".to_string(),
+            title: "plita UI v1.0".to_string(),
             width: 1280,
             height: 800,
             centered: false,
@@ -77,7 +77,7 @@ impl Default for AppConfig {
     }
 }
 
-/// Entry point type for PLITA applications.
+/// Entry point type for plita applications.
 pub struct App;
 
 impl App {
@@ -87,7 +87,7 @@ impl App {
     }
 }
 
-/// Builder for launching a PLITA application.
+/// Builder for launching a plita application.
 #[derive(Clone, Debug)]
 pub struct AppBuilder {
     config: AppConfig,
@@ -169,7 +169,7 @@ impl AppBuilder {
         .map_err(AppError::from)
     }
 
-    /// Launch a custom PLITA program with the same native window/render loop.
+    /// Launch a custom plita program with the same native window/render loop.
     pub fn run_program<F, P>(self, factory: F) -> Result<()>
     where
         F: FnOnce(plita_ui::Size) -> P + 'static,

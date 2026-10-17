@@ -30,6 +30,12 @@ def sha256(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def license_files(source):
+    return [p for p in source.rglob("*") if p.is_file() and
+            p.suffix.lower() in ("", ".md", ".txt", ".rst", ".html", ".apache", ".mit") and
+            p.name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE", "UNLICENSE", "COPYRIGHT"))]
+
+
 def collect_notices(root, bundle, target):
     metadata = json.loads(command("cargo", "metadata", "--locked", "--format-version", "1",
                                   "--features", "gui", "--filter-platform", target, cwd=root))
@@ -45,17 +51,22 @@ def collect_notices(root, bundle, target):
         pending.extend(d["pkg"] for d in nodes[package_id]["deps"]
                        if any(k["kind"] != "dev" for k in d["dep_kinds"]))
     records = []
+    missing = []
     for package_id in sorted(seen):
         package = packages[package_id]
         if package["source"] is None:
             continue
         source = Path(package["manifest_path"]).parent
-        notices = [p for p in source.rglob("*") if p.is_file() and
-                   p.name.upper().startswith(("LICENSE", "LICENCE", "COPYING", "NOTICE", "UNLICENSE", "COPYRIGHT"))]
+        notices = license_files(source)
         if package.get("license_file"):
             notices.append(source / package["license_file"])
+        if not notices:
+            source = root / "licenses/overrides" / f"{package['name']}-{package['version']}"
+            if source.is_dir():
+                notices = [p for p in source.rglob("*") if p.is_file()]
         if not notices or not package.get("license"):
-            raise RuntimeError(f"Manual license audit required: {package['name']}")
+            missing.append(f"{package['name']}-{package['version']} ({package.get('license')})")
+            continue
         copied = []
         for path in sorted(set(notices)):
             relative = Path("licenses/dependencies") / f"{package['name']}-{package['version']}" / path.relative_to(source)
@@ -63,8 +74,10 @@ def collect_notices(root, bundle, target):
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, destination)
             copied.append(relative.as_posix())
-        records.append({"name": package["name"], "version": package["version"],
+        records.append({"name": package["name"], "version": package["version"], "authors": package["authors"],
                         "license": package["license"], "notices": copied})
+    if missing:
+        raise RuntimeError("Manual license audit required: " + ", ".join(missing))
     (bundle / "GUI-DEPENDENCIES.json").write_text(json.dumps({"target": target,
         "scope": "Resolved GUI normal/build closure; original license texts retained. Not legal advice.",
         "packages": records}, indent=2) + "\n", encoding="utf-8")
@@ -136,6 +149,8 @@ def main():
         shutil.copytree(root / "vendor/plita/licenses", bundle / "licenses/plita")
         shutil.copy2(root / "vendor/plita/LICENSE", bundle / "licenses/plita/LICENSE")
         shutil.copytree(root / "licenses/lucide", bundle / "licenses/lucide")
+        shutil.copy2(root / "licenses/overrides/SOURCES.json", bundle / "licenses/override-sources.json")
+        shutil.copy2(root / "licenses/overrides/README.md", bundle / "licenses/override-notes.md")
         count = collect_notices(root, bundle, args.target)
         rust_docs = Path(command("rustc", "--print", "sysroot")) / "share/doc/rust"
         shutil.copytree(rust_docs / "licenses", bundle / "licenses/rust/licenses")

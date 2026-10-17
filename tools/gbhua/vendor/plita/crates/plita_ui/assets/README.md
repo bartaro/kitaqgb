@@ -1,6 +1,6 @@
 # Shared Lucide Icons
 
-PLITA owns the SVG sources in `lucide/`, their upstream LICENSE, the generated
+plita owns the SVG sources in `lucide/`, their upstream LICENSE, the generated
 `lucide_paths.rs`, and the renderer in `src/icons.rs`. Wire3D CAD consumes this
 shared renderer; no CAD-specific icon files are required at runtime.
 
@@ -19,7 +19,7 @@ draw_lucide_icon(&mut list, Rect::new(12.0, 12.0, 24.0, 24.0),
 and returns false for an unknown name or invalid rectangle. The enclosing
 application owns the button hit area, command, disabled state, and tooltip.
 `lucide_icon_names()` enumerates the 31 bundled names. Curves are flattened once,
-cached, and emitted through the normal PLITA DrawList renderer with round joins.
+cached, and emitted through the normal plita DrawList renderer with round joins.
 The seven desktop additions (step-forward, camera, bug, volume-2, settings,
 maximize and ellipsis) were retrieved from the same upstream on 2026-09-09.
 Repeated icon meshes are cached per thread by name, rectangle and color, with

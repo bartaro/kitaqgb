@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Top-level re-export crate for PLITA UI."
+description = "Top-level re-export crate for plita UI."
 
 [lib]
 crate-type = ["rlib", "cdylib"]

@@ -1,4 +1,4 @@
-//! Basic UI model for PLITA UI Phase 2.
+//! Basic UI model for plita UI Phase 2.
 //!
 //! Phase 2 v3 begins the retained Dock Layout State foundation. It keeps the
 //! lightweight rectangle-rendered shell and v12 floating dock behavior stable,
@@ -8,7 +8,7 @@
 //! Phase 2 v4.0 starts Dock Tab Group hardening. It keeps the v25 live split
 //! ratio behavior stable, then adds retained tab visibility, tab persistence
 //! seed data, restore-all-tab operations, and layout-memory slots that prepare
-//! PLITA for true attach/detach docking.
+//! plita for true attach/detach docking.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -238,7 +238,7 @@ impl Color {
 pub mod icons;
 pub use icons::{draw_lucide_icon, lucide_icon_names};
 
-/// Colored vertex used by mesh-backed PLITA UI drawing commands.
+/// Colored vertex used by mesh-backed plita UI drawing commands.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct ColoredVertex {
     /// Vertex position in UI coordinates.
@@ -680,7 +680,7 @@ impl PanelRadialHighlight {
     }
 }
 
-/// Shared panel surface style for lightweight PLITA tool panels.
+/// Shared panel surface style for lightweight plita tool panels.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct PanelStyle {
     /// Background color at the top edge.
@@ -804,7 +804,7 @@ pub fn draw_box_shadow(list: &mut DrawList, rect: Rect, shadow: BoxShadow) {
     }
 }
 
-/// Draw a shared PLITA panel surface with gradient, edge light, shadow, and border.
+/// Draw a shared plita panel surface with gradient, edge light, shadow, and border.
 pub fn draw_panel(list: &mut DrawList, rect: Rect, style: PanelStyle) {
     if !rect.is_visible() {
         return;
@@ -1138,7 +1138,7 @@ pub struct ScrollbarHit {
     pub part: ScrollbarPart,
 }
 
-/// Visual style for scrollbars drawn by PLITA.
+/// Visual style for scrollbars drawn by plita.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScrollbarStyle {
     /// Thickness of each scrollbar track.
@@ -1329,7 +1329,7 @@ impl ScrollAreaGeometry {
     }
 }
 
-/// Active drag data for a PLITA scroll area.
+/// Active drag data for a plita scroll area.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScrollbarDrag {
     /// Axis being dragged.
@@ -1395,7 +1395,7 @@ impl ScrollAreaState {
         changed
     }
 
-    /// Handle a pointer wheel event using PLITA's normalized wheel deltas.
+    /// Handle a pointer wheel event using plita's normalized wheel deltas.
     pub fn wheel(
         &mut self,
         delta_x: f32,
@@ -2086,7 +2086,7 @@ impl Default for MemoryEditorState {
 }
 
 impl MemoryEditorState {
-    /// Number of bytes shown per row by PLITA's built-in memory editor.
+    /// Number of bytes shown per row by plita's built-in memory editor.
     pub const BYTES_PER_ROW: usize = 8;
     /// Height of the header strip.
     pub const HEADER_HEIGHT: f32 = 42.0;
@@ -4519,7 +4519,7 @@ where
     }
 }
 
-/// Public style tokens shared by custom PLITA apps and built-in widgets.
+/// Public style tokens shared by custom plita apps and built-in widgets.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ThemeTokens {
     /// App background.
@@ -7859,7 +7859,7 @@ impl CreativeShell {
         if ctrl && shortcut_digit == Some(0) {
             // Ctrl+Shift+0 can arrive as `)`, `0`, an unidentified logical key with
             // `PhysicalKey::Code(Digit0)`, or even with an unreliable shift flag on
-            // some layouts.  Ctrl+0 is otherwise unused in PLITA, so we reserve it
+            // some layouts.  Ctrl+0 is otherwise unused in plita, so we reserve it
             // as the robust close-all-floating-panels shortcut.
             self.close_all_floating_docks();
             return UiResponse::redraw();
@@ -8483,7 +8483,7 @@ impl CreativeShell {
             MenuCommand::DetachActiveRight => "DETACH RIGHT TAB",
             MenuCommand::DetachActiveBottom => "DETACH BOTTOM TAB",
             MenuCommand::DockAllFloating => "ATTACH FLOATING",
-            MenuCommand::About => "ABOUT PLITA",
+            MenuCommand::About => "ABOUT plita",
         }
     }
 
@@ -8617,7 +8617,7 @@ impl CreativeShell {
             }
             MenuCommand::About => {
                 self.floating_debug.open = true;
-                self.set_status("MENU ABOUT PLITA UI MIT CLEAN ROOM".to_string());
+                self.set_status("MENU ABOUT plita UI MIT CLEAN ROOM".to_string());
             }
         }
     }
@@ -8786,7 +8786,7 @@ fn draw_menu(list: &mut DrawList, rect: Rect, theme: &Phase1Theme, shell: &Creat
         list,
         rect.right() - 270.0,
         rect.y + 11.0,
-        "PLITA UI PHASE2 V4.0",
+        "plita UI PHASE2 V4.0",
         2.0,
         theme.text_muted,
     );
@@ -10105,10 +10105,10 @@ fn draw_diagnostics_panel(
     }
 }
 
-/// PLITA's bundled default UI font family.
+/// plita's bundled default UI font family.
 pub const DEFAULT_FONT_FAMILY: &str = "Roboto";
 
-/// Return PLITA's default UI font family.
+/// Return plita's default UI font family.
 pub fn default_font_family() -> &'static str {
     DEFAULT_FONT_FAMILY
 }

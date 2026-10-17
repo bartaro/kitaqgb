@@ -1,4 +1,4 @@
-//! PLITA UI top-level crate.
+//! plita UI top-level crate.
 //!
 //! Phase 1 v2 exposes a small application builder, GPU-backed window loop,
 //! retained creative shell, widget tree, and event-routing primitives. Later

@@ -1,5 +1,7 @@
 # GBHUA
 
+**[GUI版の説明書とダウンロード](docs/manual.ja.md)** | [GUI](GUI.md)
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBHUAはPNG画像からGame Boy用のタイル・パレット・マップを作るツールです。作者はDAISUKE OBA、独自コードのライセンスはMITです。

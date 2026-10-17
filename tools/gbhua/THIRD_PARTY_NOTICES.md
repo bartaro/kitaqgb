@@ -8,6 +8,12 @@ GUI binary archives include target-specific `GUI-DEPENDENCIES.json` and the
 original registry license/NOTICE files plus Rust standard-library notices.
 The application MIT license does not replace these third-party terms.
 
+Versioned upstream supplements and their source hashes are in
+`licenses/overrides/SOURCES.json`. For packages that publish only a license
+declaration/link, the standard license text is provided alongside the unchanged
+upstream notice and package metadata. The objc2 upstream Apple SDK discussion
+is retained; no Apple SDK is redistributed. See `licenses/overrides/README.md`.
+
 GBHUA original application code is MIT, Copyright (c) 2026 DAISUKE OBA.
 This does not relicense dependencies, fonts, imported images or game assets.
 

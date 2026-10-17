@@ -1,4 +1,4 @@
-//! Optional PyO3 helpers for PLITA applications.
+//! Optional PyO3 helpers for plita applications.
 //!
 //! Enable the `python` feature on `plita` to reuse these bindings from an
 //! application crate. Application-specific Python modules can import
@@ -21,7 +21,7 @@ pub mod prelude {
     pub use pyo3::{pyclass, pyfunction, pymethods, pymodule, wrap_pyfunction};
 }
 
-/// Convert a PLITA application error into a Python `RuntimeError`.
+/// Convert a plita application error into a Python `RuntimeError`.
 pub fn app_error_to_py_err(error: crate::AppError) -> PyErr {
     PyRuntimeError::new_err(error.to_string())
 }
@@ -31,7 +31,7 @@ pub fn py_bytes<'py>(py: Python<'py>, bytes: &[u8]) -> Bound<'py, PyBytes> {
     PyBytes::new_bound(py, bytes)
 }
 
-/// Run a PLITA app builder and convert errors into Python exceptions.
+/// Run a plita app builder and convert errors into Python exceptions.
 pub fn run_app_builder<F, P>(builder: AppBuilder, factory: F) -> PyResult<()>
 where
     F: FnOnce(Size) -> P + 'static,
@@ -40,7 +40,7 @@ where
     builder.run_program(factory).map_err(app_error_to_py_err)
 }
 
-/// Register PLITA's common Python helper classes on a module.
+/// Register plita's common Python helper classes on a module.
 pub fn add_plita_classes(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<PyPoint>()?;
     module.add_class::<PySize>()?;
@@ -437,7 +437,7 @@ impl PyAppConfig {
 }
 
 impl PyAppConfig {
-    /// Convert into a PLITA app builder.
+    /// Convert into a plita app builder.
     pub fn to_builder(&self) -> AppBuilder {
         AppBuilder::default()
             .title(self.title.clone())
