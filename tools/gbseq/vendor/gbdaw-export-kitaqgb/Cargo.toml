@@ -1,0 +1,11 @@
+[package]
+name = "gbdaw-export-kitaqgb"
+version = "0.2.0"
+edition = "2021"
+license = "MIT"
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gbdaw-model = { path = "../gbdaw-model" }
+gbdaw-engine = { path = "../gbdaw-engine" }

@@ -1,0 +1,10 @@
+[package]
+name = "kokura-core"
+version = "0.2.0"
+edition = "2021"
+license = "MIT"
+[dependencies]
+bitflags = "2"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+bincode = "1"
