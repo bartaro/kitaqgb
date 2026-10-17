@@ -6,6 +6,10 @@ ZX0/VBlank補助実行ファイルはRust実装です。実行時に.NET・Pytho
 
 ## GBHUA
 
+[GUIダウンロード](gbhua/GUI.md) / [GUI日本語説明書](gbhua/docs/manual.ja.md) / [全9言語の説明書](gbhua/README.md)。
+Windows版、Mac Apple Silicon版、Mac Intel版のGUIと、GUI・CLI共通のソース、Python bindingsを公開しています。
+GUIは `cargo run --manifest-path tools/gbhua/Cargo.toml --locked --release --features gui --bin gbhua_gui` で起動できます。
+
 [GBHUA CLI](gbhua/) はPNGからGB/DMG・CGB用タイル、パレット、マップを作成する独立ツールです。`.gbh`・GBTD/GBTB・GBMBの入出力と、C・2bppへの書き出しに対応します。作者: DAISUKE OBA。独自コード: MIT。GUI・GPU・Pythonは不要です。
 
 [日本語説明書](gbhua/README.ja.md) / [9言語の説明書](gbhua/README.md)。

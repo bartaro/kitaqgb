@@ -1,0 +1,21 @@
+[package]
+name = "plita_render"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "GPU renderer foundation for PLITA UI Phase 1."
+
+[dependencies]
+plita_ui.workspace = true
+bytemuck.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+wgpu.workspace = true
+winit.workspace = true
+vello.workspace = true
+
+[dev-dependencies]
+pollster.workspace = true
+serde_json = "1.0"

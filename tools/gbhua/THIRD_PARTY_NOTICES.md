@@ -1,5 +1,13 @@
 # Third-Party Notices
 
+The published GUI includes only the five core crates in `vendor/plita`.
+Their original MIT notice is retained at `vendor/plita/LICENSE`; font licenses
+are under `vendor/plita/licenses/fonts`. Lucide/Feather notices are retained
+in `licenses/lucide/LICENSE` and with their vendored SVG sources.
+GUI binary archives include target-specific `GUI-DEPENDENCIES.json` and the
+original registry license/NOTICE files plus Rust standard-library notices.
+The application MIT license does not replace these third-party terms.
+
 GBHUA original application code is MIT, Copyright (c) 2026 DAISUKE OBA.
 This does not relicense dependencies, fonts, imported images or game assets.
 

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["maturin>=1.8,<2"]
+build-backend = "maturin"
+
+[project]
+name = "gbhua"
+version = "0.0.1"
+description = "Python bindings for the KITAQGB plita tile and map editor."
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "DAISUKE OBA" }]
+
+[tool.maturin]
+bindings = "pyo3"
+features = ["python"]
+module-name = "gbhua"

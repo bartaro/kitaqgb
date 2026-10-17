@@ -1,4 +1,6 @@
 /target/
 /dist/
+/dist-gui/
+/wheels/
 *.pyd
 __pycache__/

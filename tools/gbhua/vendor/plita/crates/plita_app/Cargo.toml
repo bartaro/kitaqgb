@@ -1,0 +1,16 @@
+[package]
+name = "plita_app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Application builder and configuration for PLITA UI."
+
+[dependencies]
+plita_window.workspace = true
+plita_render.workspace = true
+plita_ui.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

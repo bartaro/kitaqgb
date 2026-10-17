@@ -6,6 +6,10 @@ The ZX0/VBlank helper executables use Rust. Running them requires neither .NET n
 
 ## GBHUA
 
+[GUI downloads](gbhua/GUI.md) / [GUI English manual](gbhua/docs/manual.en.md) / [all nine languages](gbhua/README.md).
+Windows, Mac Apple Silicon and Mac Intel GUI packages accompany the shared GUI/CLI sources and Python bindings.
+Build the GUI with `cargo run --manifest-path tools/gbhua/Cargo.toml --locked --release --features gui --bin gbhua_gui`.
+
 [GBHUA CLI](gbhua/) converts PNG artwork into GB/DMG and CGB tiles, palettes and maps. It supports `.gbh`, GBTD/GBTB and GBMB exchange, plus C and 2bpp export. Author: DAISUKE OBA. Original code: MIT. No GUI, GPU or Python is required.
 
 [English manual](gbhua/README.en.md) / [manuals in nine languages](gbhua/README.md).

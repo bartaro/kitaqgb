@@ -1,0 +1,12 @@
+[package]
+name = "plita_ui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Basic UI geometry, draw lists, and Phase 1 demo layout for PLITA UI."
+
+[dependencies]
+fontdue = "0.9"
+kurbo = "0.13"
