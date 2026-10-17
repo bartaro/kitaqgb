@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## ビルド・困ったとき・権利表記
 
-Rust 1.93.1と各OSのC/C++開発環境を使用します。Linuxではlibasound2-dev、libudev-dev、libxkbcommon-dev、libwayland-dev、libx11-dev、libxi-dev、libxcursor-dev、Mesa開発ライブラリ等が必要です。CIは各OSでビルド・編集テスト・音声／SAV出力・GUI起動を確認し、verificationにソースコミットを記録します。音声デバイスの出音、物理入力、実機はこの自動検査には含みません。
+Rust 1.93.1と各OSのC/C++開発環境を使用します。Linuxではlibasound2-dev、libudev-dev、libxkbcommon-dev, libxkbcommon-x11-dev、libwayland-dev、libx11-dev、libxi-dev、libxcursor-dev、Mesa開発ライブラリ等が必要です。CIは各OSでビルド・編集テスト・音声／SAV出力・GUI起動を確認し、verificationにソースコミットを記録します。音声デバイスの出音、物理入力、実機はこの自動検査には含みません。
 
 ```sh
 cd tools/gbseq

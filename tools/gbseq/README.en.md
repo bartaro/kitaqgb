@@ -8,7 +8,7 @@ GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an ind
 
 Download your platform package from [bin/](bin/): Windows x86_64, Linux x86_64, macOS Apple Silicon or macOS Intel. Extract the entire archive, keeping assets and notices beside the programs. Run `gbseq.exe` (Windows) or `./gbseq` (macOS/Linux) for the GUI; `gbseq-cli` is the headless command-line program. In PowerShell use `./gbseq-cli.exe`; on Unix use `./gbseq-cli` unless installed in PATH. The examples below omit that prefix. A compiler, separate plita installation and Python are not required for GUI/CLI use.
 
-The GUI needs a graphical desktop, compatible GPU driver and an audio device for playback. Linux packages target Ubuntu 24.04 or newer compatible systems and need ALSA, X11/Wayland, libxkbcommon and Vulkan/OpenGL runtime libraries. macOS binaries are unsigned and not notarized: verify their origin/hash, then use the system's per-application Open/Privacy & Security approval if required; do not disable global protection. The CLI can export audio without a sound device or display. Keep the executable permission when extracting Unix packages (`chmod +x gbseq gbseq-cli` if necessary).
+The GUI needs a graphical desktop, compatible GPU driver and an audio device for playback. Linux packages target Ubuntu 24.04 or newer compatible systems and need ALSA, X11/Wayland, libxkbcommon + libxkbcommon-x11 and Vulkan/OpenGL runtime libraries. macOS binaries are unsigned and not notarized: verify their origin/hash, then use the system's per-application Open/Privacy & Security approval if required; do not disable global protection. The CLI can export audio without a sound device or display. Keep the executable permission when extracting Unix packages (`chmod +x gbseq gbseq-cli` if necessary).
 
 ## Compose in the GUI
 
@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## Build, troubleshooting and rights
 
-Build with Rust 1.93.1 and the platform C/C++ tools. Linux build packages include libasound2-dev, libudev-dev, libxkbcommon-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev and Mesa development libraries. The CI workflow builds/tests each native platform and checks GUI startup, audio/export and save preservation. Verification receipts record their source commit; audio-device output and physical input/hardware are not tested by those checks.
+Build with Rust 1.93.1 and the platform C/C++ tools. Linux build packages include libasound2-dev, libudev-dev, libxkbcommon-dev, libxkbcommon-x11-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev and Mesa development libraries. The CI workflow builds/tests each native platform and checks GUI startup, audio/export and save preservation. Verification receipts record their source commit; audio-device output and physical input/hardware are not tested by those checks.
 
 ```sh
 cd tools/gbseq

@@ -8,7 +8,7 @@ GBSEQ, par DAISUKE OBA, propose une interface plita et une CLI indépendante. El
 
 Choisissez dans [bin/](bin/) Windows x86_64, Linux x86_64 ou macOS Apple Silicon/Intel. Extrayez toute l’archive et gardez assets et les licences près des exécutables. Lancez gbseq.exe sous Windows ou ./gbseq sous macOS/Linux. Pour la CLI, remplacez gbseq-cli des exemples par ./gbseq-cli.exe sous PowerShell ou ./gbseq-cli sous Unix, sauf si le programme est dans PATH. Aucun compilateur, plita séparé ou Python n’est nécessaire à l’usage ordinaire.
 
-L’interface demande un bureau graphique, un pilote GPU compatible et un périphérique audio pour l’écoute. Linux cible Ubuntu 24.04 ou un système ultérieur compatible, avec ALSA, X11/Wayland, libxkbcommon et Vulkan/OpenGL. Les exécutables macOS ne sont ni signés ni notariés : vérifiez origine et empreinte puis, au besoin, autorisez cette application via Ouvrir/Confidentialité et sécurité, sans désactiver la protection globale. La CLI produit des WAV sans écran ni carte son. Sous Unix, restaurez si nécessaire le droit d’exécution : chmod +x gbseq gbseq-cli.
+L’interface demande un bureau graphique, un pilote GPU compatible et un périphérique audio pour l’écoute. Linux cible Ubuntu 24.04 ou un système ultérieur compatible, avec ALSA, X11/Wayland, libxkbcommon + libxkbcommon-x11 et Vulkan/OpenGL. Les exécutables macOS ne sont ni signés ni notariés : vérifiez origine et empreinte puis, au besoin, autorisez cette application via Ouvrir/Confidentialité et sécurité, sans désactiver la protection globale. La CLI produit des WAV sans écran ni carte son. Sous Unix, restaurez si nécessaire le droit d’exécution : chmod +x gbseq gbseq-cli.
 
 ## Édition graphique
 
@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## Compilation, dépannage et droits
 
-Utilisez Rust 1.93.1 et les outils C/C++ du système. Linux demande libasound2-dev, libudev-dev, libxkbcommon-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev et les bibliothèques de développement Mesa. CI vérifie modèle, édition, audio/SAV et démarrage graphique par OS ; verification enregistre le commit. Ces contrôles ne testent ni sortie audio physique, ni entrée physique, ni Game Boy réelle.
+Utilisez Rust 1.93.1 et les outils C/C++ du système. Linux demande libasound2-dev, libudev-dev, libxkbcommon-dev, libxkbcommon-x11-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev et les bibliothèques de développement Mesa. CI vérifie modèle, édition, audio/SAV et démarrage graphique par OS ; verification enregistre le commit. Ces contrôles ne testent ni sortie audio physique, ni entrée physique, ni Game Boy réelle.
 
 ```sh
 cd tools/gbseq

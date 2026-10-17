@@ -8,7 +8,7 @@ GBSEQ由DAISUKE OBA製作，提供plita桌面GUI與獨立CLI，共用編輯模�
 
 從[bin/](bin/)選擇Windows x86_64、Linux x86_64、macOS Apple Silicon或Intel套件並完整解壓縮，保留程式旁的assets與授權檔。Windows GUI為gbseq.exe，Unix為./gbseq。下列CLI範例的gbseq-cli，在PowerShell使用./gbseq-cli.exe，在Unix使用./gbseq-cli；加入PATH後可省略前綴。一般使用不需編譯器、另外安裝plita或Python。
 
-GUI需要桌面環境、相容GPU驅動及試聽用音訊裝置。Linux面向Ubuntu 24.04以後的相容系統，使用ALSA、X11/Wayland、libxkbcommon與Vulkan/OpenGL執行期程式庫。macOS執行檔未簽署、未公證；核對來源與雜湊後，必要時透過系統「打開」或「隱私權與安全性」僅允許此應用程式，不要停用全域防護。CLI產生WAV不需要螢幕或音效裝置。Unix若遺失執行權限，可用chmod +x gbseq gbseq-cli。
+GUI需要桌面環境、相容GPU驅動及試聽用音訊裝置。Linux面向Ubuntu 24.04以後的相容系統，使用ALSA、X11/Wayland、libxkbcommon與libxkbcommon-x11及Vulkan/OpenGL執行期程式庫。macOS執行檔未簽署、未公證；核對來源與雜湊後，必要時透過系統「打開」或「隱私權與安全性」僅允許此應用程式，不要停用全域防護。CLI產生WAV不需要螢幕或音效裝置。Unix若遺失執行權限，可用chmod +x gbseq gbseq-cli。
 
 ## GUI編輯
 
@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## 建置、疑難排解與授權
 
-使用Rust 1.93.1與系統C/C++工具。Linux建置需libasound2-dev、libudev-dev、libxkbcommon-dev、libwayland-dev、libx11-dev、libxi-dev、libxcursor-dev及Mesa開發程式庫。CI逐OS驗證測試、音訊/存檔匯出與GUI啟動，verification記錄來源提交。這些檢查不驗證實際音效裝置輸出、實體操作或Game Boy硬體。
+使用Rust 1.93.1與系統C/C++工具。Linux建置需libasound2-dev、libudev-dev、libxkbcommon-dev, libxkbcommon-x11-dev、libwayland-dev、libx11-dev、libxi-dev、libxcursor-dev及Mesa開發程式庫。CI逐OS驗證測試、音訊/存檔匯出與GUI啟動，verification記錄來源提交。這些檢查不驗證實際音效裝置輸出、實體操作或Game Boy硬體。
 
 ```sh
 cd tools/gbseq

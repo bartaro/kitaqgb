@@ -8,7 +8,7 @@ DAISUKE OBA의 GBSEQ는 plita GUI와 독립 CLI를 제공하는 게임보이 시
 
 [bin/](bin/)에서 Windows x86_64, Linux x86_64, macOS Apple Silicon 또는 Intel 패키지를 선택하여 전체를 풉니다. assets와 라이선스 파일도 실행 파일 옆에 둡니다. GUI는 Windows에서 gbseq.exe, Unix에서 ./gbseq입니다. CLI 예제의 gbseq-cli는 PowerShell에서 ./gbseq-cli.exe, Unix에서 ./gbseq-cli로 실행합니다(PATH에 등록했다면 접두사 불필요). 일반 사용에는 컴파일러·별도 plita·Python이 필요 없습니다.
 
-GUI에는 데스크톱, 호환 GPU 드라이버, 미리 듣기용 오디오 장치가 필요합니다. Linux는 Ubuntu 24.04 이후 호환 환경과 ALSA, X11/Wayland, libxkbcommon, Vulkan/OpenGL 라이브러리를 사용합니다. macOS 바이너리는 서명·공증되지 않았습니다. 출처와 해시를 확인하고 필요하면 시스템의 열기/개인정보 보호 및 보안에서 해당 앱만 허용하세요. 전역 보호 기능을 끄지 마세요. CLI의 WAV 생성에는 화면이나 음성 장치가 필요 없습니다. Unix 실행 권한이 빠졌다면 chmod +x gbseq gbseq-cli를 사용합니다.
+GUI에는 데스크톱, 호환 GPU 드라이버, 미리 듣기용 오디오 장치가 필요합니다. Linux는 Ubuntu 24.04 이후 호환 환경과 ALSA, X11/Wayland, libxkbcommon + libxkbcommon-x11, Vulkan/OpenGL 라이브러리를 사용합니다. macOS 바이너리는 서명·공증되지 않았습니다. 출처와 해시를 확인하고 필요하면 시스템의 열기/개인정보 보호 및 보안에서 해당 앱만 허용하세요. 전역 보호 기능을 끄지 마세요. CLI의 WAV 생성에는 화면이나 음성 장치가 필요 없습니다. Unix 실행 권한이 빠졌다면 chmod +x gbseq gbseq-cli를 사용합니다.
 
 ## GUI 편집
 
@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## 빌드·문제 해결·라이선스
 
-Rust 1.93.1과 OS C/C++ 도구가 필요합니다. Linux 빌드는 libasound2-dev, libudev-dev, libxkbcommon-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev 및 Mesa 개발 라이브러리를 사용합니다. CI는 각 OS에서 테스트·오디오/저장 내보내기·GUI 시작을 검사하고 verification에 소스 커밋을 기록합니다. 실제 오디오 출력·물리 입력·게임보이 하드웨어는 자동 검사의 대상이 아닙니다.
+Rust 1.93.1과 OS C/C++ 도구가 필요합니다. Linux 빌드는 libasound2-dev, libudev-dev, libxkbcommon-dev, libxkbcommon-x11-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev 및 Mesa 개발 라이브러리를 사용합니다. CI는 각 OS에서 테스트·오디오/저장 내보내기·GUI 시작을 검사하고 verification에 소스 커밋을 기록합니다. 실제 오디오 출력·물리 입력·게임보이 하드웨어는 자동 검사의 대상이 아닙니다.
 
 ```sh
 cd tools/gbseq

@@ -8,7 +8,7 @@ GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando 
 
 Em [bin/](bin/), escolha Windows x86_64, Linux x86_64 ou macOS Apple Silicon/Intel. Extraia o pacote inteiro, mantendo assets e licenças junto aos programas. A GUI é gbseq.exe no Windows ou ./gbseq no macOS/Linux. Nos exemplos, gbseq-cli deve ser ./gbseq-cli.exe no PowerShell ou ./gbseq-cli no Unix, salvo se estiver no PATH. O uso normal não exige compilador, outra instalação de plita nem Python.
 
-A GUI precisa de desktop, driver gráfico compatível e dispositivo de áudio para ouvir. Linux destina-se ao Ubuntu 24.04 ou sistemas posteriores compatíveis, com ALSA, X11/Wayland, libxkbcommon e bibliotecas Vulkan/OpenGL. Os binários macOS não são assinados nem notarizados: confira origem e hash e, se necessário, autorize apenas este aplicativo em Abrir/Privacidade e Segurança, sem desativar a proteção global. A CLI gera WAV sem tela nem dispositivo de som. Se necessário no Unix: chmod +x gbseq gbseq-cli.
+A GUI precisa de desktop, driver gráfico compatível e dispositivo de áudio para ouvir. Linux destina-se ao Ubuntu 24.04 ou sistemas posteriores compatíveis, com ALSA, X11/Wayland, libxkbcommon + libxkbcommon-x11 e bibliotecas Vulkan/OpenGL. Os binários macOS não são assinados nem notarizados: confira origem e hash e, se necessário, autorize apenas este aplicativo em Abrir/Privacidade e Segurança, sem desativar a proteção global. A CLI gera WAV sem tela nem dispositivo de som. Se necessário no Unix: chmod +x gbseq gbseq-cli.
 
 ## Edição gráfica
 
@@ -66,7 +66,7 @@ song.render_wav("python-song.wav")
 
 ## Compilação, problemas e direitos
 
-Use Rust 1.93.1 e ferramentas C/C++ do sistema. Linux requer libasound2-dev, libudev-dev, libxkbcommon-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev e bibliotecas de desenvolvimento Mesa. CI verifica modelo, edição, áudio/SAV e início da GUI por OS; verification registra o commit. Não testa saída física de áudio, entrada física nem hardware Game Boy.
+Use Rust 1.93.1 e ferramentas C/C++ do sistema. Linux requer libasound2-dev, libudev-dev, libxkbcommon-dev, libxkbcommon-x11-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev e bibliotecas de desenvolvimento Mesa. CI verifica modelo, edição, áudio/SAV e início da GUI por OS; verification registra o commit. Não testa saída física de áudio, entrada física nem hardware Game Boy.
 
 ```sh
 cd tools/gbseq
