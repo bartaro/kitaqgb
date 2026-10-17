@@ -24,6 +24,9 @@ Lucide icons and Feather-derived paths retain ISC and MIT notices in
 `licenses/assets/Lucide-Feather.txt` and `vendor/plita_ui/assets/lucide/LICENSE`.
 See [Lucide's upstream license](https://github.com/lucide-icons/lucide/blob/main/LICENSE).
 Operating-system fonts are only loaded at runtime and are not redistributed.
+The two bundled fonts match official Google Fonts binaries byte for byte;
+all 52 SVG geometries match official Lucide sources (current or 0.468.0).
+Hashes and source URLs are in [the asset provenance record](licenses/ASSET_PROVENANCE.json).
 
 ## Dependency choices and binary redistribution
 

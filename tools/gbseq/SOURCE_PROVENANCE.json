@@ -562,7 +562,7 @@
       "source": "plita/crates/plita_ui/assets/README.md",
       "destination": "vendor/plita_ui/assets/README.md",
       "source_sha256": "66be9790f70581241e60e95b5d88cd2f66cbed0dde43e850b494f0817475293f",
-      "published_sha256": "66be9790f70581241e60e95b5d88cd2f66cbed0dde43e850b494f0817475293f"
+      "published_sha256": "038c5d2cce703feb269571a7995232930136fa33fa60dc67bf46467c9974ee25"
     },
     {
       "source": "plita/LICENSE",

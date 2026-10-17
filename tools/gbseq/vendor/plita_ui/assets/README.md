@@ -1,8 +1,10 @@
 # Shared Lucide Icons
 
-PLITA owns the SVG sources in `lucide/`, their upstream LICENSE, the generated
-`lucide_paths.rs`, and the renderer in `src/icons.rs`. Wire3D CAD consumes this
-shared renderer; no CAD-specific icon files are required at runtime.
+plita stores the upstream SVG sources in `lucide/`, their LICENSE, the generated
+`lucide_paths.rs`, and the renderer in `src/icons.rs`. Lucide and Feather retain
+their original copyrights and ISC/MIT terms; storing or embedding these icons
+does not transfer their ownership to plita or GBSEQ. The shared renderer embeds
+the geometry, so separate icon files are not required at runtime.
 
 Source: https://github.com/lucide-icons/lucide/tree/main/icons (retrieved 2026-09-07).
 Licenses: `lucide/LICENSE` contains the Lucide ISC and inherited Feather MIT terms.
@@ -18,8 +20,8 @@ draw_lucide_icon(&mut list, Rect::new(12.0, 12.0, 24.0, 24.0),
 `draw_lucide_icon` preserves aspect ratio, centers the icon, scales its stroke,
 and returns false for an unknown name or invalid rectangle. The enclosing
 application owns the button hit area, command, disabled state, and tooltip.
-`lucide_icon_names()` enumerates the 31 bundled names. Curves are flattened once,
-cached, and emitted through the normal PLITA DrawList renderer with round joins.
+`lucide_icon_names()` enumerates the bundled names. Curves are flattened once,
+cached, and emitted through the normal plita DrawList renderer with round joins.
 The seven desktop additions (step-forward, camera, bug, volume-2, settings,
 maximize and ellipsis) were retrieved from the same upstream on 2026-09-09.
 Repeated icon meshes are cached per thread by name, rectangle and color, with

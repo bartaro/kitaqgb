@@ -1,0 +1,492 @@
+{
+  "fonts": [
+    {
+      "file": "Roboto[wdth,wght].ttf",
+      "official_url": "https://raw.githubusercontent.com/google/fonts/main/ofl/roboto/Roboto%5Bwdth%2Cwght%5D.ttf",
+      "official_sha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "bundled_sha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "exact_match": true,
+      "license": "OFL-1.1",
+      "notice": "assets/fonts/Roboto-OFL.txt"
+    },
+    {
+      "file": "RobotoMono-Regular.ttf",
+      "official_url": "https://raw.githubusercontent.com/googlefonts/robotomono/main/fonts/ttf/RobotoMono-Regular.ttf",
+      "official_sha256": "af0bff7599c3df3831755c16e39b3c496df74b8c8d8a1161b14dc8461be17cb4",
+      "bundled_sha256": "af0bff7599c3df3831755c16e39b3c496df74b8c8d8a1161b14dc8461be17cb4",
+      "exact_match": true,
+      "license": "OFL-1.1",
+      "notice": "assets/fonts/RobotoMono-OFL.txt"
+    }
+  ],
+  "icons": [
+    {
+      "file": "vendor/plita_ui/assets/lucide/arrow-down.svg",
+      "sha256": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/arrow-down.svg",
+      "upstream_file_sha256": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/arrow-left.svg",
+      "sha256": "c5f4b88076108eb1a0d95336e1aa7e7bb1419a3a92af96f6247d88cd3456f933",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/arrow-left.svg",
+      "upstream_file_sha256": "c5f4b88076108eb1a0d95336e1aa7e7bb1419a3a92af96f6247d88cd3456f933",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/arrow-right.svg",
+      "sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/arrow-right.svg",
+      "upstream_file_sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/arrow-up.svg",
+      "sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/arrow-up.svg",
+      "upstream_file_sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/box.svg",
+      "sha256": "511862693d914d2bf1947c9ccc513595f2a256541f5dd4f6f9ac8383cd41ac4f",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/box.svg",
+      "upstream_file_sha256": "511862693d914d2bf1947c9ccc513595f2a256541f5dd4f6f9ac8383cd41ac4f",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/bug.svg",
+      "sha256": "c4fddf0d43b4c4f0b8fc52eb8810173c8d8bd25618034a70f162d85e8189d69d",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/bug.svg",
+      "upstream_file_sha256": "c4fddf0d43b4c4f0b8fc52eb8810173c8d8bd25618034a70f162d85e8189d69d",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/camera.svg",
+      "sha256": "ebbb3178dd80dfd942770a2237fe7bfc3515c55c7daa9d3666933a656d2790e3",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/camera.svg",
+      "upstream_file_sha256": "ebbb3178dd80dfd942770a2237fe7bfc3515c55c7daa9d3666933a656d2790e3",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/check.svg",
+      "sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/check.svg",
+      "upstream_file_sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/chevron-down.svg",
+      "sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/chevron-down.svg",
+      "upstream_file_sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/chevron-left.svg",
+      "sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/chevron-left.svg",
+      "upstream_file_sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/chevron-right.svg",
+      "sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/chevron-right.svg",
+      "upstream_file_sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/clipboard-paste.svg",
+      "sha256": "1b6ae38c9a03b6f4587aab3def027f2dd9a87361045a97acc15b0516e272d0e8",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/clipboard-paste.svg",
+      "upstream_file_sha256": "1b6ae38c9a03b6f4587aab3def027f2dd9a87361045a97acc15b0516e272d0e8",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/contrast.svg",
+      "sha256": "a9f1a6166c479cd3e546625b09686a7e97322c850a9b146f270f912e886c395c",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/contrast.svg",
+      "upstream_file_sha256": "a9f1a6166c479cd3e546625b09686a7e97322c850a9b146f270f912e886c395c",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/copy.svg",
+      "sha256": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/copy.svg",
+      "upstream_file_sha256": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/dot.svg",
+      "sha256": "7c98b944e15871f137e75ad9898975d4722bc632a30f65ac19d5ca39f3b5e2b4",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/dot.svg",
+      "upstream_file_sha256": "7c98b944e15871f137e75ad9898975d4722bc632a30f65ac19d5ca39f3b5e2b4",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/download.svg",
+      "sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/download.svg",
+      "upstream_file_sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/ellipsis.svg",
+      "sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/ellipsis.svg",
+      "upstream_file_sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/eraser.svg",
+      "sha256": "503094bdc45fa1dcab39209da8028dc2fe4ac8876a87c37b4b976fd8d6ee53bd",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/eraser.svg",
+      "upstream_file_sha256": "503094bdc45fa1dcab39209da8028dc2fe4ac8876a87c37b4b976fd8d6ee53bd",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/file-pen-line.svg",
+      "sha256": "a5eb2fceab005296a3d2240396869db01c86292e95207eeef65bb11166ec9a3e",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/file-pen-line.svg",
+      "upstream_file_sha256": "a5eb2fceab005296a3d2240396869db01c86292e95207eeef65bb11166ec9a3e",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/file-plus.svg",
+      "sha256": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/file-plus.svg",
+      "upstream_file_sha256": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/flip-horizontal-2.svg",
+      "sha256": "f8bbeaa885c8f56758d6d8478da8912679c352e12f371f7333405a8d83f14ee0",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/flip-horizontal-2.svg",
+      "upstream_file_sha256": "f8bbeaa885c8f56758d6d8478da8912679c352e12f371f7333405a8d83f14ee0",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/flip-vertical-2.svg",
+      "sha256": "705e5fea353c2418f14fe9c094e0e5023cac1b4ec5bc448392af5a7863c51382",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/flip-vertical-2.svg",
+      "upstream_file_sha256": "705e5fea353c2418f14fe9c094e0e5023cac1b4ec5bc448392af5a7863c51382",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/focus.svg",
+      "sha256": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/focus.svg",
+      "upstream_file_sha256": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/folder-open.svg",
+      "sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/folder-open.svg",
+      "upstream_file_sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/grid-2x2.svg",
+      "sha256": "dc1896d3b22e88e0ba45a77bc8e947b7a01d0c9fb5ff77d07d24a5589816bb84",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/grid-2x2.svg",
+      "upstream_file_sha256": "dc1896d3b22e88e0ba45a77bc8e947b7a01d0c9fb5ff77d07d24a5589816bb84",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/image.svg",
+      "sha256": "619c9db58c879dce6250376ba67d9c9102ca6dbb3b1efb9294c9f180e22273a5",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/image.svg",
+      "upstream_file_sha256": "619c9db58c879dce6250376ba67d9c9102ca6dbb3b1efb9294c9f180e22273a5",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/layers.svg",
+      "sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/layers.svg",
+      "upstream_file_sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/maximize.svg",
+      "sha256": "1f790856b0de805ab62e871609f1990b89d227d472022e57a11fde015aad4826",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/maximize.svg",
+      "upstream_file_sha256": "1f790856b0de805ab62e871609f1990b89d227d472022e57a11fde015aad4826",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/minus.svg",
+      "sha256": "a0c743ab6dbf545d8a6e19ef3874f48ede686ce68d25e231bd81f540d97b1f19",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/minus.svg",
+      "upstream_file_sha256": "a0c743ab6dbf545d8a6e19ef3874f48ede686ce68d25e231bd81f540d97b1f19",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/mouse-pointer.svg",
+      "sha256": "9541b5c7cbf62f65801a1e6206db1290f077556ea9a9abb87a1ae497980eaf8e",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/mouse-pointer.svg",
+      "upstream_file_sha256": "9541b5c7cbf62f65801a1e6206db1290f077556ea9a9abb87a1ae497980eaf8e",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/move.svg",
+      "sha256": "915074a1292f72d59165339b8b93f8d440c8d55b7116b52fca240b9ded5af74d",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/move.svg",
+      "upstream_file_sha256": "915074a1292f72d59165339b8b93f8d440c8d55b7116b52fca240b9ded5af74d",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/package.svg",
+      "sha256": "399c20ee3a2ef58300e30f4c930b8cfa52bbb8faf19053593b0ab027ffd45903",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/package.svg",
+      "upstream_file_sha256": "399c20ee3a2ef58300e30f4c930b8cfa52bbb8faf19053593b0ab027ffd45903",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/paint-bucket.svg",
+      "sha256": "41b874de789e02cc6a519e3bcf6c80f4365dce47792993402773189fec23395e",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/paint-bucket.svg",
+      "upstream_file_sha256": "41b874de789e02cc6a519e3bcf6c80f4365dce47792993402773189fec23395e",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/pause.svg",
+      "sha256": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/pause.svg",
+      "upstream_file_sha256": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/pencil.svg",
+      "sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/pencil.svg",
+      "upstream_file_sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/pipette.svg",
+      "sha256": "3703307928af762a71bf141ba7582b15cb909f3d90916bcfe3c0becdf3ab4e70",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/pipette.svg",
+      "upstream_file_sha256": "3703307928af762a71bf141ba7582b15cb909f3d90916bcfe3c0becdf3ab4e70",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/play.svg",
+      "sha256": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/play.svg",
+      "upstream_file_sha256": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/plus.svg",
+      "sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/plus.svg",
+      "upstream_file_sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/redo-2.svg",
+      "sha256": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/redo-2.svg",
+      "upstream_file_sha256": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/rotate-cw.svg",
+      "sha256": "ddcfe6d87240475946935e77411cd4d15a06f3d28a9b921bafed224ebe953668",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/rotate-cw.svg",
+      "upstream_file_sha256": "ddcfe6d87240475946935e77411cd4d15a06f3d28a9b921bafed224ebe953668",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/save.svg",
+      "sha256": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/save.svg",
+      "upstream_file_sha256": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/settings.svg",
+      "sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/settings.svg",
+      "upstream_file_sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/slash.svg",
+      "sha256": "2e8b636164f057c3113b04d36a5bb958f78aff454c4a644642da790ae2addbc8",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/slash.svg",
+      "upstream_file_sha256": "2e8b636164f057c3113b04d36a5bb958f78aff454c4a644642da790ae2addbc8",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/square.svg",
+      "sha256": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/square.svg",
+      "upstream_file_sha256": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/step-forward.svg",
+      "sha256": "9253ad46e005b2b4a011e9bbeb66aadab56306e4b3674e7da3008af2274a0bb7",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/step-forward.svg",
+      "upstream_file_sha256": "9253ad46e005b2b4a011e9bbeb66aadab56306e4b3674e7da3008af2274a0bb7",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/trash-2.svg",
+      "sha256": "e63698acf757d3043fcb4a9ea6ffceff9dd84708707eafc879c86b34a6ff2786",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/0.468.0/icons/trash-2.svg",
+      "upstream_file_sha256": "e63698acf757d3043fcb4a9ea6ffceff9dd84708707eafc879c86b34a6ff2786",
+      "geometry_matches": true,
+      "revision": "0.468.0",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/trash.svg",
+      "sha256": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/trash.svg",
+      "upstream_file_sha256": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/triangle.svg",
+      "sha256": "07ef0fa398d74189b9d59ce313534a4b01fad705d52b36f8e4e8fc57a3437023",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/triangle.svg",
+      "upstream_file_sha256": "07ef0fa398d74189b9d59ce313534a4b01fad705d52b36f8e4e8fc57a3437023",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/undo-2.svg",
+      "sha256": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/undo-2.svg",
+      "upstream_file_sha256": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/volume-2.svg",
+      "sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/volume-2.svg",
+      "upstream_file_sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/zoom-in.svg",
+      "sha256": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zoom-in.svg",
+      "upstream_file_sha256": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    },
+    {
+      "file": "vendor/plita_ui/assets/lucide/zoom-out.svg",
+      "sha256": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921",
+      "official_url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/zoom-out.svg",
+      "upstream_file_sha256": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921",
+      "geometry_matches": true,
+      "revision": "main",
+      "license": "ISC; inherited Feather MIT where applicable"
+    }
+  ]
+}
