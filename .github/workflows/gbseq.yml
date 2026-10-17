@@ -1,0 +1,59 @@
+name: GBSEQ native distributions
+on:
+  workflow_dispatch:
+  push:
+    paths: ['tools/gbseq/src/**', 'tools/gbseq/vendor/**', 'tools/gbseq/tests/**', 'tools/gbseq/scripts/**', 'tools/gbseq/Cargo.*', '.github/workflows/gbseq.yml']
+permissions:
+  contents: read
+jobs:
+  native:
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, platform: windows-x86_64}
+          - {os: ubuntu-24.04, platform: linux-x86_64}
+          - {os: macos-15, platform: macos-arm64}
+          - {os: macos-15-intel, platform: macos-x86_64}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: tools/gbseq
+    env:
+      PYTHONUTF8: '1'
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
+      CARGO_TERM_COLOR: never
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Linux system libraries
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libxcursor-dev libgl1-mesa-dev mesa-vulkan-drivers xvfb
+      - name: Rust
+        run: |
+          rustup toolchain install 1.93.1 --profile minimal
+          rustup default 1.93.1
+      - name: Test model, editor, export and physical channel order
+        run: cargo test --locked --release --tests
+      - name: Build GUI
+        run: cargo build --locked --release --bin gbseq
+      - name: Build headless CLI and C ABI library
+        run: cargo build --locked --release --no-default-features --bin gbseq-cli --lib
+      - name: Verify and package binaries
+        run: python scripts/native_package.py --platform ${{ matrix.platform }}
+      - name: GUI startup on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python scripts/gui_startup.py dist/${{ matrix.platform }}
+      - name: GUI startup on Windows and macOS
+        if: runner.os != 'Linux'
+        run: python scripts/gui_startup.py dist/${{ matrix.platform }}
+      - name: Upload verified native package
+        uses: actions/upload-artifact@v4
+        with:
+          name: gbseq-${{ matrix.platform }}
+          path: tools/gbseq/dist/${{ matrix.platform }}/
+          if-no-files-found: error
+          retention-days: 30

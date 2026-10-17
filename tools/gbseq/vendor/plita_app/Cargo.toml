@@ -1,0 +1,16 @@
+[package]
+name = "plita_app"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.92"
+license = "MIT"
+authors = ["plita UI Contributors"]
+description = "Application builder and configuration for plita UI."
+
+[dependencies]
+plita_window = { path = "../plita_window" }
+plita_render = { path = "../plita_render" }
+plita_ui = { path = "../plita_ui" }
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }

@@ -1,0 +1,49 @@
+[package]
+name = "gbseq"
+version = "0.1.0"
+edition = "2021"
+default-run = "gbseq"
+license = "MIT"
+authors = ["DAISUKE OBA"]
+rust-version = "1.93"
+repository = "https://github.com/bartaro/kitaqgb"
+description = "Game Boy sequencer with plita GUI, CLI and KOKURA audio rendering."
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+plita = { path = "vendor/plita", optional = true }
+rfd = { version = "0.17", optional = true }
+rodio = { version = "0.19", default-features = false, optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+gbdaw-model = { path = "vendor/gbdaw-model" }
+gbdaw-export-kitaqgb = { path = "vendor/gbdaw-export-kitaqgb" }
+gbdaw-kokura = { path = "vendor/gbdaw-kokura" }
+windows = { version = "=0.62.0", optional = true }
+windows-core = { version = "=0.62.0", optional = true }
+
+[features]
+default = ["gui"]
+gui = ["dep:plita", "dep:rfd", "dep:rodio", "dep:windows", "dep:windows-core"]
+
+[[bin]]
+name = "gbseq"
+path = "src/main.rs"
+required-features = ["gui"]
+
+[[bin]]
+name = "gbseq-cli"
+path = "src/bin/gbseq-cli.rs"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package.kokura-core]
+opt-level = 3
+
+[workspace]
+resolver = "2"

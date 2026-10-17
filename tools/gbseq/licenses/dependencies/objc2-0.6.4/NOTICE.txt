@@ -1,0 +1,4 @@
+The exact crate source declares MIT (or MIT as an alternative) but omits a standalone MIT text.
+LICENSE.md is retained from the recorded source revision when available.
+LICENSE-MIT-upstream.txt is the full MIT text and attribution supplied by the same upstream project at 8a5abacd90d5403fc0463459a35826f892b9142e.
+It supplements, rather than replaces, the original version declaration. No Apple SDK is redistributed.

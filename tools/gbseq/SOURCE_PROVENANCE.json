@@ -1,0 +1,913 @@
+{
+  "source_files": [
+    {
+      "source": "gbseq/src/app.rs",
+      "destination": "src/app.rs",
+      "source_sha256": "9daf5bb14c7105b157d78362dcd36c7fc3458f90f828a4b8f290fae5aa17247a",
+      "published_sha256": "305e9bfb785230b50a475ca6e5e21273e3779a5f37be97bea5ad757e0d15edef"
+    },
+    {
+      "source": "gbseq/src/bin/gbseq-cli.rs",
+      "destination": "src/bin/gbseq-cli.rs",
+      "source_sha256": "9d69b0cbda84016b7b0224530cb562be5be66dcb43b07c53b6700c84eed97e1a",
+      "published_sha256": "b01150e39eabaae61b355912c8f722274d8f221919442695f5b8c918da2409d2"
+    },
+    {
+      "source": "gbseq/src/bindings.rs",
+      "destination": "src/bindings.rs",
+      "source_sha256": "c23c57d9290070e382d1c240fc011714d863a23a3aa8362c53869420709eb2d4",
+      "published_sha256": "735738ec4d333ad63f1217a9589e33a1e325389b0b04cf31b4c2c6deed539576"
+    },
+    {
+      "source": "gbseq/src/cli.rs",
+      "destination": "src/cli.rs",
+      "source_sha256": "ea3f69b84253b45f130336b59cd03e99838b29c3eae7953b8ddfff00b77e48da",
+      "published_sha256": "89dcc5c519cf20c6d51ab6ccbd32dc4c5a82a5af3818578697e74dd9a9003538"
+    },
+    {
+      "source": "gbseq/src/editing.rs",
+      "destination": "src/editing.rs",
+      "source_sha256": "7bb8b76d846b32f8f93cfef694e4b534686b6dc9cb169b61da3d890104c3cfad",
+      "published_sha256": "6abf392c6eb2ba2f068c8ca4a8eb6776ab06f89115ee73daff18662a1342abea"
+    },
+    {
+      "source": "gbseq/src/lib.rs",
+      "destination": "src/lib.rs",
+      "source_sha256": "c3d31ac84a3b6e2b1149de5e519612d1ac15d1ad5e57a25a3e32f7f782c73aa6",
+      "published_sha256": "f657ab1f864fcbdef2361b6e1215bf8787925f6a011270a40cff83453727275b"
+    },
+    {
+      "source": "gbseq/src/link16_sav.rs",
+      "destination": "src/link16_sav.rs",
+      "source_sha256": "a455662bd727f14ddca9d85fce164f438fcacd39c35e021f38d063d983ae8761",
+      "published_sha256": "5f234a37cbca80a016bd1d1a10400db134e481ceee172ac6a944136c9b8f590f"
+    },
+    {
+      "source": "gbseq/src/main.rs",
+      "destination": "src/main.rs",
+      "source_sha256": "212842685eb68d7088b855a8550866316bae88e66cac25473eb1f4dd7c3c80d7",
+      "published_sha256": "b7dd85eafd660fece7910800560335385f06de7d0ff4f61fd25b26bdba4ad1b4"
+    },
+    {
+      "source": "gbseq/src/model.rs",
+      "destination": "src/model.rs",
+      "source_sha256": "37547aa85d5347ab134abab6cd2e1faad98220e9a7a649eaea1f4e7615c49c3f",
+      "published_sha256": "5599e870e9666198209b564ecbdec7f155a03eff8a6ca6813d84bf2d90533df8"
+    },
+    {
+      "source": "gbseq/src/services.rs",
+      "destination": "src/services.rs",
+      "source_sha256": "0e2a6f92ddcf003bbb23fac4c02e1ee0c2fcaf985edb94c790f97ed943395661",
+      "published_sha256": "99e6aa408d22d76d80035c9cae7b8e998bb2cc90fb5e1845b0adb0b8d94cb20b"
+    },
+    {
+      "source": "gbseq/tests/channel_order.rs",
+      "destination": "tests/channel_order.rs",
+      "source_sha256": "a13ec94ab5f5e4a9931faa05d927a00587614b15438f0d3ced49e277a14c8985",
+      "published_sha256": "a13ec94ab5f5e4a9931faa05d927a00587614b15438f0d3ced49e277a14c8985"
+    },
+    {
+      "source": "gbseq/docs/AI_MUSIC_AUTHORING_GUIDE.md",
+      "destination": "docs/AI_MUSIC_AUTHORING_GUIDE.md",
+      "source_sha256": "79ae949dc305de7857587a58e3a49e9e7f47fb1b88d3b064c18b99b33fa6a0b5",
+      "published_sha256": "8eb858c34dfb725a42168ab37341ac01bffee2c23fb33b2214a9f6ad7f596d04"
+    },
+    {
+      "source": "gbseq/docs/CLI_PYTHON.md",
+      "destination": "docs/CLI_PYTHON.md",
+      "source_sha256": "7ebef2137945d64de8f87e6744936af1499d0869080b2020458fba3eeaebaa60",
+      "published_sha256": "ae66f50ffe12c2673f2e1547222554ecf464162c3c1c5d9071a3ae4aced0adf2"
+    },
+    {
+      "source": "gbseq/docs/GBSEQ_PROJECT_FORMAT.md",
+      "destination": "docs/GBSEQ_PROJECT_FORMAT.md",
+      "source_sha256": "ce3b26c66f2a5aef593dcf84b38ccd425b0e61100ea9e5fdb83c6b34612181e7",
+      "published_sha256": "eb23a248e46c267be6e19d239830b61d58bf2f224d87381bf79b24619ff14868"
+    },
+    {
+      "source": "gbseq/docs/KITAQGB_EXPORT_FORMAT.md",
+      "destination": "docs/KITAQGB_EXPORT_FORMAT.md",
+      "source_sha256": "de2150e88e3682f7712b5ff7f2acf7bf240fc0d0a72d72c0d913ff2c5afd8904",
+      "published_sha256": "fee8ec3c8e889f93d7f3c9d3d8e716c15f62fbd15fffa4e5947ed877c1605a4d"
+    },
+    {
+      "source": "gbseq/docs/LINK16_SAV_FORMAT.md",
+      "destination": "docs/LINK16_SAV_FORMAT.md",
+      "source_sha256": "5f9d5d6ddd86a2e42c310bf9eb95d74cca3d06d8ee13385fc12a9f6f38759989",
+      "published_sha256": "68608d7b166dedfd1c8e85643becf7aaa9c1b81f195cf6f2e63e8021c9ec0f46"
+    },
+    {
+      "source": "gbseq/docs/README.md",
+      "destination": "docs/README.md",
+      "source_sha256": "ba02776b3d11b8ac98cb744f939a0da786a17f39f65c52c7f4716ac0482a27b3",
+      "published_sha256": "8d161f4dd1a5a6783e495c9b46ab9a69abd315068e2b7420db292b1272a6502b"
+    },
+    {
+      "source": "gbseq/docs/SEQUENCER_SYSTEM_SPEC.md",
+      "destination": "docs/SEQUENCER_SYSTEM_SPEC.md",
+      "source_sha256": "5b30ec738870513a7045037248ddc6e705c7fc5da74a8c6e71e56f6b38a7467a",
+      "published_sha256": "1f03a4f807ec35176fcfc10f04bc8e417f699822da6add209bd87e654c809594"
+    },
+    {
+      "source": "gbseq/python/gbseq/__init__.py",
+      "destination": "python/gbseq/__init__.py",
+      "source_sha256": "a80b971babe83b56d4ad9d59e59cd45855a75138b101f304843a353aa81bf727",
+      "published_sha256": "a80b971babe83b56d4ad9d59e59cd45855a75138b101f304843a353aa81bf727"
+    },
+    {
+      "source": "gbseq/python/pyproject.toml",
+      "destination": "python/pyproject.toml",
+      "source_sha256": "81379b90cab270dbcb17e520f2cfaa2f0bca9dcbf06bee8b5ed1346d814b719a",
+      "published_sha256": "81379b90cab270dbcb17e520f2cfaa2f0bca9dcbf06bee8b5ed1346d814b719a"
+    },
+    {
+      "source": "gbseq/python/test_bindings.py",
+      "destination": "python/test_bindings.py",
+      "source_sha256": "fb1905e61ba3e148d585181d66415671eee6b308aab626ecb04d02fdd955bc0a",
+      "published_sha256": "fb1905e61ba3e148d585181d66415671eee6b308aab626ecb04d02fdd955bc0a"
+    },
+    {
+      "source": "gbseq/Cargo.lock",
+      "destination": "Cargo.lock",
+      "source_sha256": "8735db4eb6cc0c4b4d853844d51f07ac022ba5894a2aa629b5af222a6d501c16",
+      "published_sha256": "86552d1403d83f7bf8fe2bf18a55ff5d6b50d751940846910c9f05e29fae84a0"
+    },
+    {
+      "source": "gbseq/README.md",
+      "destination": "docs/development/README.md",
+      "source_sha256": "21c5d9d52b878abb4fba0977e6e88abde006d752cfc048acee95e8dceeb443f0",
+      "published_sha256": null
+    },
+    {
+      "source": "plita/crates/plita/src/lib.rs",
+      "destination": "vendor/plita/src/lib.rs",
+      "source_sha256": "b0ec9c671010fcf4c6fcdeb02f53b1ff6f31e8fcdca5007605693857f0825c5f",
+      "published_sha256": "b05c264059a627f586a874bdd10c54a4fa4eb6cd9f00490711c92764c5d1f777"
+    },
+    {
+      "source": "plita/crates/plita/src/python.rs",
+      "destination": "vendor/plita/src/python.rs",
+      "source_sha256": "2d3d8cf26688903ff25bd8efff4a3696476b413c5fbb0cb147d86b662afb97cc",
+      "published_sha256": "fc619f72a253bc1cf245c6afb1fea685738c61bda6cc4e9ba7304e3162178e8e"
+    },
+    {
+      "source": "plita/LICENSE",
+      "destination": "vendor/plita/LICENSE",
+      "source_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e",
+      "published_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e"
+    },
+    {
+      "source": "plita/crates/plita_app/src/lib.rs",
+      "destination": "vendor/plita_app/src/lib.rs",
+      "source_sha256": "3a7b675ac71ccf151bcec98baf8051da96b61f4c89555b74c645f592b3b3b18e",
+      "published_sha256": "e3b6cfc5de970c44a1aa79eddc45779312b6595e1809b83bc32f4ab713337f93"
+    },
+    {
+      "source": "plita/LICENSE",
+      "destination": "vendor/plita_app/LICENSE",
+      "source_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e",
+      "published_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e"
+    },
+    {
+      "source": "plita/crates/plita_window/src/lib.rs",
+      "destination": "vendor/plita_window/src/lib.rs",
+      "source_sha256": "a7dbba9cd779ece762e5a2d6002830705c282c14c42d81044e9c5ab74671a2e4",
+      "published_sha256": "c39669179b172e7b8619e29ac9186dcc0b8bacd88a3e549e3d17608a9c8d4e74"
+    },
+    {
+      "source": "plita/crates/plita_window/src/render_worker.rs",
+      "destination": "vendor/plita_window/src/render_worker.rs",
+      "source_sha256": "e7eaff0409078b0c5eec79b675fc63604b53d6cf422cd75ebc40050a1a5967fe",
+      "published_sha256": "e7eaff0409078b0c5eec79b675fc63604b53d6cf422cd75ebc40050a1a5967fe"
+    },
+    {
+      "source": "plita/LICENSE",
+      "destination": "vendor/plita_window/LICENSE",
+      "source_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e",
+      "published_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e"
+    },
+    {
+      "source": "plita/crates/plita_render/src/gpu_tests.rs",
+      "destination": "vendor/plita_render/src/gpu_tests.rs",
+      "source_sha256": "f3c4a7c4cc06e42844c670eec648cfb280a23391361320ec0c209ee299e59564",
+      "published_sha256": "deea968bd3542fd46945c9c98197eb0824018a5ab180432d1cd8c84b10d3ea39"
+    },
+    {
+      "source": "plita/crates/plita_render/src/lib.rs",
+      "destination": "vendor/plita_render/src/lib.rs",
+      "source_sha256": "84cf19e761835e27efd6582af023218b853ad266cfced35fc0a4d041e9b878f1",
+      "published_sha256": "fcae134ebb3190873fd42d65625fc8fb29b4ff6be3d629c528268bcba1e6f9f0"
+    },
+    {
+      "source": "plita/crates/plita_render/src/shaders/ui_rects.wgsl",
+      "destination": "vendor/plita_render/src/shaders/ui_rects.wgsl",
+      "source_sha256": "86d03349f1530bbd9a6b73f63654fcb1dd9dae5f5b0a39c96b27abc649bf5269",
+      "published_sha256": "86d03349f1530bbd9a6b73f63654fcb1dd9dae5f5b0a39c96b27abc649bf5269"
+    },
+    {
+      "source": "plita/crates/plita_render/src/shaders/ui_textured.wgsl",
+      "destination": "vendor/plita_render/src/shaders/ui_textured.wgsl",
+      "source_sha256": "b4bb6c0461eaf259fd4023fa5895c2270f02d033b783982b7690f1dd1a479e6e",
+      "published_sha256": "b4bb6c0461eaf259fd4023fa5895c2270f02d033b783982b7690f1dd1a479e6e"
+    },
+    {
+      "source": "plita/LICENSE",
+      "destination": "vendor/plita_render/LICENSE",
+      "source_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e",
+      "published_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e"
+    },
+    {
+      "source": "plita/crates/plita_ui/src/icons.rs",
+      "destination": "vendor/plita_ui/src/icons.rs",
+      "source_sha256": "4319865708fdfb7bb358a6d85f9ee320d1a5b8834133898ad033978a48f0625c",
+      "published_sha256": "4319865708fdfb7bb358a6d85f9ee320d1a5b8834133898ad033978a48f0625c"
+    },
+    {
+      "source": "plita/crates/plita_ui/src/lib.rs",
+      "destination": "vendor/plita_ui/src/lib.rs",
+      "source_sha256": "0f10c1ac53bb8962044f80a857f077eb9e3ff69558c7854e1952081a4003ce6b",
+      "published_sha256": "bec908ad11f6ec07c63e24672971b0e1ceb8f85ee57aababb42e862540c847c1"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/build_icons.py",
+      "destination": "vendor/plita_ui/assets/build_icons.py",
+      "source_sha256": "56d186a3c22f4e39489b586fe2c935f407e1ac6b7d0d5fcba7a1f12c6e6c5e65",
+      "published_sha256": "56d186a3c22f4e39489b586fe2c935f407e1ac6b7d0d5fcba7a1f12c6e6c5e65"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/arrow-down.svg",
+      "destination": "vendor/plita_ui/assets/lucide/arrow-down.svg",
+      "source_sha256": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2",
+      "published_sha256": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/arrow-left.svg",
+      "destination": "vendor/plita_ui/assets/lucide/arrow-left.svg",
+      "source_sha256": "c5f4b88076108eb1a0d95336e1aa7e7bb1419a3a92af96f6247d88cd3456f933",
+      "published_sha256": "c5f4b88076108eb1a0d95336e1aa7e7bb1419a3a92af96f6247d88cd3456f933"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/arrow-right.svg",
+      "destination": "vendor/plita_ui/assets/lucide/arrow-right.svg",
+      "source_sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9",
+      "published_sha256": "288397fdb73bb4f783cf9eabb726ff47357df1d4e3f1201dd748090579f108b9"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/arrow-up.svg",
+      "destination": "vendor/plita_ui/assets/lucide/arrow-up.svg",
+      "source_sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518",
+      "published_sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/box.svg",
+      "destination": "vendor/plita_ui/assets/lucide/box.svg",
+      "source_sha256": "511862693d914d2bf1947c9ccc513595f2a256541f5dd4f6f9ac8383cd41ac4f",
+      "published_sha256": "511862693d914d2bf1947c9ccc513595f2a256541f5dd4f6f9ac8383cd41ac4f"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/bug.svg",
+      "destination": "vendor/plita_ui/assets/lucide/bug.svg",
+      "source_sha256": "c4fddf0d43b4c4f0b8fc52eb8810173c8d8bd25618034a70f162d85e8189d69d",
+      "published_sha256": "c4fddf0d43b4c4f0b8fc52eb8810173c8d8bd25618034a70f162d85e8189d69d"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/camera.svg",
+      "destination": "vendor/plita_ui/assets/lucide/camera.svg",
+      "source_sha256": "ebbb3178dd80dfd942770a2237fe7bfc3515c55c7daa9d3666933a656d2790e3",
+      "published_sha256": "ebbb3178dd80dfd942770a2237fe7bfc3515c55c7daa9d3666933a656d2790e3"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/check.svg",
+      "destination": "vendor/plita_ui/assets/lucide/check.svg",
+      "source_sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0",
+      "published_sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/chevron-down.svg",
+      "destination": "vendor/plita_ui/assets/lucide/chevron-down.svg",
+      "source_sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87",
+      "published_sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/chevron-left.svg",
+      "destination": "vendor/plita_ui/assets/lucide/chevron-left.svg",
+      "source_sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93",
+      "published_sha256": "83b0681aa38bf55e9d52a1e4b4cced624abe1fe7678ecafda133a574f1161d93"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/chevron-right.svg",
+      "destination": "vendor/plita_ui/assets/lucide/chevron-right.svg",
+      "source_sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b",
+      "published_sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/clipboard-paste.svg",
+      "destination": "vendor/plita_ui/assets/lucide/clipboard-paste.svg",
+      "source_sha256": "1b6ae38c9a03b6f4587aab3def027f2dd9a87361045a97acc15b0516e272d0e8",
+      "published_sha256": "1b6ae38c9a03b6f4587aab3def027f2dd9a87361045a97acc15b0516e272d0e8"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/contrast.svg",
+      "destination": "vendor/plita_ui/assets/lucide/contrast.svg",
+      "source_sha256": "a9f1a6166c479cd3e546625b09686a7e97322c850a9b146f270f912e886c395c",
+      "published_sha256": "a9f1a6166c479cd3e546625b09686a7e97322c850a9b146f270f912e886c395c"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/copy.svg",
+      "destination": "vendor/plita_ui/assets/lucide/copy.svg",
+      "source_sha256": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718",
+      "published_sha256": "ea80e566c7a12628a447cb53179b19aea4f60b9143e2becd0d0f20bf260e5718"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/dot.svg",
+      "destination": "vendor/plita_ui/assets/lucide/dot.svg",
+      "source_sha256": "7c98b944e15871f137e75ad9898975d4722bc632a30f65ac19d5ca39f3b5e2b4",
+      "published_sha256": "7c98b944e15871f137e75ad9898975d4722bc632a30f65ac19d5ca39f3b5e2b4"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/download.svg",
+      "destination": "vendor/plita_ui/assets/lucide/download.svg",
+      "source_sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d",
+      "published_sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/ellipsis.svg",
+      "destination": "vendor/plita_ui/assets/lucide/ellipsis.svg",
+      "source_sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112",
+      "published_sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/eraser.svg",
+      "destination": "vendor/plita_ui/assets/lucide/eraser.svg",
+      "source_sha256": "503094bdc45fa1dcab39209da8028dc2fe4ac8876a87c37b4b976fd8d6ee53bd",
+      "published_sha256": "503094bdc45fa1dcab39209da8028dc2fe4ac8876a87c37b4b976fd8d6ee53bd"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/file-pen-line.svg",
+      "destination": "vendor/plita_ui/assets/lucide/file-pen-line.svg",
+      "source_sha256": "a5eb2fceab005296a3d2240396869db01c86292e95207eeef65bb11166ec9a3e",
+      "published_sha256": "a5eb2fceab005296a3d2240396869db01c86292e95207eeef65bb11166ec9a3e"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/file-plus.svg",
+      "destination": "vendor/plita_ui/assets/lucide/file-plus.svg",
+      "source_sha256": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e",
+      "published_sha256": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/flip-horizontal-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/flip-horizontal-2.svg",
+      "source_sha256": "f8bbeaa885c8f56758d6d8478da8912679c352e12f371f7333405a8d83f14ee0",
+      "published_sha256": "f8bbeaa885c8f56758d6d8478da8912679c352e12f371f7333405a8d83f14ee0"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/flip-vertical-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/flip-vertical-2.svg",
+      "source_sha256": "705e5fea353c2418f14fe9c094e0e5023cac1b4ec5bc448392af5a7863c51382",
+      "published_sha256": "705e5fea353c2418f14fe9c094e0e5023cac1b4ec5bc448392af5a7863c51382"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/focus.svg",
+      "destination": "vendor/plita_ui/assets/lucide/focus.svg",
+      "source_sha256": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10",
+      "published_sha256": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/folder-open.svg",
+      "destination": "vendor/plita_ui/assets/lucide/folder-open.svg",
+      "source_sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b",
+      "published_sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/grid-2x2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/grid-2x2.svg",
+      "source_sha256": "dc1896d3b22e88e0ba45a77bc8e947b7a01d0c9fb5ff77d07d24a5589816bb84",
+      "published_sha256": "dc1896d3b22e88e0ba45a77bc8e947b7a01d0c9fb5ff77d07d24a5589816bb84"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/image.svg",
+      "destination": "vendor/plita_ui/assets/lucide/image.svg",
+      "source_sha256": "619c9db58c879dce6250376ba67d9c9102ca6dbb3b1efb9294c9f180e22273a5",
+      "published_sha256": "619c9db58c879dce6250376ba67d9c9102ca6dbb3b1efb9294c9f180e22273a5"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/layers.svg",
+      "destination": "vendor/plita_ui/assets/lucide/layers.svg",
+      "source_sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb",
+      "published_sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/LICENSE",
+      "destination": "vendor/plita_ui/assets/lucide/LICENSE",
+      "source_sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      "published_sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/maximize.svg",
+      "destination": "vendor/plita_ui/assets/lucide/maximize.svg",
+      "source_sha256": "1f790856b0de805ab62e871609f1990b89d227d472022e57a11fde015aad4826",
+      "published_sha256": "1f790856b0de805ab62e871609f1990b89d227d472022e57a11fde015aad4826"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/minus.svg",
+      "destination": "vendor/plita_ui/assets/lucide/minus.svg",
+      "source_sha256": "a0c743ab6dbf545d8a6e19ef3874f48ede686ce68d25e231bd81f540d97b1f19",
+      "published_sha256": "a0c743ab6dbf545d8a6e19ef3874f48ede686ce68d25e231bd81f540d97b1f19"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/mouse-pointer.svg",
+      "destination": "vendor/plita_ui/assets/lucide/mouse-pointer.svg",
+      "source_sha256": "9541b5c7cbf62f65801a1e6206db1290f077556ea9a9abb87a1ae497980eaf8e",
+      "published_sha256": "9541b5c7cbf62f65801a1e6206db1290f077556ea9a9abb87a1ae497980eaf8e"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/move.svg",
+      "destination": "vendor/plita_ui/assets/lucide/move.svg",
+      "source_sha256": "915074a1292f72d59165339b8b93f8d440c8d55b7116b52fca240b9ded5af74d",
+      "published_sha256": "915074a1292f72d59165339b8b93f8d440c8d55b7116b52fca240b9ded5af74d"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/package.svg",
+      "destination": "vendor/plita_ui/assets/lucide/package.svg",
+      "source_sha256": "399c20ee3a2ef58300e30f4c930b8cfa52bbb8faf19053593b0ab027ffd45903",
+      "published_sha256": "399c20ee3a2ef58300e30f4c930b8cfa52bbb8faf19053593b0ab027ffd45903"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/paint-bucket.svg",
+      "destination": "vendor/plita_ui/assets/lucide/paint-bucket.svg",
+      "source_sha256": "41b874de789e02cc6a519e3bcf6c80f4365dce47792993402773189fec23395e",
+      "published_sha256": "41b874de789e02cc6a519e3bcf6c80f4365dce47792993402773189fec23395e"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/pause.svg",
+      "destination": "vendor/plita_ui/assets/lucide/pause.svg",
+      "source_sha256": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c",
+      "published_sha256": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/pencil.svg",
+      "destination": "vendor/plita_ui/assets/lucide/pencil.svg",
+      "source_sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c",
+      "published_sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/pipette.svg",
+      "destination": "vendor/plita_ui/assets/lucide/pipette.svg",
+      "source_sha256": "3703307928af762a71bf141ba7582b15cb909f3d90916bcfe3c0becdf3ab4e70",
+      "published_sha256": "3703307928af762a71bf141ba7582b15cb909f3d90916bcfe3c0becdf3ab4e70"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/play.svg",
+      "destination": "vendor/plita_ui/assets/lucide/play.svg",
+      "source_sha256": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833",
+      "published_sha256": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/plus.svg",
+      "destination": "vendor/plita_ui/assets/lucide/plus.svg",
+      "source_sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17",
+      "published_sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/redo-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/redo-2.svg",
+      "source_sha256": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc",
+      "published_sha256": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/rotate-cw.svg",
+      "destination": "vendor/plita_ui/assets/lucide/rotate-cw.svg",
+      "source_sha256": "ddcfe6d87240475946935e77411cd4d15a06f3d28a9b921bafed224ebe953668",
+      "published_sha256": "ddcfe6d87240475946935e77411cd4d15a06f3d28a9b921bafed224ebe953668"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/save.svg",
+      "destination": "vendor/plita_ui/assets/lucide/save.svg",
+      "source_sha256": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53",
+      "published_sha256": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/settings.svg",
+      "destination": "vendor/plita_ui/assets/lucide/settings.svg",
+      "source_sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b",
+      "published_sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/slash.svg",
+      "destination": "vendor/plita_ui/assets/lucide/slash.svg",
+      "source_sha256": "2e8b636164f057c3113b04d36a5bb958f78aff454c4a644642da790ae2addbc8",
+      "published_sha256": "2e8b636164f057c3113b04d36a5bb958f78aff454c4a644642da790ae2addbc8"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/square.svg",
+      "destination": "vendor/plita_ui/assets/lucide/square.svg",
+      "source_sha256": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb",
+      "published_sha256": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/step-forward.svg",
+      "destination": "vendor/plita_ui/assets/lucide/step-forward.svg",
+      "source_sha256": "9253ad46e005b2b4a011e9bbeb66aadab56306e4b3674e7da3008af2274a0bb7",
+      "published_sha256": "9253ad46e005b2b4a011e9bbeb66aadab56306e4b3674e7da3008af2274a0bb7"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/trash-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/trash-2.svg",
+      "source_sha256": "e63698acf757d3043fcb4a9ea6ffceff9dd84708707eafc879c86b34a6ff2786",
+      "published_sha256": "e63698acf757d3043fcb4a9ea6ffceff9dd84708707eafc879c86b34a6ff2786"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/trash.svg",
+      "destination": "vendor/plita_ui/assets/lucide/trash.svg",
+      "source_sha256": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e",
+      "published_sha256": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/triangle.svg",
+      "destination": "vendor/plita_ui/assets/lucide/triangle.svg",
+      "source_sha256": "07ef0fa398d74189b9d59ce313534a4b01fad705d52b36f8e4e8fc57a3437023",
+      "published_sha256": "07ef0fa398d74189b9d59ce313534a4b01fad705d52b36f8e4e8fc57a3437023"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/undo-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/undo-2.svg",
+      "source_sha256": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f",
+      "published_sha256": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/volume-2.svg",
+      "destination": "vendor/plita_ui/assets/lucide/volume-2.svg",
+      "source_sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071",
+      "published_sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/zoom-in.svg",
+      "destination": "vendor/plita_ui/assets/lucide/zoom-in.svg",
+      "source_sha256": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1",
+      "published_sha256": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/zoom-out.svg",
+      "destination": "vendor/plita_ui/assets/lucide/zoom-out.svg",
+      "source_sha256": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921",
+      "published_sha256": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide_paths.rs",
+      "destination": "vendor/plita_ui/assets/lucide_paths.rs",
+      "source_sha256": "16846883198e599af68174d1ef24e63bfcb7f85b8061561d0db3aa42fba3fdf4",
+      "published_sha256": "16846883198e599af68174d1ef24e63bfcb7f85b8061561d0db3aa42fba3fdf4"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/README.md",
+      "destination": "vendor/plita_ui/assets/README.md",
+      "source_sha256": "66be9790f70581241e60e95b5d88cd2f66cbed0dde43e850b494f0817475293f",
+      "published_sha256": "66be9790f70581241e60e95b5d88cd2f66cbed0dde43e850b494f0817475293f"
+    },
+    {
+      "source": "plita/LICENSE",
+      "destination": "vendor/plita_ui/LICENSE",
+      "source_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e",
+      "published_sha256": "2dadfa6edd51be794ab22e839057c7ee69647925f2b264e7d00c76fbf7b5c58e"
+    },
+    {
+      "source": "gbdaw/crates/gbdaw-model/src/lib.rs",
+      "destination": "vendor/gbdaw-model/src/lib.rs",
+      "source_sha256": "ece98748371f6834771705d9508ad16944121ca47a81f2195ce33a72c65dfbfa",
+      "published_sha256": "ece98748371f6834771705d9508ad16944121ca47a81f2195ce33a72c65dfbfa"
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "vendor/gbdaw-model/LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    },
+    {
+      "source": "gbdaw/crates/gbdaw-engine/src/lib.rs",
+      "destination": "vendor/gbdaw-engine/src/lib.rs",
+      "source_sha256": "a9195bb598bf3730e7a3b0d5bf762ba6c33be65c39fc699dbf19047eb52066cc",
+      "published_sha256": "a9195bb598bf3730e7a3b0d5bf762ba6c33be65c39fc699dbf19047eb52066cc"
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "vendor/gbdaw-engine/LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    },
+    {
+      "source": "gbdaw/crates/gbdaw-export-kitaqgb/src/lib.rs",
+      "destination": "vendor/gbdaw-export-kitaqgb/src/lib.rs",
+      "source_sha256": "d416590fb7e1d2afc234a08130c518744a843f5959dc44e1ee02b40bf177d686",
+      "published_sha256": "d416590fb7e1d2afc234a08130c518744a843f5959dc44e1ee02b40bf177d686"
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "vendor/gbdaw-export-kitaqgb/LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    },
+    {
+      "source": "gbdaw/crates/gbdaw-kokura/src/lib.rs",
+      "destination": "vendor/gbdaw-kokura/src/lib.rs",
+      "source_sha256": "c1aa70470c2130a6b119add4e34e9a7bf3d4a50bb89bec792349dda8e09e5de1",
+      "published_sha256": "c1aa70470c2130a6b119add4e34e9a7bf3d4a50bb89bec792349dda8e09e5de1"
+    },
+    {
+      "source": "gbdaw/crates/gbdaw-kokura/src/lib.rs.bak",
+      "destination": "vendor/gbdaw-kokura/src/lib.rs.bak",
+      "source_sha256": "d28e740c4004c1af6922e22365a38e3f7fb124a73592144c3b0eb955336dd19c",
+      "published_sha256": null
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "vendor/gbdaw-kokura/LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/apu.rs",
+      "destination": "vendor/kokura-core/src/apu.rs",
+      "source_sha256": "ee4318875a759b90b3f4cf95304cf3a9a65d9170028b661321338bbc9906675e",
+      "published_sha256": "ee4318875a759b90b3f4cf95304cf3a9a65d9170028b661321338bbc9906675e"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/bus.rs",
+      "destination": "vendor/kokura-core/src/bus.rs",
+      "source_sha256": "c4f112281dbdc3c52b9308b21e5b809b083074d20e883404ac126bf1b67be824",
+      "published_sha256": "c4f112281dbdc3c52b9308b21e5b809b083074d20e883404ac126bf1b67be824"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cartridge.rs",
+      "destination": "vendor/kokura-core/src/cartridge.rs",
+      "source_sha256": "09c995334c36f99f71f5678f9ee9d5da821b63fc2bd94420e5fa09535b15147f",
+      "published_sha256": "09c995334c36f99f71f5678f9ee9d5da821b63fc2bd94420e5fa09535b15147f"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/decode.rs",
+      "destination": "vendor/kokura-core/src/cpu/decode.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/exec.rs",
+      "destination": "vendor/kokura-core/src/cpu/exec.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/mod.rs",
+      "destination": "vendor/kokura-core/src/cpu/mod.rs",
+      "source_sha256": "20a4df14964bc8b49c2bdd4c0a7dcb5e5ddd9ba786e387007f3266b270ccfd58",
+      "published_sha256": "20a4df14964bc8b49c2bdd4c0a7dcb5e5ddd9ba786e387007f3266b270ccfd58"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/ops_alu.rs",
+      "destination": "vendor/kokura-core/src/cpu/ops_alu.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/ops_jump.rs",
+      "destination": "vendor/kokura-core/src/cpu/ops_jump.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/ops_load.rs",
+      "destination": "vendor/kokura-core/src/cpu/ops_load.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/ops_misc.rs",
+      "destination": "vendor/kokura-core/src/cpu/ops_misc.rs",
+      "source_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31",
+      "published_sha256": "5309cff45519921d828f343242be8d3820d42fa8f5b12878b8d7f3a5c6642b31"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/cpu/regs.rs",
+      "destination": "vendor/kokura-core/src/cpu/regs.rs",
+      "source_sha256": "fc7f13b19639d3e7525abd0c1ed7a699dc932ae1e76339227ba89d05356251bd",
+      "published_sha256": "fc7f13b19639d3e7525abd0c1ed7a699dc932ae1e76339227ba89d05356251bd"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/dma.rs",
+      "destination": "vendor/kokura-core/src/dma.rs",
+      "source_sha256": "ea547c4e6333fd12a4b1f4b9cd6a1bdca8af41a7133d8f61f1b990c75d9f4527",
+      "published_sha256": "ea547c4e6333fd12a4b1f4b9cd6a1bdca8af41a7133d8f61f1b990c75d9f4527"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/error.rs",
+      "destination": "vendor/kokura-core/src/error.rs",
+      "source_sha256": "5c20f776b428fa09c80aa01f5ab23dc4bba649ed34254bd6b759bc470fae499c",
+      "published_sha256": "5c20f776b428fa09c80aa01f5ab23dc4bba649ed34254bd6b759bc470fae499c"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/interrupt.rs",
+      "destination": "vendor/kokura-core/src/interrupt.rs",
+      "source_sha256": "d85f6b7b6564a0e62b5d71ee6bf2752997b468d9dec9f4094e7e395917f481c4",
+      "published_sha256": "d85f6b7b6564a0e62b5d71ee6bf2752997b468d9dec9f4094e7e395917f481c4"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/joypad.rs",
+      "destination": "vendor/kokura-core/src/joypad.rs",
+      "source_sha256": "ac1f5ae62d8024fb55fce933ca25d22e1b676313829b2ef2e92284d379ea3349",
+      "published_sha256": "ac1f5ae62d8024fb55fce933ca25d22e1b676313829b2ef2e92284d379ea3349"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/lib.rs",
+      "destination": "vendor/kokura-core/src/lib.rs",
+      "source_sha256": "79c6cb8d6f526fffc72715771985ab0b513455007885b75cbd321ef9557202bd",
+      "published_sha256": "79c6cb8d6f526fffc72715771985ab0b513455007885b75cbd321ef9557202bd"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/camera.rs",
+      "destination": "vendor/kokura-core/src/mbc/camera.rs",
+      "source_sha256": "dc9cf9363dee6b3dd82dd149763ed6f19e17ab84e453a1fd890224ac7e7c1304",
+      "published_sha256": "dc9cf9363dee6b3dd82dd149763ed6f19e17ab84e453a1fd890224ac7e7c1304"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/huc1.rs",
+      "destination": "vendor/kokura-core/src/mbc/huc1.rs",
+      "source_sha256": "1206fae2dc001597d08aba4a43589f82445f65c1643d376d9cb57bd257df4866",
+      "published_sha256": "1206fae2dc001597d08aba4a43589f82445f65c1643d376d9cb57bd257df4866"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/huc3.rs",
+      "destination": "vendor/kokura-core/src/mbc/huc3.rs",
+      "source_sha256": "3f90139f2d37940ab36c762ca832d14fc06502acfd783b39b3c922765aa4994f",
+      "published_sha256": "3f90139f2d37940ab36c762ca832d14fc06502acfd783b39b3c922765aa4994f"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc1.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc1.rs",
+      "source_sha256": "6aad41fff386af2cee74af935de94c4a6ea80509d0a35bdb9e451fa64d47fcb7",
+      "published_sha256": "6aad41fff386af2cee74af935de94c4a6ea80509d0a35bdb9e451fa64d47fcb7"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc2.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc2.rs",
+      "source_sha256": "57324db31c0d221fc470ceb742e5527a5878764a01f00fa2efc581050fddc779",
+      "published_sha256": "57324db31c0d221fc470ceb742e5527a5878764a01f00fa2efc581050fddc779"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc3.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc3.rs",
+      "source_sha256": "50676c0eb54c011e1e523d08d3682080317b996ec8f745de59fe70abc0d47620",
+      "published_sha256": "50676c0eb54c011e1e523d08d3682080317b996ec8f745de59fe70abc0d47620"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc5.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc5.rs",
+      "source_sha256": "e682dc8bda3e93746f1b0a3e9ca961f344890c514b099d48b3ed0eb70959e12a",
+      "published_sha256": "e682dc8bda3e93746f1b0a3e9ca961f344890c514b099d48b3ed0eb70959e12a"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc6.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc6.rs",
+      "source_sha256": "2a25e0e7bbdda7840bdec21662be71697ef57a91e8554c8ffc28b1da83718396",
+      "published_sha256": "2a25e0e7bbdda7840bdec21662be71697ef57a91e8554c8ffc28b1da83718396"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mbc7.rs",
+      "destination": "vendor/kokura-core/src/mbc/mbc7.rs",
+      "source_sha256": "ec61314d34493c6ec1aa72b2e877c65e06bcb30e2cb4e59b9da4924645669097",
+      "published_sha256": "ec61314d34493c6ec1aa72b2e877c65e06bcb30e2cb4e59b9da4924645669097"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mmm01.rs",
+      "destination": "vendor/kokura-core/src/mbc/mmm01.rs",
+      "source_sha256": "177e38597f137fcdd8b135ddffe194389486cdd6050ca590479458e6b2e1db9f",
+      "published_sha256": "177e38597f137fcdd8b135ddffe194389486cdd6050ca590479458e6b2e1db9f"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/mod.rs",
+      "destination": "vendor/kokura-core/src/mbc/mod.rs",
+      "source_sha256": "cb40c141cf72a5b20454777a848f084f6165a4f297af553aef7432dbeb8f9d30",
+      "published_sha256": "cb40c141cf72a5b20454777a848f084f6165a4f297af553aef7432dbeb8f9d30"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/rom_only.rs",
+      "destination": "vendor/kokura-core/src/mbc/rom_only.rs",
+      "source_sha256": "9bf44911bc96eaeeb7c8c102176661d5443a8b401ae8bf2ae0634902658a4656",
+      "published_sha256": "9bf44911bc96eaeeb7c8c102176661d5443a8b401ae8bf2ae0634902658a4656"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/mbc/tama5.rs",
+      "destination": "vendor/kokura-core/src/mbc/tama5.rs",
+      "source_sha256": "58c05525c3b285af278bc7198bf54464c89c3e7d912fd2982aa8410983043ab7",
+      "published_sha256": "58c05525c3b285af278bc7198bf54464c89c3e7d912fd2982aa8410983043ab7"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/memory.rs",
+      "destination": "vendor/kokura-core/src/memory.rs",
+      "source_sha256": "8d31f54c3ace682044e7b8e305875a49ca6207ef8d4158537fc6da6848091f91",
+      "published_sha256": "8d31f54c3ace682044e7b8e305875a49ca6207ef8d4158537fc6da6848091f91"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/ppu/mod.rs",
+      "destination": "vendor/kokura-core/src/ppu/mod.rs",
+      "source_sha256": "a45cf4d92614454eb81469b32d491b5d11757a2a087f2392b330608586fd8e25",
+      "published_sha256": "a45cf4d92614454eb81469b32d491b5d11757a2a087f2392b330608586fd8e25"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/ppu/regs.rs",
+      "destination": "vendor/kokura-core/src/ppu/regs.rs",
+      "source_sha256": "4c4ce32b23c94e529f750ef1ddfa972457f5b1a204ab39de2ce60f748fa9e1ca",
+      "published_sha256": "4c4ce32b23c94e529f750ef1ddfa972457f5b1a204ab39de2ce60f748fa9e1ca"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/ppu/render.rs",
+      "destination": "vendor/kokura-core/src/ppu/render.rs",
+      "source_sha256": "4c4ce32b23c94e529f750ef1ddfa972457f5b1a204ab39de2ce60f748fa9e1ca",
+      "published_sha256": "4c4ce32b23c94e529f750ef1ddfa972457f5b1a204ab39de2ce60f748fa9e1ca"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/serial.rs",
+      "destination": "vendor/kokura-core/src/serial.rs",
+      "source_sha256": "10479d466f900273905dfe28d6c07fd402ad5059cad2242c51ab7b96927c48a5",
+      "published_sha256": "10479d466f900273905dfe28d6c07fd402ad5059cad2242c51ab7b96927c48a5"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/state.rs",
+      "destination": "vendor/kokura-core/src/state.rs",
+      "source_sha256": "8d37c7fd0812dd677b836a0f3f897218f0bdce57ea69043be044fd28fe4ad2d2",
+      "published_sha256": "8d37c7fd0812dd677b836a0f3f897218f0bdce57ea69043be044fd28fe4ad2d2"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/timer.rs",
+      "destination": "vendor/kokura-core/src/timer.rs",
+      "source_sha256": "24a28bb5d2079584e42c696350949a7f0e07c01cdaae702a3ec214dc88ce4fd8",
+      "published_sha256": "24a28bb5d2079584e42c696350949a7f0e07c01cdaae702a3ec214dc88ce4fd8"
+    },
+    {
+      "source": "gbdaw/vendor/kokura-core/src/types.rs",
+      "destination": "vendor/kokura-core/src/types.rs",
+      "source_sha256": "cb4f4487035192cd788c095202702b6643e38e8804d9e009122919a370d61e77",
+      "published_sha256": "cb4f4487035192cd788c095202702b6643e38e8804d9e009122919a370d61e77"
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "vendor/kokura-core/LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    },
+    {
+      "source": "plita/assets/fonts/Roboto-OFL.txt",
+      "destination": "assets/fonts/Roboto-OFL.txt",
+      "source_sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41",
+      "published_sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41"
+    },
+    {
+      "source": "plita/assets/fonts/Roboto[wdth,wght].ttf",
+      "destination": "assets/fonts/Roboto[wdth,wght].ttf",
+      "source_sha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134",
+      "published_sha256": "d7598e12c5dbef095ff8272cfc55da0250bd07fbdecbac8a530b9b277872a134"
+    },
+    {
+      "source": "plita/assets/fonts/RobotoMono-OFL.txt",
+      "destination": "assets/fonts/RobotoMono-OFL.txt",
+      "source_sha256": "50ab8dd54680d3473f649c9db86fece88434d097c7834475c1c72d2f8c429215",
+      "published_sha256": "50ab8dd54680d3473f649c9db86fece88434d097c7834475c1c72d2f8c429215"
+    },
+    {
+      "source": "plita/assets/fonts/RobotoMono-Regular.ttf",
+      "destination": "assets/fonts/RobotoMono-Regular.ttf",
+      "source_sha256": "af0bff7599c3df3831755c16e39b3c496df74b8c8d8a1161b14dc8461be17cb4",
+      "published_sha256": "af0bff7599c3df3831755c16e39b3c496df74b8c8d8a1161b14dc8461be17cb4"
+    },
+    {
+      "source": "plita/crates/plita_ui/assets/lucide/LICENSE",
+      "destination": "licenses/assets/Lucide-Feather.txt",
+      "source_sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      "published_sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    },
+    {
+      "source": "plita/licenses/fonts/Roboto-OFL.txt",
+      "destination": "licenses/fonts/Roboto-OFL.txt",
+      "source_sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41",
+      "published_sha256": "061402327a96aadb0bfb694a960ed289ecd38d383e396243831ab81feb109c41"
+    },
+    {
+      "source": "plita/licenses/fonts/RobotoMono-OFL.txt",
+      "destination": "licenses/fonts/RobotoMono-OFL.txt",
+      "source_sha256": "50ab8dd54680d3473f649c9db86fece88434d097c7834475c1c72d2f8c429215",
+      "published_sha256": "50ab8dd54680d3473f649c9db86fece88434d097c7834475c1c72d2f8c429215"
+    },
+    {
+      "source": "kokura/LICENSE",
+      "destination": "LICENSE",
+      "source_sha256": "ca707e79f9a54d832837a7217ecd92cd9994967ae97415feeedc091e8e2e1a7d",
+      "published_sha256": "d6b70ab1321710186b08220397f46319e3bd277450121600e260d5254a24f032"
+    }
+  ],
+  "adjustments": [
+    "Self-contained manifests, Metal backend, no unused audio decoders",
+    "Executable-relative font discovery; lowercase plita product text",
+    "Only GBSEQ and ten required library crates; no emulator GUI, ROMs or user songs",
+    "Optional native-startup CI receipt added; CI and portable packaging scripts supplied",
+    "Nine complete parallel user manuals supplied; historical developer paths normalized",
+    "MIT copyright and permission retained; unrelated sample-font supplement omitted from GBSEQ/GBDAW/KOKURA license copies",
+    "Unused backup source and obsolete development README excluded"
+  ]
+}

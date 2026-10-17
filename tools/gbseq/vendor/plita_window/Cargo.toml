@@ -1,0 +1,16 @@
+[package]
+name = "plita_window"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.92"
+license = "MIT"
+authors = ["plita UI Contributors"]
+description = "Window and event-loop layer for plita UI."
+
+[dependencies]
+plita_ui = { path = "../plita_ui" }
+plita_render = { path = "../plita_render" }
+thiserror = "2.0"
+tracing = "0.1"
+pollster = "0.4"
+winit = "0.30.13"

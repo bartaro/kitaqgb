@@ -1,0 +1,22 @@
+[package]
+name = "plita"
+version = "0.0.1"
+edition = "2021"
+rust-version = "1.92"
+license = "MIT"
+authors = ["plita UI Contributors"]
+description = "Top-level re-export crate for plita UI."
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[features]
+default = []
+python = ["dep:pyo3"]
+
+[dependencies]
+plita_app = { path = "../plita_app" }
+plita_window = { path = "../plita_window" }
+plita_render = { path = "../plita_render" }
+plita_ui = { path = "../plita_ui" }
+pyo3 = { version = "0.21", features = ["abi3-py310", "extension-module"], optional = true }
