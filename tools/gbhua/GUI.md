@@ -12,6 +12,9 @@ Author: DAISUKE OBA. Original application code: MIT.
 
 Extract the complete archive. Windows: open `GBHUA.exe` and keep `assets` beside
 it. Mac: copy `GBHUA.app` to Applications. No Rust or Python installation is needed.
+
+Windows 10/11 x64 also requires [Microsoft Visual C++ v14 Redistributable x64](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). If `VCRUNTIME140.dll` is reported missing, install the current x64 package from Microsoft. Do not download individual DLLs from other sites.
+
 The Mac build targets macOS 11 or later and a Metal-capable GPU; CI runs on macOS
 15, so macOS 11 is a deployment target, not a separately tested OS.
 

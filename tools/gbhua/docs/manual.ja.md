@@ -1,5 +1,7 @@
 # GBHUA
 
+Windows 10/11 x64では[Microsoft Visual C++ v14 Redistributable x64](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)も必要です。`VCRUNTIME140.dll`がないと表示された場合は、Microsoft公式の最新x64版をインストールしてください。他のサイトからDLL単体を入手しないでください。
+
 ## ダウンロードと起動
 
 [GUIダウンロード](../GUI.md)でOSに合うアーカイブを選び、全体を展開してください。Windowsは`GBHUA.exe`を開き、隣の`assets`フォルダも残します。Macは`GBHUA.app`をアプリケーションフォルダへコピーして開きます。Apple Silicon版とIntel版を間違えないでください。配布GUIの実行にRustやPythonは不要です。Developer ID署名・公証は未実施です。公式リポジトリから入手し、Macに拒否された場合は出所を確認した上で「システム設定 > プライバシーとセキュリティ」からこのアプリだけを許可してください。OS全体の保護は無効にしないでください。

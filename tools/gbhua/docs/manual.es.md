@@ -1,5 +1,7 @@
 # GBHUA
 
+Windows 10/11 x64 también requiere [Microsoft Visual C++ v14 Redistributable x64](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). Si falta `VCRUNTIME140.dll`, instale el paquete x64 actual de Microsoft. No descargue DLL individuales de otros sitios.
+
 ## Descarga e inicio
 
 Descargue el archivo de su sistema en [Descargas GUI](../GUI.md) y extraiga todo su contenido. En Windows abra `GBHUA.exe` conservando la carpeta `assets` a su lado. En Mac copie `GBHUA.app` a Aplicaciones; elija Apple Silicon o Intel según su equipo. No necesita Rust ni Python para ejecutar la GUI. La aplicación no tiene firma Developer ID ni notarización. Use el repositorio oficial; si macOS la bloquea, verifique su origen y autorice solo esta aplicación en Ajustes del Sistema > Privacidad y seguridad. No desactive la protección del sistema.

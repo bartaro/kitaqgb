@@ -1,5 +1,7 @@
 # GBHUA
 
+Windows 10/11 x64에는 [Microsoft Visual C++ v14 Redistributable x64](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist)도 필요합니다. `VCRUNTIME140.dll`이 없다는 메시지가 나오면 Microsoft 공식 최신 x64 패키지를 설치하세요. 다른 사이트에서 DLL만 내려받지 마세요.
+
 ## 다운로드와 시작
 
 [GUI 다운로드](../GUI.md)에서 운영체제에 맞는 압축 파일을 내려받아 전체를 풉니다. Windows에서는 `GBHUA.exe`를 열고 옆의 `assets` 폴더를 유지합니다. Mac에서는 `GBHUA.app`을 응용 프로그램 폴더에 복사합니다. Apple Silicon과 Intel 버전을 구분하세요. 실행에 Rust나 Python은 필요 없습니다. Developer ID 서명과 공증은 제공되지 않습니다. 공식 저장소에서 받은 파일인지 확인하고, macOS가 차단하면 시스템 설정 > 개인정보 보호 및 보안에서 이 앱만 허용하세요. 시스템 보호를 끄지 마세요.
