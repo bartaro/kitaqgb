@@ -18,5 +18,7 @@ Run `gbseq.exe` or `./gbseq` for the GUI; use `gbseq-cli --help` for the CLI.
 The native library is optional. Binaries are built from the source commit in
 each package's `verification/native.json`; that record also contains binary
 hashes, audio checks, and the tested platform. `verification/gui-startup.json`
-records a native GUI startup check, not physical mouse/keyboard or audio-device
-testing. No commercial music, game ROM or LINK16 ROM is included.
+records a native GUI startup check with the Japanese editor: a white-key width
+of 88 pixels and a note extended from 2 to 6 steps by synthetic pointer events.
+This is not a physical mouse/keyboard or audio-device test. No commercial
+music, game ROM or LINK16 ROM is included.
