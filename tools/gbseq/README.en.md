@@ -2,7 +2,9 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an independent CLI. Both share the project model, editing rules, KOKURA audio rendering and exporters. LOCAL 4CH, CABLE 8CH and DMG07 16CH support one, two and four players. Each player has CH1 pulse, CH2 pulse, CH3 wave and CH4 noise. A project holds 1–256 bars, 16 steps per bar (4096 steps/channel), BPM 30–300 and a loop on/off setting. The GUI labels are English; this manual is available in nine languages.
+GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an independent CLI. Both share the project model, editing rules, KOKURA audio rendering and exporters. LOCAL 4CH, CABLE 8CH and DMG07 16CH support one, two and four players. Each player has CH1 pulse, CH2 pulse, CH3 wave and CH4 noise. A project holds 1–256 bars, 16 steps per bar (4096 steps/channel), BPM 30–300 and a loop on/off setting. Choose English or Japanese in the View menu, or launch with `gbseq --language ja` or `en`. Japanese text requires a Japanese-capable system font.
+
+Press **E** or double-click a track header to edit that track on the piano roll (E returns to the overview). Drag a note’s right edge to extend it up to the next note or the song end. In the CH3 user-wave graph, draw across the 32 samples; Ctrl+Z undoes one stroke.
 
 ## Install and start
 

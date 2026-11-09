@@ -8,4 +8,4 @@ Game Boy sequencer by DAISUKE OBA: plita GUI, headless CLI, 4/8/16-channel editi
 - [English user manual](README.en.md) / [日本語説明書](README.ja.md)
 - [MIT license](LICENSE) / [Third-party notices](THIRD_PARTY_NOTICES.md) / [License audit](LICENSE_AUDIT.json)
 
-The GUI uses English labels. All nine manuals cover installation, editing, sound design, CLI, export, Python and build/troubleshooting. No game ROM or user music is bundled.
+The GUI supports Japanese and English (View menu). Double-click a track header or press E to open its key editor. Drag note ends to resize; draw a CH3 user waveform directly in its graph. All nine manuals cover installation, editing, sound design, CLI, export, Python and troubleshooting. No game ROM or user music is bundled.

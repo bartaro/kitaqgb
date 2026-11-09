@@ -1,10 +1,40 @@
 {
   "source_files": [
     {
+      "source": "gbseq/src/app/i18n.rs",
+      "destination": "src/app/i18n.rs",
+      "source_sha256": "6a1adebc08169487b9f08b224bdbaff6ce2250a7b31acc64a3e8b9a92d1b7a3e",
+      "published_sha256": "6a1adebc08169487b9f08b224bdbaff6ce2250a7b31acc64a3e8b9a92d1b7a3e"
+    },
+    {
+      "source": "gbseq/src/app/key_editor.rs",
+      "destination": "src/app/key_editor.rs",
+      "source_sha256": "de41867490e5fb83b6bc2cfb47ce9f59a25ab17c608867e1cfeaafc758693857",
+      "published_sha256": "de41867490e5fb83b6bc2cfb47ce9f59a25ab17c608867e1cfeaafc758693857"
+    },
+    {
+      "source": "gbseq/src/app/locale_ja.tsv",
+      "destination": "src/app/locale_ja.tsv",
+      "source_sha256": "5ed9e3b9e1beb0ae4625206b521d578611e1e7f881166f777343d215965b917a",
+      "published_sha256": "5ed9e3b9e1beb0ae4625206b521d578611e1e7f881166f777343d215965b917a"
+    },
+    {
+      "source": "gbseq/src/app/verification.rs",
+      "destination": "src/app/verification.rs",
+      "source_sha256": "50ec5c59ccf93a4de97fc1584d1a04b272f26ff2335117f4a88624ade82d08a5",
+      "published_sha256": "50ec5c59ccf93a4de97fc1584d1a04b272f26ff2335117f4a88624ade82d08a5"
+    },
+    {
+      "source": "gbseq/src/app/wave_graph.rs",
+      "destination": "src/app/wave_graph.rs",
+      "source_sha256": "158e71d86a2005bd106ecfff3e57c736acf41d4add6e198312db73c4d15b5591",
+      "published_sha256": "158e71d86a2005bd106ecfff3e57c736acf41d4add6e198312db73c4d15b5591"
+    },
+    {
       "source": "gbseq/src/app.rs",
       "destination": "src/app.rs",
-      "source_sha256": "9daf5bb14c7105b157d78362dcd36c7fc3458f90f828a4b8f290fae5aa17247a",
-      "published_sha256": "305e9bfb785230b50a475ca6e5e21273e3779a5f37be97bea5ad757e0d15edef"
+      "source_sha256": "485dd85796248937e2deb96df4fc28c10f2830e125fa2b708159f22eb51ffe9f",
+      "published_sha256": "6d1486452f0989c0f2e2082cbe33c38b1031f3d7c31b365b25ea1abdd1260e0e"
     },
     {
       "source": "gbseq/src/bin/gbseq-cli.rs",
@@ -45,8 +75,8 @@
     {
       "source": "gbseq/src/main.rs",
       "destination": "src/main.rs",
-      "source_sha256": "212842685eb68d7088b855a8550866316bae88e66cac25473eb1f4dd7c3c80d7",
-      "published_sha256": "b7dd85eafd660fece7910800560335385f06de7d0ff4f61fd25b26bdba4ad1b4"
+      "source_sha256": "18d4c5c56bf4c0dacad4218b5faaeaa563b00604963c435834540fead20581e5",
+      "published_sha256": "179b76f56bc9063582e4323a7b1c86bd206d8a5da29e49380af151cb12b12696"
     },
     {
       "source": "gbseq/src/model.rs",

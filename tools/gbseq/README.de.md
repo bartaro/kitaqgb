@@ -2,7 +2,9 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide verwenden dasselbe Modell, dieselbe Prüfung, KOKURA-Audioausgabe und Exportlogik. LOCAL 4CH, CABLE 8CH und DMG07 16CH stehen für 1, 2 und 4 Game Boy. Jeder Spieler hat CH1/CH2 Puls, CH3 Wellenform und CH4 Rauschen. Ein Stück umfasst 1–256 Takte mit je 16 Schritten (4096 je Kanal), BPM 30–300 und eine Schleifenoption. Die Oberfläche ist englisch; Handbücher gibt es in neun Sprachen.
+GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide verwenden dasselbe Modell, dieselbe Prüfung, KOKURA-Audioausgabe und Exportlogik. LOCAL 4CH, CABLE 8CH und DMG07 16CH stehen für 1, 2 und 4 Game Boy. Jeder Spieler hat CH1/CH2 Puls, CH3 Wellenform und CH4 Rauschen. Ein Stück umfasst 1–256 Takte mit je 16 Schritten (4096 je Kanal), BPM 30–300 und eine Schleifenoption. Die Oberfläche lässt sich im Menü View oder mit `gbseq --language ja` bzw. `en` auf Japanisch oder Englisch umstellen. Für Japanisch wird eine geeignete Systemschrift benötigt.
+
+Mit **E** oder einem Doppelklick auf den Spurkopf öffnet sich der Piano-Roll-Editor der Spur; E führt zurück zur Übersicht. Ziehen Sie den rechten Notenrand bis zur nächsten Note oder zum Stückende. Im CH3-Welleneditor können Sie die 32 Abtastwerte zeichnen; Strg+Z nimmt einen Strich zurück.
 
 ## Installation
 

@@ -1,0 +1,220 @@
+FILE	ファイル
+EDIT	編集
+VIEW	表示
+EXPORT	出力
+PLAY	再生
+STOP	停止
+AUDITION	試聴
+SAVE	保存
+UNDO	元に戻す
+REDO	やり直す
+ADD	追加
+DUP	複製
+DEL	削除
+ALIGN	整列
+FIT	全体
+BAR-	小節-
+BAR+	小節+
+LOOP ON	ループ ON
+LOOP OFF	ループ OFF
+LOCAL 4CH	単体 4CH
+CABLE 8CH	2台 8CH
+DMG07 16CH	4台 16CH
+ALL16	全16CH
+New          Ctrl+N	新規作成     Ctrl+N
+Open         Ctrl+O	開く         Ctrl+O
+Save         Ctrl+S	保存         Ctrl+S
+Save as  Ctrl+Shift+S	名前を付けて保存 Ctrl+Shift+S
+Undo         Ctrl+Z	元に戻す     Ctrl+Z
+Redo         Ctrl+Y	やり直す     Ctrl+Y
+Select lane  Ctrl+A	トラック内を選択 Ctrl+A
+Duplicate    Ctrl+D	複製         Ctrl+D
+Delete          Del	削除         Del
+Align to snap     Q	グリッドに揃える Q
+Octave up	1オクターブ上げる
+Octave down	1オクターブ下げる
+Fit song          F	曲全体を表示 F
+Go to start    Home	先頭へ       Home
+Zoom in           +	拡大         +
+Zoom out          -	縮小         -
+Cycle snap        G	グリッド切替 G
+Render WAV	WAVを書き出す
+KITAQGB current player	選択プレイヤーをKITAQGB出力
+LINK16 saves	LINK16 SAVを書き出す
+TRACKS	トラック
+MIDI BAR DETAIL	ノート詳細
+SELECT A MIDI BAR	ノートを選択してください
+Double-click empty track space	トラックの空き領域を
+to create a bar.	ダブルクリックしてノートを追加
+DOUBLE-CLICK THE BAR	ノートをダブルクリック
+to edit timing and sound effects.	タイミングと音色を編集します
+DUPLICATE	複製
+DELETE	削除
+START	開始位置
+PITCH	音程
+LENGTH	長さ
+LEVEL	音量
+PAN	定位
+DUTY	デューティ比
+ENV PERIOD	減衰・増幅速度
+SWEEP TIME	スイープ周期
+SWEEP SHIFT	スイープ量
+WAVE LEVEL	CH3音量
+LINK16 WAVE	波形プリセット
+WAVE SOURCE	波形ソース
+SLOT LEVEL	プリセット音量
+NOISE SHIFT	ノイズシフト
+NOISE DIV	ノイズ分周
+ENV DIRECTION	減衰／増幅
+SWEEP SIGN	スイープ方向
+NOISE WIDTH	ノイズ幅
+ENV INCREASE	エンベロープ 増幅
+ENV DECREASE	エンベロープ 減衰
+SWEEP DOWN	スイープ 下降
+SWEEP UP	スイープ 上昇
+WIDTH 7-BIT	幅 7ビット
+WIDTH 15-BIT	幅 15ビット
+NEW USER WAVE	波形を新規作成
+CURVE	曲線表示
+POLYLINE	折れ線表示
+DRAG TO DRAW / 32 SAMPLES / 0-15	ドラッグで線描・32点・値0～15
+POINT {}  VALUE {}	位置 {}  値 {}
+{} / DRAW 32x4-BIT	{} / 波形編集 32点×4bit
+PRESET {}	波形 {}
+User Wave {}	ユーザー波形 {}
+MISSING USER WAVE	波形未設定
+TRIANGLE	三角波
+SAW	のこぎり波
+VOWEL A	母音 A
+VOWEL I	母音 I
+VOWEL U	母音 U
+VOWEL E	母音 E
+VOWEL O	母音 O
+LEFT	左
+RIGHT	右
+CENTER	中央
+BOTH	左右
+OFF	無効
+Pulse 1	矩形波 1
+Pulse 2	矩形波 2
+Wave	波形音源
+Noise	ノイズ
+{} MIDI BARS	{} ノート
+{} beat	{} 拍
+LENGTH  {} beats	長さ  {} 拍
+START   {}	開始位置   {}
+NOISE {}	ノイズ {}
+STOPPED	停止中
+PLAYING	再生中
+RENDERING	音声生成中
+FRAME GRID	フレーム単位
+1/4-BEAT SNAP	16分音符グリッド
+{} FRAME/STEP	{} フレーム/ステップ
+{}   {}   {} BARS / {} STEPS   {}	{}   {}   {} 小節 / {} ステップ   {}
+READY - audio output unavailable; WAV/export remain available	準備完了・音声出力なし（WAV・データ出力は利用できます）
+READY - double-click empty lane to add; double-click a bar for detail	空き領域をダブルクリックで音符追加・音符をダブルクリックで詳細編集
+DRAWING USER WAVE	波形を描画中
+USER WAVE updated	波形を更新しました
+USER WAVE limit is 64	ユーザー波形は最大64個です
+Select a CH3 MIDI bar first	CH3のノートを選択してください
+User waves are available on CH3	ユーザー波形はCH3で使用できます
+USER WAVE {} created and assigned to preset {}	ユーザー波形 {} を作成し、プリセット {} に設定しました
+Display language changed	表示言語を変更しました
+Language changed for this session; preference could not be saved	表示言語を変更しました（設定は保存できませんでした）
+NEW sequence	新規プロジェクト
+OPENED {}	読み込み完了 {}
+SAVED {}	保存完了 {}
+OPEN failed: {}	読み込み失敗: {}
+SAVE failed: {}	保存失敗: {}
+DROP failed: {}	ファイル読み込み失敗: {}
+ADD failed: {}	追加失敗: {}
+DUPLICATE failed: {}	複製失敗: {}
+PASTE failed: {}	貼り付け失敗: {}
+EXPORT failed: {}	書き出し失敗: {}
+LINK16 SAV failed: {}	LINK16 SAV出力失敗: {}
+PLAY failed: {}	再生失敗: {}
+AUDITION failed: {}	試聴失敗: {}
+WAV failed: {}	WAV出力失敗: {}
+PLAY render failed: {}	再生音声の生成失敗: {}
+PLAY unavailable: no audio output	再生できません: 音声出力デバイスなし
+AUDITION unavailable: no audio output	試聴できません: 音声出力デバイスなし
+PLAYBACK finished	再生終了
+PLAYING / CACHE HIT - no render needed	再生中（生成済み音声を使用）
+PLAYING ALL16 / LOOP ON	全16CH再生中 / ループ ON
+PLAYING ALL16 / LOOP OFF	全16CH再生中 / ループ OFF
+PLAYING / LOOP ON	再生中 / ループ ON
+PLAYING / LOOP OFF	再生中 / ループ OFF
+RENDERING ALL16 playback with KOKURA-Core...	全16CHの音声を生成中...
+RENDERING playback with KOKURA-Core...	再生音声を生成中...
+AUDITION selected MIDI bar	選択ノートを試聴中
+EXPORTING WAV snapshot in background - editing remains available	WAVを出力中（引き続き編集できます）
+WAV rendered -> {}	WAV出力完了 → {}
+WAV worker disconnected	WAV出力処理が中断されました
+PLAY render worker disconnected	再生音声の生成処理が中断されました
+KITAQGB export {} bytes -> {}	KITAQGB出力 {} バイト → {}
+LINK16 {} players / {} steps / {} BPM -> {}	LINK16 {} 台 / {} ステップ / {} BPM → {}
+FIT whole song / + zooms back in	曲全体を表示（+キーで拡大）
+SNAP {} steps	グリッド {} ステップ
+ZOOM {} px/beat	表示倍率 {} px/拍
+MEASURES {}	小節数 {}
+TYPE MEASURES {}..{} AND PRESS ENTER	小節数 {}～{} を入力し、Enterで確定
+MEASURES unchanged at {}	小節数は {} のままです
+DETAIL closed	詳細を閉じました
+DETAIL opened	詳細を開きました
+DETAIL switch changed	音色設定を変更しました
+DETAIL {} changed	音色項目 {} を変更しました
+DETAIL opened for MIDI bar {}	ノート {} の詳細を開きました
+SELECTED MIDI bar {}	ノート {} を選択しました
+ADDED {} at {} - DETAIL opened	{} を {} に追加・詳細を開きました
+ADDED {} at {}	{} を {} に追加しました
+MIDI bar edit committed	ノート編集を確定しました
+LANE selected / Ctrl+A selects its notes	トラック選択（Ctrl+Aでノートを全選択）
+RIGHT CLICK: DEL removes selected bar	Delキーで選択ノートを削除
+CURSOR {} {}	カーソル {} {}
+{} MUTE {}	{} ミュート {}
+{} SOLO {}	{} ソロ {}
+EDIT PLAYER {} / {}	プレイヤー {} を編集 / {}
+EDIT PLAYER {}	プレイヤー {} を編集
+ALL16 overview - PLAY mixes all four players	全16CH表示・再生で4台分を同時に演奏
+LOOP ON - playback repeats	ループ ON・繰り返し再生します
+LOOP OFF - playback stops at the finale	ループ OFF・曲の最後で停止します
+UNDO stack is empty	元に戻せる編集はありません
+REDO stack is empty	やり直せる編集はありません
+GBSEQ - Unsaved changes	GBSEQ - 未保存の変更
+Save this sequence before replacing it?	現在のプロジェクトを保存してから切り替えますか？
+GBSEQ project	GBSEQプロジェクト
+Wave audio	WAV音声
+CTRL+S SAVE  SPACE PLAY  DEL DELETE  +/- ZOOM	Ctrl+S 保存  Space 再生  Del 削除  +/- 拡大縮小
+Play from start [Space] - repeat playback uses cached audio	先頭から再生 [Space]・再演奏は生成済み音声を使用
+Stop [Space]	停止 [Space]
+Save [Ctrl+S] / Save as [Ctrl+Shift+S]	保存 [Ctrl+S] / 名前を付けて保存 [Ctrl+Shift+S]
+Undo [Ctrl+Z]	元に戻す [Ctrl+Z]
+Redo [Ctrl+Y]	やり直す [Ctrl+Y]
+Duplicate selection [Ctrl+D]	選択ノートを複製 [Ctrl+D]
+Delete selection [Del]	選択ノートを削除 [Del]
+Cycle grid [G]: 1/16, 1/8, 1/4 notes	グリッド切替 [G]：16分・8分・4分音符
+Align selected starts to grid [Q]; rejects overlaps	開始位置をグリッドに揃える [Q]（重なりは拒否）
+Fit entire song [F]	曲全体を表示 [F]
+Audition selected note	選択ノートを試聴
+Ctrl+A selects the current lane; Ctrl/Shift-click toggles notes	Ctrl+A トラック内を全選択・Ctrl/Shift+クリックで複数選択
+KEY EDITOR [E]	キーエディタ [E]
+ALL TRACKS [E]	全トラック [E]
+Key editor / All tracks E	キーエディタ／全トラック E
+KEY EDITOR: drag notes / wheel: pitch / Shift+wheel: time / E: all tracks	ドラッグで音符編集・ホイールで音域移動・Shift+ホイールで時間移動・Eで戻る
+Lead	リード
+Bass	ベース
+Wave Pad	波形パッド
+Drums	ドラム
+Select a MIDI bar first	ノートを選択してください
+MIDI bar deleted	ノートを削除しました
+MIDI bar duplicated	ノートを複製しました
+COPIED MIDI bar	ノートをコピーしました
+PASTED MIDI bar	ノートを貼り付けました
+Clipboard is empty	クリップボードは空です
+EDIT {} / {} selected	編集 {} / {} ノート選択
+EDIT unchanged: {}	編集を適用できませんでした: {}
+{} notes selected in current lane / arrows move and transpose	トラック内の {} ノートを選択・矢印キーで移動と移調
+MEASURES must be {}..{}; unchanged at {}	小節数は {}～{} で指定してください（現在 {}）
+{} / {} players	{} / {} 台
+NOTE LENGTH {} steps	ノートの長さ {} ステップ
+NOTE LENGTH limited by next note - move the next note to extend further	次の音符が延長の上限です・さらに伸ばすには次の音符を移動してください

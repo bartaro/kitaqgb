@@ -2,7 +2,9 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-DAISUKE OBA의 GBSEQ는 plita GUI와 독립 CLI를 제공하는 게임보이 시퀀서입니다. 편집 모델, 검증, KOKURA 음원과 내보내기를 공유합니다. LOCAL 4CH / CABLE 8CH / DMG07 16CH는 1·2·4대를 지원합니다. 각 기기의 CH1·CH2는 펄스, CH3은 파형, CH4는 노이즈입니다. 곡은 1–256마디, 마디당 16스텝(채널당 최대 4096), BPM 30–300이며 반복 여부를 저장합니다. GUI 표시는 영어이고 설명서는 9개 언어입니다.
+DAISUKE OBA의 GBSEQ는 plita GUI와 독립 CLI를 제공하는 게임보이 시퀀서입니다. 편집 모델, 검증, KOKURA 음원과 내보내기를 공유합니다. LOCAL 4CH / CABLE 8CH / DMG07 16CH는 1·2·4대를 지원합니다. 각 기기의 CH1·CH2는 펄스, CH3은 파형, CH4는 노이즈입니다. 곡은 1–256마디, 마디당 16스텝(채널당 최대 4096), BPM 30–300이며 반복 여부를 저장합니다. View 메뉴에서 일본어와 영어를 선택하거나 시작할 때 `gbseq --language ja` 또는 `en`을 지정할 수 있습니다. 일본어 표시에는 일본어를 지원하는 시스템 글꼴이 필요합니다.
+
+**E**를 누르거나 트랙 머리글을 두 번 클릭하면 해당 트랙의 피아노 롤이 열립니다. E를 다시 누르면 전체 보기로 돌아갑니다. 음표 오른쪽 끝을 끌어 다음 음표 직전이나 곡 끝까지 늘릴 수 있습니다. CH3 사용자 파형 그래프에서는 32개 샘플을 선으로 그리며, Ctrl+Z로 한 획을 취소합니다.
 
 ## 설치와 실행
 

@@ -25,6 +25,13 @@ use crate::model::{
 };
 use std::collections::BTreeSet;
 
+mod i18n;
+mod key_editor;
+mod verification;
+mod wave_graph;
+use i18n::Language;
+pub use verification::run_startup_smoke;
+
 const DEFAULT_WINDOW_W: u32 = 1480;
 const DEFAULT_WINDOW_H: u32 = 900;
 const HEADER_H: f32 = 82.0;
@@ -99,6 +106,10 @@ enum Action {
     Export,
     ExportLink16Sav,
     AddUserWave,
+    WaveCurve,
+    Language,
+    KeyEditor,
+    KeyTrack(i8),
     SetLink16Mode(Link16Mode),
     SetPlayer(usize),
     ToggleAllPlayers,
@@ -167,6 +178,8 @@ fn action_icon(action: Action) -> Option<&'static str> {
         }
         Action::ToggleLoop => "rotate-cw",
         Action::Home => "arrow-left",
+        Action::Language => "settings",
+        Action::KeyEditor => "grid-2x2",
         _ => return None,
     })
 }
@@ -395,6 +408,13 @@ pub struct GbseqApp {
     playback_looped: bool,
     wave_dragging: bool,
     wave_drag_before: Option<SequenceProject>,
+    wave_drag_last: Option<(usize, u8)>,
+    wave_curve: bool,
+    hover: Point,
+    language: Language,
+    key_editor: bool,
+    key_low: u8,
+    shift_down: bool,
 }
 
 impl GbseqApp {
@@ -454,6 +474,13 @@ impl GbseqApp {
             playback_looped: false,
             wave_dragging: false,
             wave_drag_before: None,
+            wave_drag_last: None,
+            wave_curve: true,
+            hover: Point::new(-1.0, -1.0),
+            language: Language::detect(),
+            key_editor: false,
+            key_low: 12,
+            shift_down: false,
         }
     }
 
@@ -477,20 +504,22 @@ impl GbseqApp {
 
     fn ruler_rect(&self) -> Rect {
         let inspector = self.inspector_rect();
+        let left = self.timeline_left();
         Rect::new(
-            TRACK_HEADER_W,
+            left,
             HEADER_H + TOOLBAR_H,
-            (inspector.x - TRACK_HEADER_W).max(160.0),
+            (inspector.x - left).max(160.0),
             RULER_H,
         )
     }
 
     fn timeline_viewport(&self) -> Rect {
         let inspector = self.inspector_rect();
+        let left = self.timeline_left();
         Rect::new(
-            TRACK_HEADER_W,
+            left,
             HEADER_H + TOOLBAR_H + RULER_H,
-            (inspector.x - TRACK_HEADER_W).max(160.0),
+            (inspector.x - left).max(160.0),
             (self.size.height - HEADER_H - TOOLBAR_H - RULER_H - STATUS_H - SCROLLBAR_H).max(180.0),
         )
     }
@@ -531,7 +560,9 @@ impl GbseqApp {
     }
 
     fn visible_track_start(&self) -> usize {
-        if self.all_players_visible() {
+        if self.key_editor {
+            self.selected_track
+        } else if self.all_players_visible() {
             0
         } else {
             self.active_player * TRACK_COUNT
@@ -539,7 +570,9 @@ impl GbseqApp {
     }
 
     fn visible_track_count(&self) -> usize {
-        if self.all_players_visible() {
+        if self.key_editor {
+            1
+        } else if self.all_players_visible() {
             self.project.player_count() * TRACK_COUNT
         } else {
             TRACK_COUNT
@@ -548,7 +581,7 @@ impl GbseqApp {
 
     fn header_lane_rect(&self, track_index: usize) -> Rect {
         let lane = self.lane_rect(track_index);
-        Rect::new(0.0, lane.y, TRACK_HEADER_W, lane.height)
+        Rect::new(0.0, lane.y, self.timeline_left(), lane.height)
     }
 
     fn timeline_content_size(&self) -> Size {
@@ -588,6 +621,9 @@ impl GbseqApp {
     }
 
     fn point_pitch(&self, track_index: usize, point: Point) -> u8 {
+        if self.key_editor {
+            return self.key_pitch(point.y);
+        }
         if self.all_players_visible() {
             return if track_index % TRACK_COUNT == 3 {
                 35
@@ -606,6 +642,9 @@ impl GbseqApp {
     }
 
     fn note_rect(&self, track_index: usize, note: &MidiNote) -> Rect {
+        if self.key_editor {
+            return self.key_note_rect(note);
+        }
         let lane = self.lane_rect(track_index);
         let y = if self.all_players_visible() {
             lane.y + (lane.height - NOTE_H) * 0.5
@@ -631,6 +670,24 @@ impl GbseqApp {
         }
         let start = self.visible_track_start();
         let end = start + self.visible_track_count();
+        // At low zoom, minimum-width bars can overlap visually. The selected
+        // note's visible resize handle must remain grabbable in that overlap.
+        if let Some(note) = self.selected_note.and_then(|id| self.project.note(id)) {
+            if let Some((track, _)) = self.project.note_location(note.id) {
+                let rect = self.note_rect(track, note);
+                if (start..end).contains(&track)
+                    && rect.contains(point)
+                    && point.x >= rect.right() - NOTE_HANDLE_W
+                {
+                    return Some(NoteHit {
+                        id: note.id,
+                        track,
+                        part: NoteHitPart::Resize,
+                    });
+                }
+            }
+        }
+        let mut padded_edge: Option<(f32, NoteHit)> = None;
         for track_index in (start..end).rev() {
             let track = &self.project.tracks[track_index];
             for note in track.notes.iter().rev() {
@@ -647,9 +704,28 @@ impl GbseqApp {
                         part,
                     });
                 }
+                // Include the outer border and a small amount of padding,
+                // without stealing a click inside a neighbouring note body.
+                let distance = point.x - rect.right();
+                if (0.0..=4.0).contains(&distance)
+                    && point.y >= rect.y
+                    && point.y <= rect.bottom()
+                    && padded_edge
+                        .as_ref()
+                        .is_none_or(|(best, _)| distance < *best)
+                {
+                    padded_edge = Some((
+                        distance,
+                        NoteHit {
+                            id: note.id,
+                            track: track_index,
+                            part: NoteHitPart::Resize,
+                        },
+                    ));
+                }
             }
         }
-        None
+        padded_edge.map(|(_, hit)| hit)
     }
 
     fn active_user_wave_index(&self) -> Option<usize> {
@@ -669,6 +745,9 @@ impl GbseqApp {
     }
 
     fn wave_editor_rect(&self) -> Option<Rect> {
+        if !self.detail_open {
+            return None;
+        }
         self.active_user_wave_index()?;
         let inspector = self.inspector_rect();
         Some(Rect::new(
@@ -679,25 +758,14 @@ impl GbseqApp {
         ))
     }
 
-    fn edit_wave_at(&mut self, point: Point) -> bool {
-        let Some(rect) = self.wave_editor_rect() else {
-            return false;
+    fn inspector_row_height(&self) -> f32 {
+        let reserved = if self.active_user_wave_index().is_some() {
+            334.0
+        } else {
+            184.0
         };
-        if !rect.contains(point) {
-            return false;
-        }
-        let Some(wave_index) = self.active_user_wave_index() else {
-            return false;
-        };
-        let sample = (((point.x - rect.x) / rect.width) * WAVE_SAMPLE_COUNT as f32)
-            .floor()
-            .clamp(0.0, (WAVE_SAMPLE_COUNT - 1) as f32) as usize;
-        let value = (15.0 - ((point.y - rect.y) / rect.height * 15.0))
-            .round()
-            .clamp(0.0, 15.0) as u8;
-        let changed = self.project.user_waves[wave_index].samples[sample] != value;
-        self.project.user_waves[wave_index].samples[sample] = value;
-        changed
+        ((self.inspector_rect().height - reserved) / self.inspector_fields().len().max(1) as f32)
+            .clamp(18.0, 39.0)
     }
 
     fn toolbar_buttons(&self) -> Vec<ButtonSpec> {
@@ -764,13 +832,34 @@ impl GbseqApp {
             x += width + 6.0;
         }
         x += MEASURES_INPUT_W + 6.0;
-        for (action, label, width) in [(Action::Measures(1), "BAR+", 52.0)] {
+        for (action, label, width) in [
+            (Action::Measures(1), "BAR+", 52.0),
+            (
+                Action::KeyEditor,
+                if self.key_editor {
+                    "ALL TRACKS [E]"
+                } else {
+                    "KEY EDITOR [E]"
+                },
+                142.0,
+            ),
+        ] {
             buttons.push(ButtonSpec {
                 action,
                 rect: Rect::new(x, y, width, 31.0),
                 label: label.to_string(),
             });
             x += width + 6.0;
+        }
+        if self.key_editor {
+            for (action, label) in [(Action::KeyTrack(-1), "<"), (Action::KeyTrack(1), ">")] {
+                buttons.push(ButtonSpec {
+                    action,
+                    rect: Rect::new(x, y, 32.0, 31.0),
+                    label: label.into(),
+                });
+                x += 38.0;
+            }
         }
         buttons
     }
@@ -784,15 +873,29 @@ impl GbseqApp {
         let first = self.visible_track_start();
         for index in first..first + self.visible_track_count() {
             let lane = self.header_lane_rect(index);
-            let button_y = lane.y + (lane.height - 24.0) * 0.5;
+            let button_y = if self.key_editor {
+                self.ruler_rect().y + 7.0
+            } else {
+                lane.y + (lane.height - 24.0) * 0.5
+            };
             buttons.push(ButtonSpec {
                 action: Action::ToggleMute(index),
-                rect: Rect::new(lane.x + 116.0, button_y, 28.0, 24.0),
+                rect: Rect::new(
+                    lane.x + if self.key_editor { 52.0 } else { 116.0 },
+                    button_y,
+                    if self.key_editor { 24.0 } else { 28.0 },
+                    24.0,
+                ),
                 label: "M".to_string(),
             });
             buttons.push(ButtonSpec {
                 action: Action::ToggleSolo(index),
-                rect: Rect::new(lane.x + 150.0, button_y, 28.0, 24.0),
+                rect: Rect::new(
+                    lane.x + if self.key_editor { 80.0 } else { 150.0 },
+                    button_y,
+                    if self.key_editor { 24.0 } else { 28.0 },
+                    24.0,
+                ),
                 label: "S".to_string(),
             });
         }
@@ -828,20 +931,21 @@ impl GbseqApp {
         ];
         let fields = self.inspector_fields();
         for (row, field) in fields.iter().enumerate() {
-            let y = rect.y + 112.0 + row as f32 * 39.0;
+            let y = rect.y + 112.0 + row as f32 * self.inspector_row_height();
+            let height = (self.inspector_row_height() - 2.0).min(26.0);
             buttons.push(ButtonSpec {
                 action: Action::Adjust(*field, -1),
-                rect: Rect::new(rect.x + 132.0, y, 30.0, 26.0),
+                rect: Rect::new(rect.x + 132.0, y, 30.0, height),
                 label: "-".to_string(),
             });
             buttons.push(ButtonSpec {
                 action: Action::Adjust(*field, 1),
-                rect: Rect::new(rect.right() - 44.0, y, 30.0, 26.0),
+                rect: Rect::new(rect.right() - 44.0, y, 30.0, height),
                 label: "+".to_string(),
             });
         }
 
-        let toggle_y = rect.y + 112.0 + fields.len() as f32 * 39.0;
+        let toggle_y = rect.y + 112.0 + fields.len() as f32 * self.inspector_row_height();
         if let Some((track_index, _)) = self
             .selected_note
             .and_then(|id| self.project.note_location(id))
@@ -874,6 +978,13 @@ impl GbseqApp {
                         rect: Rect::new(rect.x + 14.0, toggle_y, 126.0, 28.0),
                         label: "NEW USER WAVE".to_string(),
                     });
+                    if self.active_user_wave_index().is_some() {
+                        buttons.push(ButtonSpec {
+                            action: Action::WaveCurve,
+                            rect: Rect::new(rect.x + 148.0, toggle_y, 126.0, 28.0),
+                            label: if self.wave_curve { "CURVE" } else { "POLYLINE" }.to_string(),
+                        });
+                    }
                 }
             }
         }
@@ -1041,6 +1152,8 @@ impl GbseqApp {
                     (Action::Zoom(1), "Zoom in           +"),
                     (Action::Zoom(-1), "Zoom out          -"),
                     (Action::Snap, "Cycle snap        G"),
+                    (Action::Language, "日本語 / English"),
+                    (Action::KeyEditor, "Key editor / All tracks E"),
                 ],
             ),
             MenuKind::Export => (
@@ -1090,8 +1203,11 @@ impl GbseqApp {
             return true;
         }
         match rfd::MessageDialog::new()
-            .set_title("GBSEQ - Unsaved changes")
-            .set_description("Save this sequence before replacing it?")
+            .set_title(self.language.translate("GBSEQ - Unsaved changes"))
+            .set_description(
+                self.language
+                    .translate("Save this sequence before replacing it?"),
+            )
             .set_buttons(rfd::MessageButtons::YesNoCancel)
             .show()
         {
@@ -1189,6 +1305,11 @@ impl GbseqApp {
     }
 
     fn ensure_selection_exists(&mut self) {
+        self.active_player = self.active_player.min(self.project.player_count() - 1);
+        self.selected_track = self.selected_track.min(self.project.tracks.len() - 1);
+        if self.project.link16_mode != Link16Mode::Dmg07_16 {
+            self.all_players_view = false;
+        }
         self.selected_notes
             .retain(|id| self.project.note(*id).is_some());
         if self
@@ -1543,7 +1664,7 @@ impl GbseqApp {
             }
             Action::SaveAs => {
                 if let Some(path) = FileDialog::new()
-                    .add_filter("GBSEQ project", &["gbseq"])
+                    .add_filter(self.language.translate("GBSEQ project"), &["gbseq"])
                     .set_file_name("sequence.gbseq")
                     .save_file()
                 {
@@ -1626,6 +1747,20 @@ impl GbseqApp {
             Action::Export => self.export_dialog(),
             Action::ExportLink16Sav => self.export_link16_sav_dialog(),
             Action::AddUserWave => self.add_user_wave(),
+            Action::WaveCurve => self.wave_curve = !self.wave_curve,
+            Action::Language => self.toggle_language(),
+            Action::KeyEditor => {
+                if self.key_editor {
+                    self.key_editor = false;
+                } else {
+                    self.open_key_track(self.selected_track);
+                }
+            }
+            Action::KeyTrack(delta) => {
+                let count = self.project.tracks.len() as i32;
+                let next = (self.selected_track as i32 + delta as i32).rem_euclid(count);
+                self.open_key_track(next as usize);
+            }
             Action::SetLink16Mode(mode) => {
                 self.selected_notes.clear();
                 let before = self.project.clone();
@@ -1633,6 +1768,7 @@ impl GbseqApp {
                 self.active_player = self.active_player.min(self.project.player_count() - 1);
                 self.all_players_view = false;
                 self.selected_track = self.active_player * TRACK_COUNT;
+                self.center_key_range();
                 self.selected_note = None;
                 self.detail_open = false;
                 self.push_undo(before);
@@ -1644,6 +1780,7 @@ impl GbseqApp {
                     self.active_player = player;
                     self.all_players_view = false;
                     self.selected_track = player * TRACK_COUNT;
+                    self.center_key_range();
                     self.selected_note = None;
                     self.detail_open = false;
                     self.status = format!(
@@ -1654,6 +1791,7 @@ impl GbseqApp {
                 }
             }
             Action::ToggleAllPlayers => {
+                self.key_editor = false;
                 self.selected_notes.clear();
                 if self.project.link16_mode == Link16Mode::Dmg07_16 {
                     self.all_players_view = !self.all_players_view;
@@ -1775,7 +1913,7 @@ impl GbseqApp {
 
     fn open_dialog(&mut self) {
         let Some(path) = FileDialog::new()
-            .add_filter("GBSEQ project", &["gbseq", "json"])
+            .add_filter(self.language.translate("GBSEQ project"), &["gbseq", "json"])
             .pick_file()
         else {
             return;
@@ -1788,7 +1926,7 @@ impl GbseqApp {
     fn save_dialog(&mut self) {
         let path = self.current_path.clone().or_else(|| {
             FileDialog::new()
-                .add_filter("GBSEQ project", &["gbseq"])
+                .add_filter(self.language.translate("GBSEQ project"), &["gbseq"])
                 .set_file_name("sequence.gbseq")
                 .save_file()
         });
@@ -1846,7 +1984,7 @@ impl GbseqApp {
 
     fn render_wav_dialog(&mut self) {
         let Some(path) = FileDialog::new()
-            .add_filter("Wave audio", &["wav"])
+            .add_filter(self.language.translate("Wave audio"), &["wav"])
             .set_file_name("gbseq_mix.wav")
             .save_file()
         else {
@@ -1966,18 +2104,25 @@ impl GbseqApp {
         let Some(id) = self.selected_note else {
             return;
         };
-        self.stop_audio();
         let Some((track_index, note_index)) = self.project.note_location(id) else {
             return;
         };
+        self.preview_note(
+            track_index,
+            self.project.tracks[track_index].notes[note_index].clone(),
+        );
+    }
+
+    fn preview_note(&mut self, track_index: usize, mut note: MidiNote) {
+        self.stop_audio();
         let mut preview = self.project.clone();
         preview.bpm = self.project.bpm;
         preview.measures = 1;
-        preview
-            .tracks
-            .iter_mut()
-            .for_each(|track| track.notes.clear());
-        let mut note = self.project.tracks[track_index].notes[note_index].clone();
+        preview.tracks.iter_mut().for_each(|track| {
+            track.notes.clear();
+            track.mute = false;
+            track.solo = false;
+        });
         note.start = 0;
         note.length = note.length.min(STEPS_PER_MEASURE);
         preview.tracks[track_index].notes.push(note);
@@ -2151,7 +2296,10 @@ impl GbseqApp {
                     .note_location(id)
                     .map(|(track, _)| track)
                     .unwrap_or(self.selected_track);
-                let new_pitch = if self.all_players_visible() || track_index % TRACK_COUNT == 3 {
+                let new_pitch = if self.key_editor {
+                    let delta_pitch = (-(point.y - origin.y) / self.key_height()).round() as i8;
+                    add_signed_u8(pitch, delta_pitch, 0, 47)
+                } else if self.all_players_visible() || track_index % TRACK_COUNT == 3 {
                     pitch
                 } else {
                     let lane = self.lane_rect(track_index);
@@ -2167,8 +2315,28 @@ impl GbseqApp {
                 length,
             } => {
                 let delta = ((point.x - origin_x) / self.half_step_w).round() as i32;
-                self.project
-                    .resize_note(id, add_signed_u32(length, delta).max(1))
+                let requested = add_signed_u32(length, delta).max(1);
+                let Some((track, index)) = self.project.note_location(id) else {
+                    return false;
+                };
+                let note = &self.project.tracks[track].notes[index];
+                let next_start = self.project.tracks[track]
+                    .notes
+                    .iter()
+                    .filter(|other| other.id != id && other.start >= note.end())
+                    .map(|other| other.start)
+                    .min();
+                let limit = next_start.unwrap_or(self.project.total_steps()) - note.start;
+                let changed = self.project.resize_note(id, requested.min(limit).max(1));
+                self.status = if requested > limit && next_start.is_some() {
+                    "NOTE LENGTH limited by next note - move the next note to extend further".into()
+                } else {
+                    format!(
+                        "NOTE LENGTH {} steps",
+                        self.project.note(id).unwrap().length
+                    )
+                };
+                changed
             }
         }
     }
@@ -2229,6 +2397,7 @@ impl GbseqApp {
         }
 
         match upper.as_str() {
+            "E" => self.apply_action(Action::KeyEditor),
             "F" => self.apply_action(Action::FitSong),
             "HOME" => self.apply_action(Action::Home),
             "G" => self.apply_action(Action::Snap),
@@ -2303,16 +2472,15 @@ impl GbseqApp {
             HEADER,
         );
         list.fill_rect(Rect::new(0.0, HEADER_H - 2.0, self.size.width, 2.0), ACCENT);
-        draw_text(list, 15.0, 15.0, "GBSEQ", 1.55, TEXT);
+        self.text(list, 15.0, 15.0, "GBSEQ", 1.55, TEXT);
         let timing_label = self
             .project
             .frames_per_step_override
             .map(|frames| format!("{} FRAME/STEP", frames))
             .unwrap_or_else(|| format!("{} BPM", self.project.bpm));
-        draw_text(
+        self.text_in(
             list,
-            104.0,
-            17.0,
+            Rect::new(104.0, 17.0, (self.size.width - 238.0).max(1.0), 28.0),
             &format!(
                 "{}   {}   {} BARS / {} STEPS   {}",
                 format!(
@@ -2324,14 +2492,15 @@ impl GbseqApp {
                     },
                     self.project.title
                 ),
-                timing_label,
+                self.language.translate(&timing_label),
                 self.project.measures,
                 self.project.total_steps(),
-                if self.project.frames_per_step_override.is_some() {
-                    "FRAME GRID"
-                } else {
-                    "1/4-BEAT SNAP"
-                }
+                self.language
+                    .translate(if self.project.frames_per_step_override.is_some() {
+                        "FRAME GRID"
+                    } else {
+                        "1/4-BEAT SNAP"
+                    })
             ),
             1.0,
             MUTED,
@@ -2343,7 +2512,7 @@ impl GbseqApp {
         } else {
             "STOPPED"
         };
-        draw_text(
+        self.text(
             list,
             self.size.width - 118.0,
             17.0,
@@ -2399,10 +2568,15 @@ impl GbseqApp {
                 text_color,
             );
         }
-        draw_text(
+        let text_top = if spec.rect.height < 24.0 { 3.0 } else { 8.0 };
+        self.text_in(
             list,
-            spec.rect.x + if icon.is_some() { 33.0 } else { 7.0 },
-            spec.rect.y + 9.0,
+            Rect::new(
+                spec.rect.x + if icon.is_some() { 33.0 } else { 7.0 },
+                spec.rect.y + text_top,
+                spec.rect.width - if icon.is_some() { 39.0 } else { 14.0 },
+                spec.rect.height - text_top - 2.0,
+            ),
             &spec.label,
             0.82,
             text_color,
@@ -2446,7 +2620,7 @@ impl GbseqApp {
             .filter(|text| !text.is_empty())
             .map(str::to_string)
             .unwrap_or_else(|| self.project.measures.to_string());
-        draw_text(
+        self.text(
             list,
             input.x + 9.0,
             input.y + 9.0,
@@ -2458,7 +2632,10 @@ impl GbseqApp {
 
     fn draw_ruler(&self, list: &mut DrawList) {
         let ruler = self.ruler_rect();
-        list.fill_rect(Rect::new(0.0, ruler.y, TRACK_HEADER_W, ruler.height), PANEL);
+        list.fill_rect(
+            Rect::new(0.0, ruler.y, self.timeline_left(), ruler.height),
+            PANEL,
+        );
         list.fill_rect(ruler, Color::rgb8(22, 27, 32));
         list.push_clip(ruler);
         let first = (self.scroll_x() / self.half_step_w).floor().max(0.0) as u32;
@@ -2474,7 +2651,7 @@ impl GbseqApp {
                         .max(1.0) as u32)
                     == 0
             {
-                draw_text(
+                self.text(
                     list,
                     x + 5.0,
                     ruler.y + 11.0,
@@ -2483,7 +2660,7 @@ impl GbseqApp {
                     TEXT,
                 );
             } else if step % 4 == 0 && self.half_step_w >= 12.0 {
-                draw_text(
+                self.text(
                     list,
                     x + 3.0,
                     ruler.y + 16.0,
@@ -2494,7 +2671,16 @@ impl GbseqApp {
             }
         }
         list.pop_clip();
-        draw_text(list, 14.0, ruler.y + 12.0, "TRACKS", 0.92, MUTED);
+        let label = if self.key_editor {
+            format!(
+                "P{} CH{}",
+                self.selected_track / TRACK_COUNT + 1,
+                self.selected_track % TRACK_COUNT + 1
+            )
+        } else {
+            "TRACKS".into()
+        };
+        self.text(list, 14.0, ruler.y + 12.0, &label, 0.92, MUTED);
         list.stroke_rect(
             Rect::new(0.0, ruler.y, self.inspector_rect().x, ruler.height),
             1.0,
@@ -2503,6 +2689,10 @@ impl GbseqApp {
     }
 
     fn draw_tracks(&self, list: &mut DrawList) {
+        if self.key_editor {
+            self.draw_key_editor(list);
+            return;
+        }
         let viewport = self.timeline_viewport();
         let first_track = self.visible_track_start();
         let track_count = self.visible_track_count();
@@ -2523,7 +2713,7 @@ impl GbseqApp {
             let color = track_color(track_index);
             list.fill_rect(Rect::new(header.x, header.y, 5.0, header.height), color);
             if self.all_players_visible() {
-                draw_text(
+                self.text(
                     list,
                     header.x + 15.0,
                     header.y + (header.height - 12.0) * 0.5,
@@ -2535,7 +2725,7 @@ impl GbseqApp {
                     0.76,
                     color,
                 );
-                draw_text(
+                self.text(
                     list,
                     header.x + 72.0,
                     header.y + (header.height - 12.0) * 0.5,
@@ -2544,7 +2734,7 @@ impl GbseqApp {
                     MUTED,
                 );
             } else {
-                draw_text(
+                self.text(
                     list,
                     header.x + 15.0,
                     header.y + 15.0,
@@ -2556,7 +2746,7 @@ impl GbseqApp {
                     1.05,
                     color,
                 );
-                draw_text(
+                self.text(
                     list,
                     header.x + 15.0,
                     header.y + 42.0,
@@ -2564,7 +2754,7 @@ impl GbseqApp {
                     0.98,
                     TEXT,
                 );
-                draw_text(
+                self.text(
                     list,
                     header.x + 15.0,
                     header.bottom() - 24.0,
@@ -2667,7 +2857,7 @@ impl GbseqApp {
                     } else {
                         note_label(note.pitch)
                     };
-                    draw_text(list, rect.x + 5.0, rect.y + 5.0, &label, 0.70, BG);
+                    self.text(list, rect.x + 5.0, rect.y + 5.0, &label, 0.70, BG);
                 }
             }
         }
@@ -2693,7 +2883,7 @@ impl GbseqApp {
         let rect = self.inspector_rect();
         list.fill_vertical_gradient_rect(rect, Color::rgb8(30, 36, 43), PANEL);
         list.stroke_rect(rect, 1.0, BORDER);
-        draw_text(
+        self.text(
             list,
             rect.x + 14.0,
             rect.y + 16.0,
@@ -2703,7 +2893,7 @@ impl GbseqApp {
         );
 
         let Some(id) = self.selected_note else {
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 58.0,
@@ -2711,7 +2901,7 @@ impl GbseqApp {
                 0.95,
                 MUTED,
             );
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 86.0,
@@ -2719,7 +2909,7 @@ impl GbseqApp {
                 0.82,
                 MUTED,
             );
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 108.0,
@@ -2734,7 +2924,7 @@ impl GbseqApp {
         };
         let note = &self.project.tracks[track_index].notes[note_index];
         let track = &self.project.tracks[track_index];
-        draw_text(
+        self.text(
             list,
             rect.x + 14.0,
             rect.y + 40.0,
@@ -2743,7 +2933,7 @@ impl GbseqApp {
             track_color(track_index),
         );
         if !self.detail_open {
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 78.0,
@@ -2751,7 +2941,7 @@ impl GbseqApp {
                 0.98,
                 ACCENT,
             );
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 104.0,
@@ -2759,7 +2949,7 @@ impl GbseqApp {
                 0.82,
                 MUTED,
             );
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 142.0,
@@ -2767,7 +2957,7 @@ impl GbseqApp {
                 0.86,
                 TEXT,
             );
-            draw_text(
+            self.text(
                 list,
                 rect.x + 14.0,
                 rect.y + 168.0,
@@ -2783,22 +2973,37 @@ impl GbseqApp {
         }
         let fields = self.inspector_fields();
         for (row, field) in fields.iter().enumerate() {
-            let y = rect.y + 112.0 + row as f32 * 39.0;
-            draw_text(
+            let y = rect.y + 112.0 + row as f32 * self.inspector_row_height();
+            self.text_in(
                 list,
-                rect.x + 14.0,
-                y + 8.0,
+                Rect::new(
+                    rect.x + 14.0,
+                    y + 5.0,
+                    112.0,
+                    self.inspector_row_height() - 3.0,
+                ),
                 field_label(*field),
                 0.83,
                 MUTED,
             );
             let value = field_value(&self.project, *field, note);
-            draw_text(list, rect.x + 173.0, y + 8.0, &value, 0.88, TEXT);
+            self.text_in(
+                list,
+                Rect::new(
+                    rect.x + 170.0,
+                    y + 5.0,
+                    rect.width - 218.0,
+                    self.inspector_row_height() - 3.0,
+                ),
+                &value,
+                0.88,
+                TEXT,
+            );
         }
-        let toggles_y = rect.y + 112.0 + fields.len() as f32 * 39.0 + 38.0;
+        let toggles_y = rect.y + 112.0 + fields.len() as f32 * self.inspector_row_height() + 38.0;
         match track.kind {
             TrackKind::Pulse1 | TrackKind::Pulse2 => {
-                draw_text(
+                self.text(
                     list,
                     rect.x + 14.0,
                     toggles_y,
@@ -2814,7 +3019,7 @@ impl GbseqApp {
                     TEXT,
                 );
                 if track.kind == TrackKind::Pulse1 {
-                    draw_text(
+                    self.text(
                         list,
                         rect.x + 148.0,
                         toggles_y,
@@ -2831,7 +3036,7 @@ impl GbseqApp {
                     );
                 }
             }
-            TrackKind::Noise => draw_text(
+            TrackKind::Noise => self.text(
                 list,
                 rect.x + 14.0,
                 toggles_y,
@@ -2852,29 +3057,15 @@ impl GbseqApp {
             (self.active_user_wave_index(), self.wave_editor_rect())
         {
             let wave = &self.project.user_waves[wave_index];
-            draw_text(
+            self.text(
                 list,
                 wave_rect.x,
                 wave_rect.y - 22.0,
-                &format!("{} / DRAW 32x4-BIT", wave.name),
+                &format!("{} / DRAW 32x4-BIT", self.language.translate(&wave.name)),
                 0.76,
                 MUTED,
             );
-            list.fill_rect(wave_rect, Color::rgb8(14, 18, 22));
-            list.stroke_rect(wave_rect, 1.0, BORDER);
-            let cell_w = wave_rect.width / WAVE_SAMPLE_COUNT as f32;
-            for (index, sample) in wave.samples.iter().enumerate() {
-                let height = ((*sample as f32 + 1.0) / 16.0) * wave_rect.height;
-                list.fill_rect(
-                    Rect::new(
-                        wave_rect.x + index as f32 * cell_w,
-                        wave_rect.bottom() - height,
-                        (cell_w - 1.0).max(1.0),
-                        height,
-                    ),
-                    track_color(2),
-                );
-            }
+            self.draw_wave_graph(list, wave_rect, &wave.samples);
         }
     }
 
@@ -2882,15 +3073,19 @@ impl GbseqApp {
         let rect = self.status_rect();
         list.fill_rect(rect, Color::rgb8(17, 21, 25));
         list.fill_rect(Rect::new(rect.x, rect.y, rect.width, 1.0), BORDER);
-        draw_text(
+        self.text_in(
             list,
-            rect.x + 12.0,
-            rect.y + 10.0,
+            Rect::new(
+                rect.x + 12.0,
+                rect.y + 8.0,
+                (rect.width - 350.0).max(1.0),
+                21.0,
+            ),
             &self.status,
             0.82,
             MUTED,
         );
-        draw_text(
+        self.text(
             list,
             rect.right() - 316.0,
             rect.y + 10.0,
@@ -2911,6 +3106,10 @@ impl PlitaProgram for GbseqApp {
     fn handle_event(&mut self, event: UiEvent) -> UiResponse {
         match event {
             UiEvent::PointerMove { position } => {
+                let was_over_wave = self
+                    .wave_editor_rect()
+                    .is_some_and(|r| r.contains(self.hover));
+                self.hover = position;
                 if self.wave_dragging {
                     self.edit_wave_at(position);
                     return UiResponse::redraw();
@@ -2931,7 +3130,12 @@ impl PlitaProgram for GbseqApp {
                     self.handle_note_drag(position);
                     return UiResponse::redraw();
                 }
-                if self.buttons.set_hovered(self.action_at(position)) {
+                if self.buttons.set_hovered(self.action_at(position))
+                    || was_over_wave
+                    || self
+                        .wave_editor_rect()
+                        .is_some_and(|r| r.contains(position))
+                {
                     UiResponse::redraw()
                 } else {
                     UiResponse::none()
@@ -2955,6 +3159,7 @@ impl PlitaProgram for GbseqApp {
                     .is_some_and(|rect| rect.contains(position))
                 {
                     self.wave_drag_before = Some(self.project.clone());
+                    self.wave_drag_last = None;
                     self.wave_dragging = true;
                     self.edit_wave_at(position);
                     self.status = "DRAWING USER WAVE".to_string();
@@ -3028,7 +3233,11 @@ impl PlitaProgram for GbseqApp {
                     self.status = format!("SELECTED MIDI bar {}", hit.id);
                     return UiResponse::redraw();
                 }
-                if position.x < TRACK_HEADER_W {
+                if position.x < self.timeline_left() {
+                    if self.key_editor && self.keyboard_rect().contains(position) {
+                        self.audition_key(self.key_pitch(position.y));
+                        return UiResponse::redraw();
+                    }
                     if let Some(track) = (self.visible_track_start()
                         ..self.visible_track_start() + self.visible_track_count())
                         .find(|track| self.header_lane_rect(*track).contains(position))
@@ -3076,7 +3285,9 @@ impl PlitaProgram for GbseqApp {
             }
             UiEvent::PointerUp { position, .. } => {
                 if self.wave_dragging {
+                    self.edit_wave_at(position);
                     self.wave_dragging = false;
+                    self.wave_drag_last = None;
                     if let Some(before) = self.wave_drag_before.take() {
                         self.push_undo(before);
                     }
@@ -3086,11 +3297,15 @@ impl PlitaProgram for GbseqApp {
                 if self.timeline_scroll.end_scrollbar_drag() {
                     return UiResponse::redraw();
                 }
-                if self.drag.take().is_some() {
+                if let Some(drag) = self.drag {
+                    self.handle_note_drag(position);
+                    self.drag = None;
                     if let Some(before) = self.drag_before.take() {
                         self.push_undo(before);
                     }
-                    self.status = "MIDI bar edit committed".to_string();
+                    if !matches!(drag, DragKind::Resize { .. }) {
+                        self.status = "MIDI bar edit committed".to_string();
+                    }
                     return UiResponse::redraw();
                 }
                 let release = self.buttons.release_over(self.action_at(position));
@@ -3112,6 +3327,18 @@ impl PlitaProgram for GbseqApp {
                     return UiResponse::redraw();
                 }
                 self.selected_notes.clear();
+                if !self.key_editor && position.x < TRACK_HEADER_W {
+                    if let Some(track) = (self.visible_track_start()
+                        ..self.visible_track_start() + self.visible_track_count())
+                        .find(|track| self.header_lane_rect(*track).contains(position))
+                    {
+                        self.open_key_track(track);
+                        return UiResponse::redraw();
+                    }
+                }
+                if self.key_editor && self.keyboard_rect().contains(position) {
+                    return UiResponse::redraw();
+                }
                 if let Some(hit) = self.note_hit(position) {
                     self.selected_note = Some(hit.id);
                     self.selected_track = hit.track;
@@ -3150,6 +3377,16 @@ impl PlitaProgram for GbseqApp {
                 if self.menu.is_some() {
                     return UiResponse::none();
                 }
+                if self.key_editor
+                    && !self.shift_down
+                    && delta_y != 0.0
+                    && (self.keyboard_rect().contains(position)
+                        || self.timeline_viewport().contains(position))
+                {
+                    self.key_low = (self.key_low as i16 + if delta_y > 0.0 { 3 } else { -3 })
+                        .clamp(0, 24) as u8;
+                    return UiResponse::redraw();
+                }
                 if self.timeline_viewport().contains(position)
                     || self.scrollbar_rect().contains(position)
                     || self.ruler_rect().contains(position)
@@ -3171,6 +3408,7 @@ impl PlitaProgram for GbseqApp {
             UiEvent::KeyDown {
                 key, ctrl, shift, ..
             } => {
+                self.shift_down = shift;
                 self.selection_modifier = ctrl || shift;
                 if matches!(normalized_key(&key).as_str(), "SPACE" | " ") {
                     if self.space_down {
@@ -3205,6 +3443,7 @@ impl PlitaProgram for GbseqApp {
             }
             UiEvent::FocusChanged { focused: false } => {
                 self.selection_modifier = false;
+                self.shift_down = false;
                 self.space_down = false;
                 self.menu = None;
                 self.finish_measures_input(true);
@@ -3213,6 +3452,7 @@ impl PlitaProgram for GbseqApp {
                     self.push_undo(before);
                 }
                 self.wave_dragging = false;
+                self.wave_drag_last = None;
                 if let Some(before) = self.wave_drag_before.take() {
                     self.push_undo(before);
                 }
@@ -3228,6 +3468,7 @@ impl PlitaProgram for GbseqApp {
                 }
                 self.pending_measure_text = None;
                 self.selection_modifier = ctrl || shift;
+                self.shift_down = shift;
                 UiResponse::none()
             }
             _ => UiResponse::none(),
@@ -3275,7 +3516,18 @@ impl PlitaProgram for GbseqApp {
                 };
                 let rect = Rect::new(12.0, self.size.height - STATUS_H - 34.0, 700.0, 28.0);
                 list.fill_rect(rect, PANEL_RAISED);
-                draw_text(&mut list, rect.x + 8.0, rect.y + 8.0, hint, 0.8, TEXT);
+                self.text_in(
+                    &mut list,
+                    Rect::new(
+                        rect.x + 8.0,
+                        rect.y + 6.0,
+                        rect.width - 16.0,
+                        rect.height - 8.0,
+                    ),
+                    hint,
+                    0.8,
+                    TEXT,
+                );
             }
         }
         list
@@ -3284,56 +3536,6 @@ impl PlitaProgram for GbseqApp {
 
 pub fn run_gui() -> plita::prelude::Result<()> {
     run_gui_with_path(None)
-}
-
-/// Explicit CI mode: exercise the real editor in the native window loop.
-/// No audio device or user document is opened, and no settings are persisted.
-pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
-    struct Probe {
-        app: GbseqApp,
-        receipt: PathBuf,
-        ticks: u32,
-        draws: std::cell::Cell<u32>,
-    }
-    impl PlitaProgram for Probe {
-        fn resize(&mut self, size: Size) -> UiResponse {
-            self.app.resize(size)
-        }
-        fn handle_event(&mut self, event: UiEvent) -> UiResponse {
-            self.app.handle_event(event)
-        }
-        fn draw_list(&self) -> DrawList {
-            self.draws.set(self.draws.get() + 1);
-            self.app.draw_list()
-        }
-        fn tick(&mut self) -> UiResponse {
-            self.ticks += 1;
-            if self.ticks >= 16 && self.draws.get() >= 2 {
-                let report = serde_json::json!({
-                    "passed": true, "ticks": self.ticks, "draw_lists": self.draws.get(),
-                    "tracks": self.app.project.tracks.len(), "ui_toolkit": "plita",
-                    "font_source": plita::active_font_source(),
-                    "audio_device_tested": false, "physical_input_tested": false
-                });
-                if let Some(parent) = self.receipt.parent() {
-                    std::fs::create_dir_all(parent).unwrap();
-                }
-                std::fs::write(&self.receipt, serde_json::to_vec_pretty(&report).unwrap()).unwrap();
-                std::process::exit(0);
-            }
-            self.app.tick()
-        }
-    }
-    App::new()
-        .title("GBSEQ - plita startup verification")
-        .window_size(DEFAULT_WINDOW_W, DEFAULT_WINDOW_H)
-        .continuous_redraw(true)
-        .run_program(move |size| Probe {
-            app: GbseqApp::new_with_audio(size, false),
-            receipt: receipt.clone(),
-            ticks: 0,
-            draws: std::cell::Cell::new(0),
-        })
 }
 
 impl Drop for GbseqApp {
@@ -3345,6 +3547,13 @@ impl Drop for GbseqApp {
 }
 
 pub fn run_gui_with_path(path: Option<PathBuf>) -> plita::prelude::Result<()> {
+    run_gui_with_language(path, None)
+}
+
+pub fn run_gui_with_language(
+    path: Option<PathBuf>,
+    language: Option<String>,
+) -> plita::prelude::Result<()> {
     App::new()
         .title("GBSEQ - plita Game Boy Sequencer")
         .window_size(DEFAULT_WINDOW_W, DEFAULT_WINDOW_H)
@@ -3352,6 +3561,9 @@ pub fn run_gui_with_path(path: Option<PathBuf>) -> plita::prelude::Result<()> {
         .continuous_redraw(true)
         .run_program(move |size| {
             let mut app = GbseqApp::new(size);
+            if let Some(language) = language.as_deref().and_then(Language::parse) {
+                app.language = language;
+            }
             if let Some(path) = &path {
                 if let Err(error) = app.load_path(path) {
                     app.status = format!("OPEN failed: {error}");

@@ -2,7 +2,9 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ, de DAISUKE OBA, ofrece una GUI con plita y una CLI independiente. Comparten modelo, validación, síntesis KOKURA y exportación. LOCAL 4CH, CABLE 8CH y DMG07 16CH corresponden a 1, 2 y 4 Game Boy. Cada jugador dispone de CH1/CH2 de pulso, CH3 de onda y CH4 de ruido. Admite 1–256 compases de 16 pasos (4096 por canal), BPM 30–300 y reproducción con o sin bucle. La interfaz está en inglés; hay nueve manuales traducidos.
+GBSEQ, de DAISUKE OBA, ofrece una GUI con plita y una CLI independiente. Comparten modelo, validación, síntesis KOKURA y exportación. LOCAL 4CH, CABLE 8CH y DMG07 16CH corresponden a 1, 2 y 4 Game Boy. Cada jugador dispone de CH1/CH2 de pulso, CH3 de onda y CH4 de ruido. Admite 1–256 compases de 16 pasos (4096 por canal), BPM 30–300 y reproducción con o sin bucle. El menú View permite elegir inglés o japonés; también se puede iniciar con `gbseq --language ja` o `en`. Para el japonés se necesita una fuente compatible del sistema.
+
+Pulsa **E** o haz doble clic en la cabecera de una pista para abrir su editor de piano; E vuelve a la vista general. Arrastra el borde derecho de una nota hasta la nota siguiente o el final de la canción. En el gráfico de ondas de CH3 puedes dibujar las 32 muestras; Ctrl+Z deshace un trazo.
 
 ## Instalación
 

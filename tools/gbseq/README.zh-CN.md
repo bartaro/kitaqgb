@@ -2,7 +2,9 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模型、校验、KOKURA音源与导出功能。LOCAL 4CH、CABLE 8CH、DMG07 16CH分别支持1、2、4台Game Boy。每台CH1/CH2为脉冲波、CH3为波形、CH4为噪声。每首1–256小节，每小节16步（每通道最多4096步），BPM 30–300，可保存循环开关。GUI使用英文，手册有9种语言。
+GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模型、校验、KOKURA音源与导出功能。LOCAL 4CH、CABLE 8CH、DMG07 16CH分别支持1、2、4台Game Boy。每台CH1/CH2为脉冲波、CH3为波形、CH4为噪声。每首1–256小节，每小节16步（每通道最多4096步），BPM 30–300，可保存循环开关。界面支持日语和英语，可在 View 菜单中切换，也可通过 `gbseq --language ja` 或 `en` 启动。显示日语需要系统安装支持日文的字体。
+
+按 **E** 或双击轨道标题即可打开该轨的钢琴卷帘编辑器；再按 E 返回总览。拖动音符右端可将它延长至下一音符之前或曲末。在 CH3 自定义波形图上可直接绘制 32 个采样点，Ctrl+Z 撤销一笔。
 
 ## 安装与启动
 
