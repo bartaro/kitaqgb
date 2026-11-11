@@ -18,6 +18,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
         draws: std::cell::Cell<u32>,
         receipt: PathBuf,
         resize_origin: Option<Point>,
+        monitor_path: Vec<(usize, Option<usize>, usize)>,
+        resized_length: Option<u32>,
     }
     impl PlitaProgram for Probe {
         fn resize(&mut self, size: Size) -> UiResponse {
@@ -66,16 +68,59 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     }
                 });
             }
-            if self.ticks >= 24 && self.draws.get() >= 4 {
-                let length = self
+            if self.ticks == 19 {
+                self.resized_length = self
                     .app
-                    .project
-                    .note(self.app.selected_note.unwrap())
-                    .unwrap()
-                    .length;
+                    .selected_note
+                    .and_then(|id| self.app.project.note(id))
+                    .map(|n| n.length);
+            }
+            let action = match self.ticks {
+                20 => Some(Action::SetLink16Mode(Link16Mode::Cable8)),
+                21 => Some(Action::SetMonitor(Some(1))),
+                22 => Some(Action::SetLink16Mode(Link16Mode::Dmg07_16)),
+                23 => Some(Action::SetMonitor(Some(3))),
+                _ => None,
+            };
+            if let Some(action) = action {
+                if let Some(spec) = self
+                    .app
+                    .link16_buttons()
+                    .into_iter()
+                    .find(|b| b.action == action)
+                {
+                    let position = Point::new(spec.rect.x + 16.0, spec.rect.y + 12.0);
+                    self.app.handle_event(UiEvent::PointerDown {
+                        position,
+                        button: PointerButton::Primary,
+                    });
+                    self.app.handle_event(UiEvent::PointerUp {
+                        position,
+                        button: PointerButton::Primary,
+                    });
+                }
+                self.monitor_path.push((
+                    self.app.project.player_count(),
+                    self.app.monitor_player(),
+                    self.app.active_player,
+                ));
+            }
+            if self.ticks == 24 {
+                self.app.menu = Some(MenuKind::Export);
+            }
+            if self.ticks >= 26 && self.draws.get() >= 4 {
+                let length = self.resized_length.unwrap_or(0);
+                let player_export = self
+                    .app
+                    .menu_buttons()
+                    .iter()
+                    .any(|b| b.action == Action::ExportPlayerRoms);
                 let passed = length == 6
+                    && self.monitor_path
+                        == [(2, None, 0), (2, Some(1), 0), (4, None, 0), (4, Some(3), 0)]
                     && self.app.keyboard_rect().width == 88.0
-                    && self.app.project.validate().is_ok();
+                    && self.app.project.validate().is_ok()
+                    && player_export;
                 let report = serde_json::json!({
                     "passed": passed, "ticks": self.ticks, "draws": self.draws.get(),
                     "language": "ja", "wave_graph": true, "key_editor": self.app.key_editor,
@@ -83,8 +128,11 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     "note_grid_left": self.app.timeline_viewport().x,
                     "synthetic_resize_before": 2, "synthetic_resize_after": length,
                     "resize_input_source": "synthetic UiEvent in native event loop",
+                    "monitor_path_count_solo0based_edit0based": self.monitor_path,
                     "font": active_font_source(), "physical_input_tested": false,
                     "audio_output_tested": false
+                    ,"sram_free_player_export_menu": player_export
+                    ,"file_dialog_tested": false
                 });
                 if let Some(parent) = self.receipt.parent() {
                     fs::create_dir_all(parent).unwrap();
@@ -105,6 +153,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
             draws: std::cell::Cell::new(0),
             receipt,
             resize_origin: None,
+            monitor_path: Vec::new(),
+            resized_length: None,
         })
 }
 
@@ -208,7 +258,7 @@ mod tests {
         );
         assert!(
             app.all_players_visible(),
-            "ALL16 playback is kept when editing one lane"
+            "ALL16 overview is retained for the return from the key editor"
         );
         let point = Point::new(
             app.step_x(4),

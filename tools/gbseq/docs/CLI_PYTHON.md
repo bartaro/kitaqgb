@@ -37,6 +37,11 @@ The four physical channels remain CH1/CH2/CH3/CH4. LINK16 uses separate four-cha
 
 ## CLI
 
+`gbseq-cli export-player-roms song.gbseq output_folder` exports one SRAM-free
+512 KiB music player ROM per part. Start any part alone, or select MASTER/PEER
+in the link menu. `export-rom` is the separate 128 KiB SRAM editor workflow;
+`export-link16-sd` prepares matching raw save files for that workflow.
+
 CLI tracks and players are **one-based**. Starts are **zero-based sixteenth-note steps**;
 length 1 = 0.25 beat, length 2 = 0.5 beat, length 16 = one 4/4 bar.
 For frame-authored SFX, each step instead lasts `frames_per_step_override` Game Boy frames.

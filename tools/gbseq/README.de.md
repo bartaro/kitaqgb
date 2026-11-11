@@ -6,6 +6,12 @@ GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide ver
 
 Mit **E** oder einem Doppelklick auf den Spurkopf öffnet sich der Piano-Roll-Editor der Spur; E führt zurück zur Übersicht. Ziehen Sie den rechten Notenrand bis zur nächsten Note oder zum Stückende. Im CH3-Welleneditor können Sie die 32 Abtastwerte zeichnen; Strg+Z nimmt einen Strich zurück.
 
+## Wiedergabe-ROMs und Abhören
+
+**Export → Playback ROMs (no SRAM)** erzeugt pro Stimmeinheit eine 512-KiB-Datei (P1.gb bis P4.gb) mit Songtitel und vier Kanälen. Es wird kein Spielstand benötigt. START spielt den jeweiligen Part allein ab. Für den Linkbetrieb auf allen angehaltenen Geräten SELECT drücken, auf einem Gerät A (MASTER), auf den anderen B (PEER) wählen. START am Master steuert die Wiedergabe. Beim Vier-Spieler-Adapter gehört der Master unabhängig vom Part an Port 1. In GBSEQ lassen sich alle Konsolen oder einzelne Parts unabhängig von der bearbeiteten Spur abhören; der WAV-Export übernimmt diese Auswahl.
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
 ## Installation
 
 Wählen Sie unter [bin/](bin/) Windows x86_64, Linux x86_64 oder macOS Apple Silicon/Intel. Entpacken Sie das gesamte Archiv; assets und Lizenzdateien bleiben neben den Programmen. GUI: gbseq.exe unter Windows, ./gbseq unter macOS/Linux. Die Beispiele nennen gbseq-cli; verwenden Sie in PowerShell ./gbseq-cli.exe und unter Unix ./gbseq-cli, sofern es nicht im PATH liegt. Für die normale Nutzung benötigen Sie weder Compiler noch eine separate plita-Installation oder Python.
@@ -14,7 +20,7 @@ Die GUI benötigt Desktop, passenden GPU-Treiber und ein Audiogerät zum Anhöre
 
 ## GUI-Bearbeitung
 
-Modus und P1–P4 wählen. ALL16 in DMG07 zeigt und spielt alle sechzehn Kanäle. Doppelklick auf eine leere Spur erstellt eine Note, auf eine Note öffnet den Inspektor. Ziehen des Körpers ändert Zeit/Tonhöhe, der rechten Kante die Dauer. Jede Spur ist einstimmig; Überlappungen werden abgewiesen. Taktzahl 1–256. Mausrad/untere Leiste verschieben die Ansicht; F passt das Stück ein, Home springt zum Anfang, +/- zoomt. Die Ansicht folgt der Wiedergabe. Space startet/stoppt, LOOP ON/OFF schaltet die Schleife. Beim ersten Start wird das gesamte Stück berechnet; lange Stücke benötigen Vorbereitungszeit.
+Modus und P1–P4 wählen. ALL16 in DMG07 zeigt alle sechzehn Kanäle. Doppelklick auf eine leere Spur erstellt eine Note, auf eine Note öffnet den Inspektor. Ziehen des Körpers ändert Zeit/Tonhöhe, der rechten Kante die Dauer. Jede Spur ist einstimmig; Überlappungen werden abgewiesen. Taktzahl 1–256. Mausrad/untere Leiste verschieben die Ansicht; F passt das Stück ein, Home springt zum Anfang, +/- zoomt. Die Ansicht folgt der Wiedergabe. Space startet/stoppt, LOOP ON/OFF schaltet die Schleife. Beim ersten Start wird das gesamte Stück berechnet; lange Stücke benötigen Vorbereitungszeit.
 
 Ctrl/Shift-Klick ändert die Auswahl; Ctrl+A wählt die Spur. Links/rechts verschiebt im Raster, oben/unten in Halbtönen, Shift+oben/unten in Oktaven. Ctrl+D dupliziert, Delete löscht, G wechselt das Raster, Q richtet Anfänge aus. Ctrl+Z/Y macht rückgängig/wiederholt, Ctrl+C/V kopiert/fügt ein. Ctrl+O öffnet, Ctrl+S speichert, Ctrl+Shift+S speichert unter. Vor dem Ersetzen ungespeicherter Änderungen erfolgt eine Abfrage; vor Überschreiben eine Kopie behalten.
 
@@ -47,7 +53,7 @@ gbseq-cli transform --help
 
 ## LINK16- und KITAQGB-Export
 
-LINK16 erzeugt 128-KiB-MBC5-Batterieabbilder V4: link16_local.sav; link16_cable.p1.sav/.p2.sav; oder link16_dmg07.p1.sav–.p4.sav. Passende LINK16-ROM/Version und Emulator-Dateinamen verwenden. Vorhandene SAV sichern. P1 enthält auch Spiegel der anderen Spieler. Keine LINK16-ROM wird mitgeliefert; SAV allein ist nicht startfähig. Pro Spieler gibt es vier gemeinsam genutzte Hüllkurvenpresets; weitere Werte können angenähert werden. Nach dem Import anhören. V4 speichert keinen CH1-Sweep. frames_per_step_override unterstützt bildgenaue Effekte in Vorschau/WAV/KITAQGB, wird vom BPM-basierten LINK16-Export jedoch abgewiesen.
+LINK16 erzeugt 128-KiB-MBC5-Batterieabbilder V4: link16_local.sav; link16_cable.p1.sav/.p2.sav; oder link16_dmg07.p1.sav–.p4.sav. Passende LINK16-ROM/Version und Emulator-Dateinamen verwenden. Vorhandene SAV sichern. P1 enthält auch Spiegel der anderen Spieler. Eine SAV-Datei allein ist nicht startfähig. Pro Spieler gibt es vier gemeinsam genutzte Hüllkurvenpresets; weitere Werte können angenähert werden. Nach dem Import anhören. V4 speichert keinen CH1-Sweep. frames_per_step_override unterstützt bildgenaue Effekte in Vorschau/WAV/KITAQGB, wird vom BPM-basierten LINK16-Export jedoch abgewiesen.
 
 KITAQGB exportiert C/Stream eines Spielers; für jeden Spieler wiederholen. Kompatible audio.h/audio.c mit CH1=0, CH2=1, CH3=2, CH4=3 verwenden. Sechzehn Kanäle passen dadurch nicht in einen einzigen Game Boy. Die Vorschau rundet Schrittdauern auf Videoframes; manche BPM unterscheiden sich von ROMs mit gebrochenem Taktgeber. Emulation ist kein Hardwaretest.
 

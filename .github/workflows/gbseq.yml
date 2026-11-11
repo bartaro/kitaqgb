@@ -2,7 +2,7 @@ name: GBSEQ native distributions
 on:
   workflow_dispatch:
   push:
-    paths: ['tools/gbseq/src/**', 'tools/gbseq/vendor/**', 'tools/gbseq/tests/**', 'tools/gbseq/scripts/**', 'tools/gbseq/Cargo.*', '.github/workflows/gbseq.yml']
+    paths: ['tools/gbseq/src/**', 'tools/gbseq/assets/**', 'tools/gbseq/vendor/**', 'tools/gbseq/tests/**', 'tools/gbseq/scripts/**', 'tools/gbseq/Cargo.*', '.github/workflows/gbseq.yml']
 permissions:
   contents: read
 jobs:

@@ -47,6 +47,16 @@ Each native package additionally retains its build toolchain's Rust notices.
 This review covers the files and resolved versions in this distribution;
 future dependency changes require another audit.
 
+## LINK16 player and title display
+
+The four original KITAQGB LINK16 export templates are application components,
+not commercial games or user compositions. They carry no imported song.
+The 92 glyphs used by the ROM interface retain their [MIT notice](licenses/assets/ASCII-font-MIT.txt).
+GBSEQ embeds the unmodified Noto Sans JP Regular font to render each project
+title as Game Boy tiles. Its [SIL OFL 1.1 notice](assets/title-font/NotoSansJP-Regular-OFL.txt)
+and [upstream revision and hashes](assets/title-font/NotoSansJP-Regular-PROVENANCE.json)
+accompany source and binaries. Exported ROMs contain the title tiles, not the font file.
+
 Some older macOS binding crates omit a standalone license in the registry
 archive. `licenses/UPSTREAM_NOTICE_PROVENANCE.json` records the official source
 revisions, fetched files and hashes used to supplement them. For objc2 versions

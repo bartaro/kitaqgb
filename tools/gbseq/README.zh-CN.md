@@ -6,6 +6,12 @@ GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模�
 
 按 **E** 或双击轨道标题即可打开该轨的钢琴卷帘编辑器；再按 E 返回总览。拖动音符右端可将它延长至下一音符之前或曲末。在 CH3 自定义波形图上可直接绘制 32 个采样点，Ctrl+Z 撤销一笔。
 
+## 按声部导出播放 ROM 与监听
+
+在导出菜单选择 **Playback ROMs (no SRAM)**，即可生成 P1.gb 至 P4.gb；每个 ROM 为 512 KiB，内含曲名和本机的四个声道，无需存档。按 START 可独立试听。联机时在各机停止状态按 SELECT，一台按 A 选 MASTER，其余按 B 选 PEER，再在主机按 START 播放或停止。四人适配器的主机接 1 号端口，与声部编号无关。在 GBSEQ 中可独立于编辑视图监听全部或单个声部，WAV 按当前监听选择导出。
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
 ## 安装与启动
 
 从[bin/](bin/)选择Windows x86_64、Linux x86_64、macOS Apple Silicon或Intel包，完整解压，保留程序旁的assets与许可证。Windows GUI为gbseq.exe，Unix为./gbseq。以下CLI示例的gbseq-cli，在PowerShell中写为./gbseq-cli.exe，在Unix中为./gbseq-cli；加入PATH后可省略前缀。正常使用不需要编译器、另装plita或Python。
@@ -14,7 +20,7 @@ GUI需要桌面、兼容GPU驱动及试听用音频设备。Linux面向Ubuntu 24
 
 ## GUI编辑
 
-选择连接模式及P1–P4。DMG07的ALL16可同时显示、播放16通道。双击空白轨道创建音符，双击音符打开详细面板。拖动主体改变时间和音高，拖右边缘改变长度。每轨单音，拒绝重叠。小节数为1–256。滚轮和底部滚动条导航；F适应全曲，Home回开头，+/-缩放。播放时画面跟随位置。Space播放/停止，LOOP ON/OFF控制循环。首次播放先渲染整曲，长曲需要准备时间。
+选择连接模式及P1–P4。DMG07的ALL16可同时显示16通道。双击空白轨道创建音符，双击音符打开详细面板。拖动主体改变时间和音高，拖右边缘改变长度。每轨单音，拒绝重叠。小节数为1–256。滚轮和底部滚动条导航；F适应全曲，Home回开头，+/-缩放。播放时画面跟随位置。Space播放/停止，LOOP ON/OFF控制循环。首次播放先渲染整曲，长曲需要准备时间。
 
 Ctrl/Shift点击切换选择，Ctrl+A选择当前轨道。左右按网格移动，上下半音，Shift+上下八度。Ctrl+D复制，Delete删除；G切换网格，Q对齐起点；Ctrl+Z/Y撤销/重做，Ctrl+C/V复制/粘贴。Ctrl+O打开，Ctrl+S保存，Ctrl+Shift+S另存为。替换未保存的编辑前会确认，上写前请保留原件。
 
@@ -47,7 +53,7 @@ gbseq-cli transform --help
 
 ## LINK16与KITAQGB
 
-LINK16 SAV导出V4格式128 KiB MBC5电池镜像：link16_local.sav；link16_cable.p1.sav/.p2.sav；或link16_dmg07.p1.sav至.p4.sav。使用匹配的LINK16 ROM版本及模拟器存档命名规则，替换前备份旧SAV。P1也保存其他玩家的镜像。本发行包不含LINK16 ROM，SAV不能独立启动。每台仅有4个共享包络预设，多余取值可能被近似；加载后请试听。V4不保存CH1扫频。frames_per_step_override逐帧音效支持预览/WAV/KITAQGB，但BPM方式的LINK16导出会拒绝它。
+LINK16 SAV导出V4格式128 KiB MBC5电池镜像：link16_local.sav；link16_cable.p1.sav/.p2.sav；或link16_dmg07.p1.sav至.p4.sav。使用匹配的LINK16 ROM版本及模拟器存档命名规则，替换前备份旧SAV。P1也保存其他玩家的镜像。SAV不能独立启动。每台仅有4个共享包络预设，多余取值可能被近似；加载后请试听。V4不保存CH1扫频。frames_per_step_override逐帧音效支持预览/WAV/KITAQGB，但BPM方式的LINK16导出会拒绝它。
 
 KITAQGB按玩家导出C/音频流。使用物理通道ID CH1=0、CH2=1、CH3=2、CH4=3的兼容audio.h/audio.c。这不能把16通道合并到一台Game Boy。GBSEQ预览将步长量化为视频帧，因此部分BPM与分数时钟ROM的实际速度不同。模拟器渲染不等于真机测试。
 

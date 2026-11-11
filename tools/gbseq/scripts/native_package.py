@@ -11,7 +11,8 @@ for name in names:shutil.copy2(ROOT/'target/release'/name,dest/name)
 for name in ['LICENSE','THIRD_PARTY_NOTICES.md','LICENSE_AUDIT.json']:
     shutil.copy2(ROOT/name,dest/name)
 for name in ['licenses','assets','docs','python']:
-    shutil.copytree(ROOT/name,dest/name,dirs_exist_ok=True,ignore=shutil.ignore_patterns('__pycache__'))
+    # Runtime templates and the title font are embedded in both executables.
+    shutil.copytree(ROOT/name,dest/name,dirs_exist_ok=True,ignore=shutil.ignore_patterns('__pycache__','*.gb','*.otf'))
 for file in ROOT.glob('README*.md'):
     # Source-relative download links must also work in an extracted package.
     text=file.read_text(encoding='utf-8')
@@ -49,6 +50,13 @@ with tempfile.TemporaryDirectory() as tmp:
         run('export-link16-sav',song,saves)
         images=list(saves.glob('*.sav'))
         assert len(images)==players and all(f.stat().st_size==131072 for f in images)
+        package=json.loads(run('export-player-roms',song,tmp/f'player-{players}'))
+        assert package['format']=='LINK16_PLAYER_ROM_V2' and package['players']==players
+        for part in range(players):
+            rom=(Path(package['directory'])/f'P{part+1}.gb').read_bytes()
+            assert len(rom)==524288 and rom[0x147:0x14a]==bytes([0x19,4,0])
+            assert rom[0x20000:0x20005]==b'L16P\x02' and rom[0x20007]==part and any(rom[0x20010:0x20510])
+        info['sram_free_player_roms_verified']=players
         run('export-kitaqgb',song,tmp/f'c{players}','--player',players)
         before=song.read_bytes()
         bad=subprocess.run([str(cli),'add-note',str(song),'--track','1','--start','0','--out',str(song)],capture_output=True)

@@ -146,6 +146,24 @@ pub enum Command {
         project: PathBuf,
         out_dir: PathBuf,
     },
+    /// Generate a standalone LINK16 song ROM; no external SAV/SRM is needed.
+    ExportRom {
+        project: PathBuf,
+        out_path: PathBuf,
+    },
+    /// Export a separate 512 KiB playback-only ROM per console, with no SRAM.
+    ExportPlayerRoms {
+        project: PathBuf,
+        out_dir: PathBuf,
+    },
+    /// Prepare matching ROM + raw SRM files in separate per-console SD roots.
+    ExportLink16Sd {
+        project: PathBuf,
+        out_dir: PathBuf,
+        /// Current LINK16 V4 cable/DMG07 ROM, matching the project's mode.
+        #[arg(long)]
+        rom: PathBuf,
+    },
     BenchRender {
         project: PathBuf,
         #[command(flatten)]
@@ -200,6 +218,29 @@ mod parser_tests {
     use super::*;
     #[test]
     fn all_players_and_signed_transforms_parse() {
+        assert!(HeadlessCli::try_parse_from([
+            "gbseq-cli",
+            "export-player-roms",
+            "song.gbseq",
+            "output"
+        ])
+        .is_ok());
+        assert!(HeadlessCli::try_parse_from([
+            "gbseq-cli",
+            "export-link16-sd",
+            "song.gbseq",
+            "output",
+            "--rom",
+            "link16_cable.gb"
+        ])
+        .is_ok());
+        assert!(HeadlessCli::try_parse_from([
+            "gbseq-cli",
+            "export-link16-sd",
+            "song.gbseq",
+            "output"
+        ])
+        .is_err());
         assert!(HeadlessCli::try_parse_from([
             "gbseq-cli",
             "render-wav",
@@ -382,6 +423,28 @@ impl Command {
             }
             Self::ExportLink16Sav { project, out_dir } => {
                 let m = crate::export_link16_saves(&load_sequence(&project)?, &out_dir)?;
+                println!("{}", serde_json::to_string_pretty(&m)?);
+            }
+            Self::ExportRom { project, out_path } => {
+                let report =
+                    crate::link16_rom::export_link16_rom(&load_sequence(&project)?, &out_path)?;
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            }
+            Self::ExportPlayerRoms { project, out_dir } => {
+                let report =
+                    crate::player_rom::export_player_roms(&load_sequence(&project)?, &out_dir)?;
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            }
+            Self::ExportLink16Sd {
+                project,
+                out_dir,
+                rom,
+            } => {
+                let m = crate::link16_sd::export_link16_sd_package(
+                    &load_sequence(&project)?,
+                    &rom,
+                    &out_dir,
+                )?;
                 println!("{}", serde_json::to_string_pretty(&m)?);
             }
             Self::BenchRender {

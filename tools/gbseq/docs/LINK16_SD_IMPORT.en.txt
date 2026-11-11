@@ -1,0 +1,34 @@
+LINK16 / hardware SD package (raw SRM import)
+
+Copy the CONTENTS of P1_SD_ROOT to the root of console 1's SD card.
+Copy P2_SD_ROOT to console 2, and similarly for consoles 3 and 4.
+Do not merge different players' saves onto one card.
+Only EDGB/SAVE files are supplied; no OS, firmware or registry is changed.
+
+The ROM and EDGB/SAVE/*.srm have matching ASCII 8.3 basenames.
+The name changes when the song or ROM changes. The copied ROM bytes are unchanged.
+The SRM is exactly 131072 bytes of raw SRAM, identical to the corresponding
+GBSEQ SAV. Do not byte-swap, add a header, compress or truncate it to 32 KiB.
+
+Back up existing saves first. Before importing, load a different unimportant
+game so the previous LINK16 SRAM can finish writing back, then power off.
+Copy the package to SD with power off. Explicitly LOAD the newly named ROM;
+merely pressing START to resume the previous ROM may keep old cartridge SRAM.
+Some OS revisions write the old cartridge SRAM back over a newly copied file.
+
+If the OS provides these commands, manually import as follows:
+Select Only on the ROM -> select its matching EDGB/SAVE/*.srm ->
+Copy File to SRAM -> START to run the already selected ROM.
+Do NOT choose Copy SRAM to File: that is the opposite direction.
+In cable mode choose A/MASTER on P1 and B/PEER on P2.
+Wait for initialization: the current ROM took about 18 seconds of emulated
+Game Boy time for P1 and 9 seconds for P2. SAVED PATTERN LOADED confirms import.
+
+MBC5 and 128 KiB RAM (16 banks) are required. Cartridge revisions vary; support
+for one revision does not establish compatibility with every clone/OS.
+Changing only the ROM RAM-size header to 32 KiB is not a safe conversion.
+Do not install unrelated firmware as part of this procedure.
+This package has software validation, not physical-hardware certification.
+
+Original EDGB directory layout (not a compatibility claim for every cartridge):
+https://krikzz.com/pub/support/everdrive-gb/original-series/OS/disk_setup.gif

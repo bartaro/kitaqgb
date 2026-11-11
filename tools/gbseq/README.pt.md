@@ -6,6 +6,12 @@ GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando 
 
 Pressione **E** ou clique duas vezes no cabeçalho de uma faixa para abrir seu editor de notas; E retorna à visão geral. Arraste a borda direita da nota até a próxima nota ou o final da música. No gráfico de onda do CH3, desenhe as 32 amostras; Ctrl+Z desfaz um traço.
 
+## ROMs de reprodução e monitoração
+
+**Export → Playback ROMs (no SRAM)** gera um arquivo de 512 KiB por parte (P1.gb a P4.gb), com o título e seus quatro canais. Nenhum arquivo de save é necessário. START reproduz a parte isolada. Para sincronizar, pressione SELECT em cada console parado, A (MASTER) em um e B (PEER) nos demais; START no mestre controla a reprodução. No adaptador de quatro jogadores, o mestre usa a porta 1, independentemente da parte. No GBSEQ, ouça a mixagem completa ou um console sem mudar de pista; o WAV segue a seleção de monitoração.
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
 ## Instalação
 
 Em [bin/](bin/), escolha Windows x86_64, Linux x86_64 ou macOS Apple Silicon/Intel. Extraia o pacote inteiro, mantendo assets e licenças junto aos programas. A GUI é gbseq.exe no Windows ou ./gbseq no macOS/Linux. Nos exemplos, gbseq-cli deve ser ./gbseq-cli.exe no PowerShell ou ./gbseq-cli no Unix, salvo se estiver no PATH. O uso normal não exige compilador, outra instalação de plita nem Python.
@@ -14,7 +20,7 @@ A GUI precisa de desktop, driver gráfico compatível e dispositivo de áudio pa
 
 ## Edição gráfica
 
-Escolha modo e P1–P4. ALL16 no DMG07 exibe e toca os dezesseis canais. Clique duas vezes numa faixa vazia para inserir nota; numa nota para abrir o inspetor. Arraste o corpo para mudar tempo/altura ou a borda direita para duração. Cada faixa é monofônica e rejeita sobreposições. Ajuste 1–256 compassos. Navegue com roda/barra inferior, F para enquadrar a música, Home para início, +/- para zoom. A tela acompanha a reprodução. Space inicia/para; LOOP ON/OFF controla repetição. A primeira reprodução renderiza a música inteira e pode demorar.
+Escolha modo e P1–P4. ALL16 no DMG07 exibe os dezesseis canais. Clique duas vezes numa faixa vazia para inserir nota; numa nota para abrir o inspetor. Arraste o corpo para mudar tempo/altura ou a borda direita para duração. Cada faixa é monofônica e rejeita sobreposições. Ajuste 1–256 compassos. Navegue com roda/barra inferior, F para enquadrar a música, Home para início, +/- para zoom. A tela acompanha a reprodução. Space inicia/para; LOOP ON/OFF controla repetição. A primeira reprodução renderiza a música inteira e pode demorar.
 
 Ctrl/Shift-clique alterna seleção; Ctrl+A seleciona a faixa atual. Esquerda/direita move pela grade; cima/baixo muda semitons, Shift+cima/baixo oitavas. Ctrl+D duplica, Delete exclui, G troca grade, Q alinha inícios. Ctrl+Z/Y desfaz/refaz, Ctrl+C/V copia/cola. Ctrl+O abre, Ctrl+S salva, Ctrl+Shift+S salva como. A troca de alterações não salvas pede confirmação; guarde uma cópia antes de sobrescrever.
 
@@ -47,7 +53,7 @@ gbseq-cli transform --help
 
 ## Exportação
 
-LINK16 gera imagens de bateria MBC5 V4 de 128 KiB: link16_local.sav; link16_cable.p1.sav/.p2.sav; ou link16_dmg07.p1.sav–.p4.sav. Use ROM/versão LINK16 compatível e a regra de nomes do emulador. Faça backup dos SAV existentes. P1 também inclui espelhos das partes remotas. Nenhuma ROM LINK16 acompanha este pacote; SAV não inicia sozinho. Há quatro presets de envelope compartilhados por jogador; valores extras podem ser aproximados. Confira ouvindo após importar. V4 não guarda sweep CH1. frames_per_step_override permite efeitos por quadro em prévia/WAV/KITAQGB, mas é rejeitado pelo LINK16 baseado em BPM.
+LINK16 gera imagens de bateria MBC5 V4 de 128 KiB: link16_local.sav; link16_cable.p1.sav/.p2.sav; ou link16_dmg07.p1.sav–.p4.sav. Use ROM/versão LINK16 compatível e a regra de nomes do emulador. Faça backup dos SAV existentes. P1 também inclui espelhos das partes remotas. Um SAV não inicia sozinho. Há quatro presets de envelope compartilhados por jogador; valores extras podem ser aproximados. Confira ouvindo após importar. V4 não guarda sweep CH1. frames_per_step_override permite efeitos por quadro em prévia/WAV/KITAQGB, mas é rejeitado pelo LINK16 baseado em BPM.
 
 KITAQGB exporta C/fluxo de um jogador; repita para cada um. Use audio.h/audio.c compatíveis com CH1=0, CH2=1, CH3=2 e CH4=3. Não junta dezesseis canais numa Game Boy. A prévia quantiza passos a quadros de vídeo; alguns BPM diferem de ROM com relógio fracionário. Emulação não equivale a teste em hardware físico.
 

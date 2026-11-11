@@ -6,6 +6,12 @@ GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an ind
 
 Press **E** or double-click a track header to edit that track on the piano roll (E returns to the overview). Drag a note’s right edge to extend it up to the next note or the song end. In the CH3 user-wave graph, draw across the 32 samples; Ctrl+Z undoes one stroke.
 
+## Playback ROMs and listening
+
+**Export → Playback ROMs (no SRAM)** creates one 512 KiB ROM per part. P1.gb–P4.gb each contain four voices and the song title; no save file is needed. START auditions a part alone. For sync, press SELECT while stopped on each console, choose A (MASTER) on one and B (PEER) on the others, then press START on the master. On a four-player adapter the master uses port 1, regardless of part number. In GBSEQ, **Listen: All** mixes all consoles regardless of the editing view; choose P1–P4 to isolate one. WAV export uses the current monitor.
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
 ## Install and start
 
 Download your platform package from [bin/](bin/): Windows x86_64, Linux x86_64, macOS Apple Silicon or macOS Intel. Extract the entire archive, keeping assets and notices beside the programs. Run `gbseq.exe` (Windows) or `./gbseq` (macOS/Linux) for the GUI; `gbseq-cli` is the headless command-line program. In PowerShell use `./gbseq-cli.exe`; on Unix use `./gbseq-cli` unless installed in PATH. The examples below omit that prefix. A compiler, separate plita installation and Python are not required for GUI/CLI use.
@@ -14,7 +20,7 @@ The GUI needs a graphical desktop, compatible GPU driver and an audio device for
 
 ## Compose in the GUI
 
-Choose the link layout and P1–P4; ALL16 displays and plays all sixteen lanes in DMG07 mode. Double-click an empty lane to create a note; double-click a note to open its inspector. Drag its body to move time/pitch, or its right edge to change duration. Each physical lane is monophonic: overlapping notes are rejected. Edit the bar-count box to set 1–256 bars. The mouse wheel and bottom scrollbar navigate long songs; F fits the song, Home returns to its beginning, +/- zooms. Playback follows the current position. Space starts/stops; LOOP ON/OFF determines whether the end repeats. The first playback renders the complete song, so long songs can take time to prepare.
+Choose the link layout and P1–P4; ALL16 displays all sixteen lanes in DMG07 mode. Double-click an empty lane to create a note; double-click a note to open its inspector. Drag its body to move time/pitch, or its right edge to change duration. Each physical lane is monophonic: overlapping notes are rejected. Edit the bar-count box to set 1–256 bars. The mouse wheel and bottom scrollbar navigate long songs; F fits the song, Home returns to its beginning, +/- zooms. Playback follows the current position. Space starts/stops; LOOP ON/OFF determines whether the end repeats. The first playback renders the complete song, so long songs can take time to prepare.
 
 Ctrl/Shift-click toggles a selection; Ctrl+A selects the current lane. Left/Right moves by the grid, Up/Down changes semitones, Shift+Up/Down changes octaves. Ctrl+D duplicates; Delete removes. G cycles the grid; Q quantizes starts. Ctrl+Z/Y undo/redo and Ctrl+C/V copy/paste. Ctrl+O opens, Ctrl+S saves, Ctrl+Shift+S saves as. Unsaved changes are confirmed before replacement. Keep a copy before overwriting an existing project.
 
@@ -47,7 +53,7 @@ gbseq-cli transform --help
 
 ## LINK16 and KITAQGB export
 
-LINK16 SAV creates 128 KiB MBC5 battery images in V4 format: `link16_local.sav`; `link16_cable.p1.sav`/`.p2.sav`; or `link16_dmg07.p1.sav` through `.p4.sav`. Use the matching LINK16 ROM/version and emulator save naming. Back up existing battery saves before replacing them. P1 includes mirrored remote parts. No LINK16 ROM is bundled with this GBSEQ distribution; a SAV is data, not a bootable ROM. LINK16 allows four shared envelope presets per player; more distinct values may be approximated. Check the export and listen after loading. CH1 sweep is not carried by LINK16 V4. Exact-frame SFX timing (`frames_per_step_override`) works in preview/WAV/KITAQGB export but is rejected by the BPM-based LINK16 exporter.
+LINK16 SAV creates 128 KiB MBC5 battery images in V4 format: `link16_local.sav`; `link16_cable.p1.sav`/`.p2.sav`; or `link16_dmg07.p1.sav` through `.p4.sav`. Use the matching LINK16 ROM/version and emulator save naming. Back up existing battery saves before replacing them. P1 includes mirrored remote parts. A SAV is data, not a bootable ROM. LINK16 allows four shared envelope presets per player; more distinct values may be approximated. Check the export and listen after loading. CH1 sweep is not carried by LINK16 V4. Exact-frame SFX timing (`frames_per_step_override`) works in preview/WAV/KITAQGB export but is rejected by the BPM-based LINK16 exporter.
 
 KITAQGB export writes one player's C/stream data; export each player separately. Use current compatible `audio.h`/`audio.c` with physical channel IDs CH1=0, CH2=1, CH3=2, CH4=3. This does not merge sixteen channels into one Game Boy. GBSEQ preview quantizes the step duration to video frames, so arbitrary BPM values can differ from a fractional-clock ROM. Emulator rendering is not a physical-hardware test.
 

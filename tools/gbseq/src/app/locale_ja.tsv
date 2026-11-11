@@ -217,4 +217,21 @@ EDIT unchanged: {}	編集を適用できませんでした: {}
 MEASURES must be {}..{}; unchanged at {}	小節数は {}～{} で指定してください（現在 {}）
 {} / {} players	{} / {} 台
 NOTE LENGTH {} steps	ノートの長さ {} ステップ
+Listen: All	音声: 全台
+Hardware SD package	実機用SDパッケージ
+Game Boy ROM (song inside)	ゲームボーイROM（曲内蔵）
+Playback ROMs (no SRAM)	再生専用ROM（SRAM不要・台別）
+Editor ROM (128KB SRAM)	編集用ROM（128KB SRAM必須）
+Export playback ROMs (no SRAM)	台別の再生専用ROMを出力（SRAM不要）
+Export song as Game Boy ROM	曲を内蔵したゲームボーイROMを書き出す
+ROM {} players / {} steps -> {}	ROM {} 台分 / {} ステップ → {}
+ROM export failed: {}	ROM出力失敗: {}
+Choose matching LINK16 V4 ROM	曲の構成に対応するLINK16 V4 ROMを選択
+Choose SD package output	実機用パッケージの出力先を選択
+SD package {} players -> {}	実機用 {} 台分を書き出しました → {}
+SD package export failed: {}	実機用SD出力失敗: {}
+Change edit view only; the audio monitor stays unchanged	編集表示だけを切り替えます。聴こえる音は変わりません
+Monitor playback and WAV; switching keeps the song position	再生・WAV出力の対象を選択。再生位置は変わりません
+Solo P{}	P{} 単独
+ALL16 overview	全16CH表示
 NOTE LENGTH limited by next note - move the next note to extend further	次の音符が延長の上限です・さらに伸ばすには次の音符を移動してください

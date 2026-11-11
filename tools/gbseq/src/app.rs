@@ -8,12 +8,12 @@ use std::{
 
 use anyhow::{Context, Result};
 use gbdaw_export_kitaqgb::{export_project_to_dir, ExportPolicy, StreamMode};
-use gbdaw_kokura::{render_project_to_samples, render_project_to_wav_file};
+use gbdaw_kokura::render_project_to_samples;
 use plita::prelude::*;
 use rfd::FileDialog;
 use rodio::{OutputStream, OutputStreamHandle, Sink, Source};
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
+    atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
 };
 
@@ -27,6 +27,8 @@ use std::collections::BTreeSet;
 
 mod i18n;
 mod key_editor;
+#[cfg(test)]
+mod monitor_tests;
 mod verification;
 mod wave_graph;
 use i18n::Language;
@@ -105,6 +107,9 @@ enum Action {
     RenderWav,
     Export,
     ExportLink16Sav,
+    ExportLink16Sd,
+    ExportRom,
+    ExportPlayerRoms,
     AddUserWave,
     WaveCurve,
     Language,
@@ -112,6 +117,7 @@ enum Action {
     KeyTrack(i8),
     SetLink16Mode(Link16Mode),
     SetPlayer(usize),
+    SetMonitor(Option<usize>),
     ToggleAllPlayers,
     ToggleLoop,
     Bpm(i16),
@@ -148,7 +154,12 @@ fn action_icon(action: Action) -> Option<&'static str> {
         Action::Menu(MenuKind::File) | Action::Open => "folder-open",
         Action::Menu(MenuKind::Edit) => "pencil",
         Action::Menu(MenuKind::View) | Action::FitSong => "maximize",
-        Action::Menu(MenuKind::Export) | Action::Export | Action::ExportLink16Sav => "package",
+        Action::Menu(MenuKind::Export)
+        | Action::Export
+        | Action::ExportLink16Sav
+        | Action::ExportLink16Sd
+        | Action::ExportRom
+        | Action::ExportPlayerRoms => "package",
         Action::New => "file-plus",
         Action::Save | Action::SaveAs => "save",
         Action::Undo => "undo-2",
@@ -225,9 +236,40 @@ struct AudioPlayer {
     sink: Option<Sink>,
 }
 
+/// Immutable interleaved stereo buffers, all starting on the same frame.
+struct Stems {
+    players: Vec<Vec<i16>>,
+    len: usize,
+}
+
+impl Stems {
+    fn new(players: Vec<Vec<i16>>) -> Self {
+        debug_assert!((1..=4).contains(&players.len()));
+        let len = players.iter().map(Vec::len).max().unwrap_or(0);
+        Self { players, len }
+    }
+
+    fn sample(&self, at: usize, monitor: usize) -> i16 {
+        if self.players.len() == 1 {
+            return self.players[0][at];
+        }
+        if let Some(p) = monitor.checked_sub(1).and_then(|p| self.players.get(p)) {
+            return p.get(at).copied().unwrap_or(0);
+        }
+        let sum: i32 = self
+            .players
+            .iter()
+            .map(|s| i32::from(s.get(at).copied().unwrap_or(0)))
+            .sum();
+        (sum / self.players.len() as i32) as i16
+    }
+}
+
 #[derive(Clone)]
 struct SharedAudio {
-    samples: Arc<[i16]>,
+    samples: Arc<Stems>,
+    monitor: Arc<AtomicUsize>, // 0 = mix all, 1..=4 = one console
+    frame_monitor: usize,
     position: usize,
     rate: u32,
     looped: bool,
@@ -235,10 +277,16 @@ struct SharedAudio {
 impl Iterator for SharedAudio {
     type Item = i16;
     fn next(&mut self) -> Option<i16> {
-        if self.looped && self.position == self.samples.len() {
+        if self.looped && self.position == self.samples.len {
             self.position = 0;
         }
-        let sample = self.samples.get(self.position).copied()?;
+        if self.position >= self.samples.len {
+            return None;
+        }
+        if self.position % 2 == 0 {
+            self.frame_monitor = self.monitor.load(Ordering::Relaxed);
+        }
+        let sample = self.samples.sample(self.position, self.frame_monitor);
         self.position += 1;
         Some(sample)
     }
@@ -248,13 +296,13 @@ impl Source for SharedAudio {
         if !self.looped {
             return None;
         }
-        let position = if self.position == self.samples.len() {
+        let position = if self.position == self.samples.len {
             0
         } else {
             self.position
         };
         // Match Rodio 0.19's buffered repeat boundaries without copying the PCM.
-        Some((32768 - position % 32768).min(self.samples.len() - position))
+        Some((32768 - position % 32768).min(self.samples.len - position))
     }
     fn channels(&self) -> u16 {
         2
@@ -267,16 +315,15 @@ impl Source for SharedAudio {
             return None;
         }
         Some(Duration::from_secs_f64(
-            self.samples.len() as f64 / (self.rate as f64 * 2.0),
+            self.samples.len as f64 / (self.rate as f64 * 2.0),
         ))
     }
 }
 
 struct PlaybackCache {
     project: SequenceProject,
-    player: Option<usize>,
     rate: u32,
-    samples: Arc<[i16]>,
+    samples: Arc<Stems>,
 }
 
 impl AudioPlayer {
@@ -292,13 +339,16 @@ impl AudioPlayer {
     fn play(
         &mut self,
         sample_rate: u32,
-        samples: impl Into<Arc<[i16]>>,
+        samples: Arc<Stems>,
+        monitor: Arc<AtomicUsize>,
         looped: bool,
     ) -> Result<()> {
         self.stop();
         let sink = Sink::try_new(&self.handle)?;
         let source = SharedAudio {
-            samples: samples.into(),
+            samples,
+            monitor,
+            frame_monitor: 0,
             position: 0,
             rate: sample_rate,
             looped,
@@ -357,7 +407,7 @@ impl PlaybackTiming {
     }
 }
 
-type RenderMessage = std::result::Result<(u32, Vec<i16>), String>;
+type RenderMessage = std::result::Result<(u32, Arc<Stems>), String>;
 
 #[cfg(test)]
 fn render_mixed_projects(
@@ -381,6 +431,7 @@ pub struct GbseqApp {
     selected_track: usize,
     active_player: usize,
     all_players_view: bool,
+    monitor: Arc<AtomicUsize>,
     cursor_step: u32,
     detail_open: bool,
     half_step_w: f32,
@@ -399,12 +450,11 @@ pub struct GbseqApp {
     export_rx: Option<Receiver<std::result::Result<String, String>>>,
     render_cancel: Option<Arc<AtomicBool>>,
     render_started: Option<Instant>,
-    render_key: Option<(SequenceProject, Option<usize>)>,
+    render_key: Option<SequenceProject>,
     playback_cache: Option<PlaybackCache>,
     rendering: bool,
     play_started: Option<Instant>,
     playback_timing: Option<PlaybackTiming>,
-    playback_all_players: bool,
     playback_looped: bool,
     wave_dragging: bool,
     wave_drag_before: Option<SequenceProject>,
@@ -447,6 +497,7 @@ impl GbseqApp {
             selected_track: 0,
             active_player: 0,
             all_players_view: false,
+            monitor: Arc::new(AtomicUsize::new(0)),
             cursor_step: 0,
             detail_open: false,
             half_step_w: 34.0,
@@ -470,7 +521,6 @@ impl GbseqApp {
             rendering: false,
             play_started: None,
             playback_timing: None,
-            playback_all_players: false,
             playback_looped: false,
             wave_dragging: false,
             wave_drag_before: None,
@@ -1075,7 +1125,47 @@ impl GbseqApp {
             rect: Rect::new(x, y, 102.0, 28.0),
             label: "LINK16 SAV".to_string(),
         });
+        x += 118.0;
+        let monitors = self.monitor_choices();
+        if x + 96.0 + 74.0 * self.project.player_count() as f32 <= self.size.width {
+            for (action, label) in monitors {
+                let width = if action == Action::SetMonitor(None) {
+                    90.0
+                } else {
+                    68.0
+                };
+                buttons.push(ButtonSpec {
+                    action,
+                    rect: Rect::new(x, y, width, 28.0),
+                    label: label.into(),
+                });
+                x += width + 6.0;
+            }
+        }
         buttons
+    }
+
+    fn monitor_choices(&self) -> Vec<(Action, &'static str)> {
+        if self.project.player_count() == 1 {
+            return Vec::new();
+        }
+        let mut choices = vec![(Action::SetMonitor(None), "Listen: All")];
+        for (p, label) in ["Solo P1", "Solo P2", "Solo P3", "Solo P4"]
+            .into_iter()
+            .enumerate()
+            .take(self.project.player_count())
+        {
+            choices.push((Action::SetMonitor(Some(p)), label));
+        }
+        choices
+    }
+
+    fn monitor_player(&self) -> Option<usize> {
+        self.monitor.load(Ordering::Relaxed).checked_sub(1)
+    }
+
+    fn reset_monitor(&self) {
+        self.monitor.store(0, Ordering::Relaxed);
     }
 
     fn action_at(&self, point: Point) -> Option<Action> {
@@ -1121,7 +1211,7 @@ impl GbseqApp {
         let Some(menu) = self.menu else {
             return Vec::new();
         };
-        let (x, items): (f32, Vec<(Action, &str)>) = match menu {
+        let (x, mut items): (f32, Vec<(Action, &str)>) = match menu {
             MenuKind::File => (
                 12.0,
                 vec![
@@ -1160,11 +1250,17 @@ impl GbseqApp {
                 288.0,
                 vec![
                     (Action::RenderWav, "Render WAV"),
+                    (Action::ExportPlayerRoms, "Playback ROMs (no SRAM)"),
+                    (Action::ExportRom, "Editor ROM (128KB SRAM)"),
                     (Action::Export, "KITAQGB current player"),
                     (Action::ExportLink16Sav, "LINK16 saves"),
+                    (Action::ExportLink16Sd, "Hardware SD package"),
                 ],
             ),
         };
+        if menu == MenuKind::View {
+            items.extend(self.monitor_choices());
+        }
         items
             .into_iter()
             .enumerate()
@@ -1306,7 +1402,9 @@ impl GbseqApp {
 
     fn ensure_selection_exists(&mut self) {
         self.active_player = self.active_player.min(self.project.player_count() - 1);
-        self.selected_track = self.selected_track.min(self.project.tracks.len() - 1);
+        self.selected_track = self
+            .selected_track
+            .min(self.project.link16_mode.track_count() - 1);
         if self.project.link16_mode != Link16Mode::Dmg07_16 {
             self.all_players_view = false;
         }
@@ -1329,6 +1427,10 @@ impl GbseqApp {
             self.status = "UNDO stack is empty".to_string();
             return;
         };
+        if previous.link16_mode != self.project.link16_mode {
+            self.stop_audio();
+            self.reset_monitor();
+        }
         self.redo
             .push(std::mem::replace(&mut self.project, previous));
         self.ensure_selection_exists();
@@ -1341,6 +1443,10 @@ impl GbseqApp {
             self.status = "REDO stack is empty".to_string();
             return;
         };
+        if next.link16_mode != self.project.link16_mode {
+            self.stop_audio();
+            self.reset_monitor();
+        }
         self.undo.push(std::mem::replace(&mut self.project, next));
         self.ensure_selection_exists();
         self.clamp_scroll();
@@ -1716,6 +1822,7 @@ impl GbseqApp {
                 self.wave_dragging = false;
                 self.wave_drag_before = None;
                 self.project = SequenceProject::empty();
+                self.reset_monitor();
                 self.saved_project = self.project.clone();
                 self.selected_notes.clear();
                 self.current_path = None;
@@ -1746,6 +1853,65 @@ impl GbseqApp {
             Action::RenderWav => self.render_wav_dialog(),
             Action::Export => self.export_dialog(),
             Action::ExportLink16Sav => self.export_link16_sav_dialog(),
+            Action::ExportLink16Sd => {
+                let rom = FileDialog::new()
+                    .set_title(self.language.translate("Choose matching LINK16 V4 ROM"))
+                    .add_filter("Game Boy ROM", &["gb"])
+                    .pick_file();
+                if let Some(rom) = rom {
+                    if let Some(out) = FileDialog::new()
+                        .set_title(self.language.translate("Choose SD package output"))
+                        .pick_folder()
+                    {
+                        self.status = match crate::link16_sd::export_link16_sd_package(
+                            &self.project,
+                            &rom,
+                            &out,
+                        ) {
+                            Ok(package) => format!(
+                                "SD package {} players -> {}",
+                                package.players.len(),
+                                package.directory.display()
+                            ),
+                            Err(error) => format!("SD package export failed: {error:#}"),
+                        };
+                    }
+                }
+            }
+            Action::ExportRom => {
+                if let Some(path) = FileDialog::new()
+                    .set_title(self.language.translate("Export song as Game Boy ROM"))
+                    .add_filter("Game Boy ROM", &["gb"])
+                    .set_file_name("link16_song.gb")
+                    .save_file()
+                {
+                    self.status = match crate::link16_rom::export_link16_rom(&self.project, &path) {
+                        Ok(report) => format!(
+                            "ROM {} players / {} steps -> {}",
+                            report.players,
+                            report.steps,
+                            path.display()
+                        ),
+                        Err(error) => format!("ROM export failed: {error:#}"),
+                    };
+                }
+            }
+            Action::ExportPlayerRoms => {
+                if let Some(root) = FileDialog::new()
+                    .set_title(self.language.translate("Export playback ROMs (no SRAM)"))
+                    .pick_folder()
+                {
+                    self.status = match crate::player_rom::export_player_roms(&self.project, &root)
+                    {
+                        Ok(report) => format!(
+                            "{} playback ROMs / 512KB each / no SRAM -> {}",
+                            report.players,
+                            report.directory.display()
+                        ),
+                        Err(error) => format!("Playback ROM export failed: {error:#}"),
+                    };
+                }
+            }
             Action::AddUserWave => self.add_user_wave(),
             Action::WaveCurve => self.wave_curve = !self.wave_curve,
             Action::Language => self.toggle_language(),
@@ -1757,11 +1923,15 @@ impl GbseqApp {
                 }
             }
             Action::KeyTrack(delta) => {
-                let count = self.project.tracks.len() as i32;
+                let count = self.project.link16_mode.track_count() as i32;
                 let next = (self.selected_track as i32 + delta as i32).rem_euclid(count);
                 self.open_key_track(next as usize);
             }
             Action::SetLink16Mode(mode) => {
+                if mode != self.project.link16_mode {
+                    self.stop_audio();
+                    self.reset_monitor();
+                }
                 self.selected_notes.clear();
                 let before = self.project.clone();
                 self.project.set_link16_mode(mode);
@@ -1790,13 +1960,21 @@ impl GbseqApp {
                     );
                 }
             }
+            Action::SetMonitor(player) => {
+                if player.is_none_or(|p| p < self.project.player_count()) {
+                    self.monitor
+                        .store(player.map_or(0, |p| p + 1), Ordering::Relaxed);
+                    self.status =
+                        player.map_or_else(|| "Listen: All".into(), |p| format!("Solo P{}", p + 1));
+                }
+            }
             Action::ToggleAllPlayers => {
                 self.key_editor = false;
                 self.selected_notes.clear();
                 if self.project.link16_mode == Link16Mode::Dmg07_16 {
                     self.all_players_view = !self.all_players_view;
                     if self.all_players_view {
-                        self.status = "ALL16 overview - PLAY mixes all four players".to_string();
+                        self.status = "ALL16 overview".to_string();
                     } else {
                         self.active_player = self.selected_track / TRACK_COUNT;
                         self.status = format!("EDIT PLAYER {}", self.active_player + 1);
@@ -1886,6 +2064,7 @@ impl GbseqApp {
         self.menu = None;
         self.buttons.clear();
         self.project = project;
+        self.reset_monitor();
         self.saved_project = self.project.clone();
         self.selected_notes.clear();
         self.active_player = 0;
@@ -1998,14 +2177,10 @@ impl GbseqApp {
             return;
         }
         let project = self.project.clone();
-        let player = if self.all_players_visible() {
-            None
-        } else {
-            Some(self.active_player)
-        };
+        let player = self.monitor_player();
         let (sender, receiver) = mpsc::channel();
         thread::spawn(move || {
-            let result = crate::services::render_wav(&project, &path, player)
+            let result = crate::services::render_monitor_wav(&project, &path, player)
                 .map(|()| format!("WAV rendered -> {}", path.display()))
                 .map_err(|error| format!("WAV failed: {error}"));
             let _ = sender.send(result);
@@ -2034,19 +2209,11 @@ impl GbseqApp {
     }
 
     fn start_playback(&mut self) {
-        let all_players = self.all_players_visible();
-        let player = if all_players {
-            None
-        } else {
-            Some(self.active_player)
-        };
-        let key = (self.project.clone(), player);
         let playback_source = self.project.clone();
         let playback_timing = PlaybackTiming::from_project(&playback_source);
         let max_frames = project_frame_count(&playback_source);
         self.stop_audio();
         self.playback_timing = Some(playback_timing);
-        self.playback_all_players = all_players;
         self.playback_looped = playback_timing.looped;
         self.timeline_scroll.set_offset(
             Point::new(0.0, 0.0),
@@ -2056,10 +2223,15 @@ impl GbseqApp {
         if let Some(cache) = self
             .playback_cache
             .as_ref()
-            .filter(|cache| cache.project == key.0 && cache.player == key.1)
+            .filter(|cache| cache.project == playback_source)
         {
             if let Some(audio) = self.audio.as_mut() {
-                match audio.play(cache.rate, Arc::clone(&cache.samples), self.playback_looped) {
+                match audio.play(
+                    cache.rate,
+                    Arc::clone(&cache.samples),
+                    Arc::clone(&self.monitor),
+                    self.playback_looped,
+                ) {
                     Ok(()) => {
                         self.play_started = Some(Instant::now());
                         self.status = "PLAYING / CACHE HIT - no render needed".to_string();
@@ -2069,35 +2241,33 @@ impl GbseqApp {
                 return;
             }
         }
-        let projects = match crate::services::playback_projects(&playback_source, player) {
+        let projects = match crate::services::playback_projects(&playback_source, None) {
             Ok(projects) => projects,
             Err(error) => {
                 self.status = format!("PLAY failed: {error}");
                 return;
             }
         };
-        self.render_key = Some(key);
+        self.render_key = Some(playback_source);
         self.render_started = Some(Instant::now());
         let cancelled = Arc::new(AtomicBool::new(false));
         self.render_cancel = Some(Arc::clone(&cancelled));
         let (sender, receiver) = mpsc::channel();
         thread::spawn(move || {
-            let result = crate::services::render_mixed_cancellable(
-                &projects,
-                max_frames,
-                true,
-                Some(&cancelled),
-            )
-            .map_err(|error| error.to_string());
+            let result =
+                crate::services::render_player_stems(&projects, max_frames, true, Some(&cancelled))
+                    .map(|rendered| {
+                        (
+                            rendered[0].0,
+                            Arc::new(Stems::new(rendered.into_iter().map(|(_, s)| s).collect())),
+                        )
+                    })
+                    .map_err(|error| error.to_string());
             let _ = sender.send(result);
         });
         self.render_rx = Some(receiver);
         self.rendering = true;
-        self.status = if all_players {
-            "RENDERING ALL16 playback with KOKURA-Core...".to_string()
-        } else {
-            "RENDERING playback with KOKURA-Core...".to_string()
-        };
+        self.status = "RENDERING playback with KOKURA-Core...".to_string();
     }
 
     fn preview_selected(&mut self) {
@@ -2135,7 +2305,12 @@ impl GbseqApp {
         match result {
             Ok((sample_rate, samples)) => {
                 if let Some(audio) = self.audio.as_mut() {
-                    match audio.play(sample_rate, samples, false) {
+                    match audio.play(
+                        sample_rate,
+                        Arc::new(Stems::new(vec![samples])),
+                        Arc::new(AtomicUsize::new(0)),
+                        false,
+                    ) {
                         Ok(()) => self.status = "AUDITION selected MIDI bar".to_string(),
                         Err(error) => self.status = format!("AUDITION failed: {error}"),
                     }
@@ -2160,7 +2335,6 @@ impl GbseqApp {
         self.rendering = false;
         self.play_started = None;
         self.playback_timing = None;
-        self.playback_all_players = false;
         self.playback_looped = false;
         self.status = "STOPPED".to_string();
     }
@@ -2186,31 +2360,31 @@ impl GbseqApp {
                     .take()
                     .map(|t| t.elapsed().as_secs_f64() * 1000.0)
                     .unwrap_or(0.0);
-                let samples: Arc<[i16]> = samples.into();
-                if let Some((project, player)) = self.render_key.take() {
-                    // Keep at most one 128 MiB PCM buffer. Playback shares it without copying.
-                    self.playback_cache = if samples.len() <= 64 * 1024 * 1024 {
-                        Some(PlaybackCache {
-                            project,
-                            player,
-                            rate: sample_rate,
-                            samples: Arc::clone(&samples),
-                        })
-                    } else {
-                        None
-                    };
+                if let Some(project) = self.render_key.take() {
+                    // 128 MiB total across all stems, shared with the sink.
+                    self.playback_cache =
+                        if samples.players.iter().map(Vec::capacity).sum::<usize>()
+                            <= 64 * 1024 * 1024
+                        {
+                            Some(PlaybackCache {
+                                project,
+                                rate: sample_rate,
+                                samples: Arc::clone(&samples),
+                            })
+                        } else {
+                            None
+                        };
                 }
                 if let Some(audio) = self.audio.as_mut() {
-                    match audio.play(sample_rate, samples, self.playback_looped) {
+                    match audio.play(
+                        sample_rate,
+                        samples,
+                        Arc::clone(&self.monitor),
+                        self.playback_looped,
+                    ) {
                         Ok(()) => {
                             self.play_started = Some(Instant::now());
-                            self.status = if self.playback_all_players {
-                                if self.playback_looped {
-                                    "PLAYING ALL16 / LOOP ON".to_string()
-                                } else {
-                                    "PLAYING ALL16 / LOOP OFF".to_string()
-                                }
-                            } else if self.playback_looped {
+                            self.status = if self.playback_looped {
                                 "PLAYING / LOOP ON".to_string()
                             } else {
                                 "PLAYING / LOOP OFF".to_string()
@@ -2527,6 +2701,7 @@ impl GbseqApp {
                     value == self.active_player && !self.all_players_visible()
                 }
                 Action::ToggleAllPlayers => self.all_players_visible(),
+                Action::SetMonitor(p) => p == self.monitor_player(),
                 _ => false,
             };
             self.draw_button(list, &spec, active);
@@ -3496,7 +3671,8 @@ impl PlitaProgram for GbseqApp {
         self.draw_inspector(&mut list);
         self.draw_status(&mut list);
         for spec in self.menu_buttons() {
-            self.draw_button(&mut list, &spec, false);
+            let active = matches!(spec.action, Action::SetMonitor(p) if p == self.monitor_player());
+            self.draw_button(&mut list, &spec, active);
         }
         if self.menu.is_none() {
             if let Some(action) = self.buttons.hovered() {
@@ -3512,6 +3688,12 @@ impl PlitaProgram for GbseqApp {
                     Action::Quantize => "Align selected starts to grid [Q]; rejects overlaps",
                     Action::FitSong => "Fit entire song [F]",
                     Action::Preview => "Audition selected note",
+                    Action::SetPlayer(_) | Action::ToggleAllPlayers => {
+                        "Change edit view only; the audio monitor stays unchanged"
+                    }
+                    Action::SetMonitor(_) => {
+                        "Monitor playback and WAV; switching keeps the song position"
+                    }
                     _ => "Ctrl+A selects the current lane; Ctrl/Shift-click toggles notes",
                 };
                 let rect = Rect::new(12.0, self.size.height - STATUS_H - 34.0, 700.0, 28.0);
@@ -3726,17 +3908,7 @@ pub fn export_sequence(project: &SequenceProject, out_dir: &Path) -> Result<usiz
 }
 
 pub fn render_sequence_wav(project: &SequenceProject, out_path: &Path) -> Result<()> {
-    let legacy = project.to_gbdaw_project()?;
-    if let Some(parent) = out_path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    render_project_to_wav_file(
-        &legacy,
-        out_path,
-        StreamMode::Extended,
-        project_frame_count(project),
-    )?;
-    Ok(())
+    crate::services::render_sequence_wav(project, out_path)
 }
 
 pub fn inspect_sequence(project: &SequenceProject) -> Result<String> {
@@ -3864,10 +4036,29 @@ mod tests {
     }
 
     #[test]
+    fn export_menu_distinguishes_sram_free_players_from_editor_rom() {
+        let mut app = GbseqApp::new_with_audio(Size::new(1480.0, 900.0), false);
+        app.menu = Some(MenuKind::Export);
+        let buttons = app.menu_buttons();
+        assert!(buttons
+            .iter()
+            .any(|b| b.action == Action::ExportPlayerRoms && b.label == "Playback ROMs (no SRAM)"));
+        assert!(buttons
+            .iter()
+            .any(|b| b.action == Action::ExportRom && b.label == "Editor ROM (128KB SRAM)"));
+        assert_eq!(
+            Language::Japanese.translate("Playback ROMs (no SRAM)"),
+            "再生専用ROM（SRAM不要・台別）"
+        );
+    }
+
+    #[test]
     fn shared_audio_replay_does_not_copy_the_pcm() {
-        let samples: Arc<[i16]> = vec![1, 2, 3, 4].into();
+        let samples = Arc::new(Stems::new(vec![vec![1, 2, 3, 4]]));
         let source = SharedAudio {
             samples: Arc::clone(&samples),
+            monitor: Arc::new(AtomicUsize::new(0)),
+            frame_monitor: 0,
             position: 0,
             rate: 48000,
             looped: false,
@@ -3887,7 +4078,9 @@ mod tests {
             for rate in [48000, 65536] {
                 for looped in [false, true] {
                     let source = SharedAudio {
-                        samples: samples.clone().into(),
+                        samples: Arc::new(Stems::new(vec![samples.clone()])),
+                        monitor: Arc::new(AtomicUsize::new(0)),
+                        frame_monitor: 0,
                         position: 0,
                         rate,
                         looped,
@@ -3914,7 +4107,9 @@ mod tests {
             }
         }
         let mut empty = SharedAudio {
-            samples: Vec::<i16>::new().into(),
+            samples: Arc::new(Stems::new(vec![vec![]])),
+            monitor: Arc::new(AtomicUsize::new(0)),
+            frame_monitor: 0,
             position: 0,
             rate: 48000,
             looped: true,

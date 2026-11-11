@@ -11,6 +11,8 @@ assert result.returncode==0,result.stderr.decode(errors='replace')
 data=json.loads(receipt.read_text(encoding='utf-8'))
 assert data['passed'] and data['ticks']>=24 and data['draws']>=4
 assert data['language']=='ja' and data['wave_graph'] and data['key_editor']
+assert data['sram_free_player_export_menu']
+assert data['monitor_path_count_solo0based_edit0based']==[[2,None,0],[2,1,0],[4,None,0],[4,3,0]]
 assert (data['keyboard_width'],data['note_grid_left'])==(88,116)
 assert (data['synthetic_resize_before'],data['synthetic_resize_after'])==(2,6)
 assert Path(data['font']).resolve().is_relative_to(folder),'font loaded outside portable package'

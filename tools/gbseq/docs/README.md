@@ -7,6 +7,8 @@ LINK16 SRAM (`.sav`)、およびKITAQGB音楽ストリームの現行実装仕�
 
 ## 文書一覧
 
+- [再生専用ROM仕様](LINK16_PLAYER_ROM_FORMAT.md) — 台別の512KBプレイヤー、単独試聴と通信同期
+
 1. [SEQUENCER_SYSTEM_SPEC.md](SEQUENCER_SYSTEM_SPEC.md)
    - GBSEQとLINK16 ROMの役割、チャンネル構成、長さ、操作、同期方式
 2. [GBSEQ_PROJECT_FORMAT.md](GBSEQ_PROJECT_FORMAT.md)

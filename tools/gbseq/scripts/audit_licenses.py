@@ -123,6 +123,14 @@ declarations; Apple SDKs/frameworks are not redistributed in this package.
 license file; its supplemental NOTICE records that distinction. This inventory
 does not claim legal clearance of arbitrary future inputs or dependencies.
 
+## LINK16 player and title display
+
+The original KITAQGB export templates contain no imported songs. ROM text
+glyphs retain their [MIT notice](licenses/assets/ASCII-font-MIT.txt).
+GBSEQ embeds unmodified Noto Sans JP Regular; its [OFL notice](assets/title-font/NotoSansJP-Regular-OFL.txt)
+and [provenance](assets/title-font/NotoSansJP-Regular-PROVENANCE.json) accompany the binaries.
+Exported ROMs contain title tiles rather than the font file.
+
 ## Inventory
 
 | Component | Version | Declared license | Full notice |

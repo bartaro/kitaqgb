@@ -13,8 +13,8 @@ impl GbseqApp {
 
     pub(super) fn open_key_track(&mut self, track: usize) {
         self.key_editor = true;
-        self.selected_track = track.min(self.project.tracks.len() - 1);
-        // Keep the all-player playback choice when opening a track from ALL16.
+        self.selected_track = track.min(self.project.link16_mode.track_count() - 1);
+        // Changing the edited console never changes the audio monitor.
         self.active_player = self.selected_track / TRACK_COUNT;
         self.selected_note = self.selected_note.filter(|id| {
             self.project

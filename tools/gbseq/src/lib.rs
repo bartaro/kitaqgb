@@ -3,8 +3,11 @@ pub mod app;
 pub mod bindings;
 pub mod cli;
 pub mod editing;
+pub mod link16_rom;
 pub mod link16_sav;
+pub mod link16_sd;
 pub mod model;
+pub mod player_rom;
 pub mod services;
 
 #[cfg(feature = "gui")]

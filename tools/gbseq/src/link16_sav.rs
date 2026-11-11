@@ -54,6 +54,46 @@ pub fn step_frames_for_bpm(bpm: u16) -> u8 {
 }
 
 pub fn export_link16_saves(project: &SequenceProject, out_dir: &Path) -> Result<Link16SavManifest> {
+    let (step_frames, player_images) = build_player_images(project)?;
+    fs::create_dir_all(out_dir).with_context(|| format!("create {}", out_dir.display()))?;
+    let effective_bpm = project.bpm.clamp(60, 225);
+    let names: Vec<String> = match project.link16_mode {
+        Link16Mode::Local4 => vec!["link16_local.sav".to_string()],
+        Link16Mode::Cable8 => (1..=2).map(|p| format!("link16_cable.p{p}.sav")).collect(),
+        Link16Mode::Dmg07_16 => (1..=4).map(|p| format!("link16_dmg07.p{p}.sav")).collect(),
+    };
+    let mut files = Vec::new();
+    for (player, (name, image)) in names.iter().zip(player_images.iter()).enumerate() {
+        let path = out_dir.join(name);
+        fs::write(&path, image).with_context(|| format!("write {}", path.display()))?;
+        files.push(Link16SavFile {
+            player: player + 1,
+            path,
+            bytes: image.len(),
+        });
+    }
+    let manifest = Link16SavManifest {
+        format: "LINK16_SRAM_V4",
+        version: LINK16_FORMAT_VERSION,
+        mode: project.link16_mode,
+        measures: project.measures,
+        steps: project.total_steps(),
+        step_frames,
+        requested_bpm: project.bpm,
+        effective_bpm,
+        playback_start_page: 0,
+        playback_end_page: ((project.total_steps() - 1) / 16) as u8,
+        loop_playback: project.loop_playback,
+        files,
+    };
+    fs::write(
+        out_dir.join("link16_sav_manifest.json"),
+        serde_json::to_string_pretty(&manifest)?,
+    )?;
+    Ok(manifest)
+}
+
+pub(crate) fn build_player_images(project: &SequenceProject) -> Result<(u8, Vec<Vec<u8>>)> {
     project.validate()?;
     if project.frames_per_step_override.is_some() {
         bail!(
@@ -66,7 +106,6 @@ pub fn export_link16_saves(project: &SequenceProject, out_dir: &Path) -> Result<
             project.total_steps()
         );
     }
-    fs::create_dir_all(out_dir).with_context(|| format!("create {}", out_dir.display()))?;
     let effective_bpm = project.bpm.clamp(60, 225);
     let step_frames = step_frames_for_bpm(effective_bpm);
     let player_count = project.player_count();
@@ -89,41 +128,7 @@ pub fn export_link16_saves(project: &SequenceProject, out_dir: &Path) -> Result<
         player_images.push(image);
     }
 
-    let names: Vec<String> = match project.link16_mode {
-        Link16Mode::Local4 => vec!["link16_local.sav".to_string()],
-        Link16Mode::Cable8 => (1..=2).map(|p| format!("link16_cable.p{p}.sav")).collect(),
-        Link16Mode::Dmg07_16 => (1..=4).map(|p| format!("link16_dmg07.p{p}.sav")).collect(),
-    };
-
-    let mut files = Vec::new();
-    for (player, (name, image)) in names.iter().zip(player_images.iter()).enumerate() {
-        let path = out_dir.join(name);
-        fs::write(&path, image).with_context(|| format!("write {}", path.display()))?;
-        files.push(Link16SavFile {
-            player: player + 1,
-            path,
-            bytes: image.len(),
-        });
-    }
-
-    let manifest = Link16SavManifest {
-        format: "LINK16_SRAM_V4",
-        version: LINK16_FORMAT_VERSION,
-        mode: project.link16_mode,
-        measures: project.measures,
-        steps: project.total_steps(),
-        step_frames,
-        requested_bpm: project.bpm,
-        effective_bpm,
-        playback_start_page: 0,
-        playback_end_page: ((project.total_steps() - 1) / 16) as u8,
-        loop_playback: project.loop_playback,
-        files,
-    };
-    let manifest_path = out_dir.join("link16_sav_manifest.json");
-    fs::write(&manifest_path, serde_json::to_string_pretty(&manifest)?)
-        .with_context(|| format!("write {}", manifest_path.display()))?;
-    Ok(manifest)
+    Ok((step_frames, player_images))
 }
 
 fn write_region(

@@ -55,29 +55,37 @@ pub fn playback_projects(
     project: &SequenceProject,
     player: Option<usize>,
 ) -> Result<Vec<gbdaw_model::Project>> {
+    prepare_playback_projects(project, player, player.is_none())
+}
+
+fn prepare_playback_projects(
+    project: &SequenceProject,
+    player: Option<usize>,
+    global_solo: bool,
+) -> Result<Vec<gbdaw_model::Project>> {
     project.validate()?;
     if let Some(player) = player {
         ensure!(
             player < project.player_count(),
             "player is outside the active link mode"
         );
-        return Ok(vec![project.to_gbdaw_player(player)?]);
     }
+    let targets = player.map_or(0..project.player_count(), |p| p..p + 1);
+    let solo_tracks = if global_solo {
+        0..project.link16_mode.track_count()
+    } else {
+        targets.start * crate::model::TRACK_COUNT..targets.end * crate::model::TRACK_COUNT
+    };
+    let solo = project.tracks[solo_tracks].iter().any(|t| t.solo);
     let mut source = project.clone();
-    let active_tracks = source.link16_mode.track_count();
-    if source.tracks[..active_tracks]
-        .iter()
-        .any(|track| track.solo)
-    {
-        for track in &mut source.tracks[..active_tracks] {
-            if !track.solo {
-                track.mute = true;
-            }
+    // The stream renderer consumes note events, not the GUI mixer metadata.
+    // Apply mutes only to this snapshot; retain the transport and song length.
+    for track in &mut source.tracks[..project.link16_mode.track_count()] {
+        if track.mute || (solo && !track.solo) {
+            track.notes.clear();
         }
     }
-    (0..source.player_count())
-        .map(|p| source.to_gbdaw_player(p))
-        .collect()
+    targets.map(|p| source.to_gbdaw_player(p)).collect()
 }
 
 pub fn render_mixed_projects(
@@ -101,6 +109,33 @@ pub fn render_mixed_cancellable(
     parallel: bool,
     cancelled: Option<&std::sync::atomic::AtomicBool>,
 ) -> Result<(u32, Vec<i16>)> {
+    let rendered = render_player_stems(projects, frames, parallel, cancelled)?;
+    let rate = rendered[0].0;
+    if rendered.len() == 1 {
+        return Ok(rendered.into_iter().next().unwrap());
+    }
+    let divisor = rendered.len() as i32;
+    let len = rendered.iter().map(|(_, s)| s.len()).max().unwrap_or(0);
+    let mut mix = vec![0i32; len];
+    for (_, samples) in rendered {
+        for (dest, sample) in mix.iter_mut().zip(samples) {
+            *dest += i32::from(sample);
+        }
+    }
+    Ok((
+        rate,
+        mix.into_iter().map(|s| (s / divisor) as i16).collect(),
+    ))
+}
+
+/// Keep the console outputs separate so the GUI can change the monitor
+/// without restarting KOKURA or moving the transport.
+pub(crate) fn render_player_stems(
+    projects: &[gbdaw_model::Project],
+    frames: u32,
+    parallel: bool,
+    cancelled: Option<&std::sync::atomic::AtomicBool>,
+) -> Result<Vec<(u32, Vec<i16>)>> {
     ensure!(
         !projects.is_empty() && projects.len() <= 4,
         "render requires 1..4 players"
@@ -111,7 +146,7 @@ pub fn render_mixed_cancellable(
                 gbdaw_kokura::ProjectAudioRenderer::new(project, StreamMode::Extended)?;
             let mut samples = Vec::new();
             let mut remaining = frames;
-            while remaining > 0 {
+            while remaining > 0 && !renderer.is_finished() {
                 ensure!(
                     !cancelled.load(std::sync::atomic::Ordering::Relaxed),
                     "render cancelled"
@@ -142,38 +177,54 @@ pub fn render_mixed_cancellable(
     } else {
         projects.iter().map(render).collect::<Result<_>>()?
     };
-    let rate = rendered[0].0;
-    if rendered.len() == 1 {
-        return Ok(rendered.into_iter().next().unwrap());
-    }
-    let divisor = rendered.len() as i32;
-    let len = rendered.iter().map(|(_, s)| s.len()).max().unwrap_or(0);
-    let mut mix = vec![0i32; len];
-    for (sample_rate, samples) in rendered {
-        ensure!(sample_rate == rate, "player sample rates differ");
-        for (dest, sample) in mix.iter_mut().zip(samples) {
-            *dest += i32::from(sample);
-        }
-    }
-    Ok((
-        rate,
-        mix.into_iter()
-            .map(|s| (s / divisor).clamp(i16::MIN as i32, i16::MAX as i32) as i16)
-            .collect(),
-    ))
+    ensure!(
+        rendered.iter().all(|(rate, _)| *rate == rendered[0].0),
+        "player sample rates differ"
+    );
+    Ok(rendered)
 }
 
 pub fn render_sequence_wav(project: &SequenceProject, path: &Path) -> Result<()> {
-    render_wav(project, path, Some(0))
+    render_wav(project, path, None)
 }
 
 pub fn render_wav(project: &SequenceProject, path: &Path, player: Option<usize>) -> Result<()> {
     let projects = playback_projects(project, player)?;
-    let (rate, samples) = render_mixed_projects(&projects, project_frame_count(project))?;
+    write_projects_wav(&projects, path, project_frame_count(project))
+}
+
+/// A monitor isolates a console *after* the global track mute/solo rules.
+/// A stream may end early even with the project loop flag. A solo WAV must
+/// use the mix duration regardless of the selected console's last event.
+#[cfg(feature = "gui")]
+pub(crate) fn render_monitor_wav(
+    project: &SequenceProject,
+    path: &Path,
+    player: Option<usize>,
+) -> Result<()> {
+    if let Some(p) = player {
+        let projects = prepare_playback_projects(project, None, true)?;
+        ensure!(p < projects.len(), "invalid monitor player");
+        let mut stems = render_player_stems(&projects, project_frame_count(project), true, None)?;
+        let len = stems.iter().map(|(_, s)| s.len()).max().unwrap_or(0);
+        let (rate, mut solo) = stems.swap_remove(p);
+        solo.resize(len, 0);
+        return write_samples_wav(path, rate, &solo);
+    }
+    let projects = prepare_playback_projects(project, player, true)?;
+    write_projects_wav(&projects, path, project_frame_count(project))
+}
+
+fn write_projects_wav(projects: &[gbdaw_model::Project], path: &Path, frames: u32) -> Result<()> {
+    let (rate, samples) = render_mixed_projects(projects, frames)?;
+    write_samples_wav(path, rate, &samples)
+}
+
+fn write_samples_wav(path: &Path, rate: u32, samples: &[i16]) -> Result<()> {
     if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
         fs::create_dir_all(parent)?;
     }
-    write_wav_i16_stereo(path, rate, &samples)?;
+    write_wav_i16_stereo(path, rate, samples)?;
     Ok(())
 }
 
