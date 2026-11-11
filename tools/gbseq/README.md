@@ -1,5 +1,7 @@
 # GBSEQ
 
+GB Studio: [UGE / MOD export](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 Game Boy sequencer by DAISUKE OBA: plita GUI, headless CLI, 4/8/16-channel editing and monitoring, WAV, KITAQGB, LINK16 saves and standalone GB/GBC player ROMs.

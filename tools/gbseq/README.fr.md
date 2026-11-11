@@ -1,5 +1,7 @@
 # GBSEQ — manuel d’utilisation
 
+Dans Exporter, choisissez UGE modifiable (avec vos formes d’onde) ou MOD (instruments GBT fixes). Enregistrez un fichier par console dans `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBSEQ, par DAISUKE OBA, propose une interface plita et une CLI indépendante. Elles partagent modèle, validation, audio KOKURA et exportateurs. LOCAL 4CH, CABLE 8CH et DMG07 16CH correspondent à 1, 2 et 4 Game Boy. Chaque joueur dispose de CH1/CH2 à impulsions, CH3 à table d’onde et CH4 à bruit. Un morceau contient 1–256 mesures de 16 pas (4096 par canal), BPM 30–300 et une option de boucle. Le menu View permet de choisir le japonais ou l’anglais, tout comme l’option `gbseq --language ja` ou `en` au démarrage. Le japonais nécessite une police système adaptée.

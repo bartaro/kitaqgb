@@ -1,5 +1,7 @@
 # GBSEQ — 操作説明書
 
+「書き出し」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 DAISUKE OBA制作のGBSEQは、plita製GUIと独立したCLIを備えるゲームボーイ用シーケンサーです。編集モデル、検証、KOKURA音源、書き出し処理を共用します。LOCAL 4CH・CABLE 8CH・DMG07 16CHで1台・2台・4台分を制作できます。各台はCH1矩形波、CH2矩形波、CH3波形、CH4ノイズ。1曲1～256小節、1小節16ステップ（各CH最大4096）、BPM30～300、ループ有無を設定できます。GUIは日本語と英語に対応しています。「表示 / View」で切り替えるか、起動時に `gbseq --language ja` または `en` を指定します。日本語表示には日本語フォントが必要です。

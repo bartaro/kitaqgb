@@ -3,6 +3,7 @@ pub mod app;
 pub mod bindings;
 pub mod cli;
 pub mod editing;
+pub mod gb_studio;
 pub mod link16_rom;
 pub mod link16_sav;
 pub mod link16_sd;

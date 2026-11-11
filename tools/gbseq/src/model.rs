@@ -794,7 +794,7 @@ impl SequenceProject {
         let mut project = legacy::Project::empty();
         project.metadata.title = self.title.clone();
         project.metadata.author = self.author.clone();
-        project.metadata.comment = "Created with GBSEQ / plita".to_string();
+        project.metadata.comment = "Created with GBSEQ / PLITA".to_string();
         project.song.tempo = self.bpm;
         project.song.speed = 6;
         project.song.ticks_per_row = self.timing_ticks_per_row();
@@ -855,7 +855,7 @@ impl SequenceProject {
         Ok(project)
     }
 
-    fn gbdaw_wave_definition(&self, preset: u8) -> Result<legacy::WaveDefinition> {
+    pub(crate) fn gbdaw_wave_definition(&self, preset: u8) -> Result<legacy::WaveDefinition> {
         let preset_index = usize::from(preset);
         let slot = self
             .wave_slots

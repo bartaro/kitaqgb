@@ -1,5 +1,7 @@
 # GBSEQ — 사용 설명서
 
+내보내기에서 편집 가능한 UGE(사용자 파형 포함) 또는 MOD(고정 GBT 음색)를 선택하세요. 콘솔당 파일 하나를 `assets/music`에 저장합니다. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 DAISUKE OBA의 GBSEQ는 plita GUI와 독립 CLI를 제공하는 게임보이 시퀀서입니다. 편집 모델, 검증, KOKURA 음원과 내보내기를 공유합니다. LOCAL 4CH / CABLE 8CH / DMG07 16CH는 1·2·4대를 지원합니다. 각 기기의 CH1·CH2는 펄스, CH3은 파형, CH4는 노이즈입니다. 곡은 1–256마디, 마디당 16스텝(채널당 최대 4096), BPM 30–300이며 반복 여부를 저장합니다. View 메뉴에서 일본어와 영어를 선택하거나 시작할 때 `gbseq --language ja` 또는 `en`을 지정할 수 있습니다. 일본어 표시에는 일본어를 지원하는 시스템 글꼴이 필요합니다.

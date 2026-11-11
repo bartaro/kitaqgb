@@ -83,12 +83,20 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                 _ => None,
             };
             if let Some(action) = action {
-                if let Some(spec) = self
+                let toolbar = self
                     .app
                     .link16_buttons()
                     .into_iter()
-                    .find(|b| b.action == action)
-                {
+                    .find(|b| b.action == action);
+                let spec = toolbar.or_else(|| {
+                    // The monitor is in View when the native desktop is too narrow.
+                    self.app.menu = Some(MenuKind::View);
+                    self.app
+                        .menu_buttons()
+                        .into_iter()
+                        .find(|b| b.action == action)
+                });
+                if let Some(spec) = spec {
                     let position = Point::new(spec.rect.x + 16.0, spec.rect.y + 12.0);
                     self.app.handle_event(UiEvent::PointerDown {
                         position,
@@ -123,6 +131,7 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     && player_export;
                 let report = serde_json::json!({
                     "passed": passed, "ticks": self.ticks, "draws": self.draws.get(),
+                    "viewport": [self.app.size.width, self.app.size.height],
                     "language": "ja", "wave_graph": true, "key_editor": self.app.key_editor,
                     "keyboard_width": self.app.keyboard_rect().width,
                     "note_grid_left": self.app.timeline_viewport().x,
@@ -132,6 +141,7 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     "font": active_font_source(), "physical_input_tested": false,
                     "audio_output_tested": false
                     ,"sram_free_player_export_menu": player_export
+                    ,"gb_studio_export_menus": self.app.menu_buttons().iter().filter(|b| matches!(b.action, Action::ExportStudio(_))).count()
                     ,"file_dialog_tested": false
                 });
                 if let Some(parent) = self.receipt.parent() {

@@ -37,7 +37,7 @@ with tempfile.TemporaryDirectory() as tmp:
         song=tmp/f'{players}.gbseq'; wav=tmp/f'{players}.wav'; saves=tmp/f'saves{players}'
         run('new',song,'--bars','1','--bpm','150','--players',players,'--no-loop')
         for track in range(1,players*4+1):
-            run('add-note',song,'--track',track,'--start','0','--length','2','--pitch','24','--out',song)
+            run('add-note',song,'--track',track,'--start','0','--length','2','--pitch',str(12+track),'--out',song)
         run('validate',song)
         run('render-wav',song,wav,'--all-players')
         with wave.open(str(wav)) as w:
@@ -57,6 +57,24 @@ with tempfile.TemporaryDirectory() as tmp:
             assert len(rom)==524288 and rom[0x147:0x14a]==bytes([0x19,4,0])
             assert rom[0x20000:0x20005]==b'L16P\x02' and rom[0x20007]==part and any(rom[0x20010:0x20510])
         info['sram_free_player_roms_verified']=players
+        for ext in ('mod','uge'):
+            report=json.loads(run('export-'+ext,song,tmp/f'studio{players}.{ext}'))
+            parts=[Path(f).read_bytes() for f in report['files']]
+            assert len(set(parts))==len(parts)==players
+            for idx,data in enumerate(parts):
+                if ext=='mod':
+                    assert data[1080:1084]==b'M.K.' and data[950]==3
+                    periods=[808,640,508,404]
+                    at=1084+1024 # order 0 is a one-row tempo prelude on this dense fixture
+                    actual=((data[at]&15)<<8)|data[at+1]
+                    assert actual==periods[idx],(idx,actual)
+                else:
+                    # Version 6, three short strings, 45 instrument records,
+                    # wave RAM, speed/timer, pattern count, first pattern ID.
+                    base=4+3*256+45*1385+16*32+9
+                    assert struct.unpack_from('<I',data)[0]==6
+                    assert struct.unpack_from('<III',data,base)==(8,0,13+idx*4)
+            info['gb_studio_'+ext+'_parts_verified']=players
         run('export-kitaqgb',song,tmp/f'c{players}','--player',players)
         before=song.read_bytes()
         bad=subprocess.run([str(cli),'add-note',str(song),'--track','1','--start','0','--out',str(song)],capture_output=True)

@@ -110,6 +110,7 @@ enum Action {
     ExportLink16Sd,
     ExportRom,
     ExportPlayerRoms,
+    ExportStudio(crate::gb_studio::Format),
     AddUserWave,
     WaveCurve,
     Language,
@@ -159,7 +160,8 @@ fn action_icon(action: Action) -> Option<&'static str> {
         | Action::ExportLink16Sav
         | Action::ExportLink16Sd
         | Action::ExportRom
-        | Action::ExportPlayerRoms => "package",
+        | Action::ExportPlayerRoms
+        | Action::ExportStudio(_) => "package",
         Action::New => "file-plus",
         Action::Save | Action::SaveAs => "save",
         Action::Undo => "undo-2",
@@ -1250,6 +1252,14 @@ impl GbseqApp {
                 288.0,
                 vec![
                     (Action::RenderWav, "Render WAV"),
+                    (
+                        Action::ExportStudio(crate::gb_studio::Format::Uge),
+                        "GB Studio music (.uge)",
+                    ),
+                    (
+                        Action::ExportStudio(crate::gb_studio::Format::Mod),
+                        "GB Studio music (.mod)",
+                    ),
                     (Action::ExportPlayerRoms, "Playback ROMs (no SRAM)"),
                     (Action::ExportRom, "Editor ROM (128KB SRAM)"),
                     (Action::Export, "KITAQGB current player"),
@@ -1382,7 +1392,7 @@ impl GbseqApp {
                 }
             }
             digits if !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()) => {
-                // plita also supports backends that deliver printable keys without TextInput.
+                // PLITA also supports backends that deliver printable keys without TextInput.
                 self.append_measures_input(digits);
                 self.pending_measure_text = Some(digits.to_string());
             }
@@ -1894,6 +1904,41 @@ impl GbseqApp {
                         ),
                         Err(error) => format!("ROM export failed: {error:#}"),
                     };
+                }
+            }
+            Action::ExportStudio(format) => {
+                let ext = format.extension();
+                if let Some(path) = FileDialog::new()
+                    .set_title(self.language.translate("Export GB Studio music"))
+                    .add_filter("GB Studio", &[ext])
+                    .set_file_name(format!("song.{ext}"))
+                    .save_file()
+                {
+                    match crate::gb_studio::export(&self.project, &path, format) {
+                        Ok(report) => {
+                            self.status = format!(
+                                "GB Studio: {} -> {}",
+                                report.files.len(),
+                                report.files[0].display()
+                            );
+                            let mut details = report
+                                .files
+                                .iter()
+                                .map(|p| p.display().to_string())
+                                .collect::<Vec<_>>();
+                            details.extend(
+                                report
+                                    .warnings
+                                    .iter()
+                                    .map(|w| self.language.translate(w).into_owned()),
+                            );
+                            rfd::MessageDialog::new()
+                                .set_title("GB Studio")
+                                .set_description(details.join("\n"))
+                                .show();
+                        }
+                        Err(error) => self.status = format!("GB Studio: {error:#}"),
+                    }
                 }
             }
             Action::ExportPlayerRoms => {

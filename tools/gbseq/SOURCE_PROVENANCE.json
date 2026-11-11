@@ -15,14 +15,14 @@
     {
       "source": "gbseq/src/app/locale_ja.tsv",
       "destination": "src/app/locale_ja.tsv",
-      "source_sha256": "c10b28c8bb8e00e09f50edbb2d09063ac0ece00eeecba19fb6fc53f7657932a3",
-      "published_sha256": "c10b28c8bb8e00e09f50edbb2d09063ac0ece00eeecba19fb6fc53f7657932a3"
+      "source_sha256": "8ee78c4853812fa683a85ed553d655f3780be35c213d9c032e5c4a0f01d5803c",
+      "published_sha256": "8ee78c4853812fa683a85ed553d655f3780be35c213d9c032e5c4a0f01d5803c"
     },
     {
       "source": "gbseq/src/app/verification.rs",
       "destination": "src/app/verification.rs",
-      "source_sha256": "a4615c2f6eb376832128d5cd978a4dad6a65b895223369ae1af9d0f9e7a4b061",
-      "published_sha256": "a4615c2f6eb376832128d5cd978a4dad6a65b895223369ae1af9d0f9e7a4b061"
+      "source_sha256": "c1f0ae43e6c20fe564ba9a358f04ae5251de3f5fae9dcbb22e01e67ac9127f17",
+      "published_sha256": "c1f0ae43e6c20fe564ba9a358f04ae5251de3f5fae9dcbb22e01e67ac9127f17"
     },
     {
       "source": "gbseq/src/app/wave_graph.rs",
@@ -33,8 +33,8 @@
     {
       "source": "gbseq/src/app.rs",
       "destination": "src/app.rs",
-      "source_sha256": "39bd34c2a458be91dee3feb012ef2ab121b3117db377cac1699859b467ee13be",
-      "published_sha256": "e4cb89c803fbe75477efec31998b9bdf57b8844e64d0bd42be14bcbabc87791b"
+      "source_sha256": "329bb03fe8706533e3eef9e11fbdc652f8d6491a3059463d78d40cba1126da29",
+      "published_sha256": "8b9ba4b0d54869fe48dd3cd14dc6cc868e9cd327590eb0b9223260a0f24a9fdf"
     },
     {
       "source": "gbseq/src/bin/gbseq-cli.rs",
@@ -51,8 +51,8 @@
     {
       "source": "gbseq/src/cli.rs",
       "destination": "src/cli.rs",
-      "source_sha256": "6ff628d8c6e2444b661389040900ff15e71893a6d278d712ac09ad73e03d7d8b",
-      "published_sha256": "9a757e96440121d862eda682354926360212c3eb8cdb87154178852549100725"
+      "source_sha256": "a8802bf8860e4560393ae9da91194dedda5fe312683785b56d2f7f562821f4db",
+      "published_sha256": "9a9a34a657c13b974ed5ce3b915246246741315dfe41c359bc0cc0a6bc1bb42d"
     },
     {
       "source": "gbseq/src/editing.rs",
@@ -63,8 +63,8 @@
     {
       "source": "gbseq/src/lib.rs",
       "destination": "src/lib.rs",
-      "source_sha256": "b01888a14f1ffa2e498bc7b1c12de75af8eb5dca4052f9ee03372c93cc8ff6ca",
-      "published_sha256": "b56761af88016f543fb99be61e71dc4e0f2582a73395b11760963b4f480bf94a"
+      "source_sha256": "25a4c2651033661e3b0952b8dda2b544bda5f1c07002b6ddb12cc50dbe322e00",
+      "published_sha256": "c51cdd2cb22e6e131b336f7cd2eb3a666938e9547c3f5116976af3e3807b8c22"
     },
     {
       "source": "gbseq/src/link16_sav.rs",
@@ -81,8 +81,8 @@
     {
       "source": "gbseq/src/model.rs",
       "destination": "src/model.rs",
-      "source_sha256": "37547aa85d5347ab134abab6cd2e1faad98220e9a7a649eaea1f4e7615c49c3f",
-      "published_sha256": "5599e870e9666198209b564ecbdec7f155a03eff8a6ca6813d84bf2d90533df8"
+      "source_sha256": "b7b1657bdb0679973959fc3d6637475b3d78f0a788df59b7d0e9e25d69784238",
+      "published_sha256": "06ce7411d445d4e4f15ea67e544325a5168323a7caf5763ba3627c6829f85944"
     },
     {
       "source": "gbseq/src/services.rs",
@@ -1025,6 +1025,30 @@
       "destination": "src/player_title.rs",
       "source_sha256": "ce81dc812c3a4afc0a13e2733776497c49be0066ad165c7442d8642e8ab4b2c6",
       "published_sha256": "ce81dc812c3a4afc0a13e2733776497c49be0066ad165c7442d8642e8ab4b2c6"
+    },
+    {
+      "source": "gbseq/docs/GB_STUDIO_EXPORT.md",
+      "destination": "docs/GB_STUDIO_EXPORT.md",
+      "source_sha256": "cc50d6cbc205d4fbf6b6aa69178b0f920903c9f762e5535a384f56f75929e796",
+      "published_sha256": "cc50d6cbc205d4fbf6b6aa69178b0f920903c9f762e5535a384f56f75929e796"
+    },
+    {
+      "source": "gbseq/src/gb_studio.rs",
+      "destination": "src/gb_studio.rs",
+      "source_sha256": "df3009aff7fea078f1e3911bcd09e744f3926faa440569b0fca136048a39404c",
+      "published_sha256": "df3009aff7fea078f1e3911bcd09e744f3926faa440569b0fca136048a39404c"
+    },
+    {
+      "source": "gbseq/src/gb_studio/protracker.rs",
+      "destination": "src/gb_studio/protracker.rs",
+      "source_sha256": "5c95c831f723df2d08d901ba0fe9952bfe9017b24bcc93dea9d2042fe7e0585f",
+      "published_sha256": "5c95c831f723df2d08d901ba0fe9952bfe9017b24bcc93dea9d2042fe7e0585f"
+    },
+    {
+      "source": "gbseq/src/gb_studio/uge.rs",
+      "destination": "src/gb_studio/uge.rs",
+      "source_sha256": "1371224c011c85d0835d51409774fc9ef32bf08779b623d1d314a72dfbf5686d",
+      "published_sha256": "1371224c011c85d0835d51409774fc9ef32bf08779b623d1d314a72dfbf5686d"
     }
   ],
   "adjustments": [

@@ -1,5 +1,7 @@
 # GBSEQ — 用户手册
 
+在导出菜单中选择可编辑的 UGE（含自定义波形）或 MOD（GBT 固定音色）。每台主机单独导出一个文件，存入 `assets/music`。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模型、校验、KOKURA音源与导出功能。LOCAL 4CH、CABLE 8CH、DMG07 16CH分别支持1、2、4台Game Boy。每台CH1/CH2为脉冲波、CH3为波形、CH4为噪声。每首1–256小节，每小节16步（每通道最多4096步），BPM 30–300，可保存循环开关。界面支持日语和英语，可在 View 菜单中切换，也可通过 `gbseq --language ja` 或 `en` 启动。显示日语需要系统安装支持日文的字体。

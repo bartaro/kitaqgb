@@ -1,5 +1,7 @@
 # GBSEQ — user manual
 
+GB Studio export: select editable UGE (including user waves) or MOD (fixed GBT instruments) in Export. Write one file per console to `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
 GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an independent CLI. Both share the project model, editing rules, KOKURA audio rendering and exporters. LOCAL 4CH, CABLE 8CH and DMG07 16CH support one, two and four players. Each player has CH1 pulse, CH2 pulse, CH3 wave and CH4 noise. A project holds 1–256 bars, 16 steps per bar (4096 steps/channel), BPM 30–300 and a loop on/off setting. Choose English or Japanese in the View menu, or launch with `gbseq --language ja` or `en`. Japanese text requires a Japanese-capable system font.

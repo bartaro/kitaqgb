@@ -130,6 +130,16 @@ pub enum Command {
         #[command(flatten)]
         output: Output,
     },
+    /// Export editable hUGETracker v6 music (one file per console).
+    ExportUge {
+        project: PathBuf,
+        out_path: PathBuf,
+    },
+    /// Export a four-channel ProTracker MOD for GB Studio's GBT Player.
+    ExportMod {
+        project: PathBuf,
+        out_path: PathBuf,
+    },
     ExportKitaqgb {
         project: PathBuf,
         out_dir: PathBuf,
@@ -428,6 +438,23 @@ impl Command {
             Self::ExportRom { project, out_path } => {
                 let report =
                     crate::link16_rom::export_link16_rom(&load_sequence(&project)?, &out_path)?;
+                println!("{}", serde_json::to_string_pretty(&report)?);
+            }
+            Self::ExportUge {
+                ref project,
+                ref out_path,
+            }
+            | Self::ExportMod {
+                ref project,
+                ref out_path,
+            } => {
+                let format = if matches!(self, Self::ExportUge { .. }) {
+                    crate::gb_studio::Format::Uge
+                } else {
+                    crate::gb_studio::Format::Mod
+                };
+                let report =
+                    crate::gb_studio::export(&load_sequence(&project)?, &out_path, format)?;
                 println!("{}", serde_json::to_string_pretty(&report)?);
             }
             Self::ExportPlayerRoms { project, out_dir } => {

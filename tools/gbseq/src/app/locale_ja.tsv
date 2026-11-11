@@ -228,6 +228,17 @@ ROM {} players / {} steps -> {}	ROM {} 台分 / {} ステップ → {}
 ROM export failed: {}	ROM出力失敗: {}
 Choose matching LINK16 V4 ROM	曲の構成に対応するLINK16 V4 ROMを選択
 Choose SD package output	実機用パッケージの出力先を選択
+GB Studio music (.uge)	GB Studio 楽曲 (.uge)
+GB Studio music (.mod)	GB Studio 楽曲 (.mod)
+Export GB Studio music	GB Studio 楽曲を書き出す
+Tempo rounded to whole tracker ticks.	テンポをトラッカーの整数ティックに丸めました。
+MOD uses one startup row to set tempo without losing a note or its volume.	MODの先頭行が埋まっているため、音符と音量を残すために開始時のみテンポ設定用の1行を置きました。
+The final pattern needs one extra row for its jump.	最終パターンのジャンプに1行追加しました。
+Noise pitch approximated by the tracker noise table.	ノイズの周波数をトラッカーで指定可能な値に近似しました。
+UGE exceeded 15 instruments of one type; the closest existing timbre was used.	UGEの同系統15音色の上限を超えたため、近い既存音色で代用しました。
+MOD uses note volume; pan, envelopes and hardware sweep are not exported.	MODでは音符ごとの音量を使用します。パン、エンベロープ、スイープは出力されません。
+MOD replaces CH3 waves with fixed GBT instruments. Use UGE to keep user waves.	MODではCH3をGBTの固定音色に置き換えます。ユーザー波形を残すにはUGEを選んでください。
+MOD percussion uses the nearest fixed GBT noise instrument.	MODでは打楽器を近いGBT固定ノイズ音色で代用します。
 SD package {} players -> {}	実機用 {} 台分を書き出しました → {}
 SD package export failed: {}	実機用SD出力失敗: {}
 Change edit view only; the audio monitor stays unchanged	編集表示だけを切り替えます。聴こえる音は変わりません
