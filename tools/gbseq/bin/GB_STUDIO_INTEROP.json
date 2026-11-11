@@ -1,0 +1,12 @@
+{
+  "gbseq_source_commit": "b3d0cca190be106534bc49459d2c669a792f6c49",
+  "checker": "../scripts/verify_gb_studio_import.cjs",
+  "input": "Synthetic 1-, 2- and 4-console GBSEQ songs; one note on every channel on row 63, spanning the pattern boundary.",
+  "gb_studio_revisions": [
+    {"version": "v4.3.2", "commit": "ccb891b2670134ba8237416772eea4ed09d34e1e", "uge_files_passed": 7, "mod_files_passed": 7},
+    {"version": "development", "commit": "eb6aa8a757203d9fdacabfc90e1e31cc5c52eb0d", "uge_files_passed": 7, "mod_files_passed": 7}
+  ],
+  "verified": ["GB Studio loadUGESong", "parseMod and convertMODDataToUGESong", "per-console pitches and gate locations", "UTF-8 UGE title and exact CH3 custom wave", "GB Studio exportToC for every imported file"],
+  "gb_studio_gui_auditioned": false,
+  "physical_hardware_tested": false
+}

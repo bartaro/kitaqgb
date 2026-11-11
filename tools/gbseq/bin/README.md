@@ -1,5 +1,8 @@
 # Native downloads
 
+These builds include **GB Studio UGE and MOD export** in both the GUI and CLI.
+See the [format guide](../docs/GB_STUDIO_EXPORT.md) and the [GB Studio importer checks](GB_STUDIO_INTEROP.json).
+
 Each platform package contains both the **gbseq GUI** and **gbseq-cli**, the
 optional C ABI/Python library, all nine user manuals, fonts and full licenses.
 Keep the entire extracted directory together. See the manual for system

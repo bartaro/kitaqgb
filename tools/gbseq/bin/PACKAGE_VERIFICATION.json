@@ -1,82 +1,13 @@
 {
   "passed": true,
-  "source_commit": "8a212e749c09a74ea3fd22a9c9e9c52b73fd1667",
-  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/42615355205",
+  "source_commit": "b3d0cca190be106534bc49459d2c669a792f6c49",
+  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43069572840",
   "packages": [
-    {
-      "platform": "macos-x86_64",
-      "archive": "gbseq-macos-x86_64.tar.gz",
-      "sha256": "7409b14dcc2a10c391c7119ec0e7aee27556cf50efac425df9731c6386b36a61",
-      "file_count": 559,
-      "architectures": {
-        "gbseq": "Mach-O-x86_64",
-        "gbseq-cli": "Mach-O-x86_64",
-        "libgbseq.dylib": "Mach-O-x86_64"
-      },
-      "executable_modes": {
-        "gbseq": "0o755",
-        "gbseq-cli": "0o755"
-      },
-      "gui_startup": true,
-      "audio_and_save_players": [
-        1,
-        2,
-        4
-      ],
-      "dependency_notices_complete": true,
-      "fonts_match_official_binaries": true,
-      "nine_manuals": true
-    },
-    {
-      "platform": "windows-x86_64",
-      "archive": "gbseq-windows-x86_64.zip",
-      "sha256": "705aa8fb7e1bf6ef4a47eb849cff24783e273f6be21de77cd102ed111d7ad593",
-      "file_count": 559,
-      "architectures": {
-        "gbseq.exe": "PE-x86_64",
-        "gbseq-cli.exe": "PE-x86_64",
-        "gbseq.dll": "PE-x86_64"
-      },
-      "executable_modes": null,
-      "gui_startup": true,
-      "audio_and_save_players": [
-        1,
-        2,
-        4
-      ],
-      "dependency_notices_complete": true,
-      "fonts_match_official_binaries": true,
-      "nine_manuals": true
-    },
-    {
-      "platform": "macos-arm64",
-      "archive": "gbseq-macos-arm64.tar.gz",
-      "sha256": "6aefb43da2173b5cbaa3ce7be0c6a580ba075555043ce98ee11b83a126aa46fc",
-      "file_count": 559,
-      "architectures": {
-        "gbseq": "Mach-O-arm64",
-        "gbseq-cli": "Mach-O-arm64",
-        "libgbseq.dylib": "Mach-O-arm64"
-      },
-      "executable_modes": {
-        "gbseq": "0o755",
-        "gbseq-cli": "0o755"
-      },
-      "gui_startup": true,
-      "audio_and_save_players": [
-        1,
-        2,
-        4
-      ],
-      "dependency_notices_complete": true,
-      "fonts_match_official_binaries": true,
-      "nine_manuals": true
-    },
     {
       "platform": "linux-x86_64",
       "archive": "gbseq-linux-x86_64.tar.gz",
-      "sha256": "24d2fddb7054eda4a3b4b589c0e1faa11a1cd59c94f6adde36c3752dc6f4a748",
-      "file_count": 559,
+      "sha256": "929dff941dc71d981415d2db313d01299e169e4e95b6b19a30126f8354213c36",
+      "file_count": 567,
       "architectures": {
         "gbseq": "ELF-x86_64",
         "gbseq-cli": "ELF-x86_64",
@@ -94,7 +25,80 @@
       ],
       "dependency_notices_complete": true,
       "fonts_match_official_binaries": true,
-      "nine_manuals": true
+      "nine_manuals": true,
+      "music_player_exports_and_live_monitor": true
+    },
+    {
+      "platform": "windows-x86_64",
+      "archive": "gbseq-windows-x86_64.zip",
+      "sha256": "58065dd6a7040456595b35f287e6dc9b6d2ac462e6e0bd8d27395ad12bfbda07",
+      "file_count": 567,
+      "architectures": {
+        "gbseq.exe": "PE-x86_64",
+        "gbseq-cli.exe": "PE-x86_64",
+        "gbseq.dll": "PE-x86_64"
+      },
+      "executable_modes": null,
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true,
+      "music_player_exports_and_live_monitor": true
+    },
+    {
+      "platform": "macos-x86_64",
+      "archive": "gbseq-macos-x86_64.tar.gz",
+      "sha256": "b6a213eed6180169e1008da36ffa33a3676c43bfe9c0a0cd2cf715912f76b44c",
+      "file_count": 567,
+      "architectures": {
+        "gbseq": "Mach-O-x86_64",
+        "gbseq-cli": "Mach-O-x86_64",
+        "libgbseq.dylib": "Mach-O-x86_64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true,
+      "music_player_exports_and_live_monitor": true
+    },
+    {
+      "platform": "macos-arm64",
+      "archive": "gbseq-macos-arm64.tar.gz",
+      "sha256": "07b821a16f53fd229c2b2dc52cb4958dfaf52867371b72f7a17943791b01c32d",
+      "file_count": 567,
+      "architectures": {
+        "gbseq": "Mach-O-arm64",
+        "gbseq-cli": "Mach-O-arm64",
+        "libgbseq.dylib": "Mach-O-arm64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true,
+      "music_player_exports_and_live_monitor": true
     }
   ],
   "physical_hardware_tested": false,

@@ -1,6 +1,6 @@
 # GBSEQ — 操作説明書
 
-「書き出し」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
+「出力」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
