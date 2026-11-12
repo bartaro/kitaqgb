@@ -10,6 +10,7 @@ struct Held {
     pitch: u8,
     lane: usize,
     v: u8,
+    base_volume: u8,
     fx: NoteEffects,
     start: Option<u32>,
 }
@@ -32,6 +33,9 @@ pub(super) struct Performance {
     input: Option<Input>,
     output: Option<Output>,
     held: Option<Held>,
+    // Highlighting a newly recorded note must not multiply its already scaled
+    // MIDI velocity into the following note a second time.
+    inserted_volume: Option<(usize, u64, u8, u8)>,
     down: BTreeSet<u16>,
     voice: Option<Arc<AtomicBool>>,
     pub take_before: Option<SequenceProject>,
@@ -305,16 +309,171 @@ mod tests {
         );
     }
     #[test]
+    fn selected_note_edits_override_input_preset_on_all_sixteen_lanes() {
+        let mut a = fresh();
+        a.project.set_link16_mode(Link16Mode::Dmg07_16);
+        for lane in 0..16 {
+            a.selected_track = lane;
+            let id = a.project.insert_note_exact(lane, 0, 8, 24, 11).unwrap();
+            a.selected_note = Some(id);
+            crate::presets::factory(a.project.tracks[lane].kind, 3)
+                .apply(&mut a.project, lane, &[id])
+                .unwrap();
+            let n = a.project.note_mut(id).unwrap();
+            n.velocity = 9;
+            n.effects.duty = 3;
+            n.effects.envelope_period = 6;
+            n.effects.pan = PanPosition::Right;
+            n.effects.wave_level = 3;
+            n.effects.noise_shift = 6;
+            n.effects.noise_divisor = 2;
+            let expected = n.clone();
+            a.handle_event(key("a", true));
+            let held = a.live.held.as_ref().unwrap();
+            assert_eq!(held.lane, lane);
+            assert_eq!(held.v, 9);
+            assert_eq!(held.fx, expected.effects, "lane {lane}: stale input patch");
+            a.handle_event(key("a", false));
+            assert!(a.live.held.is_none());
+        }
+    }
+    #[test]
+    fn channel_instrument_follows_cursor_unless_an_input_preset_is_selected() {
+        let mut a = fresh();
+        a.project.set_link16_mode(Link16Mode::Cable8);
+        let stale = a.project.insert_note_exact(0, 0, 4, 25, 6).unwrap();
+        a.selected_note = Some(stale);
+        a.selected_track = 5;
+        let first = a.project.insert_note_exact(5, 3, 2, 20, 8).unwrap();
+        let later = a.project.insert_note_exact(5, 10, 2, 27, 13).unwrap();
+        a.project.note_mut(first).unwrap().effects.duty = 0;
+        a.project.note_mut(later).unwrap().effects.duty = 3;
+        for (step, id) in [(0, first), (3, first), (7, first), (10, later), (15, later)] {
+            a.cursor_step = step;
+            let p = a.input_preset().unwrap();
+            let n = a.project.note(id).unwrap();
+            assert_eq!(p.patch.effects, n.effects);
+            assert_eq!(p.patch.volume, n.velocity);
+        }
+        let preset = crate::presets::factory(TrackKind::Pulse2, 9);
+        preset.apply(&mut a.project, 5, &[]).unwrap();
+        assert_eq!(
+            a.input_preset().unwrap().patch.effects,
+            preset.patch.effects
+        );
+    }
+    #[test]
+    fn mouse_midi_and_pc_keys_use_the_same_selected_instrument() {
+        let mut a = fresh();
+        a.selected_track = 2;
+        let id = a.project.insert_note_exact(2, 0, 4, 24, 7).unwrap();
+        a.selected_note = Some(id);
+        a.project.note_mut(id).unwrap().effects.wave_level = 2;
+        let source = a.project.clone();
+        a.handle_event(key("a", true));
+        let pc = a.live.held.as_ref().unwrap().fx.clone();
+        assert_eq!(a.live.held.as_ref().unwrap().v, 7);
+        a.handle_event(key("a", false));
+        let rect = a.perf_keys()[0].1;
+        let position = Point::new(rect.x + 5., rect.bottom() - 5.);
+        a.handle_event(UiEvent::PointerDown {
+            position,
+            button: PointerButton::Primary,
+        });
+        assert_eq!(a.live.held.as_ref().unwrap().fx, pc);
+        a.handle_event(UiEvent::PointerUp {
+            position,
+            button: PointerButton::Primary,
+        });
+        a.receive_key(Instant::now(), [0x94, 60, 127]);
+        assert_eq!(a.live.held.as_ref().unwrap().fx, pc);
+        assert_eq!(a.live.held.as_ref().unwrap().v, 7);
+        a.receive_key(Instant::now(), [0x84, 60, 0]);
+        assert_eq!(a.project, source);
+    }
+    #[test]
+    fn step_input_does_not_compound_midi_velocity() {
+        let mut a = fresh();
+        let preset = crate::presets::factory(TrackKind::Pulse1, 8);
+        preset.apply(&mut a.project, 0, &[]).unwrap();
+        a.live.step = true;
+        for pitch in [60, 62, 64, 65] {
+            a.receive_key(Instant::now(), [0x90, pitch, 80]);
+            a.receive_key(Instant::now(), [0x80, pitch, 0]);
+        }
+        let notes = &a.project.tracks[0].notes;
+        assert_eq!(notes.len(), 4);
+        assert!(notes.iter().all(|n| n.velocity == notes[0].velocity));
+        assert!(notes.iter().all(|n| n.effects == preset.patch.effects));
+    }
+    #[test]
+    fn keyboard_apu_pcm_matches_score_preview_including_custom_wave() {
+        let mut a = fresh();
+        a.project.measures = 1;
+        for lane in 0..4 {
+            a.project.tracks.iter_mut().for_each(|t| t.notes.clear());
+            a.selected_track = lane;
+            let id = a.project.insert_note_exact(lane, 0, 12, 24, 11).unwrap();
+            a.selected_note = Some(id);
+            let factory = crate::presets::factory(a.project.tracks[lane].kind, 37);
+            factory.apply(&mut a.project, lane, &[id]).unwrap();
+            if lane == 2 {
+                let slot = a.project.note(id).unwrap().effects.wave_preset as usize;
+                let index = (a.project.wave_slots[slot].source & 0x3f) as usize;
+                for (i, sample) in a.project.user_waves[index].samples.iter_mut().enumerate() {
+                    *sample = if i < 9 { 15 } else { (i % 4) as u8 };
+                }
+            }
+            let fx = &mut a.project.note_mut(id).unwrap().effects;
+            fx.duty = 3;
+            fx.pan = PanPosition::Left;
+            fx.wave_level = 2;
+            let tone = a.input_preset().unwrap();
+            let n = a.project.note(id).unwrap();
+            let mut keyboard =
+                voice_host(lane as u8, 24, n.velocity, &tone.patch.effects, tone.wave);
+            keyboard.advance_tcycles(70_224 * 4);
+            let pcm = keyboard.drain_audio_frames_interleaved_i16(8192);
+            let mut renderer = gbdaw_kokura::ProjectAudioRenderer::new(
+                &a.project.to_gbdaw_player(0).unwrap(),
+                StreamMode::Extended,
+            )
+            .unwrap();
+            assert_eq!(
+                pcm,
+                renderer.render_next_frames(4).unwrap(),
+                "CH{} keyboard and score differ",
+                lane + 1
+            );
+            assert!(pcm.iter().any(|x| *x != 0));
+        }
+    }
+    #[test]
     #[ignore = "explicit native audio/MIDI device check"]
     fn native_keyboard_and_ports() {
         let mut a = GbseqApp::new(Size::new(950., 700.));
         assert!(a.audio.is_some());
         a.toggle_keyboard();
-        a.handle_event(key("a", true));
-        assert!(a.live.voice.is_some());
-        thread::sleep(Duration::from_millis(80));
-        a.handle_event(key("a", false));
-        assert!(a.live.voice.is_none());
+        a.project = SequenceProject::empty();
+        a.project.set_link16_mode(Link16Mode::Dmg07_16);
+        for lane in 0..16 {
+            a.selected_track = lane;
+            let id = a.project.insert_note_exact(lane, 0, 8, 24, 12).unwrap();
+            crate::presets::factory(a.project.tracks[lane].kind, 10)
+                .apply(&mut a.project, lane, &[id])
+                .unwrap();
+            a.selected_note = Some(id);
+            a.project.note_mut(id).unwrap().effects.duty = 3;
+            a.handle_event(key("a", true));
+            assert!(a.live.voice.is_some());
+            assert_eq!(
+                a.live.held.as_ref().unwrap().fx,
+                a.project.note(id).unwrap().effects
+            );
+            thread::sleep(Duration::from_millis(50));
+            a.handle_event(key("a", false));
+            assert!(a.live.voice.is_none());
+        }
         eprintln!("{}", a.live.cycle_input().unwrap());
         eprintln!("{}", a.live.cycle_output().unwrap());
         if a.live.has_output() {
@@ -386,6 +545,26 @@ fn monitor_voice(
     wave: Option<[u8; 16]>,
 ) -> Result<Arc<AtomicBool>> {
     let sink = Sink::try_new(&audio.handle)?;
+    let mut host = voice_host(ch, p, v, fx, wave);
+    let cancel = Arc::new(AtomicBool::new(false));
+    let flag = cancel.clone();
+    thread::spawn(move || {
+        let rate = host.audio_sample_rate();
+        while !flag.load(Ordering::Acquire) {
+            if sink.len() < 3 {
+                host.advance_tcycles(16384);
+                let pcm = host.drain_audio_frames_interleaved_i16(1024);
+                sink.append(rodio::buffer::SamplesBuffer::new(2, rate, pcm));
+            } else {
+                thread::sleep(Duration::from_millis(1));
+            }
+        }
+        sink.stop();
+    });
+    Ok(cancel)
+}
+
+fn voice_host(ch: u8, p: u8, v: u8, fx: &NoteEffects, wave: Option<[u8; 16]>) -> KokuraApuHost {
     let mut host = KokuraApuHost::default();
     let env = (v << 4) | (u8::from(fx.envelope_increase) << 3) | fx.envelope_period.min(7);
     host.set_inst(
@@ -410,22 +589,7 @@ fn monitor_voice(
         },
     );
     host.note_on(ch, if ch == 3 { fx.nr43() } else { p });
-    let cancel = Arc::new(AtomicBool::new(false));
-    let flag = cancel.clone();
-    thread::spawn(move || {
-        let rate = host.audio_sample_rate();
-        while !flag.load(Ordering::Acquire) {
-            if sink.len() < 3 {
-                host.advance_tcycles(16384);
-                let pcm = host.drain_audio_frames_interleaved_i16(1024);
-                sink.append(rodio::buffer::SamplesBuffer::new(2, rate, pcm));
-            } else {
-                thread::sleep(Duration::from_millis(1));
-            }
-        }
-        sink.stop();
-    });
-    Ok(cancel)
+    host
 }
 impl GbseqApp {
     pub(super) fn toggle_keyboard(&mut self) {
@@ -467,7 +631,40 @@ impl GbseqApp {
         self.chords.clear();
         self.selected_note = Some(id);
         self.selected_notes.clear();
+        self.live.inserted_volume = Some((h.lane, id, h.base_volume, h.v));
         Ok(())
+    }
+    fn input_preset(&self) -> Result<crate::presets::Preset> {
+        let lane = self.selected_track;
+        let t = &self.project.tracks[lane];
+        // Editing a note takes priority over the track's saved input default.
+        // Without either, audition the instrument used at the input cursor.
+        let selected = self
+            .selected_note
+            .filter(|id| t.notes.iter().any(|n| n.id == *id));
+        let context = selected.or_else(|| {
+            if t.input_patch.is_some() {
+                None
+            } else {
+                let step = self
+                    .playback_timing
+                    .and_then(|timing| self.transport_elapsed().map(|d| timing.step_at(d) as u32))
+                    .unwrap_or(self.cursor_step);
+                t.notes
+                    .iter()
+                    .rev()
+                    .find(|n| n.start <= step)
+                    .or_else(|| t.notes.first())
+                    .map(|n| n.id)
+            }
+        });
+        let mut preset = crate::presets::Preset::capture(&self.project, lane, context)?;
+        if let Some((track, id, base, velocity)) = self.live.inserted_volume {
+            if track == lane && context == Some(id) && preset.patch.volume == velocity {
+                preset.patch.volume = base;
+            }
+        }
+        Ok(preset)
     }
     fn press_key(&mut self, id: u16, pitch: u8, v: u8, now: Instant) {
         if !self.live.down.insert(id) {
@@ -475,32 +672,18 @@ impl GbseqApp {
         }
         self.release_key(None, now); // newest key owns this monophonic GB voice
         let lane = self.selected_track;
-        let t = &self.project.tracks[lane];
-        let fx = t
-            .input_patch
-            .as_ref()
-            .map(|p| p.effects.clone())
-            .or_else(|| {
-                self.selected_note
-                    .and_then(|id| self.project.note_location(id))
-                    .filter(|(t, _)| *t == lane)
-                    .map(|(_, n)| self.project.tracks[lane].notes[n].effects.clone())
-            })
-            .unwrap_or_else(|| NoteEffects::for_track(t.kind));
-        let v = t
-            .input_patch
-            .as_ref()
-            .map_or(v, |p| ((u16::from(v) * u16::from(p.volume) + 7) / 15) as u8);
+        let preset = match self.input_preset() {
+            Ok(p) => p,
+            Err(e) => {
+                self.status = format!("Monitor: {e}");
+                return;
+            }
+        };
+        let fx = preset.patch.effects;
+        let base_volume = preset.patch.volume;
+        let v = ((u16::from(v) * u16::from(base_volume) + 7) / 15) as u8;
         if let Some(a) = self.audio.as_ref() {
-            let wave = if lane % 4 == 2 {
-                self.project
-                    .gbdaw_wave_definition(fx.wave_preset)
-                    .ok()
-                    .map(|w| w.bytes16)
-            } else {
-                None
-            };
-            match monitor_voice(a, (lane % 4) as u8, pitch, v, &fx, wave) {
+            match monitor_voice(a, (lane % 4) as u8, pitch, v, &fx, preset.wave) {
                 Ok(flag) => self.live.voice = Some(flag),
                 Err(e) => self.status = format!("Monitor: {e}"),
             }
@@ -515,6 +698,7 @@ impl GbseqApp {
             pitch,
             lane,
             v,
+            base_volume,
             fx,
             start,
         };
@@ -568,6 +752,7 @@ impl GbseqApp {
     pub(super) fn finish_performance(&mut self) {
         self.release_key(None, Instant::now());
         self.live.down.clear();
+        self.live.inserted_volume = None;
         self.live.silence();
         if let Some(before) = self.live.take_before.take() {
             self.push_undo(before);
@@ -848,6 +1033,11 @@ impl GbseqApp {
         }
         if !self.live.open {
             return false;
+        }
+        if matches!(e,UiEvent::PointerDown{position,..}|UiEvent::PointerDoubleClick{position,..}
+            if !self.perf_rect().contains(*position))
+        {
+            self.live.inserted_volume = None;
         }
         if let UiEvent::KeyUp { key, .. } = e {
             if let Some(i) = KEYS.iter().position(|k| *k == normalized_key(key)) {

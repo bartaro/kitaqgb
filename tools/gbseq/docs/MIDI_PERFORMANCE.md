@@ -6,6 +6,8 @@
 
 **表示 → 演奏鍵盤 / MIDI（K）**でパネルを開きます。編集したいトラックを先に選んでください。
 
+鍵盤の音色は、選択中の同じトラックの音符を最優先にします。音符を選ばない場合はトラックの入力プリセットを、未設定ならカーソル付近の音符の音色を使います。音符のデューティ・エンベロープ・CH3波形／音量・パンなどを編集した結果は、次の押鍵から反映されます。PCキー、マウス、MIDIで共通です。
+
 - 白鍵は **A S D F G H J**、黒鍵は **W E T Y U**。マウスでも弾けます。**Z / X** または **Oct − / +** でオクターブを変更します。押している間だけ発音します（音色自体の減衰は別です）。各GBトラックは単音です。
 - **IN** をクリックして入力ポート、**OUT** で出力ポートを順に切り替えます。最後の次はOFFです。外部鍵盤の任意のMIDIチャンネルのノート36～83（C2～B5）を選択トラックのGB音色で試奏できます。OUTは再生中の曲を外部音源へ送ります。入力をそのまま送り返すMIDI Thruではありません。専用ケーブル、OSに認識されるUSB MIDI機器、または仮想ポートを使用してください。
 - **試奏**は譜面を変更しません。**ステップ入力**では押鍵で音符を追加し、**入力長**（1・2・4個の16分音符）だけ進みます。休符は音を置かず進みます。
@@ -17,6 +19,8 @@
 - **編集**から選択音符を半音またはオクターブ単位で移調できます。「曲全体を半音上げる／下げる」は全プレイヤーのCH1～CH3に適用し、CH4は維持します。音域外になる場合は変更しません。
 
 ## English
+
+The performance voice uses the selected note on the current lane first, then its input preset, then the nearest preceding note at the cursor (or the first note when the cursor is earlier). Detail edits to duty, envelope, CH3 waveform/level and pan take effect on the next key press. PC keys, mouse keys and MIDI use the same instrument resolution.
 
 File → Import MIDI converts an SMF to an unsaved editable project. Export → Export MIDI writes all active lanes (including muted ones) to a format-1 SMF with a tempo track and a named track per lane. Save the original GB instruments, waves and loop mode in the native project.
 

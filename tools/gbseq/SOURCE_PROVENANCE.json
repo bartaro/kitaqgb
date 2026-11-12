@@ -1071,8 +1071,8 @@
     {
       "source": "gbseq/src/app/performance.rs",
       "destination": "src/app/performance.rs",
-      "source_sha256": "73d5f7a0beaea0e1697fdd5fbaf3463498fb9a349d57a50073ce2133087d0cc4",
-      "published_sha256": "73d5f7a0beaea0e1697fdd5fbaf3463498fb9a349d57a50073ce2133087d0cc4"
+      "source_sha256": "94338fb50d33b01429a12425f81d1b6374fc5716a662142249206436d9d2a536",
+      "published_sha256": "94338fb50d33b01429a12425f81d1b6374fc5716a662142249206436d9d2a536"
     },
     {
       "source": "gbseq/src/app/realtime.rs",
@@ -1095,8 +1095,8 @@
     {
       "source": "gbseq/docs/MIDI_PERFORMANCE.md",
       "destination": "docs/MIDI_PERFORMANCE.md",
-      "source_sha256": "f1f4d21db9ba7f0a029304b0bd8eda0e6b83327e4114941d5f10642a2cb552bf",
-      "published_sha256": "f1f4d21db9ba7f0a029304b0bd8eda0e6b83327e4114941d5f10642a2cb552bf"
+      "source_sha256": "e3913cb647f38153f467a753d992dd68cc198a82bae9bc96945733b52c5c9eff",
+      "published_sha256": "e3913cb647f38153f467a753d992dd68cc198a82bae9bc96945733b52c5c9eff"
     },
     {
       "source": "gbseq/src/app/chords.rs",
