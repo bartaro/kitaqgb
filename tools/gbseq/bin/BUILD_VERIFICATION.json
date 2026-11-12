@@ -1,95 +1,12 @@
 {
-  "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
-  "run_id": 43232674045,
-  "url": "https://github.com/bartaro/kitaqgb/actions/runs/43232674045",
+  "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
+  "run_id": 43242841585,
+  "url": "https://github.com/bartaro/kitaqgb/actions/runs/43242841585",
   "status": "completed",
   "conclusion": "success",
   "jobs": [
     {
-      "id": 131231826528,
-      "name": "native (macos-15-intel, macos-x86_64)",
-      "status": "completed",
-      "conclusion": "success",
-      "steps": [
-        {
-          "name": "Set up job",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Run actions/checkout@v4",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Run actions/setup-python@v5",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Linux system libraries",
-          "status": "completed",
-          "conclusion": "skipped"
-        },
-        {
-          "name": "Rust",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Test model, editor, export and physical channel order",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Build GUI",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Build headless CLI and C ABI library",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Verify and package binaries",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "GUI startup on Linux",
-          "status": "completed",
-          "conclusion": "skipped"
-        },
-        {
-          "name": "GUI startup on Windows and macOS",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Upload verified native package",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Post Run actions/setup-python@v5",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Post Run actions/checkout@v4",
-          "status": "completed",
-          "conclusion": "success"
-        },
-        {
-          "name": "Complete job",
-          "status": "completed",
-          "conclusion": "success"
-        }
-      ]
-    },
-    {
-      "id": 131231826882,
+      "id": 131267624572,
       "name": "native (ubuntu-24.04, linux-x86_64)",
       "status": "completed",
       "conclusion": "success",
@@ -172,7 +89,90 @@
       ]
     },
     {
-      "id": 131231826987,
+      "id": 131267625158,
+      "name": "native (macos-15-intel, macos-x86_64)",
+      "status": "completed",
+      "conclusion": "success",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Linux system libraries",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Rust",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Test model, editor, export and physical channel order",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build GUI",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Build headless CLI and C ABI library",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Verify and package binaries",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "GUI startup on Linux",
+          "status": "completed",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "GUI startup on Windows and macOS",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Upload verified native package",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/setup-python@v5",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 131267625177,
       "name": "native (macos-15, macos-arm64)",
       "status": "completed",
       "conclusion": "success",
@@ -255,7 +255,7 @@
       ]
     },
     {
-      "id": 131231827056,
+      "id": 131267625192,
       "name": "native (windows-latest, windows-x86_64)",
       "status": "completed",
       "conclusion": "success",
@@ -340,16 +340,16 @@
   ],
   "packages": [
     {
-      "platform": "windows-x86_64",
-      "file": "gbseq-windows-x86_64.zip",
-      "bytes": 28771326,
-      "sha256": "b0f344bf86b909f537f7c8bfb3862639c6a0994afa3f16fb68e4b6900c913c48",
+      "platform": "linux-x86_64",
+      "file": "gbseq-linux-x86_64.tar.gz",
+      "bytes": 29850462,
+      "sha256": "6a05365c2528cdec370fb049111fb40da919d5929aea8effa0f012873fee9fd1",
       "native": {
         "passed": true,
-        "platform": "windows-x86_64",
-        "system": "Windows-2025Server-10.0.26100-SP0",
-        "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
-        "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: x86_64-pc-windows-msvc\nrelease: 1.93.1\nLLVM version: 21.1.8",
+        "platform": "linux-x86_64",
+        "system": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
+        "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: x86_64-unknown-linux-gnu\nrelease: 1.93.1\nLLVM version: 21.1.8",
         "audio_tests": [
           {
             "players": 1,
@@ -391,18 +391,18 @@
         "python_ctypes_tested": true,
         "invalid_edit_preserves_source": true,
         "binaries": {
-          "gbseq.exe": "2f3a08f1af466adc8c89580f189de35107007e888abc8fcfccf106b4be6f393f",
-          "gbseq-cli.exe": "f2d14f9468581342aded8bcf0fc51665b09df7ee25ac367e82aa062714fd179d",
-          "gbseq.dll": "0118cfc20c114def4d82e940e8fde32226f9861cfe42c1fbf873899f992a760e"
+          "gbseq": "02e30277cad8468a3c7d3a516d29cb98b6653825759815b4a804cf9b47cc8272",
+          "gbseq-cli": "b14b0b1d8c2642635dbf4cf92d3036c4a85c31d23e6378833ba4e590ecd30138",
+          "libgbseq.so": "d17a9fe1f993253a0ba6c8b16c3bdfd78d688d8d7ab0a84b195359c5fca0eca1"
         },
         "physical_hardware_tested": false,
         "audio_output_device_tested": false
       },
       "gui": {
         "audio_output_tested": false,
-        "draws": 37,
+        "draws": 36,
         "file_dialog_tested": false,
-        "font": "D:\\a\\kitaqgb\\kitaqgb\\tools\\gbseq\\dist\\windows-x86_64\\assets/fonts/Roboto[wdth,wght].ttf",
+        "font": "/home/runner/work/kitaqgb/kitaqgb/tools/gbseq/dist/linux-x86_64/assets/fonts/Roboto[wdth,wght].ttf",
         "gb_studio_export_menus": 2,
         "key_editor": true,
         "keyboard_width": 88.0,
@@ -459,13 +459,13 @@
     {
       "platform": "macos-x86_64",
       "file": "gbseq-macos-x86_64.tar.gz",
-      "bytes": 27957305,
-      "sha256": "a89b18b54079626533eb12dc78493bd925c9d4b1b43e68584916b695d702473d",
+      "bytes": 27958010,
+      "sha256": "433bc39b8b466d976f0efff803d463c813eee74a87e1a509c49a50185ded1110",
       "native": {
         "passed": true,
         "platform": "macos-x86_64",
         "system": "macOS-15.7.9-x86_64-i386-64bit",
-        "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
+        "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
         "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: x86_64-apple-darwin\nrelease: 1.93.1\nLLVM version: 21.1.8",
         "audio_tests": [
           {
@@ -508,7 +508,7 @@
         "python_ctypes_tested": true,
         "invalid_edit_preserves_source": true,
         "binaries": {
-          "gbseq": "3972aa48abb4b20829fc64c42e2add0e5931f33d7d9910db64a2912ede11d335",
+          "gbseq": "b4c3d2e573b6045eb60ba7d3ecb5cd4cbc198c24dbe88f8c65725ec1809b7347",
           "gbseq-cli": "d903c2526b0cadbfe244a06d8ce64ad19bdfeb03d3660bc529a7c70efe70ddaf",
           "libgbseq.dylib": "cc3f39a8c320efe792b19f225afadff9c2a0b6fe3e38470dd4d5e2396f462dba"
         },
@@ -576,13 +576,13 @@
     {
       "platform": "macos-arm64",
       "file": "gbseq-macos-arm64.tar.gz",
-      "bytes": 27795494,
-      "sha256": "d540818c2c12c6ac065b037e3d6deafbc665d09fe31b380e54054cf0ced13285",
+      "bytes": 27800310,
+      "sha256": "3c48d27acb81d00c1b702f1f2379ed605b6a577b15f4208ff611e6cc995cab73",
       "native": {
         "passed": true,
         "platform": "macos-arm64",
         "system": "macOS-15.8.2-arm64-arm-64bit",
-        "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
+        "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
         "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: aarch64-apple-darwin\nrelease: 1.93.1\nLLVM version: 21.1.8",
         "audio_tests": [
           {
@@ -625,7 +625,7 @@
         "python_ctypes_tested": true,
         "invalid_edit_preserves_source": true,
         "binaries": {
-          "gbseq": "981b0535cd39b89916e6b879993753bdde33d12bc75b8e6faacb73d2ab84622f",
+          "gbseq": "a8b1078970267fa91eac9bb1781ee5e4a8abc18de010cb8238acfb17a5af9393",
           "gbseq-cli": "f7b86808750eda6875155796ce0a7f5a766201cad4840aa24c9be51c4c2eb7f2",
           "libgbseq.dylib": "9a717865b12eaad59a0c6f233f07872c3eea39dfefe5957d824b6d12acddd960"
         },
@@ -691,16 +691,16 @@
       }
     },
     {
-      "platform": "linux-x86_64",
-      "file": "gbseq-linux-x86_64.tar.gz",
-      "bytes": 29850836,
-      "sha256": "456a0e593879c6fcb5a8bba20421438f0b17afe8d657806d5f8f052091360e87",
+      "platform": "windows-x86_64",
+      "file": "gbseq-windows-x86_64.zip",
+      "bytes": 28772429,
+      "sha256": "be3f7260ff1b7c85c51302e0d9cc3914659a2037157e247c2bf0ade415b8ce9a",
       "native": {
         "passed": true,
-        "platform": "linux-x86_64",
-        "system": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
-        "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
-        "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: x86_64-unknown-linux-gnu\nrelease: 1.93.1\nLLVM version: 21.1.8",
+        "platform": "windows-x86_64",
+        "system": "Windows-2025Server-10.0.26100-SP0",
+        "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
+        "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)\nbinary: rustc\ncommit-hash: 01f6ddf7588f42ae2d7eb0a2f21d44e8e96674cf\ncommit-date: 2026-02-11\nhost: x86_64-pc-windows-msvc\nrelease: 1.93.1\nLLVM version: 21.1.8",
         "audio_tests": [
           {
             "players": 1,
@@ -742,18 +742,18 @@
         "python_ctypes_tested": true,
         "invalid_edit_preserves_source": true,
         "binaries": {
-          "gbseq": "13bc48fd7e981335e250e8010b5d553ffc0fd60d72ae9cc9547f5cb65901de43",
-          "gbseq-cli": "b14b0b1d8c2642635dbf4cf92d3036c4a85c31d23e6378833ba4e590ecd30138",
-          "libgbseq.so": "d17a9fe1f993253a0ba6c8b16c3bdfd78d688d8d7ab0a84b195359c5fca0eca1"
+          "gbseq.exe": "38b8c99f8d45d92409d923730f47b33ec1529ad487f50b56d7b76d14ebc0409b",
+          "gbseq-cli.exe": "90fc73cb75881bbb14f2084db9050abed36ee984b72cc2c919632fe526148c03",
+          "gbseq.dll": "2059434f25c1e989e45e733a2ca04bf7b2260e8f752a0130541159056844d3b3"
         },
         "physical_hardware_tested": false,
         "audio_output_device_tested": false
       },
       "gui": {
         "audio_output_tested": false,
-        "draws": 36,
+        "draws": 37,
         "file_dialog_tested": false,
-        "font": "/home/runner/work/kitaqgb/kitaqgb/tools/gbseq/dist/linux-x86_64/assets/fonts/Roboto[wdth,wght].ttf",
+        "font": "D:\\a\\kitaqgb\\kitaqgb\\tools\\gbseq\\dist\\windows-x86_64\\assets/fonts/Roboto[wdth,wght].ttf",
         "gb_studio_export_menus": 2,
         "key_editor": true,
         "keyboard_width": 88.0,

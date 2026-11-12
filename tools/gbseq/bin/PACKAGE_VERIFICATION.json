@@ -1,19 +1,22 @@
 {
   "passed": true,
-  "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
-  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43232674045",
+  "source_commit": "0da624486809e98a0b49c18e2a431e97929fb47c",
+  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43242841585",
   "packages": [
     {
-      "platform": "windows-x86_64",
-      "archive": "gbseq-windows-x86_64.zip",
-      "sha256": "b0f344bf86b909f537f7c8bfb3862639c6a0994afa3f16fb68e4b6900c913c48",
+      "platform": "linux-x86_64",
+      "archive": "gbseq-linux-x86_64.tar.gz",
+      "sha256": "6a05365c2528cdec370fb049111fb40da919d5929aea8effa0f012873fee9fd1",
       "file_count": 593,
       "architectures": {
-        "gbseq.exe": "PE-x86_64",
-        "gbseq-cli.exe": "PE-x86_64",
-        "gbseq.dll": "PE-x86_64"
+        "gbseq": "ELF-x86_64",
+        "gbseq-cli": "ELF-x86_64",
+        "libgbseq.so": "ELF-x86_64"
       },
-      "executable_modes": null,
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
       "gui_startup": true,
       "audio_and_save_players": [
         1,
@@ -30,7 +33,7 @@
     {
       "platform": "macos-x86_64",
       "archive": "gbseq-macos-x86_64.tar.gz",
-      "sha256": "a89b18b54079626533eb12dc78493bd925c9d4b1b43e68584916b695d702473d",
+      "sha256": "433bc39b8b466d976f0efff803d463c813eee74a87e1a509c49a50185ded1110",
       "file_count": 593,
       "architectures": {
         "gbseq": "Mach-O-x86_64",
@@ -57,7 +60,7 @@
     {
       "platform": "macos-arm64",
       "archive": "gbseq-macos-arm64.tar.gz",
-      "sha256": "d540818c2c12c6ac065b037e3d6deafbc665d09fe31b380e54054cf0ced13285",
+      "sha256": "3c48d27acb81d00c1b702f1f2379ed605b6a577b15f4208ff611e6cc995cab73",
       "file_count": 593,
       "architectures": {
         "gbseq": "Mach-O-arm64",
@@ -82,19 +85,16 @@
       "active_wav_and_nine_ui_locales": true
     },
     {
-      "platform": "linux-x86_64",
-      "archive": "gbseq-linux-x86_64.tar.gz",
-      "sha256": "456a0e593879c6fcb5a8bba20421438f0b17afe8d657806d5f8f052091360e87",
+      "platform": "windows-x86_64",
+      "archive": "gbseq-windows-x86_64.zip",
+      "sha256": "be3f7260ff1b7c85c51302e0d9cc3914659a2037157e247c2bf0ade415b8ce9a",
       "file_count": 593,
       "architectures": {
-        "gbseq": "ELF-x86_64",
-        "gbseq-cli": "ELF-x86_64",
-        "libgbseq.so": "ELF-x86_64"
+        "gbseq.exe": "PE-x86_64",
+        "gbseq-cli.exe": "PE-x86_64",
+        "gbseq.dll": "PE-x86_64"
       },
-      "executable_modes": {
-        "gbseq": "0o755",
-        "gbseq-cli": "0o755"
-      },
+      "executable_modes": null,
       "gui_startup": true,
       "audio_and_save_players": [
         1,

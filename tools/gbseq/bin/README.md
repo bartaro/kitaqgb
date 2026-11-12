@@ -1,5 +1,10 @@
 # Native downloads
 
+Keyboard audition uses the current lane's selected note (including edited
+duty, envelope, pan and custom CH3 wave), then its input preset or cursor
+instrument. PC keys, mouse keys and MIDI share that path. The source tests
+compare the keyboard's PCM with score playback for all four APU channels.
+
 These builds include the nine-language GUI, MIDI file and device I/O, live/step recording, 512 channel instruments, chord overlays, and WAV export that matches the active mixer and console monitor. See the [performance guide](../docs/MIDI_PERFORMANCE.md) or a localized user manual. GB Studio UGE and MOD export are available in both the GUI and CLI.
 See the [format guide](../docs/GB_STUDIO_EXPORT.md) and the [GB Studio importer checks](GB_STUDIO_INTEROP.json).
 
