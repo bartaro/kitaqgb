@@ -56,6 +56,16 @@ impl Players {
 
 #[derive(Subcommand)]
 pub enum Command {
+    /// Convert a Standard MIDI File (type 0/1, PPQN) to an editable GBSEQ song.
+    ImportMidi {
+        input: PathBuf,
+        out_path: PathBuf,
+    },
+    /// Write all active lanes as separate tracks in a format-1 MIDI file.
+    ExportMidi {
+        project: PathBuf,
+        out_path: PathBuf,
+    },
     Demo {
         out_path: PathBuf,
     },
@@ -274,6 +284,14 @@ mod parser_tests {
 impl Command {
     pub fn run(self) -> Result<()> {
         match self {
+            Self::ImportMidi { input, out_path } => {
+                let (p, report) = crate::midi::import(&input)?;
+                save_sequence(&p, &out_path)?;
+                println!("{report}");
+            }
+            Self::ExportMidi { project, out_path } => {
+                crate::midi::export(&load_sequence(&project)?, &out_path)?
+            }
             Self::Demo { out_path } => {
                 save_sequence(&SequenceProject::demo(), &out_path)?;
                 println!("saved={}", out_path.display());

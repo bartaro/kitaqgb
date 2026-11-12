@@ -136,6 +136,11 @@ Exported ROMs contain title tiles rather than the font file.
 | Component | Version | Declared license | Full notice |
 |---|---|---|---|
 '''
+# Maintain the reviewed asset/trademark notices in the checked-in header.
+# The generated section starts at the dependency inventory only.
+existing=(ROOT/'THIRD_PARTY_NOTICES.md').read_text(encoding='utf-8')
+if '## Inventory' in existing:
+    header=existing.split('## Inventory',1)[0]+'## Inventory'+header.split('## Inventory',1)[1]
 for row in rows:
     header+=f"| {row['name']} | {row['version']} | {row['license']} | "+(f"[notice]({row['notices'][0]})" if row['notices'] else 'MISSING')+" |\n"
 (ROOT/'THIRD_PARTY_NOTICES.md').write_text(header,encoding='utf-8')

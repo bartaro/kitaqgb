@@ -70,6 +70,8 @@ pub enum Link16Mode {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UserWave {
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub preset_cache: bool,
     pub name: String,
     /// Thirty-two unsigned 4-bit Game Boy CH3 samples.
     pub samples: Vec<u8>,
@@ -79,6 +81,7 @@ impl Default for UserWave {
     fn default() -> Self {
         Self {
             name: "User Wave".to_string(),
+            preset_cache: false,
             samples: (0..WAVE_SAMPLE_COUNT)
                 .map(|index| {
                     if index < 16 {
@@ -265,6 +268,18 @@ impl Default for NoteEffects {
 }
 
 impl NoteEffects {
+    pub(crate) fn nr43(&self) -> u8 {
+        (self.noise_shift.min(15) << 4)
+            | (u8::from(self.noise_width7) << 3)
+            | self.noise_divisor.min(7)
+    }
+
+    pub(crate) fn nr10(&self) -> u8 {
+        (self.sweep_period.min(7) << 4)
+            | (u8::from(self.sweep_negate) << 3)
+            | self.sweep_shift.min(7)
+    }
+
     pub fn for_track(kind: TrackKind) -> Self {
         let mut effects = Self::default();
         match kind {
@@ -337,6 +352,8 @@ impl MidiNote {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Track {
     pub kind: TrackKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub input_patch: Option<crate::presets::Patch>,
     pub name: String,
     pub mute: bool,
     pub solo: bool,
@@ -347,6 +364,7 @@ impl Track {
     pub fn new(kind: TrackKind) -> Self {
         Self {
             kind,
+            input_patch: None,
             name: kind.default_name().to_string(),
             mute: false,
             solo: false,
@@ -555,6 +573,9 @@ impl SequenceProject {
         let total_steps = self.total_steps();
         let mut ids = HashSet::new();
         for (track_index, track) in self.tracks.iter().enumerate() {
+            if let Some(p) = &track.input_patch {
+                p.validate()?;
+            }
             if track.kind != TrackKind::ALL[track_index % TRACK_COUNT] {
                 bail!(
                     "track {} has the wrong Game Boy channel kind",
@@ -639,7 +660,12 @@ impl SequenceProject {
         let start = (requested_start..=last_start)
             .find(|start| self.can_place_note(track_index, None, *start, default_length))
             .ok_or_else(|| anyhow!("no free space remains on this track"))?;
-        self.insert_note_exact(track_index, start, default_length, pitch, 15)
+        let v = self
+            .tracks
+            .get(track_index)
+            .and_then(|t| t.input_patch.as_ref())
+            .map_or(15, |p| p.volume.min(15));
+        self.insert_note_exact(track_index, start, default_length, pitch, v)
     }
 
     pub fn insert_note_exact(
@@ -660,13 +686,17 @@ impl SequenceProject {
         }
         let id = self.next_note_id.max(1);
         self.next_note_id = id.saturating_add(1);
+        let effects = self.tracks[track_index]
+            .input_patch
+            .as_ref()
+            .map_or_else(|| NoteEffects::for_track(kind), |p| p.effects.clone());
         self.tracks[track_index].notes.push(MidiNote {
             id,
             start,
             length,
             pitch: pitch.min(47),
             velocity: velocity.min(15),
-            effects: NoteEffects::for_track(kind),
+            effects,
         });
         self.tracks[track_index].sort_notes();
         Ok(id)
@@ -794,7 +824,7 @@ impl SequenceProject {
         let mut project = legacy::Project::empty();
         project.metadata.title = self.title.clone();
         project.metadata.author = self.author.clone();
-        project.metadata.comment = "Created with GBSEQ / PLITA".to_string();
+        project.metadata.comment = "Created with GBSEQ / plita".to_string();
         project.song.tempo = self.bpm;
         project.song.speed = 6;
         project.song.ticks_per_row = self.timing_ticks_per_row();
@@ -840,7 +870,14 @@ impl SequenceProject {
                 let measure = absolute_row / ROWS_PER_MEASURE;
                 let row = absolute_row % ROWS_PER_MEASURE;
                 let cell = &mut project.song.patterns[measure].rows[row].cells[local_track];
-                cell.note = Some(note.pitch);
+                // A CH4 piano-roll lane is not a hardware pitch. The legacy
+                // stream combines cell.note with the instrument NR43 byte
+                // using max(); a neutral trigger leaves all eight bits intact.
+                cell.note = Some(if track.kind == TrackKind::Noise {
+                    0
+                } else {
+                    note.pitch
+                });
                 cell.instrument_ref = Some(instrument_id);
                 cell.length_ticks = Some(
                     note.length
@@ -922,9 +959,7 @@ fn instrument_for_note(
         | effects.envelope_period.min(7);
     match kind {
         TrackKind::Pulse1 | TrackKind::Pulse2 => {
-            let sweep = (effects.sweep_period.min(7) << 4)
-                | (u8::from(effects.sweep_negate) << 3)
-                | effects.sweep_shift.min(7);
+            let sweep = effects.nr10();
             legacy::Instrument::Pulse(legacy::PulseInstrument {
                 id: id.to_string(),
                 name: id.to_string(),
@@ -954,9 +989,7 @@ fn instrument_for_note(
             id: id.to_string(),
             name: id.to_string(),
             envelope,
-            noise_param: (effects.noise_shift.min(15) << 4)
-                | (u8::from(effects.noise_width7) << 3)
-                | effects.noise_divisor.min(7),
+            noise_param: effects.nr43(),
             pan,
         }),
     }
@@ -1147,6 +1180,7 @@ mod tests {
             .for_each(|track| track.notes.clear());
         project.user_waves = vec![UserWave {
             name: "Alternating".to_string(),
+            preset_cache: false,
             samples: (0..WAVE_SAMPLE_COUNT)
                 .map(|index| if index % 2 == 0 { 0x0F } else { 0x00 })
                 .collect(),

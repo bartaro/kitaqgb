@@ -11,7 +11,46 @@ use std::{
 
 #[path = "player_title.rs"]
 mod player_title;
-const CAPABILITY: &[u8] = b"L16PLAY2\x08\x09\x01\x04\x19\0\0\0";
+const CAPABILITY: &[u8] = b"L16PLAY3\x08\x09\x01\x04\x19\0\0\0";
+const VOICE_OFFSET: usize = 11 * 0x4000;
+const VOICE_ROW: usize = 16;
+
+// Dedicated ROM banks 11..14. Aligned rows never straddle a bank; playback
+// fetches just once per sixteenth. The editable L16X/SAV layout is unchanged.
+fn voice_rows(project: &SequenceProject, player: usize, region: &[u8]) -> Vec<u8> {
+    let steps = project.total_steps() as usize;
+    let mut rows = vec![0; steps * VOICE_ROW];
+    for (row, legacy) in rows
+        .chunks_exact_mut(VOICE_ROW)
+        .zip(region[16..].chunks_exact(7))
+    {
+        row[..7].copy_from_slice(legacy);
+    }
+    for ch in 0..4 {
+        for note in &project.tracks[4 * player + ch].notes {
+            let start = note.start as usize;
+            let end = (note.end() as usize).min(steps);
+            for at in start..end {
+                let r = &mut rows[at * VOICE_ROW..][..VOICE_ROW];
+                r[7] |= 1 << ch; // occupied; independent of 0xff (a valid NR43)
+                if at == start {
+                    r[8] |= 1 << ch;
+                } // attack, not a held step
+                if ch == 2 {
+                    r[11] = note.effects.wave_level.clamp(1, 3) << 5;
+                } else {
+                    r[9 + ch] = (note.velocity.min(15) << 4)
+                        | (u8::from(note.effects.envelope_increase) << 3)
+                        | note.effects.envelope_period.min(7);
+                }
+                if ch == 0 {
+                    r[13] = note.effects.nr10();
+                }
+            }
+        }
+    }
+    rows
+}
 
 #[derive(Debug, Serialize)]
 pub struct PlayerRom {
@@ -57,9 +96,18 @@ pub fn build_player_roms(project: &SequenceProject) -> Result<(String, Vec<Vec<u
         template[0x147] == 0x19 && template[0x148] == 4 && template[0x149] == 0,
         "playback template must declare 512 KiB MBC5 ROM and no SRAM"
     );
-    let tag = images[0].iter().fold(0x811c9dc5u32, |n, b| {
-        (n ^ u32::from(*b)).wrapping_mul(0x01000193)
-    });
+    ensure!(template[0x143] == 0x80, "playback template must support both GB and GBC");
+    let voices: Vec<_> = images
+        .iter()
+        .enumerate()
+        .map(|(p, image)| voice_rows(project, p, image))
+        .collect();
+    let tag = images[0]
+        .iter()
+        .chain(voices.iter().flatten())
+        .fold(0x811c9dc5u32, |n, b| {
+            (n ^ u32::from(*b)).wrapping_mul(0x01000193)
+        });
     let mut identity = [0u8; 8];
     identity[..4].copy_from_slice(b"L16P");
     identity[4..].copy_from_slice(&tag.to_le_bytes());
@@ -71,7 +119,7 @@ pub fn build_player_roms(project: &SequenceProject) -> Result<(String, Vec<Vec<u
         // the reserved banks of this dedicated player ROM.
         rom[MANIFEST_OFFSET..].fill(0xff);
         rom[MANIFEST_OFFSET..MANIFEST_OFFSET + 4].copy_from_slice(b"L16P");
-        rom[MANIFEST_OFFSET + 4] = 2;
+        rom[MANIFEST_OFFSET + 4] = 3;
         rom[MANIFEST_OFFSET + 5] = project.player_count() as u8;
         rom[MANIFEST_OFFSET + 6] = match project.link16_mode {
             Link16Mode::Local4 => 0,
@@ -86,6 +134,8 @@ pub fn build_player_roms(project: &SequenceProject) -> Result<(String, Vec<Vec<u
         local.copy_from_slice(&image[..LINK16_REGION_BYTES]);
         local[SONG_TAG_OFFSET..SONG_TAG_OFFSET + 8].copy_from_slice(&identity);
         local[7] = region_checksum(local);
+        let voice = &voices[player];
+        rom[VOICE_OFFSET..VOICE_OFFSET + voice.len()].copy_from_slice(voice);
         let title = format!("L16P{tag:08X}{}", player + 1);
         rom[0x134..0x143].fill(0);
         rom[0x134..0x134 + title.len()].copy_from_slice(title.as_bytes());
@@ -131,7 +181,7 @@ pub fn export_player_roms(
         });
     }
     let report = PlayerRomPackage {
-        format: "LINK16_PLAYER_ROM_V2",
+        format: "LINK16_PLAYER_ROM_V3",
         title: project.title.clone(),
         directory,
         song_id,
@@ -146,10 +196,10 @@ pub fn export_player_roms(
         serde_json::to_string_pretty(&report)?,
     )?;
     fs::write(report.directory.join("README.ja.txt"), format!(
-        "LINK16 ミュージックプレイヤー（GB/GBC共通）\n曲: {}\n{}台 / {}ステップ / 各ROM 512KB / SRAM不要\n\nP番号は楽曲の担当パートです。起動直後は全ROMともSOLO。ケーブルなしでSTARTを押すと自分の4CHを再生・停止できます。\n上部に曲名とパート、中央に4CHの出力レベルの目安を表示します。\n2台・4台で同期するには、同じセットの異なるパートを各台に用意します。全台の停止中にSELECT、1台でA（MASTER）、他はB（PEER）を選択し、MASTERのSTARTで再生／停止。\n4人用アダプターはMASTERをポート1、PEERをポート2〜4へ。ROMの番号とポート番号は独立です。\n停止後、SELECTでメニュー、もう一度SELECTでSOLOへ戻ります。通信は音声を混合しません。編集はGBSEQで行ってください。\n",
+        "LINK16 ミュージックプレイヤー（GB/GBC共通）\n曲: {}\n{}台 / {}ステップ / 各ROM 512KB / SRAM不要\n\nP番号は楽曲の担当パートです。起動直後は全ROMともSOLO。ケーブルなしでSTARTを押すと自分の4CHを再生・停止できます。\n上部に曲名とパート、中央に4CHの出力レベルの目安を表示します。\n停止中のSOLOまたはMASTERでBを押すと、曲末のループをON／OFFできます。PEERはMASTERに従います。電源を入れ直すと曲の初期設定に戻ります。\n2台・4台で同期するには、同じセットの異なるパートを各台に用意します。全台の停止中にSELECT、1台でA（MASTER）、他はB（PEER）を選択し、MASTERのSTARTで再生／停止。\n4人用アダプターはMASTERをポート1、PEERをポート2〜4へ。ROMの番号とポート番号は独立です。\n停止後、SELECTでメニュー、もう一度SELECTでSOLOへ戻ります。通信は音声を混合しません。編集はGBSEQで行ってください。\n",
         project.title, report.players, report.steps))?;
     fs::write(report.directory.join("README.txt"),
-        "LINK16 Music Player for GB/GBC. 512 KiB per ROM, no SRAM or SAV/SRM.\nP1..P4 identify musical parts, not link roles. Each boots in SOLO: START plays/stops its four voices without a link.\nFor sync, use distinct parts from one set. Press SELECT while stopped on each console. A: MASTER on one; B: PEER on the others. START on the master plays/stops everyone.\nDMG-07: plug the selected MASTER into port 1, PEERs into ports 2..4, regardless of part number. SELECT in the menu returns to SOLO.\nThe four meters show relative channel activity, not a frequency analysis. The cable does not carry/mix audio. Edit in GBSEQ.\n")?;
+        "LINK16 Music Player for GB/GBC. 512 KiB per ROM, no SRAM or SAV/SRM.\nP1..P4 identify musical parts, not link roles. Each boots in SOLO: START plays/stops its four voices without a link.\nWhile stopped in SOLO or MASTER, press B to toggle looping. PEER follows MASTER. Power-on restores the exported setting.\nFor sync, use distinct parts from one set. Press SELECT while stopped on each console. A: MASTER on one; B: PEER on the others. START on the master plays/stops everyone.\nDMG-07: plug the selected MASTER into port 1, PEERs into ports 2..4, regardless of part number. SELECT in the menu returns to SOLO.\nThe four meters show relative channel activity, not a frequency analysis. The cable does not carry/mix audio. Edit in GBSEQ.\n")?;
     Ok(report)
 }
 
@@ -176,6 +226,7 @@ mod tests {
             for (player, rom) in roms.iter().enumerate() {
                 assert_eq!(rom.len(), 512 * 1024);
                 assert_eq!(&rom[0x147..=0x149], &[0x19, 4, 0]);
+                assert_eq!(rom[0x143], 0x80);
                 assert_eq!(rom[MANIFEST_OFFSET + 7], player as u8);
                 assert_eq!(rom[DATA_OFFSET + 5], player as u8);
                 assert_eq!(rom[DATA_OFFSET + 16 + 4095 * 7], 24 + player as u8);
@@ -183,7 +234,9 @@ mod tests {
                     rom[DATA_OFFSET + 7],
                     region_checksum(&rom[DATA_OFFSET..DATA_OFFSET + LINK16_REGION_BYTES])
                 );
-                assert!(rom[DATA_OFFSET + LINK16_REGION_BYTES..]
+                let last = &rom[VOICE_OFFSET + 4095 * VOICE_ROW..][..VOICE_ROW];
+                assert_eq!((last[0], last[7], last[8]), (24 + player as u8, 1, 1));
+                assert!(rom[VOICE_OFFSET + 4096 * VOICE_ROW..]
                     .iter()
                     .all(|b| *b == 255));
                 assert_eq!(

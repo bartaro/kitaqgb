@@ -78,8 +78,17 @@ impl GbseqApp {
                 start: 0,
                 length: 2,
                 pitch,
-                velocity: 15,
-                effects: crate::model::NoteEffects::for_track(self.project.tracks[track].kind),
+                velocity: self.project.tracks[track]
+                    .input_patch
+                    .as_ref()
+                    .map_or(15, |p| p.volume),
+                effects: self.project.tracks[track]
+                    .input_patch
+                    .as_ref()
+                    .map(|p| p.effects.clone())
+                    .unwrap_or_else(|| {
+                        crate::model::NoteEffects::for_track(self.project.tracks[track].kind)
+                    }),
             });
         note.pitch = pitch;
         self.preview_note(track, note);

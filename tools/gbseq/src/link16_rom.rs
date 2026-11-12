@@ -42,6 +42,7 @@ pub fn build_link16_rom(project: &SequenceProject) -> Result<(Vec<u8>, RomExport
         "invalid embedded LINK16 ROM template; rebuild export templates"
     );
     let (_, images) = build_player_images(project)?;
+    ensure!(template[0x143] == 0x80, "editor template must support both GB and GBC");
     let mut canonical = images[0].clone();
     let tag = canonical.iter().fold(0x811c9dc5u32, |n, b| {
         (n ^ u32::from(*b)).wrapping_mul(0x01000193)

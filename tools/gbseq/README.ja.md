@@ -1,5 +1,9 @@
 # GBSEQ — 操作説明書
 
+[MIDI入出力・PC鍵盤・録音・ステップ入力・512種類のプリセット音色](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+
+出力ROMには起動時の互換性のため任天堂ロゴの48バイトが含まれます。GBSEQのMITライセンスは任天堂のロゴ・商標の独立した利用許諾を与えず、任天堂との提携・承認を意味しません。[注意書き（日英）](docs/NINTENDO_NOTICE.md)を参照してください。
+
 「出力」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)

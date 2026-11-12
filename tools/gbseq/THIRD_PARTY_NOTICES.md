@@ -51,6 +51,13 @@ future dependency changes require another audit.
 
 The four original KITAQGB LINK16 export templates are application components,
 not commercial games or user compositions. They carry no imported song.
+The templates and exported ROMs include the 48-byte Nintendo logo data in
+the cartridge header solely for boot-time validation compatibility. Its
+inclusion claims no ownership and grants no independent license to Nintendo's
+logo or trademark rights. GBSEQ is independent and is not affiliated with,
+endorsed by, sponsored by, or approved by Nintendo. Game Boy and Game Boy Color
+are trademarks of Nintendo. This scope notice adds no restrictions to the
+MIT-licensed project code; see [the English/Japanese notice](docs/NINTENDO_NOTICE.md).
 The 92 glyphs used by the ROM interface retain their [MIT notice](licenses/assets/ASCII-font-MIT.txt).
 GBSEQ embeds the unmodified Noto Sans JP Regular font to render each project
 title as Game Boy tiles. Its [SIL OFL 1.1 notice](assets/title-font/NotoSansJP-Regular-OFL.txt)
@@ -67,6 +74,11 @@ declarations; Apple SDKs/frameworks are not redistributed in this package.
 `dispatch` has an explicit MIT declaration and named author but no upstream
 license file; its supplemental NOTICE records that distinction. This inventory
 does not claim legal clearance of arbitrary future inputs or dependencies.
+
+MIDI files use midly (Unlicense); device I/O uses midir (MIT). The midly
+registry archive declares the Unlicense but omits the standalone text;
+the [retained license](licenses/dependencies/midly-0.5.3/LICENSE) is from the
+[exact upstream release revision](https://github.com/negamartin/midly/blob/816cb2a585b4d5d1fd7aeb0cb35668f21dc00869/LICENSE).
 
 ## Inventory
 
@@ -124,6 +136,8 @@ does not claim legal clearance of arbitrary future inputs or dependencies.
 | core-graphics-types | 0.2.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/core-graphics-types-0.2.0/LICENSE-APACHE) |
 | coreaudio-rs | 0.11.3 | MIT/Apache-2.0 | [notice](licenses/dependencies/coreaudio-rs-0.11.3/LICENSE-APACHE) |
 | coreaudio-sys | 0.2.17 | MIT | [notice](licenses/dependencies/coreaudio-sys-0.2.17/LICENSE) |
+| coremidi | 0.9.2 | MIT | [notice](licenses/dependencies/coremidi-0.9.2/LICENSE) |
+| coremidi-sys | 3.2.1 | MIT | [notice](licenses/dependencies/coremidi-sys-3.2.1/LICENSE) |
 | cpal | 0.15.3 | Apache-2.0 | [notice](licenses/dependencies/cpal-0.15.3/LICENSE) |
 | crc32fast | 1.5.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/crc32fast-1.5.0/LICENSE-APACHE) |
 | cursor-icon | 1.2.0 | MIT OR Apache-2.0 OR Zlib | [notice](licenses/dependencies/cursor-icon-1.2.0/LICENSE-APACHE) |
@@ -195,6 +209,8 @@ does not claim legal clearance of arbitrary future inputs or dependencies.
 | memchr | 2.8.3 | Unlicense OR MIT | [notice](licenses/dependencies/memchr-2.8.3/COPYING) |
 | memmap2 | 0.9.10 | MIT OR Apache-2.0 | [notice](licenses/dependencies/memmap2-0.9.10/LICENSE-APACHE) |
 | metal | 0.33.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/metal-0.33.0/LICENSE-APACHE) |
+| midir | 0.10.4 | MIT | [notice](licenses/dependencies/midir-0.10.4/LICENSE) |
+| midly | 0.5.3 | Unlicense | [notice](licenses/dependencies/midly-0.5.3/LICENSE) |
 | minimal-lexical | 0.2.1 | MIT/Apache-2.0 | [notice](licenses/dependencies/minimal-lexical-0.2.1/LICENSE-APACHE) |
 | miniz_oxide | 0.8.9 | MIT OR Zlib OR Apache-2.0 | [notice](licenses/dependencies/miniz_oxide-0.8.9/LICENSE) |
 | naga | 28.0.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/naga-28.0.0/LICENSE.APACHE) |
@@ -313,12 +329,16 @@ does not claim legal clearance of arbitrary future inputs or dependencies.
 | wgpu-hal | 28.0.1 | MIT OR Apache-2.0 | [notice](licenses/dependencies/wgpu-hal-28.0.1/LICENSE.APACHE) |
 | wgpu-types | 28.0.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/wgpu-types-28.0.0/LICENSE.APACHE) |
 | windows | 0.54.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-0.54.0/license-apache-2.0) |
+| windows | 0.56.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-0.56.0/license-apache-2.0) |
 | windows | 0.62.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-0.62.0/license-apache-2.0) |
 | windows-collections | 0.3.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-collections-0.3.0/license-apache-2.0) |
 | windows-core | 0.54.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-core-0.54.0/license-apache-2.0) |
+| windows-core | 0.56.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-core-0.56.0/license-apache-2.0) |
 | windows-core | 0.62.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-core-0.62.0/license-apache-2.0) |
 | windows-future | 0.3.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-future-0.3.0/license-apache-2.0) |
+| windows-implement | 0.56.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-implement-0.56.0/license-apache-2.0) |
 | windows-implement | 0.60.2 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-implement-0.60.2/license-apache-2.0) |
+| windows-interface | 0.56.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-interface-0.56.0/license-apache-2.0) |
 | windows-interface | 0.59.3 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-interface-0.59.3/license-apache-2.0) |
 | windows-link | 0.2.1 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-link-0.2.1/license-apache-2.0) |
 | windows-numerics | 0.3.0 | MIT OR Apache-2.0 | [notice](licenses/dependencies/windows-numerics-0.3.0/license-apache-2.0) |

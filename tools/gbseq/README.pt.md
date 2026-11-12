@@ -1,5 +1,9 @@
 # GBSEQ — manual do usuário
 
+[Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+
+As ROMs exportadas contêm os 48 bytes do logotipo da Nintendo para compatibilidade com a verificação de inicialização. A licença MIT do GBSEQ não concede direitos independentes sobre o logotipo ou as marcas. O GBSEQ não é afiliado à Nintendo nem aprovado por ela. [Aviso em inglês/japonês](docs/NINTENDO_NOTICE.md).
+
 Em Exportar, escolha UGE editável (com ondas próprias) ou MOD (instrumentos GBT fixos). Salve um arquivo por console em `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)

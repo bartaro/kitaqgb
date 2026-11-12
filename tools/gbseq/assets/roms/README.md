@@ -11,3 +11,9 @@ writes the project data into reserved ROM banks during export.
 
 The included ROM text glyphs retain their [MIT notice](../../licenses/assets/ASCII-font-MIT.txt).
 See [player ROM format](../../docs/LINK16_PLAYER_ROM_FORMAT.md) for the manifest and part layout.
+
+The templates and exported ROMs retain the 48-byte Nintendo logo data in
+their cartridge headers for boot-time compatibility. GBSEQ's MIT license
+does not grant independent rights to Nintendo's logo or trademarks; GBSEQ
+is not affiliated with or approved by Nintendo. See the
+[English/Japanese scope notice](../../docs/NINTENDO_NOTICE.md).

@@ -3,38 +3,38 @@
     {
       "source": "gbseq/src/app/i18n.rs",
       "destination": "src/app/i18n.rs",
-      "source_sha256": "6a1adebc08169487b9f08b224bdbaff6ce2250a7b31acc64a3e8b9a92d1b7a3e",
-      "published_sha256": "6a1adebc08169487b9f08b224bdbaff6ce2250a7b31acc64a3e8b9a92d1b7a3e"
+      "source_sha256": "bf4f9e882973f628a15a3b847aa7ea1b983eda2c60e8d2371e40919683f3057e",
+      "published_sha256": "bf4f9e882973f628a15a3b847aa7ea1b983eda2c60e8d2371e40919683f3057e"
     },
     {
       "source": "gbseq/src/app/key_editor.rs",
       "destination": "src/app/key_editor.rs",
-      "source_sha256": "820655476604989ddf0de53fd06f7409e4328bf53f157af19e890dc5eaf8433f",
-      "published_sha256": "820655476604989ddf0de53fd06f7409e4328bf53f157af19e890dc5eaf8433f"
+      "source_sha256": "d78fd184226e1c28fbdac583410904328b92a4ee4344942207ef2ec786a059be",
+      "published_sha256": "d78fd184226e1c28fbdac583410904328b92a4ee4344942207ef2ec786a059be"
     },
     {
       "source": "gbseq/src/app/locale_ja.tsv",
       "destination": "src/app/locale_ja.tsv",
-      "source_sha256": "8ee78c4853812fa683a85ed553d655f3780be35c213d9c032e5c4a0f01d5803c",
-      "published_sha256": "8ee78c4853812fa683a85ed553d655f3780be35c213d9c032e5c4a0f01d5803c"
+      "source_sha256": "b651c7bf46915137c38d9524959c1ecfb1cf0fe69b150aa6823bec15d44ab407",
+      "published_sha256": "b651c7bf46915137c38d9524959c1ecfb1cf0fe69b150aa6823bec15d44ab407"
     },
     {
       "source": "gbseq/src/app/verification.rs",
       "destination": "src/app/verification.rs",
-      "source_sha256": "c1f0ae43e6c20fe564ba9a358f04ae5251de3f5fae9dcbb22e01e67ac9127f17",
-      "published_sha256": "c1f0ae43e6c20fe564ba9a358f04ae5251de3f5fae9dcbb22e01e67ac9127f17"
+      "source_sha256": "9526fd6428f07484abf4a6fe96beca532204c33645252e4f1265be80e32f6697",
+      "published_sha256": "9526fd6428f07484abf4a6fe96beca532204c33645252e4f1265be80e32f6697"
     },
     {
       "source": "gbseq/src/app/wave_graph.rs",
       "destination": "src/app/wave_graph.rs",
-      "source_sha256": "158e71d86a2005bd106ecfff3e57c736acf41d4add6e198312db73c4d15b5591",
-      "published_sha256": "158e71d86a2005bd106ecfff3e57c736acf41d4add6e198312db73c4d15b5591"
+      "source_sha256": "de0274d365f215c6d9ac944a4122702e17fff030781fe954735a01d295ff17e8",
+      "published_sha256": "de0274d365f215c6d9ac944a4122702e17fff030781fe954735a01d295ff17e8"
     },
     {
       "source": "gbseq/src/app.rs",
       "destination": "src/app.rs",
-      "source_sha256": "329bb03fe8706533e3eef9e11fbdc652f8d6491a3059463d78d40cba1126da29",
-      "published_sha256": "8b9ba4b0d54869fe48dd3cd14dc6cc868e9cd327590eb0b9223260a0f24a9fdf"
+      "source_sha256": "610321a64690b021e39bd7d16e9eea874ce88141d1b92bd68c158e3ab08762ee",
+      "published_sha256": "608dabb8800644dba0d1ebff0528280a5c0cef66a47a5efd7fa480d014d30952"
     },
     {
       "source": "gbseq/src/bin/gbseq-cli.rs",
@@ -51,26 +51,26 @@
     {
       "source": "gbseq/src/cli.rs",
       "destination": "src/cli.rs",
-      "source_sha256": "a8802bf8860e4560393ae9da91194dedda5fe312683785b56d2f7f562821f4db",
-      "published_sha256": "9a9a34a657c13b974ed5ce3b915246246741315dfe41c359bc0cc0a6bc1bb42d"
+      "source_sha256": "4ff3f1452a53019f2dd3d50b01bb0a81b81fc1327f23344a2b7262141de60c35",
+      "published_sha256": "5da255321d58b40b0c075f3f4b2f19a4049e44e66b8d83521199d5ba3ed48952"
     },
     {
       "source": "gbseq/src/editing.rs",
       "destination": "src/editing.rs",
-      "source_sha256": "7bb8b76d846b32f8f93cfef694e4b534686b6dc9cb169b61da3d890104c3cfad",
-      "published_sha256": "6abf392c6eb2ba2f068c8ca4a8eb6776ab06f89115ee73daff18662a1342abea"
+      "source_sha256": "49a76c150121d398f74ed41b9f86099f77b5a7ad42b272b49d37fe5afaa4d202",
+      "published_sha256": "b436d290e8c201b6433bf2e21d18ea600f6e8771c571b734bee3bbcf79cdc697"
     },
     {
       "source": "gbseq/src/lib.rs",
       "destination": "src/lib.rs",
-      "source_sha256": "25a4c2651033661e3b0952b8dda2b544bda5f1c07002b6ddb12cc50dbe322e00",
-      "published_sha256": "c51cdd2cb22e6e131b336f7cd2eb3a666938e9547c3f5116976af3e3807b8c22"
+      "source_sha256": "22d7d056940ce88cd27124d698003151c26dcfda4185192985661ec5b638cb3c",
+      "published_sha256": "95273225b7817d760b19fef88f643b1a8a44f8b3e0b8dd40b9e89a006cef8cd0"
     },
     {
       "source": "gbseq/src/link16_sav.rs",
       "destination": "src/link16_sav.rs",
-      "source_sha256": "910477c234d25923d1683792650bd56ffb0ae135f74c6f3f6fb79436c4e1d29f",
-      "published_sha256": "aba75f3cf019359d49593d8cbaf226e31924da9947361e11012dd63b89d8e026"
+      "source_sha256": "4573bd958ce05fd0f2383b97c91cf6700069da1fc1f5a341b1ea44154ffaab90",
+      "published_sha256": "7b260398e8ea9d6b2da4813bad85753c5dc4ad808b13f6d0caaaa85ac51c0f23"
     },
     {
       "source": "gbseq/src/main.rs",
@@ -81,8 +81,8 @@
     {
       "source": "gbseq/src/model.rs",
       "destination": "src/model.rs",
-      "source_sha256": "b7b1657bdb0679973959fc3d6637475b3d78f0a788df59b7d0e9e25d69784238",
-      "published_sha256": "06ce7411d445d4e4f15ea67e544325a5168323a7caf5763ba3627c6829f85944"
+      "source_sha256": "c4027ab7f125da81b1c713ccc7d441d5cac2ebea5d97b16960fc0ab9edba9749",
+      "published_sha256": "d9814fb135e6e22c2bb4cf30842074c3288c5fc01214bb2d100fb79e03f4be5f"
     },
     {
       "source": "gbseq/src/services.rs",
@@ -93,8 +93,8 @@
     {
       "source": "gbseq/tests/channel_order.rs",
       "destination": "tests/channel_order.rs",
-      "source_sha256": "a13ec94ab5f5e4a9931faa05d927a00587614b15438f0d3ced49e277a14c8985",
-      "published_sha256": "a13ec94ab5f5e4a9931faa05d927a00587614b15438f0d3ced49e277a14c8985"
+      "source_sha256": "fa4e57042d5c81cd9f79f63ead8f92d54443ea3a8c224a6e2995477bebd5c734",
+      "published_sha256": "fa4e57042d5c81cd9f79f63ead8f92d54443ea3a8c224a6e2995477bebd5c734"
     },
     {
       "source": "gbseq/docs/AI_MUSIC_AUTHORING_GUIDE.md",
@@ -111,8 +111,8 @@
     {
       "source": "gbseq/docs/GBSEQ_PROJECT_FORMAT.md",
       "destination": "docs/GBSEQ_PROJECT_FORMAT.md",
-      "source_sha256": "ce3b26c66f2a5aef593dcf84b38ccd425b0e61100ea9e5fdb83c6b34612181e7",
-      "published_sha256": "eb23a248e46c267be6e19d239830b61d58bf2f224d87381bf79b24619ff14868"
+      "source_sha256": "8425977b3b3b90aa95330fc658fca51326e71c8dc27a1ac987e0867766ae7343",
+      "published_sha256": "67be92b23a9a71b0215ae35959d28c694d3e6e172ca298f1a30af42c81095f3c"
     },
     {
       "source": "gbseq/docs/KITAQGB_EXPORT_FORMAT.md",
@@ -159,8 +159,8 @@
     {
       "source": "gbseq/Cargo.lock",
       "destination": "Cargo.lock",
-      "source_sha256": "ca8285dcce0b7a6a76c0b25f78bb2021b5bb23f91df369fe85f83321b2abe95c",
-      "published_sha256": "179e0a93db9f5b6ef1c14bb320a24799a49dbe4cb90295478c9f72453451e777"
+      "source_sha256": "2ad762a3d4ac49ee9a88efd71a3791d67a46f534689e043a2735e59d7aebd28f",
+      "published_sha256": "8a15b8030c142367da7b04474ae3b335381290846c2fc43869d83bc9bb742b9d"
     },
     {
       "source": "gbseq/README.md",
@@ -639,8 +639,8 @@
     {
       "source": "gbdaw/crates/gbdaw-kokura/src/lib.rs",
       "destination": "vendor/gbdaw-kokura/src/lib.rs",
-      "source_sha256": "c1aa70470c2130a6b119add4e34e9a7bf3d4a50bb89bec792349dda8e09e5de1",
-      "published_sha256": "c1aa70470c2130a6b119add4e34e9a7bf3d4a50bb89bec792349dda8e09e5de1"
+      "source_sha256": "6eda8ddf57f3c3ce3007b05554cf711a2e3a15f01e8d4daceae3e11bb3b84a3e",
+      "published_sha256": "6eda8ddf57f3c3ce3007b05554cf711a2e3a15f01e8d4daceae3e11bb3b84a3e"
     },
     {
       "source": "gbdaw/crates/gbdaw-kokura/src/lib.rs.bak",
@@ -933,32 +933,32 @@
     {
       "source": "gbseq/Cargo.toml",
       "destination": "Cargo.toml",
-      "source_sha256": "44c14d1b875584def7d9510b4494fb0d07be155ccef5e8b04938ce9627826735",
-      "published_sha256": "19be0a3e5b5efa96978b91757395b3ed2d66eb6cc4a0a7584ee67a7e7827b476"
+      "source_sha256": "b89912c3abad8304697fcafa94fa7afc0cb9e4b9d9b09262e11a357e61fa234d",
+      "published_sha256": "88121da82bec146e6d8b0efa2866110cb639bf4a5710462ee63e3d6467d6b3c7"
     },
     {
       "source": "gbseq/assets/roms/link16_export_cable.gb",
       "destination": "assets/roms/link16_export_cable.gb",
-      "source_sha256": "e5c8724f81144b504d60bd23704b2da9824079bd9d049f21f56b7787c47e12ce",
-      "published_sha256": "e5c8724f81144b504d60bd23704b2da9824079bd9d049f21f56b7787c47e12ce"
+      "source_sha256": "7723b82e7866b91bee022a6e434a3effd0afdd7478a2635c8128510aaa05e7e9",
+      "published_sha256": "7723b82e7866b91bee022a6e434a3effd0afdd7478a2635c8128510aaa05e7e9"
     },
     {
       "source": "gbseq/assets/roms/link16_export_dmg07.gb",
       "destination": "assets/roms/link16_export_dmg07.gb",
-      "source_sha256": "250aa0bf0fd346fd9f407fe399e0e8df9d6b498eb1de3dfc0dea25d2b76ec9ca",
-      "published_sha256": "250aa0bf0fd346fd9f407fe399e0e8df9d6b498eb1de3dfc0dea25d2b76ec9ca"
+      "source_sha256": "b2e6680331e19e65beb9b3e6ffee0ad394411f15d73b6646bd73eb49dc6e9399",
+      "published_sha256": "b2e6680331e19e65beb9b3e6ffee0ad394411f15d73b6646bd73eb49dc6e9399"
     },
     {
       "source": "gbseq/assets/roms/link16_player_cable.gb",
       "destination": "assets/roms/link16_player_cable.gb",
-      "source_sha256": "d2c799a94a94e70754767b22901449ddfe31c83e60bb1a4c4f043a2e588f061b",
-      "published_sha256": "d2c799a94a94e70754767b22901449ddfe31c83e60bb1a4c4f043a2e588f061b"
+      "source_sha256": "b660c2e3e5adfadeb827e12da2860297d1f75a8a87d1cb0c17999641b37e94a7",
+      "published_sha256": "b660c2e3e5adfadeb827e12da2860297d1f75a8a87d1cb0c17999641b37e94a7"
     },
     {
       "source": "gbseq/assets/roms/link16_player_dmg07.gb",
       "destination": "assets/roms/link16_player_dmg07.gb",
-      "source_sha256": "56364073d9d12f862420a67d092d54a8e8707f8ed614e5f46400ea9b6f5dac3a",
-      "published_sha256": "56364073d9d12f862420a67d092d54a8e8707f8ed614e5f46400ea9b6f5dac3a"
+      "source_sha256": "51fd80ab7cd46ab1f97df3425fd8d0b36850df9d01af0095401537875eb21c96",
+      "published_sha256": "51fd80ab7cd46ab1f97df3425fd8d0b36850df9d01af0095401537875eb21c96"
     },
     {
       "source": "gbseq/assets/title-font/NotoSansJP-Regular-OFL.txt",
@@ -981,8 +981,8 @@
     {
       "source": "gbseq/docs/LINK16_PLAYER_ROM_FORMAT.md",
       "destination": "docs/LINK16_PLAYER_ROM_FORMAT.md",
-      "source_sha256": "555f30cbfe779b267dda5862cf7e71c19a9363fd8260f921f13493485e09c2c2",
-      "published_sha256": "555f30cbfe779b267dda5862cf7e71c19a9363fd8260f921f13493485e09c2c2"
+      "source_sha256": "962b2da4a445fab5ecc707c28e94010f8e4dbd90a649ec34292f04aa9655da69",
+      "published_sha256": "962b2da4a445fab5ecc707c28e94010f8e4dbd90a649ec34292f04aa9655da69"
     },
     {
       "source": "gbseq/docs/LINK16_SD_IMPORT.en.txt",
@@ -999,14 +999,14 @@
     {
       "source": "gbseq/src/app/monitor_tests.rs",
       "destination": "src/app/monitor_tests.rs",
-      "source_sha256": "6a0864013b3a0dc67b7499bb69c12c9be82c69bf171ca849e6b731753c67440b",
-      "published_sha256": "6a0864013b3a0dc67b7499bb69c12c9be82c69bf171ca849e6b731753c67440b"
+      "source_sha256": "5a230122afe85a2774a2b4c403cdaa87ac53ef3988f6d667d9d053354043741f",
+      "published_sha256": "5a230122afe85a2774a2b4c403cdaa87ac53ef3988f6d667d9d053354043741f"
     },
     {
       "source": "gbseq/src/link16_rom.rs",
       "destination": "src/link16_rom.rs",
-      "source_sha256": "64a82e7c9d02a40c0f7b1800ee5acedd233d3c643509f9bcb2d213757ff6e36c",
-      "published_sha256": "64a82e7c9d02a40c0f7b1800ee5acedd233d3c643509f9bcb2d213757ff6e36c"
+      "source_sha256": "35aae9e4ba399c02c6383eb9e14bd7a8c15658e4d290cbb950c2f18770590033",
+      "published_sha256": "35aae9e4ba399c02c6383eb9e14bd7a8c15658e4d290cbb950c2f18770590033"
     },
     {
       "source": "gbseq/src/link16_sd.rs",
@@ -1017,8 +1017,8 @@
     {
       "source": "gbseq/src/player_rom.rs",
       "destination": "src/player_rom.rs",
-      "source_sha256": "6bfaa2e0edaec4f69075465d56bacf993a22ab6b6ea55c2d4d5071a638f15945",
-      "published_sha256": "6bfaa2e0edaec4f69075465d56bacf993a22ab6b6ea55c2d4d5071a638f15945"
+      "source_sha256": "a60988da5279562a5040a906d7c03b35901b869d7acb1021793352f4173c4d5c",
+      "published_sha256": "a60988da5279562a5040a906d7c03b35901b869d7acb1021793352f4173c4d5c"
     },
     {
       "source": "gbseq/src/player_title.rs",
@@ -1035,8 +1035,8 @@
     {
       "source": "gbseq/src/gb_studio.rs",
       "destination": "src/gb_studio.rs",
-      "source_sha256": "df3009aff7fea078f1e3911bcd09e744f3926faa440569b0fca136048a39404c",
-      "published_sha256": "df3009aff7fea078f1e3911bcd09e744f3926faa440569b0fca136048a39404c"
+      "source_sha256": "5ffdf6bdaf14cf1a8b9493bb22e499a18193900aa551de47edfd9e044fcc1b4d",
+      "published_sha256": "5ffdf6bdaf14cf1a8b9493bb22e499a18193900aa551de47edfd9e044fcc1b4d"
     },
     {
       "source": "gbseq/src/gb_studio/protracker.rs",
@@ -1049,6 +1049,66 @@
       "destination": "src/gb_studio/uge.rs",
       "source_sha256": "1371224c011c85d0835d51409774fc9ef32bf08779b623d1d314a72dfbf5686d",
       "published_sha256": "1371224c011c85d0835d51409774fc9ef32bf08779b623d1d314a72dfbf5686d"
+    },
+    {
+      "source": "gbseq/docs/NINTENDO_NOTICE.md",
+      "destination": "docs/NINTENDO_NOTICE.md",
+      "source_sha256": "88161c66b19670335ec12949f94fb373145469e498e2af4a5b62826159dabc6b",
+      "published_sha256": "88161c66b19670335ec12949f94fb373145469e498e2af4a5b62826159dabc6b"
+    },
+    {
+      "source": "gbseq/src/app/outputs.rs",
+      "destination": "src/app/outputs.rs",
+      "source_sha256": "f9d0d1816a7677864b9e96acb0fe04cb47bad6db57a72ced0a5d8139ea8b3d2f",
+      "published_sha256": "f9d0d1816a7677864b9e96acb0fe04cb47bad6db57a72ced0a5d8139ea8b3d2f"
+    },
+    {
+      "source": "gbseq/src/app/patch_list.rs",
+      "destination": "src/app/patch_list.rs",
+      "source_sha256": "9b24d97b54b1edbb8a72c8ebdfb9a413be2dfa7be0634105ffdc1b379ea741a5",
+      "published_sha256": "9b24d97b54b1edbb8a72c8ebdfb9a413be2dfa7be0634105ffdc1b379ea741a5"
+    },
+    {
+      "source": "gbseq/src/app/performance.rs",
+      "destination": "src/app/performance.rs",
+      "source_sha256": "73d5f7a0beaea0e1697fdd5fbaf3463498fb9a349d57a50073ce2133087d0cc4",
+      "published_sha256": "73d5f7a0beaea0e1697fdd5fbaf3463498fb9a349d57a50073ce2133087d0cc4"
+    },
+    {
+      "source": "gbseq/src/app/realtime.rs",
+      "destination": "src/app/realtime.rs",
+      "source_sha256": "34a3396bba9d9f2b89002f99f5b359438da289f3bf7088022a731b8bc184f207",
+      "published_sha256": "34a3396bba9d9f2b89002f99f5b359438da289f3bf7088022a731b8bc184f207"
+    },
+    {
+      "source": "gbseq/src/midi.rs",
+      "destination": "src/midi.rs",
+      "source_sha256": "54a16a2d571ccd81fb25679414fdfddda93b7ea6d7c98a8114a09f3bdb89a4a9",
+      "published_sha256": "54a16a2d571ccd81fb25679414fdfddda93b7ea6d7c98a8114a09f3bdb89a4a9"
+    },
+    {
+      "source": "gbseq/src/presets.rs",
+      "destination": "src/presets.rs",
+      "source_sha256": "1ef84e81a07b849598e44308ec0735fd04e4418eb962629b892040feeb290676",
+      "published_sha256": "1ef84e81a07b849598e44308ec0735fd04e4418eb962629b892040feeb290676"
+    },
+    {
+      "source": "gbseq/docs/MIDI_PERFORMANCE.md",
+      "destination": "docs/MIDI_PERFORMANCE.md",
+      "source_sha256": "f1f4d21db9ba7f0a029304b0bd8eda0e6b83327e4114941d5f10642a2cb552bf",
+      "published_sha256": "f1f4d21db9ba7f0a029304b0bd8eda0e6b83327e4114941d5f10642a2cb552bf"
+    },
+    {
+      "source": "gbseq/src/app/chords.rs",
+      "destination": "src/app/chords.rs",
+      "source_sha256": "da5e041a8b6a304b74ec6a6e6f68d13e9161dc83180b7e5e6364022c738407d8",
+      "published_sha256": "da5e041a8b6a304b74ec6a6e6f68d13e9161dc83180b7e5e6364022c738407d8"
+    },
+    {
+      "source": "gbseq/src/harmony.rs",
+      "destination": "src/harmony.rs",
+      "source_sha256": "cf4427fbe3a2e1a1ca45c6e245d19e788a2ffb32af46e06ccda7781230de8f36",
+      "published_sha256": "cf4427fbe3a2e1a1ca45c6e245d19e788a2ffb32af46e06ccda7781230de8f36"
     }
   ],
   "adjustments": [
@@ -1058,6 +1118,7 @@
     "Optional native-startup CI receipt added; CI and portable packaging scripts supplied",
     "Nine complete parallel user manuals supplied; historical developer paths normalized",
     "MIT copyright and permission retained; unrelated sample-font supplement omitted from GBSEQ/GBDAW/KOKURA license copies",
-    "Unused backup source and obsolete development README excluded"
+    "Unused backup source and obsolete development README excluded",
+    "Nintendo boot-header logo scope notice added following KITAQGB; no change to MIT code permissions or ROM data"
   ]
 }

@@ -331,6 +331,8 @@ pub struct ProjectAudioRendererState {
     event_index: usize,
     current_frame: u32,
     finished: bool,
+    routing: u8,
+    monitor_mask: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -374,6 +376,8 @@ pub struct ProjectAudioRenderer {
     event_index: usize,
     current_frame: u32,
     finished: bool,
+    routing: u8,
+    monitor_mask: u8,
 }
 
 impl ProjectAudioRenderer {
@@ -385,6 +389,8 @@ impl ProjectAudioRenderer {
             event_index: 0,
             current_frame: 0,
             finished: false,
+            routing: 0xff,
+            monitor_mask: 15,
         })
     }
 
@@ -394,6 +400,19 @@ impl ProjectAudioRenderer {
 
     pub fn current_frame(&self) -> u32 {
         self.current_frame
+    }
+
+    /// End marker without synthesizing any PCM. A looping stream has no STOP.
+    pub fn end_frame(&self) -> Option<u32> {
+        self.events
+            .iter()
+            .find(|e| e.cmd == "STOP")
+            .map(|e| e.frame)
+    }
+
+    /// Monitor routing only: oscillator, sweep and envelope clocks keep running.
+    pub fn set_monitor_mask(&mut self, mask: u8) {
+        self.monitor_mask = mask & 15;
     }
 
     pub fn is_finished(&self) -> bool {
@@ -409,6 +428,7 @@ impl ProjectAudioRenderer {
         self.event_index = 0;
         self.current_frame = 0;
         self.finished = false;
+        self.routing = 0xff;
     }
 
     pub fn capture_state(&self) -> ProjectAudioRendererState {
@@ -417,6 +437,8 @@ impl ProjectAudioRenderer {
             event_index: self.event_index,
             current_frame: self.current_frame,
             finished: self.finished,
+            routing: self.routing,
+            monitor_mask: self.monitor_mask,
         }
     }
 
@@ -425,6 +447,8 @@ impl ProjectAudioRenderer {
         self.event_index = state.event_index;
         self.current_frame = state.current_frame;
         self.finished = state.finished;
+        self.routing = state.routing;
+        self.monitor_mask = state.monitor_mask;
     }
 
     pub fn seek_to_frame_with_preroll(
@@ -467,6 +491,9 @@ impl ProjectAudioRenderer {
     }
 
     fn advance_one_frame(&mut self, out: Option<&mut Vec<i16>>) -> Result<()> {
+        // Keep score routing separately from the monitor, so a later unmute
+        // restores stereo placement without retriggering a held note.
+        self.host.write_apu_reg(0xff25, self.routing);
         while self.event_index < self.events.len()
             && self.events[self.event_index].frame == self.current_frame
         {
@@ -500,6 +527,9 @@ impl ProjectAudioRenderer {
         if self.finished {
             return Ok(());
         }
+        self.routing = self.host.read_apu_reg(0xff25);
+        let mask = self.monitor_mask | (self.monitor_mask << 4);
+        self.host.write_apu_reg(0xff25, self.routing & mask);
         self.host.advance_tcycles(GB_FRAME_TCYCLES);
         let drained = self
             .host
@@ -706,7 +736,9 @@ mod channel_order_tests {
 
     fn sounding_host() -> KokuraApuHost {
         let mut host = KokuraApuHost::default();
-        for channel in 0..4 { host.note_on(channel, if channel == 3 { 0x35 } else { 24 + channel * 3 }); }
+        for channel in 0..4 {
+            host.note_on(channel, if channel == 3 { 0x35 } else { 24 + channel * 3 });
+        }
         host
     }
 
@@ -725,24 +757,36 @@ mod channel_order_tests {
                 traced.apu.tick(cycles);
                 traced.cycle_counter += u64::from(cycles);
             }
-            assert_eq!(fast.drain_audio_frames_interleaved_i16(usize::MAX),traced.drain_audio_frames_interleaved_i16(usize::MAX));
-            assert_eq!(serde_json::to_value(fast.capture_apu_snapshot()).unwrap(),serde_json::to_value(traced.capture_apu_snapshot()).unwrap());
+            assert_eq!(
+                fast.drain_audio_frames_interleaved_i16(usize::MAX),
+                traced.drain_audio_frames_interleaved_i16(usize::MAX)
+            );
+            assert_eq!(
+                serde_json::to_value(fast.capture_apu_snapshot()).unwrap(),
+                serde_json::to_value(traced.capture_apu_snapshot()).unwrap()
+            );
         }
     }
 
     #[test]
     #[ignore = "manual release-mode timing measurement"]
     fn benchmark_tick_paths() {
-        for fast in [false,true,false,true] {
+        for fast in [false, true, false, true] {
             let mut host = sounding_host();
             let started = std::time::Instant::now();
             let mut samples = 0;
             for _ in 0..600 {
-                if fast { host.apu.tick_fast(GB_FRAME_TCYCLES); }
-                else { host.apu.tick(GB_FRAME_TCYCLES); }
+                if fast {
+                    host.apu.tick_fast(GB_FRAME_TCYCLES);
+                } else {
+                    host.apu.tick(GB_FRAME_TCYCLES);
+                }
                 samples += host.drain_audio_frames_interleaved_i16(usize::MAX).len();
             }
-            println!("fast={fast} frames=600 samples={samples} elapsed_ms={:.3}",started.elapsed().as_secs_f64()*1000.0);
+            println!(
+                "fast={fast} frames=600 samples={samples} elapsed_ms={:.3}",
+                started.elapsed().as_secs_f64() * 1000.0
+            );
         }
     }
 

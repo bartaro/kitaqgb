@@ -1,5 +1,9 @@
 # GBSEQ — 使用手冊
 
+[MIDI 檔案與裝置、演奏鍵盤、錄音及 512 種音色](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+
+匯出的ROM包含用於啟動相容性驗證的48位元組任天堂標誌資料。GBSEQ的MIT授權不授予任天堂標誌或商標的獨立使用權，GBSEQ與任天堂沒有合作關係，也未獲其認可。[英文／日文聲明](docs/NINTENDO_NOTICE.md)。
+
 在匯出選單中選擇可編輯的 UGE（含自訂波形）或 MOD（GBT 固定音色）。每臺主機各匯出一個檔案，存入 `assets/music`。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)

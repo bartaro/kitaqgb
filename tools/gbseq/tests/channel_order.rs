@@ -2,6 +2,27 @@ use gbdaw_export_kitaqgb::{export_project, ExportPolicy, StreamMode};
 use gbdaw_kokura::ProjectAudioRenderer;
 use gbseq::{model::PanPosition, Link16Mode, SequenceProject};
 
+#[test]
+fn ch4_lane_pitch_never_overrides_nr43_in_render_or_player_rom() {
+    for param in [0, 1, 0x11, 0x6c, 0xff] {
+        let mut project = SequenceProject::empty();
+        project.measures = 1;
+        let id = project.insert_note_exact(3, 0, 2, 24, 9).unwrap();
+        let fx = &mut project.note_mut(id).unwrap().effects;
+        fx.noise_shift = param >> 4;
+        fx.noise_width7 = param & 8 != 0;
+        fx.noise_divisor = param & 7;
+        let converted = project.to_gbdaw_player(0).unwrap();
+        let mut renderer = ProjectAudioRenderer::new(&converted, StreamMode::Extended).unwrap();
+        renderer.render_next_frames(1).unwrap();
+        assert_eq!(renderer.snapshot().nr41_to_nr44[2], param);
+        let (_, roms) = gbseq::player_rom::build_player_roms(&project).unwrap();
+        let rows = &roms[0][0x2c000..];
+        assert_eq!((rows[3], rows[7], rows[8]), (param, 8, 8));
+        assert_eq!((rows[23], rows[24], rows[39]), (8, 0, 0));
+    }
+}
+
 // Exercise GBSEQ conversion, command generation and the actual APU together.
 // Equal-looking preview and ROM output is insufficient if both swap CH3/CH4.
 #[test]

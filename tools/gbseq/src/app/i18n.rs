@@ -7,7 +7,7 @@ pub(super) enum Language {
     Japanese,
 }
 
-fn preference_path() -> Option<PathBuf> {
+pub(super) fn preference_path() -> Option<PathBuf> {
     #[cfg(windows)]
     let base = std::env::var_os("APPDATA").map(PathBuf::from);
     #[cfg(target_os = "macos")]

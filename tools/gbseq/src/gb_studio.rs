@@ -392,6 +392,7 @@ mod tests {
         p.frames_per_step_override = Some(4);
         p.user_waves.push(UserWave {
             name: "Ramp".into(),
+            preset_cache:false,
             samples: (0..32).map(|i| i % 16).collect(),
         });
         p.wave_slots[7].source = 0x80;

@@ -12,6 +12,83 @@ pub enum NoteEdit {
     Duplicate,
 }
 
+/// Replace only the occupied portion of the destination lane. A surviving
+/// right fragment needs a fresh ID when both ends of the old note survive.
+pub fn input_note(
+    p: &mut SequenceProject,
+    lane: usize,
+    start: u32,
+    len: u32,
+    pitch: u8,
+    velocity: u8,
+    overwrite: bool,
+) -> Result<u64> {
+    ensure!(
+        lane < p.link16_mode.track_count()
+            && len > 0
+            && start.checked_add(len).is_some_and(|e| e <= p.total_steps()),
+        "note lies outside song"
+    );
+    if overwrite {
+        let end = start + len;
+        let track = &mut p.tracks[lane];
+        let mut tail = None;
+        track.notes.retain_mut(|n| {
+            let old_end = n.end();
+            if old_end <= start || n.start >= end {
+                return true;
+            }
+            if n.start < start {
+                if old_end > end {
+                    let mut split = n.clone();
+                    split.id = p.next_note_id;
+                    p.next_note_id += 1;
+                    split.start = end;
+                    split.length = old_end - end;
+                    tail = Some(split);
+                }
+                n.length = start - n.start;
+                true
+            } else if old_end > end {
+                n.start = end;
+                n.length = old_end - end;
+                true
+            } else {
+                false
+            }
+        });
+        track.notes.extend(tail);
+    }
+    p.insert_note_exact(lane, start, len, pitch, velocity)
+}
+
+/// Transpose active pitched voices atomically; noise lanes and hidden players stay intact.
+pub fn song_key(project: &mut SequenceProject, delta: i16) -> Result<()> {
+    let count = project.link16_mode.track_count();
+    for (_, t) in project.tracks[..count]
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| i % 4 != 3)
+    {
+        ensure!(
+            t.notes
+                .iter()
+                .all(|n| (0..=47).contains(&(i32::from(n.pitch) + i32::from(delta)))),
+            "transpose exceeds C2..B5; song unchanged"
+        );
+    }
+    for (_, t) in project.tracks[..count]
+        .iter_mut()
+        .enumerate()
+        .filter(|(i, _)| i % 4 != 3)
+    {
+        for n in &mut t.notes {
+            n.pitch = (i32::from(n.pitch) + i32::from(delta)) as u8;
+        }
+    }
+    Ok(())
+}
+
 pub fn edit_notes(project: &mut SequenceProject, ids: &[u64], edit: NoteEdit) -> Result<Vec<u64>> {
     ensure!(!ids.is_empty(), "select at least one note");
     let ids: std::collections::BTreeSet<_> = ids.iter().copied().collect();

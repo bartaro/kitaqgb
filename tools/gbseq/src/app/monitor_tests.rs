@@ -116,10 +116,7 @@ fn gui_mixes_all_players_from_a_single_edit_view_and_exports_current_monitor() {
             app.poll_audio_render();
             thread::sleep(Duration::from_millis(2));
         }
-        let cache = app.playback_cache.as_ref().unwrap();
-        let stems = Arc::clone(&cache.samples);
-        let rate = cache.rate;
-        assert_eq!(stems.players.len(), n);
+        let rate = app.headless_stream.as_ref().unwrap().sample_rate();
         // Reference: independently render each console in isolation, including one
         // that is never the displayed console while Play is rendering.
         let parts = (0..n)
@@ -137,8 +134,28 @@ fn gui_mixes_all_players_from_a_single_edit_view_and_exports_current_monitor() {
         for (i, part) in parts.iter().enumerate() {
             assert!(part.iter().any(|v| *v != 0));
             assert!(parts[..i].iter().all(|other| *other != *part));
-            assert_eq!(&stems.players[i], part);
         }
+        let stems = Arc::new(Stems::new(parts.clone()));
+        click(&mut app, Action::SetMonitor(None));
+        let expected: Vec<_> = (0..stems.len).map(|i| stems.sample(i, 0)).collect();
+        let streamed = app
+            .headless_stream
+            .as_mut()
+            .unwrap()
+            .collect_wait(stems.len);
+        assert_eq!(
+            streamed, expected,
+            "{mode:?}: streamed PCM differs from offline mix"
+        );
+        assert_eq!(
+            app.stream_control
+                .as_ref()
+                .unwrap()
+                .stats
+                .missing_samples
+                .load(Ordering::Relaxed),
+            0
+        );
         for player in std::iter::once(None).chain((0..n).map(Some)) {
             click(&mut app, Action::SetMonitor(player));
             let expected = (0..stems.len)
@@ -252,8 +269,187 @@ fn live_output_keeps_the_transport_while_switching_consoles() {
             assert!(app.render_rx.is_none());
             let end = app.audio.as_ref().unwrap().position().unwrap();
             assert!(end > pos, "audio sink did not advance");
+            let timing = app.playback_timing.unwrap();
+            let (shown, total) = app.transport_times();
+            let after = app.audio.as_ref().unwrap().position().unwrap();
+            assert_eq!(total, timing.duration);
+            let lo = timing.position_at(end);
+            let hi = timing.position_at(after);
+            assert!(if hi >= lo {
+                lo <= shown && shown <= hi
+            } else {
+                shown >= lo || shown <= hi
+            });
             println!("{mode:?} monitor {p:?}: {pos:?} -> {end:?}");
         }
+        assert_eq!(
+            app.stream_control
+                .as_ref()
+                .unwrap()
+                .stats
+                .missing_samples
+                .load(Ordering::Relaxed),
+            0
+        );
         app.stop_audio();
+    }
+}
+
+#[test]
+fn mute_solo_and_undo_update_live_control_without_restarting() {
+    let mut app = fixture(Link16Mode::Cable8);
+    app.start_playback();
+    let cancel = app.render_cancel.as_ref().unwrap().clone();
+    app.apply_action(Action::ToggleSolo(4));
+    assert_eq!(
+        app.stream_control
+            .as_ref()
+            .unwrap()
+            .audible
+            .load(Ordering::Relaxed),
+        1 << 4
+    );
+    app.apply_action(Action::ToggleSolo(0));
+    assert_eq!(
+        app.stream_control
+            .as_ref()
+            .unwrap()
+            .audible
+            .load(Ordering::Relaxed),
+        17
+    );
+    app.apply_action(Action::ToggleMute(4));
+    assert_eq!(
+        app.stream_control
+            .as_ref()
+            .unwrap()
+            .audible
+            .load(Ordering::Relaxed),
+        1
+    );
+    app.undo();
+    assert_eq!(
+        app.stream_control
+            .as_ref()
+            .unwrap()
+            .audible
+            .load(Ordering::Relaxed),
+        17
+    );
+    app.redo();
+    assert_eq!(
+        app.stream_control
+            .as_ref()
+            .unwrap()
+            .audible
+            .load(Ordering::Relaxed),
+        1
+    );
+    assert!(!cancel.load(Ordering::Relaxed));
+    app.stop_audio();
+    assert!(cancel.load(Ordering::Relaxed));
+}
+
+#[test]
+#[ignore = "requires a native audio output device"]
+fn live_long_16ch_stays_bounded_during_editor_and_monitor_actions() {
+    let mut app = fixture(Link16Mode::Dmg07_16);
+    app.project.measures = 256;
+    app.project.loop_playback = true;
+    for ch in 0..16 {
+        app.project.tracks[ch].notes.clear();
+        for step in (0..4096).step_by(4) {
+            let id = app
+                .project
+                .insert_note_exact(ch, step, 3, (ch * 3 % 48) as u8, 11)
+                .unwrap();
+            let fx = &mut app.project.note_mut(id).unwrap().effects;
+            fx.noise_shift = 1;
+            fx.noise_divisor = 1;
+            fx.wave_preset = 1;
+        }
+    }
+    app.audio = Some(AudioPlayer::new().expect("native output required"));
+    let begin = Instant::now();
+    app.start_playback();
+    let until = begin + Duration::from_secs(20);
+    while app.play_started.is_none() {
+        app.tick();
+        assert!(Instant::now() < until, "{}", app.status);
+        thread::sleep(Duration::from_millis(2));
+    }
+    let startup = begin.elapsed();
+    let started = app.play_started;
+    for step in 0..100 {
+        if step % 10 == 0 {
+            app.apply_action(Action::SetMonitor(Some(step / 10 % 4)));
+        }
+        if step % 15 == 0 {
+            app.apply_action(Action::ToggleMute(5));
+        }
+        if step % 17 == 0 {
+            app.apply_action(Action::ToggleSolo(9));
+        }
+        if step % 23 == 0 {
+            app.undo();
+            app.redo();
+        }
+        app.draw_list();
+        app.tick();
+        assert_eq!(app.play_started, started);
+        assert!(app.render_rx.is_none());
+        thread::sleep(Duration::from_millis(10));
+    }
+    let stats = app.stream_control.as_ref().unwrap().stats.clone();
+    let played = stats.consumed_samples.load(Ordering::Relaxed);
+    let generated = stats.generated_frames.load(Ordering::Relaxed);
+    let consumed_frames = played as f64 / (2.0 * 65536.0) * GB_FRAME_RATE_HZ;
+    let ahead = generated as f64 - consumed_frames;
+    let missing = stats.missing_samples.load(Ordering::Relaxed);
+    println!("16CH / 256 bars / 16384 notes: startup={startup:?}, generated={generated} GB frames, consumed={played} samples, ahead={ahead:.2} frames, missing={missing}");
+    assert!(ahead <= 13.0, "unbounded synthesis lead");
+    assert_eq!(missing, 0, "native output starved");
+    assert!(app.transport_times().0 > Duration::from_millis(500));
+    app.stop_audio();
+    let until = Instant::now() + Duration::from_secs(2);
+    while !stats.worker_finished.load(Ordering::Acquire) {
+        assert!(Instant::now() < until);
+        thread::sleep(Duration::from_millis(2));
+    }
+}
+
+#[test]
+#[ignore = "requires a native audio output device"]
+fn live_clock_finishes_at_pcm_length_and_restarts_a_fresh_stream() {
+    let mut app = fixture(Link16Mode::Local4);
+    app.project.loop_playback = false;
+    app.project.frames_per_step_override = Some(3);
+    app.audio = Some(AudioPlayer::new().expect("native output required for this test"));
+    for pass in 0..2 {
+        app.start_playback();
+        let deadline = Instant::now() + Duration::from_secs(12);
+        let mut total = Duration::ZERO;
+        let mut advanced = false;
+        loop {
+            app.tick();
+            if app.finished_duration.is_some() {
+                break;
+            }
+            if app.play_started.is_some() {
+                let (now, end) = app.transport_times();
+                total = end;
+                advanced |= now >= Duration::from_millis(100);
+                assert!(now <= end);
+            }
+            assert!(Instant::now() < deadline, "{}", app.status);
+            thread::sleep(Duration::from_millis(5));
+        }
+        assert!(advanced);
+        assert_eq!(app.transport_times(), (total, total));
+        println!(
+            "pass {pass}: final clock {} / {}",
+            transport_stamp(total),
+            transport_stamp(total)
+        );
     }
 }

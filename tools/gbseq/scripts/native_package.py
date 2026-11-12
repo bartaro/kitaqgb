@@ -51,11 +51,16 @@ with tempfile.TemporaryDirectory() as tmp:
         images=list(saves.glob('*.sav'))
         assert len(images)==players and all(f.stat().st_size==131072 for f in images)
         package=json.loads(run('export-player-roms',song,tmp/f'player-{players}'))
-        assert package['format']=='LINK16_PLAYER_ROM_V2' and package['players']==players
+        assert package['format']=='LINK16_PLAYER_ROM_V3' and package['players']==players
         for part in range(players):
             rom=(Path(package['directory'])/f'P{part+1}.gb').read_bytes()
             assert len(rom)==524288 and rom[0x147:0x14a]==bytes([0x19,4,0])
-            assert rom[0x20000:0x20005]==b'L16P\x02' and rom[0x20007]==part and any(rom[0x20010:0x20510])
+            assert rom[0x143]==0x80 and rom[0x20000:0x20005]==b'L16P\x03' and rom[0x20007]==part and any(rom[0x20010:0x20510])
+        mid=tmp/f'{players}.mid'; restored=tmp/f'{players}-roundtrip.gbseq'
+        run('export-midi',song,mid);run('import-midi',mid,restored)
+        check=lambda f:[[(n['start'],n['length'],n['pitch'],n['velocity']) for n in t['notes']] for t in json.loads(f.read_text(encoding='utf-8'))['tracks']]
+        assert mid.read_bytes()[:4]==b'MThd' and check(song)==check(restored)
+        info['midi_lanes_roundtripped']=players*4
         info['sram_free_player_roms_verified']=players
         for ext in ('mod','uge'):
             report=json.loads(run('export-'+ext,song,tmp/f'studio{players}.{ext}'))

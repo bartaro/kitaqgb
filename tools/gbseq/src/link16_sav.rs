@@ -160,11 +160,7 @@ fn write_region(
             for step in note.start as usize..end {
                 let at = data_start + step * LINK16_BYTES_PER_STEP;
                 image[at + local_track] = match track.kind {
-                    TrackKind::Noise => {
-                        (note.effects.noise_shift.min(15) << 4)
-                            | (u8::from(note.effects.noise_width7) << 3)
-                            | note.effects.noise_divisor.min(7)
-                    }
+                    TrackKind::Noise => note.effects.nr43(),
                     _ => note.pitch.min(47),
                 };
                 match track.kind {
@@ -410,6 +406,7 @@ mod tests {
 
         project.user_waves.push(UserWave {
             name: "Test Wave".to_string(),
+            preset_cache:false,
             samples: (0..WAVE_SAMPLE_COUNT)
                 .map(|sample| (sample as u8) & 15)
                 .collect(),

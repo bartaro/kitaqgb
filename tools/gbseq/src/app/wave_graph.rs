@@ -58,6 +58,7 @@ impl GbseqApp {
         };
         let (index, value) = sample_at(rect, point);
         let (last_index, last_value) = self.wave_drag_last.unwrap_or((index, value));
+        self.project.user_waves[wave_index].preset_cache=false;
         let samples = &mut self.project.user_waves[wave_index].samples;
         let mut changed = false;
         for i in index.min(last_index)..=index.max(last_index) {

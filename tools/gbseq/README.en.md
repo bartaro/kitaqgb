@@ -1,5 +1,9 @@
 # GBSEQ — user manual
 
+[MIDI file and device I/O, keyboard, recording and 512 instruments](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+
+ROM exports retain the 48-byte Nintendo logo data for boot-time compatibility. GBSEQ's MIT license grants no independent logo/trademark rights, and GBSEQ is not affiliated with or approved by Nintendo. [English/Japanese scope notice](docs/NINTENDO_NOTICE.md).
+
 GB Studio export: select editable UGE (including user waves) or MOD (fixed GBT instruments) in Export. Write one file per console to `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)

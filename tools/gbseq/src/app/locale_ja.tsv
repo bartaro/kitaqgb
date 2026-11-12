@@ -3,6 +3,12 @@ EDIT	編集
 VIEW	表示
 EXPORT	出力
 PLAY	再生
+TIME	時間
+Choose export folder	出力先フォルダを選択
+Choose export destination...	出力先を選択してください…
+Writing export in background...	書き出し中（引き続き編集・再生できます）
+Export cancelled	書き出しをキャンセルしました
+Export worker disconnected	書き出し処理との接続が切れました
 STOP	停止
 AUDITION	試聴
 SAVE	保存
@@ -185,7 +191,7 @@ Save this sequence before replacing it?	現在のプロジェクトを保存し�
 GBSEQ project	GBSEQプロジェクト
 Wave audio	WAV音声
 CTRL+S SAVE  SPACE PLAY  DEL DELETE  +/- ZOOM	Ctrl+S 保存  Space 再生  Del 削除  +/- 拡大縮小
-Play from start [Space] - repeat playback uses cached audio	先頭から再生 [Space]・再演奏は生成済み音声を使用
+Play from start [Space] - real-time KOKURA audio	先頭から再生 [Space]・KOKURA音源でリアルタイム生成
 Stop [Space]	停止 [Space]
 Save [Ctrl+S] / Save as [Ctrl+Shift+S]	保存 [Ctrl+S] / 名前を付けて保存 [Ctrl+Shift+S]
 Undo [Ctrl+Z]	元に戻す [Ctrl+Z]
@@ -246,3 +252,33 @@ Monitor playback and WAV; switching keeps the song position	再生・WAV出力�
 Solo P{}	P{} 単独
 ALL16 overview	全16CH表示
 NOTE LENGTH limited by next note - move the next note to extend further	次の音符が延長の上限です・さらに伸ばすには次の音符を移動してください
+STARTING real-time KOKURA playback...	KOKURAリアルタイム再生を準備中...
+Keyboard / MIDI     K	演奏鍵盤 / MIDI     K
+Import MIDI (.mid)	MIDIを読み込み (.mid)
+Export MIDI (.mid)	MIDIを書き出し (.mid)
+Selection +1 semitone	選択音符を半音上げる
+Selection -1 semitone	選択音符を半音下げる
+Song key +1 (no drums)	曲全体を半音上げる（ノイズ以外）
+Song key -1 (no drums)	曲全体を半音下げる（ノイズ以外）
+Listen	試奏
+Step input	ステップ入力
+Protect notes	既存音符を保護
+Overwrite	上書き
+Preset	音色
+Chord display...	コード進行の表示...
+Combined chords	全体のコード
+All lane labels	各トラック一括
+Chords	コード
+Save user preset	ユーザー音色を保存
+Load user preset	ユーザー音色を開く
+REC / STOP	録音 / 停止
+Rest	休符
+Close	閉じる
+Grid: {}	入力長: {}
+Step {}	位置 {}
+Take ended / rejected notes: {}	録音終了・重なりなどで記録しなかった音符: {}
+No MIDI input ports	MIDI入力機器が見つかりません
+No MIDI output ports	MIDI出力機器が見つかりません
+REC: occupied or outside song; note not inserted	録音: 既存音符との重なり・曲末のため挿入できません
+AUDITION real-time KOKURA playback...	KOKURAリアルタイム試聴を準備中...
+PLAYING / REAL-TIME / {} ms start	リアルタイム再生中 / 開始待ち {} ms

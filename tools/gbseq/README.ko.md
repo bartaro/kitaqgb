@@ -1,5 +1,9 @@
 # GBSEQ — 사용 설명서
 
+[MIDI 파일 및 장치, 연주 키보드, 녹음, 512개 음색](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+
+내보낸 ROM에는 부팅 시 호환성 검증을 위한 Nintendo 로고 데이터 48바이트가 포함됩니다. GBSEQ의 MIT 라이선스는 Nintendo 로고나 상표에 대한 별도의 이용 권한을 부여하지 않으며, GBSEQ는 Nintendo와 제휴하거나 Nintendo의 승인을 받은 제품이 아닙니다. [영어·일본어 고지](docs/NINTENDO_NOTICE.md)를 확인하세요.
+
 내보내기에서 편집 가능한 UGE(사용자 파형 포함) 또는 MOD(고정 GBT 음색)를 선택하세요. 콘솔당 파일 하나를 `assets/music`에 저장합니다. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)

@@ -8,6 +8,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use gbdaw_export_kitaqgb::{export_project_to_dir, ExportPolicy, StreamMode};
+#[cfg(test)]
 use gbdaw_kokura::render_project_to_samples;
 use plita::prelude::*;
 use rfd::FileDialog;
@@ -25,10 +26,15 @@ use crate::model::{
 };
 use std::collections::BTreeSet;
 
+mod chords;
 mod i18n;
 mod key_editor;
 #[cfg(test)]
 mod monitor_tests;
+mod outputs;
+mod patch_list;
+mod performance;
+mod realtime;
 mod verification;
 mod wave_graph;
 use i18n::Language;
@@ -85,6 +91,13 @@ enum AdjustField {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Action {
+    ChordMix,
+    ChordLane(usize),
+    ChordBulk,
+    ImportMidi,
+    ExportMidi,
+    Keyboard,
+    SongKey(i16),
     Menu(MenuKind),
     SaveAs,
     SelectAll,
@@ -135,6 +148,7 @@ enum Action {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MenuKind {
+    Harmony,
     File,
     Edit,
     View,
@@ -152,6 +166,20 @@ fn normalized_key(key: &str) -> String {
 
 fn action_icon(action: Action) -> Option<&'static str> {
     Some(match action {
+        Action::Menu(MenuKind::Harmony)
+        | Action::ChordMix
+        | Action::ChordLane(_)
+        | Action::ChordBulk => "grid-2x2",
+        Action::ImportMidi => "folder-open",
+        Action::ExportMidi => "download",
+        Action::Keyboard => "grid-2x2",
+        Action::SongKey(n) => {
+            if n > 0 {
+                "arrow-up"
+            } else {
+                "arrow-down"
+            }
+        }
         Action::Menu(MenuKind::File) | Action::Open => "folder-open",
         Action::Menu(MenuKind::Edit) => "pencil",
         Action::Menu(MenuKind::View) | Action::FitSong => "maximize",
@@ -245,6 +273,11 @@ struct Stems {
 }
 
 impl Stems {
+    #[cfg(test)]
+    fn duration(&self, sample_rate: u32) -> Duration {
+        Duration::from_secs_f64((self.len / 2) as f64 / f64::from(sample_rate))
+    }
+
     fn new(players: Vec<Vec<i16>>) -> Self {
         debug_assert!((1..=4).contains(&players.len()));
         let len = players.iter().map(Vec::len).max().unwrap_or(0);
@@ -267,6 +300,7 @@ impl Stems {
     }
 }
 
+#[cfg(test)]
 #[derive(Clone)]
 struct SharedAudio {
     samples: Arc<Stems>,
@@ -276,6 +310,7 @@ struct SharedAudio {
     rate: u32,
     looped: bool,
 }
+#[cfg(test)]
 impl Iterator for SharedAudio {
     type Item = i16;
     fn next(&mut self) -> Option<i16> {
@@ -293,6 +328,7 @@ impl Iterator for SharedAudio {
         Some(sample)
     }
 }
+#[cfg(test)]
 impl Source for SharedAudio {
     fn current_frame_len(&self) -> Option<usize> {
         if !self.looped {
@@ -316,16 +352,8 @@ impl Source for SharedAudio {
         if self.looped {
             return None;
         }
-        Some(Duration::from_secs_f64(
-            self.samples.len as f64 / (self.rate as f64 * 2.0),
-        ))
+        Some(self.samples.duration(self.rate))
     }
-}
-
-struct PlaybackCache {
-    project: SequenceProject,
-    rate: u32,
-    samples: Arc<Stems>,
 }
 
 impl AudioPlayer {
@@ -336,29 +364,6 @@ impl AudioPlayer {
             handle,
             sink: None,
         })
-    }
-
-    fn play(
-        &mut self,
-        sample_rate: u32,
-        samples: Arc<Stems>,
-        monitor: Arc<AtomicUsize>,
-        looped: bool,
-    ) -> Result<()> {
-        self.stop();
-        let sink = Sink::try_new(&self.handle)?;
-        let source = SharedAudio {
-            samples,
-            monitor,
-            frame_monitor: 0,
-            position: 0,
-            rate: sample_rate,
-            looped,
-        };
-        sink.append(source);
-        sink.play();
-        self.sink = Some(sink);
-        Ok(())
     }
 
     fn stop(&mut self) {
@@ -385,6 +390,7 @@ struct PlaybackTiming {
     frames_per_step: u32,
     total_steps: u32,
     looped: bool,
+    duration: Duration,
 }
 
 impl PlaybackTiming {
@@ -393,23 +399,41 @@ impl PlaybackTiming {
             frames_per_step: project.frames_per_step(),
             total_steps: project.total_steps(),
             looped: project.loop_playback,
+            // Before rendering, show the length of the score. Once playback
+            // starts use the PCM length (also the exact loop period).
+            duration: Duration::from_secs_f64(
+                f64::from(project.total_steps()) * f64::from(project.frames_per_step())
+                    / GB_FRAME_RATE_HZ,
+            ),
+        }
+    }
+
+    fn position_at(self, elapsed: Duration) -> Duration {
+        if self.looped && !self.duration.is_zero() {
+            Duration::from_nanos((elapsed.as_nanos() % self.duration.as_nanos()) as u64)
+        } else {
+            elapsed.min(self.duration)
         }
     }
 
     fn step_at(self, elapsed: Duration) -> f32 {
-        let mut step =
-            elapsed.as_secs_f64() * GB_FRAME_RATE_HZ / f64::from(self.frames_per_step.max(1));
-        let total = f64::from(self.total_steps);
-        if self.looped && total > 0.0 {
-            step %= total;
-        } else {
-            step = step.min(total);
-        }
-        step as f32
+        (self.position_at(elapsed).as_secs_f64() * GB_FRAME_RATE_HZ
+            / f64::from(self.frames_per_step.max(1)))
+        .min(f64::from(self.total_steps)) as f32
     }
 }
 
-type RenderMessage = std::result::Result<(u32, Arc<Stems>), String>;
+fn transport_stamp(time: Duration) -> String {
+    let tenths = time.as_millis() / 100;
+    format!(
+        "{:02}:{:02}.{}",
+        tenths / 600,
+        tenths / 10 % 60,
+        tenths % 10
+    )
+}
+
+type RenderMessage = std::result::Result<realtime::Ready, String>;
 
 #[cfg(test)]
 fn render_mixed_projects(
@@ -420,6 +444,9 @@ fn render_mixed_projects(
 }
 
 pub struct GbseqApp {
+    chords: chords::Labels,
+    patches: patch_list::Browser,
+    live: performance::Performance,
     size: Size,
     project: SequenceProject,
     current_path: Option<PathBuf>,
@@ -449,14 +476,18 @@ pub struct GbseqApp {
     status: String,
     audio: Option<AudioPlayer>,
     render_rx: Option<Receiver<RenderMessage>>,
-    export_rx: Option<Receiver<std::result::Result<String, String>>>,
+    export_rx: Option<Receiver<std::result::Result<outputs::OutputReport, String>>>,
+    output_dialog: Option<outputs::OutputDialog>,
     render_cancel: Option<Arc<AtomicBool>>,
     render_started: Option<Instant>,
     render_key: Option<SequenceProject>,
-    playback_cache: Option<PlaybackCache>,
+    stream_control: Option<realtime::Control>,
+    #[cfg(test)]
+    headless_stream: Option<realtime::StreamSource>,
     rendering: bool,
     play_started: Option<Instant>,
     playback_timing: Option<PlaybackTiming>,
+    finished_duration: Option<Duration>,
     playback_looped: bool,
     wave_dragging: bool,
     wave_drag_before: Option<SequenceProject>,
@@ -487,6 +518,9 @@ impl GbseqApp {
         };
         Self {
             size: size.clamped(),
+            chords: Default::default(),
+            patches: Default::default(),
+            live: Default::default(),
             project: SequenceProject::demo(),
             current_path: None,
             selected_note: None,
@@ -516,13 +550,17 @@ impl GbseqApp {
             audio,
             render_rx: None,
             export_rx: None,
+            output_dialog: None,
             render_cancel: None,
             render_started: None,
             render_key: None,
-            playback_cache: None,
+            stream_control: None,
+            #[cfg(test)]
+            headless_stream: None,
             rendering: false,
             play_started: None,
             playback_timing: None,
+            finished_duration: None,
             playback_looped: false,
             wave_dragging: false,
             wave_drag_before: None,
@@ -570,9 +608,16 @@ impl GbseqApp {
         let left = self.timeline_left();
         Rect::new(
             left,
-            HEADER_H + TOOLBAR_H + RULER_H,
+            HEADER_H + TOOLBAR_H + RULER_H + self.chords.extra(),
             (inspector.x - left).max(160.0),
-            (self.size.height - HEADER_H - TOOLBAR_H - RULER_H - STATUS_H - SCROLLBAR_H).max(180.0),
+            (self.size.height
+                - HEADER_H
+                - TOOLBAR_H
+                - RULER_H
+                - self.chords.extra()
+                - STATUS_H
+                - SCROLLBAR_H)
+                .max(180.0),
         )
     }
 
@@ -1192,7 +1237,9 @@ impl GbseqApp {
 
     fn action_enabled(&self, action: Action) -> bool {
         match action {
-            Action::RenderWav => self.export_rx.is_none(),
+            action if outputs::is_output(action) => {
+                self.export_rx.is_none() && self.output_dialog.is_none()
+            }
             Action::Undo => !self.undo.is_empty(),
             Action::Redo => !self.redo.is_empty(),
             Action::Preview
@@ -1214,11 +1261,13 @@ impl GbseqApp {
             return Vec::new();
         };
         let (x, mut items): (f32, Vec<(Action, &str)>) = match menu {
+            MenuKind::Harmony => return self.chord_buttons(),
             MenuKind::File => (
                 12.0,
                 vec![
                     (Action::New, "New          Ctrl+N"),
                     (Action::Open, "Open         Ctrl+O"),
+                    (Action::ImportMidi, "Import MIDI (.mid)"),
                     (Action::Save, "Save         Ctrl+S"),
                     (Action::SaveAs, "Save as  Ctrl+Shift+S"),
                 ],
@@ -1233,6 +1282,10 @@ impl GbseqApp {
                     (Action::Delete, "Delete          Del"),
                     (Action::Quantize, "Align to snap     Q"),
                     (Action::Transpose(12), "Octave up"),
+                    (Action::Transpose(1), "Selection +1 semitone"),
+                    (Action::Transpose(-1), "Selection -1 semitone"),
+                    (Action::SongKey(1), "Song key +1 (no drums)"),
+                    (Action::SongKey(-1), "Song key -1 (no drums)"),
                     (Action::Transpose(-12), "Octave down"),
                 ],
             ),
@@ -1240,6 +1293,8 @@ impl GbseqApp {
                 196.0,
                 vec![
                     (Action::FitSong, "Fit song          F"),
+                    (Action::Menu(MenuKind::Harmony), "Chord display..."),
+                    (Action::Keyboard, "Keyboard / MIDI     K"),
                     (Action::Home, "Go to start    Home"),
                     (Action::Zoom(1), "Zoom in           +"),
                     (Action::Zoom(-1), "Zoom out          -"),
@@ -1252,6 +1307,7 @@ impl GbseqApp {
                 288.0,
                 vec![
                     (Action::RenderWav, "Render WAV"),
+                    (Action::ExportMidi, "Export MIDI (.mid)"),
                     (
                         Action::ExportStudio(crate::gb_studio::Format::Uge),
                         "GB Studio music (.uge)",
@@ -1327,14 +1383,25 @@ impl GbseqApp {
     }
 
     fn push_undo(&mut self, before: SequenceProject) {
+        self.chords.clear();
         if before == self.project {
             return;
         }
         self.undo.push(before);
+        self.finished_duration = None;
         if self.undo.len() > 96 {
             self.undo.remove(0);
         }
         self.redo.clear();
+        self.sync_live_mix();
+    }
+
+    fn sync_live_mix(&self) {
+        if let Some(control) = &self.stream_control {
+            control
+                .audible
+                .store(realtime::audible(&self.project), Ordering::Relaxed);
+        }
     }
 
     fn begin_measures_input(&mut self) {
@@ -1392,7 +1459,7 @@ impl GbseqApp {
                 }
             }
             digits if !digits.is_empty() && digits.chars().all(|c| c.is_ascii_digit()) => {
-                // PLITA also supports backends that deliver printable keys without TextInput.
+                // plita also supports backends that deliver printable keys without TextInput.
                 self.append_measures_input(digits);
                 self.pending_measure_text = Some(digits.to_string());
             }
@@ -1433,6 +1500,7 @@ impl GbseqApp {
     }
 
     fn undo(&mut self) {
+        self.chords.clear();
         let Some(previous) = self.undo.pop() else {
             self.status = "UNDO stack is empty".to_string();
             return;
@@ -1443,12 +1511,15 @@ impl GbseqApp {
         }
         self.redo
             .push(std::mem::replace(&mut self.project, previous));
+        self.finished_duration = None;
         self.ensure_selection_exists();
         self.clamp_scroll();
         self.status = "UNDO".to_string();
+        self.sync_live_mix();
     }
 
     fn redo(&mut self) {
+        self.chords.clear();
         let Some(next) = self.redo.pop() else {
             self.status = "REDO stack is empty".to_string();
             return;
@@ -1458,9 +1529,11 @@ impl GbseqApp {
             self.reset_monitor();
         }
         self.undo.push(std::mem::replace(&mut self.project, next));
+        self.finished_duration = None;
         self.ensure_selection_exists();
         self.clamp_scroll();
         self.status = "REDO".to_string();
+        self.sync_live_mix();
     }
 
     fn clamp_scroll(&mut self) {
@@ -1778,6 +1851,23 @@ impl GbseqApp {
                     Some(menu)
                 }
             }
+            Action::ChordMix => {
+                self.chords.mix = !self.chords.mix;
+                self.menu = Some(MenuKind::Harmony);
+            }
+            Action::ChordLane(i) => {
+                self.chords.lanes ^= 1 << i;
+                self.menu = Some(MenuKind::Harmony);
+            }
+            Action::ChordBulk => {
+                let mask = (1u32 << self.project.link16_mode.track_count()) - 1;
+                self.chords.lanes = if self.chords.lanes & mask == mask {
+                    0
+                } else {
+                    mask
+                };
+                self.menu = Some(MenuKind::Harmony);
+            }
             Action::SaveAs => {
                 if let Some(path) = FileDialog::new()
                     .add_filter(self.language.translate("GBSEQ project"), &["gbseq"])
@@ -1802,6 +1892,29 @@ impl GbseqApp {
                 );
             }
             Action::Quantize => self.edit_selection(NoteEdit::Quantize(self.snap_steps)),
+            Action::Keyboard => self.toggle_keyboard(),
+            Action::SongKey(delta) => {
+                let before = self.project.clone();
+                match crate::editing::song_key(&mut self.project, delta) {
+                    Ok(()) => {
+                        self.push_undo(before);
+                        self.status = format!("Song key: {delta:+}");
+                    }
+                    Err(e) => self.status = e.to_string(),
+                }
+            }
+            Action::ImportMidi => {
+                if let Some(path) = FileDialog::new()
+                    .add_filter("MIDI", &["mid", "midi"])
+                    .pick_file()
+                {
+                    if self.confirm_replace() {
+                        if let Err(e) = self.load_path(&path) {
+                            self.status = format!("MIDI: {e:#}");
+                        }
+                    }
+                }
+            }
             Action::Transpose(delta) => self.edit_selection(NoteEdit::Transpose(delta)),
             Action::FitSong => {
                 self.half_step_w = (self.timeline_viewport().width
@@ -1832,6 +1945,7 @@ impl GbseqApp {
                 self.wave_dragging = false;
                 self.wave_drag_before = None;
                 self.project = SequenceProject::empty();
+                self.chords.clear();
                 self.reset_monitor();
                 self.saved_project = self.project.clone();
                 self.selected_notes.clear();
@@ -1860,103 +1974,14 @@ impl GbseqApp {
             Action::Play => self.start_playback(),
             Action::Stop => self.stop_audio(),
             Action::Preview => self.preview_selected(),
-            Action::RenderWav => self.render_wav_dialog(),
-            Action::Export => self.export_dialog(),
-            Action::ExportLink16Sav => self.export_link16_sav_dialog(),
-            Action::ExportLink16Sd => {
-                let rom = FileDialog::new()
-                    .set_title(self.language.translate("Choose matching LINK16 V4 ROM"))
-                    .add_filter("Game Boy ROM", &["gb"])
-                    .pick_file();
-                if let Some(rom) = rom {
-                    if let Some(out) = FileDialog::new()
-                        .set_title(self.language.translate("Choose SD package output"))
-                        .pick_folder()
-                    {
-                        self.status = match crate::link16_sd::export_link16_sd_package(
-                            &self.project,
-                            &rom,
-                            &out,
-                        ) {
-                            Ok(package) => format!(
-                                "SD package {} players -> {}",
-                                package.players.len(),
-                                package.directory.display()
-                            ),
-                            Err(error) => format!("SD package export failed: {error:#}"),
-                        };
-                    }
-                }
-            }
-            Action::ExportRom => {
-                if let Some(path) = FileDialog::new()
-                    .set_title(self.language.translate("Export song as Game Boy ROM"))
-                    .add_filter("Game Boy ROM", &["gb"])
-                    .set_file_name("link16_song.gb")
-                    .save_file()
-                {
-                    self.status = match crate::link16_rom::export_link16_rom(&self.project, &path) {
-                        Ok(report) => format!(
-                            "ROM {} players / {} steps -> {}",
-                            report.players,
-                            report.steps,
-                            path.display()
-                        ),
-                        Err(error) => format!("ROM export failed: {error:#}"),
-                    };
-                }
-            }
-            Action::ExportStudio(format) => {
-                let ext = format.extension();
-                if let Some(path) = FileDialog::new()
-                    .set_title(self.language.translate("Export GB Studio music"))
-                    .add_filter("GB Studio", &[ext])
-                    .set_file_name(format!("song.{ext}"))
-                    .save_file()
-                {
-                    match crate::gb_studio::export(&self.project, &path, format) {
-                        Ok(report) => {
-                            self.status = format!(
-                                "GB Studio: {} -> {}",
-                                report.files.len(),
-                                report.files[0].display()
-                            );
-                            let mut details = report
-                                .files
-                                .iter()
-                                .map(|p| p.display().to_string())
-                                .collect::<Vec<_>>();
-                            details.extend(
-                                report
-                                    .warnings
-                                    .iter()
-                                    .map(|w| self.language.translate(w).into_owned()),
-                            );
-                            rfd::MessageDialog::new()
-                                .set_title("GB Studio")
-                                .set_description(details.join("\n"))
-                                .show();
-                        }
-                        Err(error) => self.status = format!("GB Studio: {error:#}"),
-                    }
-                }
-            }
-            Action::ExportPlayerRoms => {
-                if let Some(root) = FileDialog::new()
-                    .set_title(self.language.translate("Export playback ROMs (no SRAM)"))
-                    .pick_folder()
-                {
-                    self.status = match crate::player_rom::export_player_roms(&self.project, &root)
-                    {
-                        Ok(report) => format!(
-                            "{} playback ROMs / 512KB each / no SRAM -> {}",
-                            report.players,
-                            report.directory.display()
-                        ),
-                        Err(error) => format!("Playback ROM export failed: {error:#}"),
-                    };
-                }
-            }
+            Action::RenderWav
+            | Action::ExportMidi
+            | Action::Export
+            | Action::ExportLink16Sav
+            | Action::ExportLink16Sd
+            | Action::ExportRom
+            | Action::ExportStudio(_)
+            | Action::ExportPlayerRoms => self.choose_export(action),
             Action::AddUserWave => self.add_user_wave(),
             Action::WaveCurve => self.wave_curve = !self.wave_curve,
             Action::Language => self.toggle_language(),
@@ -2096,9 +2121,20 @@ impl GbseqApp {
     }
 
     fn load_path(&mut self, path: &Path) -> Result<()> {
-        let text = fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
-        let mut project: SequenceProject =
-            serde_json::from_str(&text).with_context(|| format!("parse {}", path.display()))?;
+        let imported = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .is_some_and(|s| s.eq_ignore_ascii_case("mid") || s.eq_ignore_ascii_case("midi"));
+        let (mut project, report) = if imported {
+            crate::midi::import(path)?
+        } else {
+            let text =
+                fs::read_to_string(path).with_context(|| format!("read {}", path.display()))?;
+            (
+                serde_json::from_str(&text).with_context(|| format!("parse {}", path.display()))?,
+                String::new(),
+            )
+        };
         project.repair();
         project.validate()?;
         self.stop_audio();
@@ -2109,6 +2145,7 @@ impl GbseqApp {
         self.menu = None;
         self.buttons.clear();
         self.project = project;
+        self.chords.clear();
         self.reset_monitor();
         self.saved_project = self.project.clone();
         self.selected_notes.clear();
@@ -2116,12 +2153,20 @@ impl GbseqApp {
         self.all_players_view = false;
         self.selected_track = 0;
         self.current_path = Some(path.to_path_buf());
+        self.cursor_step = 0;
+        if imported {
+            self.current_path = None;
+            self.saved_project = SequenceProject::empty();
+        }
         self.selected_note = None;
         self.detail_open = false;
         self.undo.clear();
         self.redo.clear();
         self.timeline_scroll = ScrollAreaState::new();
         self.status = format!("OPENED {}", path.display());
+        if imported {
+            self.status = report;
+        }
         Ok(())
     }
 
@@ -2161,158 +2206,39 @@ impl GbseqApp {
         }
     }
 
-    fn export_dialog(&mut self) {
-        let Some(out_dir) = FileDialog::new().pick_folder() else {
-            return;
-        };
-        let result = self
-            .project
-            .to_gbdaw_player(self.active_player)
-            .and_then(|project| {
-                export_project_to_dir(
-                    &project,
-                    &out_dir,
-                    StreamMode::Extended,
-                    ExportPolicy::default(),
-                )
-                .map(|manifest| manifest.songs.first().map(|song| song.bytes).unwrap_or(0))
-            });
-        match result {
-            Ok(bytes) => {
-                self.status = format!("KITAQGB export {} bytes -> {}", bytes, out_dir.display())
-            }
-            Err(error) => self.status = format!("EXPORT failed: {error}"),
-        }
-    }
-
-    fn export_link16_sav_dialog(&mut self) {
-        let Some(out_dir) = FileDialog::new().pick_folder() else {
-            return;
-        };
-        self.status = match export_link16_saves(&self.project, &out_dir) {
-            Ok(manifest) => format!(
-                "LINK16 {} players / {} steps / {} BPM -> {}",
-                manifest
-                    .files
-                    .iter()
-                    .map(|file| file.player)
-                    .max()
-                    .unwrap_or(1),
-                manifest.steps,
-                manifest.effective_bpm,
-                out_dir.display()
-            ),
-            Err(error) => format!("LINK16 SAV failed: {error}"),
-        };
-    }
-
-    fn render_wav_dialog(&mut self) {
-        let Some(path) = FileDialog::new()
-            .add_filter(self.language.translate("Wave audio"), &["wav"])
-            .set_file_name("gbseq_mix.wav")
-            .save_file()
-        else {
-            return;
-        };
-        self.start_wav_export(path);
-    }
-
-    fn start_wav_export(&mut self, path: PathBuf) {
-        if self.export_rx.is_some() {
-            return;
-        }
-        let project = self.project.clone();
-        let player = self.monitor_player();
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let result = crate::services::render_monitor_wav(&project, &path, player)
-                .map(|()| format!("WAV rendered -> {}", path.display()))
-                .map_err(|error| format!("WAV failed: {error}"));
-            let _ = sender.send(result);
-        });
-        self.export_rx = Some(receiver);
-        self.status =
-            "EXPORTING WAV snapshot in background - editing remains available".to_string();
-    }
-
-    fn poll_export(&mut self) -> bool {
-        let Some(receiver) = self.export_rx.as_ref() else {
-            return false;
-        };
-        match receiver.try_recv() {
-            Ok(result) => {
-                self.export_rx = None;
-                self.status = result.unwrap_or_else(|error| error);
-            }
-            Err(TryRecvError::Disconnected) => {
-                self.export_rx = None;
-                self.status = "WAV worker disconnected".to_string();
-            }
-            Err(TryRecvError::Empty) => {}
-        }
-        true
-    }
-
     fn start_playback(&mut self) {
-        let playback_source = self.project.clone();
-        let playback_timing = PlaybackTiming::from_project(&playback_source);
-        let max_frames = project_frame_count(&playback_source);
+        self.start_transport(false);
+    }
+    fn start_transport(&mut self, record: bool) {
         self.stop_audio();
-        self.playback_timing = Some(playback_timing);
-        self.playback_looped = playback_timing.looped;
+        let mut playback_source = self.project.clone();
+        if record {
+            self.live.take_before = Some(self.project.clone());
+            playback_source.loop_playback = false;
+        }
+        self.live.prepare_output(&playback_source);
+        let timing = PlaybackTiming::from_project(&playback_source);
+        self.playback_timing = Some(timing);
+        self.playback_looped = timing.looped;
         self.timeline_scroll.set_offset(
             Point::new(0.0, 0.0),
             self.scroll_area_rect(),
             self.timeline_content_size(),
         );
-        if let Some(cache) = self
-            .playback_cache
-            .as_ref()
-            .filter(|cache| cache.project == playback_source)
-        {
-            if let Some(audio) = self.audio.as_mut() {
-                match audio.play(
-                    cache.rate,
-                    Arc::clone(&cache.samples),
-                    Arc::clone(&self.monitor),
-                    self.playback_looped,
-                ) {
-                    Ok(()) => {
-                        self.play_started = Some(Instant::now());
-                        self.status = "PLAYING / CACHE HIT - no render needed".to_string();
-                    }
-                    Err(error) => self.status = format!("PLAY failed: {error}"),
-                }
-                return;
-            }
-        }
-        let projects = match crate::services::playback_projects(&playback_source, None) {
-            Ok(projects) => projects,
-            Err(error) => {
-                self.status = format!("PLAY failed: {error}");
-                return;
-            }
-        };
-        self.render_key = Some(playback_source);
+        self.render_key = Some(playback_source.clone());
         self.render_started = Some(Instant::now());
-        let cancelled = Arc::new(AtomicBool::new(false));
-        self.render_cancel = Some(Arc::clone(&cancelled));
-        let (sender, receiver) = mpsc::channel();
-        thread::spawn(move || {
-            let result =
-                crate::services::render_player_stems(&projects, max_frames, true, Some(&cancelled))
-                    .map(|rendered| {
-                        (
-                            rendered[0].0,
-                            Arc::new(Stems::new(rendered.into_iter().map(|(_, s)| s).collect())),
-                        )
-                    })
-                    .map_err(|error| error.to_string());
-            let _ = sender.send(result);
-        });
+        if self.audio.is_none() && (record || self.live.has_output()) {
+            self.begin_transport_clock(timing.duration);
+            self.status = if record { "REC" } else { "MIDI OUT" }.into();
+            return;
+        }
+        let (control, receiver) =
+            realtime::start_transport(playback_source, self.monitor.clone(), record);
+        self.render_cancel = Some(control.cancel.clone());
+        self.stream_control = Some(control);
         self.render_rx = Some(receiver);
         self.rendering = true;
-        self.status = "RENDERING playback with KOKURA-Core...".to_string();
+        self.status = "STARTING real-time KOKURA playback...".into();
     }
 
     fn preview_selected(&mut self) {
@@ -2331,8 +2257,8 @@ impl GbseqApp {
     fn preview_note(&mut self, track_index: usize, mut note: MidiNote) {
         self.stop_audio();
         let mut preview = self.project.clone();
-        preview.bpm = self.project.bpm;
         preview.measures = 1;
+        preview.loop_playback = false;
         preview.tracks.iter_mut().for_each(|track| {
             track.notes.clear();
             track.mute = false;
@@ -2341,37 +2267,28 @@ impl GbseqApp {
         note.start = 0;
         note.length = note.length.min(STEPS_PER_MEASURE);
         preview.tracks[track_index].notes.push(note);
-        let result = preview
-            .to_gbdaw_player(track_index / TRACK_COUNT)
-            .and_then(|project| {
-                render_project_to_samples(&project, StreamMode::Extended, 180)
-                    .map(|(sample_rate, samples, _)| (sample_rate, samples))
-            });
-        match result {
-            Ok((sample_rate, samples)) => {
-                if let Some(audio) = self.audio.as_mut() {
-                    match audio.play(
-                        sample_rate,
-                        Arc::new(Stems::new(vec![samples])),
-                        Arc::new(AtomicUsize::new(0)),
-                        false,
-                    ) {
-                        Ok(()) => self.status = "AUDITION selected MIDI bar".to_string(),
-                        Err(error) => self.status = format!("AUDITION failed: {error}"),
-                    }
-                } else {
-                    self.status = "AUDITION unavailable: no audio output".to_string();
-                }
-            }
-            Err(error) => self.status = format!("AUDITION failed: {error}"),
-        }
+        self.render_started = Some(Instant::now());
+        let audition_monitor = Arc::new(AtomicUsize::new(track_index / TRACK_COUNT + 1));
+        let (control, receiver) = realtime::start(preview, audition_monitor);
+        self.render_cancel = Some(control.cancel.clone());
+        self.stream_control = Some(control);
+        self.render_rx = Some(receiver);
+        self.rendering = true;
+        self.status = "AUDITION real-time KOKURA playback...".into();
     }
 
     fn stop_audio(&mut self) {
+        let recorded = self.live.take_before.is_some();
+        self.finish_performance();
         if let Some(cancelled) = self.render_cancel.take() {
             cancelled.store(true, Ordering::Relaxed);
         }
         self.render_key = None;
+        self.stream_control = None;
+        #[cfg(test)]
+        {
+            self.headless_stream = None;
+        }
         self.render_started = None;
         if let Some(audio) = self.audio.as_mut() {
             audio.stop();
@@ -2381,102 +2298,140 @@ impl GbseqApp {
         self.play_started = None;
         self.playback_timing = None;
         self.playback_looped = false;
+        self.finished_duration = None;
         self.status = "STOPPED".to_string();
+        if recorded {
+            self.status = format!("Take ended / rejected notes: {}", self.live.rejected);
+        }
     }
 
     fn poll_audio_render(&mut self) -> bool {
+        if let Some(error) = self
+            .stream_control
+            .as_ref()
+            .and_then(realtime::Control::error)
+        {
+            self.stop_audio();
+            self.status = format!("PLAY render failed: {error}");
+            return true;
+        }
         let Some(receiver) = self.render_rx.as_ref() else {
-            if self.play_started.is_some() && self.audio.as_ref().is_some_and(AudioPlayer::finished)
+            let clock_done = self.audio.is_none()
+                && self.playback_timing.is_some_and(|t| {
+                    !t.looped && self.transport_elapsed().is_some_and(|e| e >= t.duration)
+                });
+            if self.play_started.is_some()
+                && (self.audio.as_ref().is_some_and(AudioPlayer::finished) || clock_done)
             {
+                let recorded = self.live.take_before.is_some();
+                self.finish_performance();
                 self.play_started = None;
-                self.playback_timing = None;
-                self.status = "PLAYBACK finished".to_string();
+                self.finished_duration = self.playback_timing.take().map(|t| t.duration);
+                self.status = "PLAYBACK finished".into();
+                if recorded {
+                    self.status = format!("Take ended / rejected notes: {}", self.live.rejected);
+                }
                 return true;
             }
             return self.play_started.is_some();
         };
-        match receiver.try_recv() {
-            Ok(Ok((sample_rate, samples))) => {
-                self.render_rx = None;
-                self.rendering = false;
-                self.render_cancel = None;
-                let elapsed_ms = self
-                    .render_started
-                    .take()
-                    .map(|t| t.elapsed().as_secs_f64() * 1000.0)
-                    .unwrap_or(0.0);
-                if let Some(project) = self.render_key.take() {
-                    // 128 MiB total across all stems, shared with the sink.
-                    self.playback_cache =
-                        if samples.players.iter().map(Vec::capacity).sum::<usize>()
-                            <= 64 * 1024 * 1024
-                        {
-                            Some(PlaybackCache {
-                                project,
-                                rate: sample_rate,
-                                samples: Arc::clone(&samples),
-                            })
-                        } else {
-                            None
-                        };
-                }
+        let message = match receiver.try_recv() {
+            Ok(message) => message,
+            Err(TryRecvError::Empty) => return true,
+            Err(TryRecvError::Disconnected) => Err("real-time worker disconnected".into()),
+        };
+        self.render_rx = None;
+        self.rendering = false;
+        let startup_ms = self
+            .render_started
+            .take()
+            .map(|t| t.elapsed().as_millis())
+            .unwrap_or(0);
+        match message {
+            Ok(ready) => {
+                debug_assert_eq!(ready.rate, ready.source.sample_rate());
+                let duration = ready.duration;
                 if let Some(audio) = self.audio.as_mut() {
-                    match audio.play(
-                        sample_rate,
-                        samples,
-                        Arc::clone(&self.monitor),
-                        self.playback_looped,
-                    ) {
-                        Ok(()) => {
-                            self.play_started = Some(Instant::now());
-                            self.status = if self.playback_looped {
-                                "PLAYING / LOOP ON".to_string()
+                    audio.stop();
+                    match Sink::try_new(&audio.handle) {
+                        Ok(sink) => {
+                            sink.append(ready.source);
+                            sink.play();
+                            audio.sink = Some(sink);
+                            if self.playback_timing.is_some() {
+                                self.begin_transport_clock(duration);
+                                self.status =
+                                    format!("PLAYING / REAL-TIME / {} ms start", startup_ms);
                             } else {
-                                "PLAYING / LOOP OFF".to_string()
-                            };
-                            self.status
-                                .push_str(&format!(" / render {:.0} ms", elapsed_ms));
+                                self.status = "AUDITION selected MIDI bar".into();
+                            }
                         }
-                        Err(error) => {
-                            self.playback_timing = None;
-                            self.status = format!("PLAY failed: {error}");
+                        Err(e) => {
+                            self.stop_audio();
+                            self.status = format!("PLAY failed: {e}");
                         }
                     }
                 } else {
+                    #[cfg(test)]
+                    {
+                        self.headless_stream = Some(ready.source);
+                    }
                     self.playback_timing = None;
-                    self.status = "PLAY unavailable: no audio output".to_string();
+                    self.status = "PLAY unavailable: no audio output".into();
                 }
-                true
             }
-            Ok(Err(error)) => {
-                self.render_rx = None;
-                self.rendering = false;
-                self.playback_timing = None;
+            Err(error) => {
+                self.stop_audio();
                 self.status = format!("PLAY render failed: {error}");
-                true
-            }
-            Err(TryRecvError::Empty) => true,
-            Err(TryRecvError::Disconnected) => {
-                self.render_rx = None;
-                self.rendering = false;
-                self.playback_timing = None;
-                self.status = "PLAY render worker disconnected".to_string();
-                true
             }
         }
+        true
     }
 
-    fn playhead_step(&self) -> Option<f32> {
+    fn begin_transport_clock(&mut self, duration: Duration) {
+        if let Some(timing) = &mut self.playback_timing {
+            timing.duration = duration;
+        }
+        self.play_started = Some(Instant::now());
+    }
+
+    fn transport_elapsed(&self) -> Option<Duration> {
         let started = self.play_started?;
-        let timing = self.playback_timing?;
         // Sink::get_pos follows the source consumed by the audio stream. The
         // wall clock remains only as a headless-test/fallback path.
-        let elapsed = self
+        let position = self
             .audio
             .as_ref()
             .and_then(AudioPlayer::position)
             .unwrap_or_else(|| started.elapsed());
-        Some(timing.step_at(elapsed))
+        // Underruns insert silence, not skipped musical samples.
+        let missing = self.stream_control.as_ref().map_or(Duration::ZERO, |c| {
+            Duration::from_secs_f64(
+                c.stats.missing_samples.load(Ordering::Relaxed) as f64
+                    / (2.0 * f64::from(gbdaw_kokura::default_output_sample_rate())),
+            )
+        });
+        Some(position.saturating_sub(missing))
+    }
+
+    fn transport_times(&self) -> (Duration, Duration) {
+        if let Some(timing) = self.playback_timing {
+            (
+                timing.position_at(self.transport_elapsed().unwrap_or_default()),
+                timing.duration,
+            )
+        } else if let Some(end) = self.finished_duration {
+            (end, end)
+        } else {
+            (
+                Duration::ZERO,
+                PlaybackTiming::from_project(&self.project).duration,
+            )
+        }
+    }
+
+    fn playhead_step(&self) -> Option<f32> {
+        Some(self.playback_timing?.step_at(self.transport_elapsed()?))
     }
 
     fn follow_playhead(&mut self) {
@@ -2616,6 +2571,7 @@ impl GbseqApp {
         }
 
         match upper.as_str() {
+            "K" => self.apply_action(Action::Keyboard),
             "E" => self.apply_action(Action::KeyEditor),
             "F" => self.apply_action(Action::FitSong),
             "HOME" => self.apply_action(Action::Home),
@@ -2692,6 +2648,13 @@ impl GbseqApp {
         );
         list.fill_rect(Rect::new(0.0, HEADER_H - 2.0, self.size.width, 2.0), ACCENT);
         self.text(list, 15.0, 15.0, "GBSEQ", 1.55, TEXT);
+        let (position, total) = self.transport_times();
+        let clock = format!("{} / {}", transport_stamp(position), transport_stamp(total));
+        // Reserve the numeric field, even with long song titles or a narrow window.
+        let clock_x = (self.size.width - 178.0).max(0.0);
+        let show_time_label = self.size.width >= 700.0;
+        let time_left = clock_x - if show_time_label { 62.0 } else { 0.0 };
+        let mode_x = time_left - 104.0;
         let timing_label = self
             .project
             .frames_per_step_override
@@ -2699,7 +2662,7 @@ impl GbseqApp {
             .unwrap_or_else(|| format!("{} BPM", self.project.bpm));
         self.text_in(
             list,
-            Rect::new(104.0, 17.0, (self.size.width - 238.0).max(1.0), 28.0),
+            Rect::new(104.0, 17.0, (mode_x - 112.0).max(0.0), 28.0),
             &format!(
                 "{}   {}   {} BARS / {} STEPS   {}",
                 format!(
@@ -2731,13 +2694,34 @@ impl GbseqApp {
         } else {
             "STOPPED"
         };
-        self.text(
+        if mode_x >= 100.0 {
+            self.text_in(
+                list,
+                Rect::new(mode_x, 17.0, 100.0, 26.0),
+                mode,
+                0.95,
+                if mode == "STOPPED" { MUTED } else { PLAYHEAD },
+            );
+        }
+        if show_time_label {
+            self.text_in(
+                list,
+                Rect::new(time_left, 17.0, 60.0, 26.0),
+                "TIME",
+                0.85,
+                MUTED,
+            );
+        }
+        self.text_in(
             list,
-            self.size.width - 118.0,
-            17.0,
-            mode,
-            0.95,
-            if mode == "STOPPED" { MUTED } else { PLAYHEAD },
+            Rect::new(clock_x, 17.0, self.size.width - clock_x - 4.0, 26.0),
+            &clock,
+            1.0,
+            if self.play_started.is_some() {
+                PLAYHEAD
+            } else {
+                TEXT
+            },
         );
         for spec in self.link16_buttons() {
             let active = match spec.action {
@@ -3324,6 +3308,9 @@ impl PlitaProgram for GbseqApp {
     }
 
     fn handle_event(&mut self, event: UiEvent) -> UiResponse {
+        if self.performance_event(&event) {
+            return UiResponse::redraw();
+        }
         match event {
             UiEvent::PointerMove { position } => {
                 let was_over_wave = self
@@ -3696,10 +3683,12 @@ impl PlitaProgram for GbseqApp {
     }
 
     fn tick(&mut self) -> UiResponse {
+        let patch_redraw = self.poll_patch_file();
+        let live_redraw = self.poll_performance();
         let redraw = self.poll_audio_render();
         let export_redraw = self.poll_export();
         self.follow_playhead();
-        if redraw || export_redraw {
+        if redraw || export_redraw || live_redraw || patch_redraw {
             UiResponse::redraw()
         } else {
             UiResponse::none()
@@ -3713,8 +3702,12 @@ impl PlitaProgram for GbseqApp {
         self.draw_toolbar(&mut list);
         self.draw_ruler(&mut list);
         self.draw_tracks(&mut list);
+        self.draw_chords(&mut list);
         self.draw_inspector(&mut list);
         self.draw_status(&mut list);
+        if self.live.open {
+            self.draw_performance(&mut list);
+        }
         for spec in self.menu_buttons() {
             let active = matches!(spec.action, Action::SetMonitor(p) if p == self.monitor_player());
             self.draw_button(&mut list, &spec, active);
@@ -3722,7 +3715,7 @@ impl PlitaProgram for GbseqApp {
         if self.menu.is_none() {
             if let Some(action) = self.buttons.hovered() {
                 let hint = match action {
-                    Action::Play => "Play from start [Space] - repeat playback uses cached audio",
+                    Action::Play => "Play from start [Space] - real-time KOKURA audio",
                     Action::Stop => "Stop [Space]",
                     Action::Save => "Save [Ctrl+S] / Save as [Ctrl+Shift+S]",
                     Action::Undo => "Undo [Ctrl+Z]",
@@ -3767,6 +3760,7 @@ pub fn run_gui() -> plita::prelude::Result<()> {
 
 impl Drop for GbseqApp {
     fn drop(&mut self) {
+        self.live.silence();
         if let Some(cancelled) = self.render_cancel.take() {
             cancelled.store(true, Ordering::Relaxed);
         }
@@ -4246,6 +4240,77 @@ mod tests {
         assert!(!app.project.loop_playback);
         app.apply_action(Action::Undo);
         assert!(app.project.loop_playback);
+    }
+
+    #[test]
+    fn transport_clock_uses_rendered_period_and_snapshot() {
+        let mut p = SequenceProject::empty();
+        p.frames_per_step_override = Some(3);
+        p.set_measures(1);
+        let timing = PlaybackTiming::from_project(&p);
+        assert_eq!(
+            timing.duration,
+            Duration::from_secs_f64(48.0 / GB_FRAME_RATE_HZ)
+        );
+        let actual = Stems::new(vec![vec![0; 48000], vec![0; 24000]]).duration(48000);
+        assert_eq!(actual, Duration::from_millis(500)); // stereo, longest console
+        let timing = PlaybackTiming {
+            duration: actual,
+            ..timing
+        };
+        let elapsed = Duration::from_millis(1625);
+        assert_eq!(timing.position_at(elapsed), Duration::from_millis(125));
+        assert_eq!(
+            timing.step_at(elapsed),
+            timing.step_at(Duration::from_millis(125))
+        );
+        assert_eq!(timing.position_at(actual), Duration::ZERO);
+        assert_eq!(
+            PlaybackTiming {
+                looped: false,
+                ..timing
+            }
+            .position_at(elapsed),
+            actual
+        );
+        assert_eq!(
+            PlaybackTiming {
+                duration: Duration::ZERO,
+                ..timing
+            }
+            .position_at(elapsed),
+            Duration::ZERO
+        );
+        assert_eq!(transport_stamp(Duration::from_millis(59999)), "00:59.9");
+        assert_eq!(transport_stamp(Duration::from_secs(60)), "01:00.0");
+    }
+
+    #[test]
+    fn transport_clock_is_idle_during_render_and_resets_after_stop_or_edit() {
+        let mut app = GbseqApp::new_with_audio(Size::new(800.0, 600.0), false);
+        let timing = PlaybackTiming::from_project(&app.project);
+        app.playback_timing = Some(timing);
+        app.rendering = true;
+        app.project.set_measures(1);
+        assert_eq!(app.transport_times(), (Duration::ZERO, timing.duration));
+        app.rendering = false;
+        app.begin_transport_clock(Duration::from_secs(4));
+        app.play_started = Some(Instant::now() - Duration::from_millis(1500));
+        let (pos, length) = app.transport_times();
+        assert_eq!(length, Duration::from_secs(4));
+        assert!(pos >= Duration::from_millis(1500) && pos < Duration::from_secs(2));
+        app.stop_audio();
+        let idle = (
+            Duration::ZERO,
+            PlaybackTiming::from_project(&app.project).duration,
+        );
+        assert_eq!(app.transport_times(), idle);
+        app.finished_duration = Some(length);
+        assert_eq!(app.transport_times(), (length, length));
+        let before = app.project.clone();
+        app.project.set_measures(2);
+        app.push_undo(before);
+        assert_eq!(app.transport_times().0, Duration::ZERO);
     }
 
     #[test]
