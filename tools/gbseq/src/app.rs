@@ -173,7 +173,7 @@ fn action_icon(action: Action) -> Option<&'static str> {
         | Action::ChordLane(_)
         | Action::ChordBulk => "grid-2x2",
         Action::ImportMidi => "folder-open",
-        Action::ExportMidi => "download",
+        Action::ExportMidi | Action::ExportVblank => "download",
         Action::Keyboard => "grid-2x2",
         Action::SongKey(n) => {
             if n > 0 {

@@ -33,8 +33,8 @@
     {
       "source": "gbseq/src/app.rs",
       "destination": "src/app.rs",
-      "source_sha256": "ae74fcf1144cf732140b5abfc2b26cb7aa3001cd738aafc5b369c807d00ec31c",
-      "published_sha256": "70561d484ba0d917e074c3ec14778bf1c84f24f1a867e7179c3d4b672d0f7b5f"
+      "source_sha256": "c89e353e3ae4f48a797a6ece4a9644d42a6999939a8bb183f908c48c361c140a",
+      "published_sha256": "21285fdbaa05736a09ac8927f5ea46ff9ee3c4e3da053da91269e19f318ff6af"
     },
     {
       "source": "gbseq/src/bin/gbseq-cli.rs",
