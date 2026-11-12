@@ -20,6 +20,8 @@ WAV 遵循开始导出时的监听、静音与独奏设置。监听全部会混�
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[导出 VBlank 驱动和乐曲的 C 源码](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 按 **E** 或双击轨道标题即可打开该轨的钢琴卷帘编辑器；再按 E 返回总览。拖动音符右端可将它延长至下一音符之前或曲末。在 CH3 自定义波形图上可直接绘制 32 个采样点，Ctrl+Z 撤销一笔。
 
 ## 按声部导出播放 ROM 与监听
@@ -46,7 +48,7 @@ Ctrl/Shift点击切换选择，Ctrl+A选择当前轨道。左右按网格移动�
 
 ## CLI
 
-track/player从1开始，start从0开始；length=1为十六分音符，16为4/4一小节。pitch 0–47对应C2–B5，velocity 0–15。players仅支持1、2、4。编辑必须给出--out，显式目标可以覆盖已有文件。不合法操作非零退出且不保存。transform还支持--shift、--quantize和--velocity。--all-players混合所有有效玩家，默认仅P1。导出可能替换现有输出。
+track/player从1开始，start从0开始；length=1为十六分音符，16为4/4一小节。pitch 0–47对应C2–B5，velocity 0–15。players仅支持1、2、4。编辑必须给出--out，显式目标可以覆盖已有文件。不合法操作非零退出且不保存。transform还支持--shift、--quantize和--velocity。WAV默认混合所有启用的主机；--player N 只输出指定主机。导出可能替换现有输出。
 
 ```sh
 gbseq --open song.gbseq

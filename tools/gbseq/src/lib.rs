@@ -13,6 +13,7 @@ pub mod model;
 pub mod player_rom;
 pub mod presets;
 pub mod services;
+pub mod vblank;
 
 #[cfg(feature = "gui")]
 pub use app::{run_gui, GbseqApp};

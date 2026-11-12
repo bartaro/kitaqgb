@@ -20,6 +20,8 @@ WAV에는 내보낼 때의 모니터·음소거·솔로 설정이 적용됩니�
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[VBlank 드라이버와 곡의 C 소스 내보내기](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 **E**를 누르거나 트랙 머리글을 두 번 클릭하면 해당 트랙의 피아노 롤이 열립니다. E를 다시 누르면 전체 보기로 돌아갑니다. 음표 오른쪽 끝을 끌어 다음 음표 직전이나 곡 끝까지 늘릴 수 있습니다. CH3 사용자 파형 그래프에서는 32개 샘플을 선으로 그리며, Ctrl+Z로 한 획을 취소합니다.
 
 ## 파트별 재생 ROM 및 모니터
@@ -46,7 +48,7 @@ Ctrl/Shift 클릭으로 선택을 전환하고 Ctrl+A로 현재 레인을 선택
 
 ## CLI
 
-track/player는 1부터, start는 0부터 계산합니다. length 1은 16분음표, 16은 4/4 한 마디입니다. pitch 0–47은 C2–B5, velocity는 0–15입니다. players는 1·2·4만 지원합니다. 편집은 --out이 필수이며 명시한 기존 파일을 덮어쓸 수 있습니다. 잘못된 편집은 0이 아닌 종료 코드로 실패하고 저장되지 않습니다. transform은 --shift, --quantize, --velocity도 받습니다. --all-players는 전체 믹스, 기본은 P1입니다. 내보내기는 기존 출력을 교체할 수 있습니다.
+track/player는 1부터, start는 0부터 계산합니다. length 1은 16분음표, 16은 4/4 한 마디입니다. pitch 0–47은 C2–B5, velocity는 0–15입니다. players는 1·2·4만 지원합니다. 편집은 --out이 필수이며 명시한 기존 파일을 덮어쓸 수 있습니다. 잘못된 편집은 0이 아닌 종료 코드로 실패하고 저장되지 않습니다. transform은 --shift, --quantize, --velocity도 받습니다. WAV는 기본적으로 활성 기기 전체를 믹스하며 --player N은 한 기기만 출력합니다. 내보내기는 기존 출력을 교체할 수 있습니다.
 
 ```sh
 gbseq --open song.gbseq

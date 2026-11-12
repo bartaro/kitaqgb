@@ -119,6 +119,7 @@ enum Action {
     Preview,
     RenderWav,
     Export,
+    ExportVblank,
     ExportLink16Sav,
     ExportLink16Sd,
     ExportRom,
@@ -1327,6 +1328,7 @@ impl GbseqApp {
                     (Action::ExportPlayerRoms, "Playback ROMs (no SRAM)"),
                     (Action::ExportRom, "Editor ROM (128KB SRAM)"),
                     (Action::Export, "KITAQGB current player"),
+                    (Action::ExportVblank, "KITAQGB VBlank (C)"),
                     (Action::ExportLink16Sav, "LINK16 saves"),
                     (Action::ExportLink16Sd, "Hardware SD package"),
                 ],
@@ -1985,6 +1987,7 @@ impl GbseqApp {
             Action::RenderWav
             | Action::ExportMidi
             | Action::Export
+            | Action::ExportVblank
             | Action::ExportLink16Sav
             | Action::ExportLink16Sd
             | Action::ExportRom

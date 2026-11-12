@@ -20,6 +20,8 @@ WAVには出力を選んだ時点の試聴・ミュート・ソロ設定が反�
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[VBlankドライバ・曲データのC出力](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 **E** キーまたはトラック見出しのダブルクリックで、そのトラックのキーエディタが開きます。Eでもう一度全体表示に戻ります。音符の右端をドラッグすると、次の音符の直前または曲末まで伸ばせます。CH3のユーザー波形はグラフ上で32サンプルを線描でき、Ctrl+Zでひと筆を取り消せます。
 
 ## 台別の再生専用ROMと試聴
@@ -46,7 +48,7 @@ Ctrl/Shiftクリックで複数選択、Ctrl+Aで現在レーン全選択。左�
 
 ## CLI
 
-track/playerは1始まり、startは0始まりのステップ数です。length=1は16分音符、16は4/4の1小節。pitch=0～47はC3～B6、velocity=0～15。`--players`は1・2・4のみ。編集には`--out`が必須で、指定先が既存なら上書きされます。不正編集は非0終了し保存されません。transformには`--shift`、`--quantize`、`--velocity`もあります。`--all-players`で全台ミックス、未指定ではP1です。書き出しも既存出力を置き換える場合があります。
+track/playerは1始まり、startは0始まりのステップ数です。length=1は16分音符、16は4/4の1小節。pitch=0～47はC3～B6、velocity=0～15。`--players`は1・2・4のみ。編集には`--out`が必須で、指定先が既存なら上書きされます。不正編集は非0終了し保存されません。transformには`--shift`、`--quantize`、`--velocity`もあります。WAVは未指定で全台ミックス、`--player N` で指定した1台のみになります。書き出しも既存出力を置き換える場合があります。
 
 ```sh
 gbseq --open song.gbseq

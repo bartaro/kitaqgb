@@ -20,6 +20,8 @@ El WAV respeta la escucha, el silencio y el solo elegidos al iniciar la exportac
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[Exportar el controlador VBlank y la música en C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 Pulsa **E** o haz doble clic en la cabecera de una pista para abrir su editor de piano; E vuelve a la vista general. Arrastra el borde derecho de una nota hasta la nota siguiente o el final de la canción. En el gráfico de ondas de CH3 puedes dibujar las 32 muestras; Ctrl+Z deshace un trazo.
 
 ## ROM de reproducción y escucha
@@ -46,7 +48,7 @@ El inspector ajusta nivel, panorama izquierda/derecha/centro, ciclo de trabajo y
 
 ## CLI
 
-track/player comienzan en 1; start en 0. length 1 es semicorchea, 16 un compás 4/4. pitch admite 0–47 y velocity 0–15. players acepta 1, 2 o 4. Editar exige --out, que puede sobrescribir el destino explícito. Una edición inválida termina con código distinto de cero y no se guarda. transform también acepta --shift, --quantize y --velocity. --all-players mezcla todos; por defecto se usa P1. Exportar puede reemplazar salidas existentes.
+track/player comienzan en 1; start en 0. length 1 es semicorchea, 16 un compás 4/4. pitch admite 0–47 y velocity 0–15. players acepta 1, 2 o 4. Editar exige --out, que puede sobrescribir el destino explícito. Una edición inválida termina con código distinto de cero y no se guarda. transform también acepta --shift, --quantize y --velocity. WAV mezcla por defecto todas las consolas activas; --player N aísla una. Exportar puede reemplazar salidas existentes.
 
 ```sh
 gbseq --open song.gbseq

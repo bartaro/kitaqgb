@@ -150,6 +150,17 @@ pub enum Command {
         project: PathBuf,
         out_path: PathBuf,
     },
+    /// Write VBlank driver C sources and playable music for every console.
+    ExportVblank {
+        project: PathBuf,
+        out_dir: PathBuf,
+        /// Reject wave or noise approximations before creating any output.
+        #[arg(long)]
+        strict: bool,
+        /// Use this KITAQGB lib directory instead of the bundled release.
+        #[arg(long)]
+        driver_dir: Option<PathBuf>,
+    },
     ExportKitaqgb {
         project: PathBuf,
         out_dir: PathBuf,
@@ -420,6 +431,22 @@ impl Command {
                 let added = edit_notes(&mut p, &ids, NoteEdit::Duplicate)?;
                 save_sequence(&p, &output.out)?;
                 println!("{}", serde_json::to_string(&added)?);
+            }
+            Self::ExportVblank {
+                project,
+                out_dir,
+                strict,
+                driver_dir,
+            } => {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&crate::vblank::export_with_driver(
+                        &load_sequence(&project)?,
+                        &out_dir,
+                        strict,
+                        driver_dir.as_deref()
+                    )?)?
+                );
             }
             Self::ExportKitaqgb {
                 project,

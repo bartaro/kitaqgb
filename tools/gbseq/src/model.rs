@@ -23,7 +23,7 @@ pub const LINK16_STEP_COUNT: u32 = MAX_MEASURES * STEPS_PER_MEASURE;
 // Keep the built-in CH3 waveforms byte-identical to KITAQGB lib/audio.c.
 // GBDAW's extended preview/export path accepts packed 32 x 4-bit samples,
 // so using these bytes preserves what the Game Boy driver will actually play.
-const KITAQGB_BUILTIN_WAVES: [[u8; 16]; 7] = [
+pub(crate) const KITAQGB_BUILTIN_WAVES: [[u8; 16]; 7] = [
     [
         0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32,
         0x10,

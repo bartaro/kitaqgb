@@ -1,0 +1,20 @@
+#include "audio.h"
+#include "audio_vblank.h"
+#include "music.h"
+#pragma fixed_bank 0
+__location(0xFF40) u8 vb_lcdc;
+// CH4 SFX ownership is supplied by the host game, not audio.c.
+__hram u8 Audio_NoiseEffectActive;
+void main() {
+    Audio_Init();
+    Audio_NoiseEffectActive = 0;
+    AudioVBlank_Init();
+    vb_lcdc = 0x91;
+    GbseqVB_Start();
+    AudioVBlank_EnableIrq();
+    while (1) {
+        GbseqVB_Pump();
+        __asm { HALT }
+        Audio_Update();
+    }
+}

@@ -12,6 +12,7 @@ pub(super) fn is_output(a: Action) -> bool {
         Action::RenderWav
             | Action::ExportMidi
             | Action::Export
+            | Action::ExportVblank
             | Action::ExportLink16Sav
             | Action::ExportLink16Sd
             | Action::ExportRom
@@ -127,6 +128,13 @@ impl Job {
             Action::RenderWav => {
                 crate::services::render_wav(p, path, self.monitor)?;
                 format!("WAV rendered -> {}", path.display())
+            }
+            Action::ExportVblank => {
+                let m = crate::vblank::export(p, path, false)?;
+                if !m.warnings.is_empty() {
+                    details = Some(m.warnings.join("\n"));
+                }
+                format!("VBlank C: P1–P{} -> {}", m.players, m.directory.display())
             }
             Action::Export => {
                 let m = export_project_to_dir(
@@ -256,7 +264,7 @@ impl Job {
                     .pick_folder()
                     .await
             }
-            Action::ExportLink16Sav | Action::Export => {
+            Action::ExportLink16Sav | Action::Export | Action::ExportVblank => {
                 Picker::new()
                     .set_title(tr("Choose export folder"))
                     .pick_folder()

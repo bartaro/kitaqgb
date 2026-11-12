@@ -20,6 +20,8 @@ Le WAV respecte l’écoute, les pistes muettes et les solos au lancement de l�
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[Exporter le pilote VBlank et la musique en C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 Appuyez sur **E** ou double-cliquez sur l’en-tête d’une piste pour ouvrir son éditeur de notes ; E ramène à la vue d’ensemble. Tirez le bord droit d’une note jusqu’à la note suivante ou à la fin du morceau. Le graphe d’onde du CH3 permet de dessiner les 32 échantillons ; Ctrl+Z annule un trait.
 
 ## ROM de lecture et écoute
@@ -46,7 +48,7 @@ L’inspecteur règle par note niveau, panoramique gauche/droite/centre, rapport
 
 ## CLI
 
-track/player commencent à 1, start à 0. length 1 vaut une double croche, 16 une mesure 4/4. pitch accepte 0–47, velocity 0–15. players accepte 1, 2 ou 4. Les éditions exigent --out, qui peut écraser la destination explicitement choisie. Une édition invalide renvoie un code non nul et n’est pas enregistrée. transform accepte aussi --shift, --quantize et --velocity. --all-players mélange tous les joueurs ; par défaut P1 seul. L’export peut remplacer des fichiers existants.
+track/player commencent à 1, start à 0. length 1 vaut une double croche, 16 une mesure 4/4. pitch accepte 0–47, velocity 0–15. players accepte 1, 2 ou 4. Les éditions exigent --out, qui peut écraser la destination explicitement choisie. Une édition invalide renvoie un code non nul et n’est pas enregistrée. transform accepte aussi --shift, --quantize et --velocity. Le WAV mélange par défaut toutes les consoles actives ; --player N en isole une. L’export peut remplacer des fichiers existants.
 
 ```sh
 gbseq --open song.gbseq

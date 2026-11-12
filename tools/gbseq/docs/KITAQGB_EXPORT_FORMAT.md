@@ -61,6 +61,8 @@ CH4=3 を使います。旧出力の CH3=3 / CH4=2 のC配列は、元の `.gbse
 再exportしてください。`.gbseq` のtrack順序は元から CH1/CH2/CH3/CH4 のため、
 project内のtrackやnoteを入れ替える必要はありません。
 
+`export-vblank` は別の出力経路で、各台のVBlankレコード・ドライバ・再生例を生成します。[VBlank出力と旧番号の互換性](KITAQGB_VBLANK.md)参照。
+
 `audio_vblank.h` の固定長recordも `delay, ch1_note, ch2_note, ch3_note,
 ch4_noise_param` の順序です。ただし本exportは `audio.c` 向けcommand streamを
 生成します。VBlankの5-byte recordとは形式が異なり、そのまま置き換えては使えません。

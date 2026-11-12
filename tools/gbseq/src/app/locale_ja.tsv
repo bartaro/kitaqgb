@@ -46,6 +46,7 @@ Zoom out          -	縮小         -
 Cycle snap        G	グリッド切替 G
 Render WAV	WAVを書き出す
 KITAQGB current player	選択プレイヤーをKITAQGB出力
+KITAQGB VBlank (C)	KITAQGB VBlank音源（C出力）
 LINK16 saves	LINK16 SAVを書き出す
 TRACKS	トラック
 MIDI BAR DETAIL	ノート詳細

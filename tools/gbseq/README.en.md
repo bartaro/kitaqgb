@@ -20,6 +20,8 @@ WAV follows the monitor and mixer at the moment of export: All mixes the active 
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[VBlank C export](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 Press **E** or double-click a track header to edit that track on the piano roll (E returns to the overview). Drag a note’s right edge to extend it up to the next note or the song end. In the CH3 user-wave graph, draw across the 32 samples; Ctrl+Z undoes one stroke.
 
 ## Playback ROMs and listening
@@ -46,7 +48,7 @@ The inspector sets each note's level and left/right/center pan, pulse duty and e
 
 ## Command line
 
-CLI tracks/players are one-based; starts are zero-based steps. Length 1 is a sixteenth note, length 16 one 4/4 bar. Pitch 0–47 corresponds to C2–B5; velocity is 0–15. Use `--players 1`, `2` or `4` (3 is unsupported). Editing commands require `--out`; that explicit destination may overwrite a file. Invalid edits return a nonzero status and are not saved. `transform` also accepts `--shift`, `--quantize` and `--velocity`. `--all-players` mixes the active players; otherwise rendering defaults to P1. Export operations may replace existing output files.
+CLI tracks/players are one-based; starts are zero-based steps. Length 1 is a sixteenth note, length 16 one 4/4 bar. Pitch 0–47 corresponds to C2–B5; velocity is 0–15. Use `--players 1`, `2` or `4` (3 is unsupported). Editing commands require `--out`; that explicit destination may overwrite a file. Invalid edits return a nonzero status and are not saved. `transform` also accepts `--shift`, `--quantize` and `--velocity`. WAV rendering defaults to all active consoles; `--player N` isolates one. Export operations may replace existing output files.
 
 ```sh
 gbseq --open song.gbseq

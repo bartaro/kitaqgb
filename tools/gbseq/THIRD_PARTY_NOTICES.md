@@ -6,6 +6,12 @@ GBSEQ's MIT license does not relicense third-party material or imported music.
 
 ## Bundled components and assets
 
+The VBlank C exporter embeds an unchanged snapshot of the already published
+[KITAQGB audio library](https://github.com/bartaro/kitaqgb/tree/6fdcf1f/lib),
+including its [MIT license](assets/kitaqgb-vblank/LICENSE). The generated
+package carries that license alongside the driver sources. Users can point
+GBSEQ at a separately installed SDK instead.
+
 The required GBDAW model/export/audio libraries and KOKURA core are included
 as MIT source in `vendor/`. No KOKURA GUI, game ROM, boot ROM, commercial
 music, sound sample or user project is included. Hardware names identify

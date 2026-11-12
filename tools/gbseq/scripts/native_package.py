@@ -68,6 +68,13 @@ with tempfile.TemporaryDirectory() as tmp:
         with wave.open(str(default)) as w:
             assert w.getnframes()==info['frames'] and not any(w.readframes(w.getnframes()))
         info['wav_global_solo_mute_and_duration']=True
+        vb=json.loads(run('export-vblank',song,tmp/f'vb{players}','--strict'))
+        vdir=Path(vb['directory'])
+        assert vb['players']==players and not vb['warnings'] and (vdir/'driver/LICENSE').is_file()
+        for idx in range(players):
+            code=(vdir/f'P{idx+1}/music_bank02.c').read_text()
+            assert '#pragma fixed_bank 2' in code and '0xFC, 0x11, 0x02,' in code and '0xFC, 0x11, 0x03,' in code
+        info['vblank_source_parts']=players
         images=list(saves.glob('*.sav'))
         assert len(images)==players and all(f.stat().st_size==131072 for f in images)
         package=json.loads(run('export-player-roms',song,tmp/f'player-{players}'))

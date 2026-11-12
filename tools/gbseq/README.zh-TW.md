@@ -20,6 +20,8 @@ WAV 會套用開始匯出時的監聽、靜音與獨奏設定。監聽全部會�
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[匯出 VBlank 驅動程式與樂曲的 C 原始碼](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 按 **E** 或按兩下音軌標題即可開啟該軌的鋼琴捲軸編輯器；再按 E 返回總覽。拖曳音符右端可延長至下一個音符之前或曲末。在 CH3 自訂波形圖上可直接繪製 32 個取樣點，Ctrl+Z 可復原一筆。
 
 ## 分聲部播放 ROM 與監聽
@@ -46,7 +48,7 @@ Ctrl/Shift點擊切換選取，Ctrl+A選取目前軌道。左右按格線移動�
 
 ## CLI
 
-track/player從1起算，start從0；length=1為十六分音符，16為4/4一小節。pitch 0–47對應C2–B5，velocity為0–15。players只接受1、2、4。編輯必須指定--out，明確指定的既有檔可能被覆寫。不合法編輯以非零碼結束且不儲存。transform另有--shift、--quantize、--velocity。--all-players混合所有有效玩家，預設為P1。匯出可取代既有輸出。
+track/player從1起算，start從0；length=1為十六分音符，16為4/4一小節。pitch 0–47對應C2–B5，velocity為0–15。players只接受1、2、4。編輯必須指定--out，明確指定的既有檔可能被覆寫。不合法編輯以非零碼結束且不儲存。transform另有--shift、--quantize、--velocity。WAV預設混合所有啟用的主機；--player N 只輸出指定主機。匯出可取代既有輸出。
 
 ```sh
 gbseq --open song.gbseq

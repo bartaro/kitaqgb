@@ -20,6 +20,8 @@ Beim WAV-Export gelten die aktuellen Abhör-, Stumm- und Soloschaltungen. Alle a
 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
+[VBlank-Treiber und Musik als C-Code exportieren](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+
 Mit **E** oder einem Doppelklick auf den Spurkopf öffnet sich der Piano-Roll-Editor der Spur; E führt zurück zur Übersicht. Ziehen Sie den rechten Notenrand bis zur nächsten Note oder zum Stückende. Im CH3-Welleneditor können Sie die 32 Abtastwerte zeichnen; Strg+Z nimmt einen Strich zurück.
 
 ## Wiedergabe-ROMs und Abhören
@@ -46,7 +48,7 @@ Pro Note sind Pegel, Panorama links/rechts/Mitte, Pulstastverhältnis und Hüllk
 
 ## CLI
 
-track/player zählen ab 1, start ab 0. length 1 ist eine Sechzehntel, 16 ein 4/4-Takt. pitch erlaubt 0–47, velocity 0–15. players unterstützt 1, 2 oder 4. Bearbeitungen erfordern --out; das ausdrücklich gewählte Ziel kann überschrieben werden. Ungültige Bearbeitungen enden mit Fehlerstatus und werden nicht gespeichert. transform unterstützt auch --shift, --quantize und --velocity. --all-players mischt alle aktiven Spieler, sonst nur P1. Exporte können vorhandene Ausgaben ersetzen.
+track/player zählen ab 1, start ab 0. length 1 ist eine Sechzehntel, 16 ein 4/4-Takt. pitch erlaubt 0–47, velocity 0–15. players unterstützt 1, 2 oder 4. Bearbeitungen erfordern --out; das ausdrücklich gewählte Ziel kann überschrieben werden. Ungültige Bearbeitungen enden mit Fehlerstatus und werden nicht gespeichert. transform unterstützt auch --shift, --quantize und --velocity. WAV mischt standardmäßig alle aktiven Spieler; --player N isoliert einen. Exporte können vorhandene Ausgaben ersetzen.
 
 ```sh
 gbseq --open song.gbseq
