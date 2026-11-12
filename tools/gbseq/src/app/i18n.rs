@@ -5,6 +5,13 @@ use std::{borrow::Cow, sync::OnceLock};
 pub(super) enum Language {
     English,
     Japanese,
+    Korean,
+    ChineseSimplified,
+    ChineseTraditional,
+    Spanish,
+    Portuguese,
+    French,
+    German,
 }
 
 pub(super) fn preference_path() -> Option<PathBuf> {
@@ -21,15 +28,57 @@ pub(super) fn preference_path() -> Option<PathBuf> {
 }
 
 impl Language {
+    pub(super) const ALL: [Self; 9] = [
+        Self::English,
+        Self::Japanese,
+        Self::Korean,
+        Self::ChineseSimplified,
+        Self::ChineseTraditional,
+        Self::Spanish,
+        Self::Portuguese,
+        Self::French,
+        Self::German,
+    ];
+    pub(super) fn code(self) -> &'static str {
+        [
+            "en", "ja", "ko", "zh-CN", "zh-TW", "es", "pt-BR", "fr", "de",
+        ][self as usize]
+    }
+    pub(super) fn name(self) -> &'static str {
+        [
+            "English",
+            "日本語",
+            "한국어",
+            "简体中文",
+            "繁體中文",
+            "Español",
+            "Português (Brasil)",
+            "Français",
+            "Deutsch",
+        ][self as usize]
+    }
     pub(super) fn parse(value: &str) -> Option<Self> {
-        let value = value.trim().to_ascii_lowercase();
-        if value == "ja" || value.starts_with("ja-") || value.starts_with("ja_") {
-            Some(Self::Japanese)
-        } else if value == "en" || value.starts_with("en-") || value.starts_with("en_") {
-            Some(Self::English)
-        } else {
-            None
+        let value = value
+            .trim()
+            .split(['.', '@'])
+            .next()?
+            .to_ascii_lowercase()
+            .replace('_', "-");
+        if value == "zh" || value.starts_with("zh-") {
+            return Some(
+                if value
+                    .split('-')
+                    .any(|x| matches!(x, "tw" | "hk" | "mo" | "hant"))
+                {
+                    Self::ChineseTraditional
+                } else {
+                    Self::ChineseSimplified
+                },
+            );
         }
+        Self::ALL
+            .into_iter()
+            .find(|l| l.code().split('-').next() == value.split('-').next())
     }
 
     pub(super) fn detect() -> Self {
@@ -53,7 +102,9 @@ impl Language {
         for key in ["LC_ALL", "LC_MESSAGES", "LANG"] {
             if let Ok(value) = std::env::var(key) {
                 if !value.is_empty() {
-                    return Self::parse(&value).unwrap_or(Self::English);
+                    if let Some(l) = Self::parse(&value) {
+                        return l;
+                    }
                 }
             }
         }
@@ -63,8 +114,23 @@ impl Language {
             extern "system" {
                 pub(super) fn GetUserDefaultUILanguage() -> u16;
             }
-            if unsafe { GetUserDefaultUILanguage() } & 0x3ff == 0x11 {
-                return Self::Japanese;
+            let n = unsafe { GetUserDefaultUILanguage() };
+            if let Some(l) = match n & 0x3ff {
+                4 => Some(if matches!(n >> 10, 1 | 3 | 5) {
+                    Self::ChineseTraditional
+                } else {
+                    Self::ChineseSimplified
+                }),
+                7 => Some(Self::German),
+                9 => Some(Self::English),
+                10 => Some(Self::Spanish),
+                12 => Some(Self::French),
+                17 => Some(Self::Japanese),
+                18 => Some(Self::Korean),
+                22 => Some(Self::Portuguese),
+                _ => None,
+            } {
+                return l;
             }
         }
         #[cfg(target_os = "macos")]
@@ -73,13 +139,14 @@ impl Language {
             .output()
         {
             let value = String::from_utf8_lossy(&output.stdout);
-            if output.status.success()
-                && value
-                    .split(|c: char| !c.is_ascii_alphabetic())
-                    .find(|s| !s.is_empty())
-                    == Some("ja")
-            {
-                return Self::Japanese;
+            if output.status.success() {
+                if let Some(l) = value
+                    .split(|c: char| !(c.is_ascii_alphabetic() || c == '-'))
+                    .filter(|s| !s.is_empty())
+                    .find_map(Self::parse)
+                {
+                    return l;
+                }
             }
         }
         Self::English
@@ -89,24 +156,49 @@ impl Language {
         if self == Self::English {
             return Cow::Borrowed(text);
         }
-        static CATALOG: OnceLock<Vec<(&str, &str)>> = OnceLock::new();
-        let catalog = CATALOG.get_or_init(|| {
-            include_str!("locale_ja.tsv")
-                .lines()
-                .filter_map(|line| line.split_once('\t'))
+        type Catalog = (
+            std::collections::HashMap<&'static str, &'static str>,
+            Vec<(&'static str, &'static str)>,
+        );
+        static TABLES: OnceLock<Vec<Catalog>> = OnceLock::new();
+        let (exact, patterns) = &TABLES.get_or_init(|| {
+            (1..9)
+                .map(|i| {
+                    let map: std::collections::HashMap<_, _> = if i == 1 {
+                        include_str!("locale_ja.tsv")
+                            .lines()
+                            .filter_map(|l| l.split_once('\t'))
+                            .collect()
+                    } else {
+                        include_str!("locale_multi.tsv")
+                            .lines()
+                            .map(|l| {
+                                let mut cols = l.split('\t');
+                                (cols.next().unwrap(), cols.nth(i - 2).unwrap())
+                            })
+                            .collect()
+                    };
+                    let mut pat: Vec<_> = map
+                        .iter()
+                        .filter(|(k, _)| k.contains("{}"))
+                        .map(|(&k, &v)| (k, v))
+                        .collect();
+                    pat.sort_by_key(|(k, _)| (std::cmp::Reverse(k.len()), *k));
+                    (map, pat)
+                })
                 .collect()
-        });
-        if let Some((_, ja)) = catalog.iter().find(|(en, _)| *en == text) {
-            return Cow::Borrowed(ja);
+        })[self as usize - 1];
+        if let Some(&s) = exact.get(text) {
+            return Cow::Borrowed(s);
         }
         // Translate fixed UI messages, retaining project names, file paths and diagnostic details.
-        for (en, ja) in catalog.iter().filter(|(en, _)| en.contains("{}")) {
+        for (en, ja) in patterns {
             if let Some(value) = template(text, en, ja) {
                 return Cow::Owned(value);
             }
         }
         if let Some((base, timing)) = text.split_once(" / render ") {
-            return Cow::Owned(format!("{} / 生成 {}", self.translate(base), timing));
+            return Cow::Owned(format!("{} / {}", self.translate(base), timing));
         }
         Cow::Borrowed(text)
     }
@@ -194,26 +286,15 @@ impl GbseqApp {
         list.pop_clip();
     }
 
-    pub(super) fn toggle_language(&mut self) {
-        self.language = if self.language == Language::English {
-            Language::Japanese
-        } else {
-            Language::English
-        };
+    pub(super) fn set_language(&mut self, l: Language) {
+        self.language = l;
         self.status = "Display language changed".into();
         if !cfg!(test) {
             let result = preference_path()
                 .ok_or_else(|| std::io::Error::other("No user configuration directory"))
                 .and_then(|p| {
                     fs::create_dir_all(p.parent().unwrap())?;
-                    fs::write(
-                        p,
-                        if self.language == Language::Japanese {
-                            "ja\n"
-                        } else {
-                            "en\n"
-                        },
-                    )
+                    fs::write(p, self.language.code())
                 });
             if result.is_err() {
                 self.status =
@@ -245,5 +326,28 @@ mod tests {
         );
         assert_eq!(Language::English.translate("FILE"), "FILE");
         assert_eq!(Language::parse("ja_JP.UTF-8"), Some(Language::Japanese));
+        let mut multi_keys = BTreeSet::new();
+        for row in include_str!("locale_multi.tsv").lines() {
+            let cols = row.split('\t').collect::<Vec<_>>();
+            assert_eq!(cols.len(), 8, "{row}");
+            assert!(multi_keys.insert(cols[0]));
+            assert!(
+                cols[1..]
+                    .iter()
+                    .all(|s| !s.is_empty()
+                        && s.matches("{}").count() == cols[0].matches("{}").count()),
+                "{row}"
+            );
+        }
+        assert_eq!(keys, multi_keys);
+        for l in Language::ALL {
+            assert_eq!(Language::parse(l.code()), Some(l));
+            assert!(!l.name().is_empty());
+        }
+        assert_eq!(
+            Language::parse("zh_Hant_HK.UTF-8"),
+            Some(Language::ChineseTraditional)
+        );
+        assert_eq!(Language::parse("pt_BR.UTF-8"), Some(Language::Portuguese));
     }
 }

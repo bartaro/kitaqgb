@@ -10204,7 +10204,8 @@ fn load_rich_font() -> Option<RichFontRasterizer> {
         let Some(font) = load_font_path(&path) else {
             continue;
         };
-        let fallback_font = (font.lookup_glyph_index('\u{4e00}') == 0)
+        let fallback_font = (std::env::var_os("PLITA_UI_FONT_FALLBACK").is_some()
+            || font.lookup_glyph_index('\u{4e00}') == 0)
             .then(load_cjk_fallback_font)
             .flatten();
         return Some(RichFontRasterizer {

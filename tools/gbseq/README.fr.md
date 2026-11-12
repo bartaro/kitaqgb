@@ -8,7 +8,17 @@ Dans Exporter, choisissez UGE modifiable (avec vos formes d’onde) ou MOD (inst
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ, par DAISUKE OBA, propose une interface plita et une CLI indépendante. Elles partagent modèle, validation, audio KOKURA et exportateurs. LOCAL 4CH, CABLE 8CH et DMG07 16CH correspondent à 1, 2 et 4 Game Boy. Chaque joueur dispose de CH1/CH2 à impulsions, CH3 à table d’onde et CH4 à bruit. Un morceau contient 1–256 mesures de 16 pas (4096 par canal), BPM 30–300 et une option de boucle. Le menu View permet de choisir le japonais ou l’anglais, tout comme l’option `gbseq --language ja` ou `en` au démarrage. Le japonais nécessite une police système adaptée.
+GBSEQ, par DAISUKE OBA, propose une interface plita et une CLI indépendante. Elles partagent modèle, validation, audio KOKURA et exportateurs. LOCAL 4CH, CABLE 8CH et DMG07 16CH correspondent à 1, 2 et 4 Game Boy. Chaque joueur dispose de CH1/CH2 à impulsions, CH3 à table d’onde et CH4 à bruit. Un morceau contient 1–256 mesures de 16 pas (4096 par canal), BPM 30–300 et une option de boucle. Choisissez la langue dans Affichage → Langue. Ce réglage est enregistré indépendamment du morceau. `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
+
+## Jeu au clavier, enregistrement et WAV
+
+Sélectionnez une piste et appuyez sur K pour ouvrir le clavier. A/S/D/F/G/H/J jouent les touches blanches, W/E/T/Y/U les noires ; Z/X change l’octave. Cliquez sur IN et OUT pour choisir les ports MIDI. La saisie pas à pas avance de 1, 2 ou 4 doubles croches. REC enregistre une prise depuis le début. La protection refuse les chevauchements ; l’écrasement ne remplace que la partie recouverte. Importez le MIDI depuis Fichier et enregistrez-le depuis Exporter ; gardez le .gbseq pour conserver les timbres GB.
+
+Chaque canal propose 128 timbres d’usine dans la liste déroulante. Vos timbres se sauvegardent et se rechargent séparément au format .gbpreset. L’affichage des accords peut être activé pour le mixage et pour chaque piste indépendamment. La transposition globale ne modifie pas la piste de bruit.
+
+Le WAV respecte l’écoute, les pistes muettes et les solos au lancement de l’export. Tout écouter mélange les consoles actives ; P1–P4 en isole une. En présence d’un solo, seules les pistes en solo non muettes sont audibles. Sélectionner une piste à éditer ne l’isole pas. Rendre toutes les pistes muettes conserve la durée du WAV.
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 Appuyez sur **E** ou double-cliquez sur l’en-tête d’une piste pour ouvrir son éditeur de notes ; E ramène à la vue d’ensemble. Tirez le bord droit d’une note jusqu’à la note suivante ou à la fin du morceau. Le graphe d’onde du CH3 permet de dessiner les 32 échantillons ; Ctrl+Z annule un trait.
 

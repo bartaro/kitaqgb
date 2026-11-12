@@ -269,6 +269,20 @@ Chord display...	コード進行の表示...
 Combined chords	全体のコード
 All lane labels	各トラック一括
 Chords	コード
+Language	言語 / Language
+Preset: {}	音色: {}
+User preset: {} / {}	ユーザー音色: {} / {}
+IN: {}	入力: {}
+OUT: {}	出力: {}
+Oct -  C{}	オクターブ − C{}
+Oct +	オクターブ +
+Song key: {}	曲全体の移調: {}
+MIDI input overflow	MIDI入力が過負荷です
+GBSEQ instrument	GBSEQ音色
+note overlaps another note or exceeds the project	音符が重なるか、曲の範囲を超えています
+All 16 CH3 slots are used; existing sounds were preserved	CH3の16スロットが使用中です。既存音色は変更していません
+All 64 user waves are used; existing waves were preserved	ユーザー波形64個が使用中です。既存波形は変更していません
+transpose exceeds C2..B5; song unchanged	移調がC2～B5の範囲を超えるため変更しませんでした
 Save user preset	ユーザー音色を保存
 Load user preset	ユーザー音色を開く
 REC / STOP	録音 / 停止

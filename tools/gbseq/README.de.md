@@ -8,7 +8,17 @@ GB-Studio-Export: Im Exportmenü UGE (editierbar, mit eigenen Wellen) oder MOD (
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide verwenden dasselbe Modell, dieselbe Prüfung, KOKURA-Audioausgabe und Exportlogik. LOCAL 4CH, CABLE 8CH und DMG07 16CH stehen für 1, 2 und 4 Game Boy. Jeder Spieler hat CH1/CH2 Puls, CH3 Wellenform und CH4 Rauschen. Ein Stück umfasst 1–256 Takte mit je 16 Schritten (4096 je Kanal), BPM 30–300 und eine Schleifenoption. Die Oberfläche lässt sich im Menü View oder mit `gbseq --language ja` bzw. `en` auf Japanisch oder Englisch umstellen. Für Japanisch wird eine geeignete Systemschrift benötigt.
+GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide verwenden dasselbe Modell, dieselbe Prüfung, KOKURA-Audioausgabe und Exportlogik. LOCAL 4CH, CABLE 8CH und DMG07 16CH stehen für 1, 2 und 4 Game Boy. Jeder Spieler hat CH1/CH2 Puls, CH3 Wellenform und CH4 Rauschen. Ein Stück umfasst 1–256 Takte mit je 16 Schritten (4096 je Kanal), BPM 30–300 und eine Schleifenoption. Die Sprache lässt sich unter Ansicht → Sprache wählen. Die Einstellung wird unabhängig vom Stück gespeichert. `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
+
+## Einspielen, aufnehmen und WAV ausgeben
+
+Zielspur wählen und mit K die Klaviatur öffnen. A/S/D/F/G/H/J spielen die weißen Tasten, W/E/T/Y/U die schwarzen; Z/X wechselt die Oktave. Mit IN und OUT das MIDI-Gerät wählen. Die Schritteingabe rückt um 1, 2 oder 4 Sechzehntel vor. REC nimmt einen Durchgang ab Stückanfang auf. Der Schutz überspringt überlappende Noten; Überschreiben ersetzt nur den belegten Abschnitt. MIDI über Datei importieren und über Export ausgeben. Für GB-Klangfarben das .gbseq-Projekt behalten.
+
+Pro Kanal stehen 128 Werksklänge im Auswahlmenü. Eigene Klänge lassen sich getrennt als .gbpreset speichern und laden. Akkorde können für die Mischung und für jede Spur unabhängig ein- und ausgeblendet werden. Die globale Transposition lässt die Rauschspur unverändert.
+
+Beim WAV-Export gelten die aktuellen Abhör-, Stumm- und Soloschaltungen. Alle abhören mischt alle aktiven Konsolen; P1–P4 isoliert eine. Sobald eine Spur auf Solo steht, sind nur nicht stummgeschaltete Solospuren hörbar. Die Wahl der Bearbeitungsspur ändert die Mischung nicht. Bei vollständig stummgeschalteten Spuren bleibt die WAV-Dauer erhalten.
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 Mit **E** oder einem Doppelklick auf den Spurkopf öffnet sich der Piano-Roll-Editor der Spur; E führt zurück zur Übersicht. Ziehen Sie den rechten Notenrand bis zur nächsten Note oder zum Stückende. Im CH3-Welleneditor können Sie die 32 Abtastwerte zeichnen; Strg+Z nimmt einen Strich zurück.
 

@@ -126,7 +126,7 @@ enum Action {
     ExportStudio(crate::gb_studio::Format),
     AddUserWave,
     WaveCurve,
-    Language,
+    SetLanguage(Language),
     KeyEditor,
     KeyTrack(i8),
     SetLink16Mode(Link16Mode),
@@ -148,6 +148,7 @@ enum Action {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum MenuKind {
+    Languages,
     Harmony,
     File,
     Edit,
@@ -219,7 +220,7 @@ fn action_icon(action: Action) -> Option<&'static str> {
         }
         Action::ToggleLoop => "rotate-cw",
         Action::Home => "arrow-left",
-        Action::Language => "settings",
+        Action::Menu(MenuKind::Languages) | Action::SetLanguage(_) => "settings",
         Action::KeyEditor => "grid-2x2",
         _ => return None,
     })
@@ -1261,6 +1262,13 @@ impl GbseqApp {
             return Vec::new();
         };
         let (x, mut items): (f32, Vec<(Action, &str)>) = match menu {
+            MenuKind::Languages => (
+                196.,
+                Language::ALL
+                    .into_iter()
+                    .map(|l| (Action::SetLanguage(l), l.name()))
+                    .collect(),
+            ),
             MenuKind::Harmony => return self.chord_buttons(),
             MenuKind::File => (
                 12.0,
@@ -1299,7 +1307,7 @@ impl GbseqApp {
                     (Action::Zoom(1), "Zoom in           +"),
                     (Action::Zoom(-1), "Zoom out          -"),
                     (Action::Snap, "Cycle snap        G"),
-                    (Action::Language, "日本語 / English"),
+                    (Action::Menu(MenuKind::Languages), "Language"),
                     (Action::KeyEditor, "Key editor / All tracks E"),
                 ],
             ),
@@ -1984,7 +1992,7 @@ impl GbseqApp {
             | Action::ExportPlayerRoms => self.choose_export(action),
             Action::AddUserWave => self.add_user_wave(),
             Action::WaveCurve => self.wave_curve = !self.wave_curve,
-            Action::Language => self.toggle_language(),
+            Action::SetLanguage(l) => self.set_language(l),
             Action::KeyEditor => {
                 if self.key_editor {
                     self.key_editor = false;

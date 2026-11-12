@@ -16,4 +16,4 @@ Choose **Export → Playback ROMs (no SRAM)** or run `gbseq-cli export-player-ro
 - [English user manual](README.en.md) / [日本語説明書](README.ja.md)
 - [MIT license](LICENSE) / [Third-party notices](THIRD_PARTY_NOTICES.md) / [License audit](LICENSE_AUDIT.json)
 
-The GUI supports Japanese and English (View menu). Double-click a track header or press E to open its key editor. Drag note ends to resize; draw a CH3 user waveform directly in its graph. All nine manuals cover installation, editing, sound design, CLI, export, Python and troubleshooting. No game ROM or user music is bundled.
+Choose any of the nine manual languages in **View → Language**. Double-click a track header or press E to open its key editor. WAV export follows the active mute/solo mix and the selected console monitor, not the lane being edited. Each manual covers the performance keyboard, MIDI, recording, instruments, chord display and WAV routing. No game ROM or user music is bundled.

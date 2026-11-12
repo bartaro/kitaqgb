@@ -8,7 +8,17 @@ Em Exportar, escolha UGE editável (com ondas próprias) ou MOD (instrumentos GB
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando modelo, validação, áudio KOKURA e exportadores. LOCAL 4CH, CABLE 8CH e DMG07 16CH representam 1, 2 e 4 Game Boy. Cada jogador tem CH1/CH2 de pulso, CH3 de onda e CH4 de ruído. São 1–256 compassos de 16 passos (4096 por canal), BPM 30–300 e opção de repetição. Escolha inglês ou japonês no menu View ou ao iniciar com `gbseq --language ja` ou `en`. Para japonês, o sistema precisa de uma fonte compatível.
+GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando modelo, validação, áudio KOKURA e exportadores. LOCAL 4CH, CABLE 8CH e DMG07 16CH representam 1, 2 e 4 Game Boy. Cada jogador tem CH1/CH2 de pulso, CH3 de onda e CH4 de ruído. São 1–256 compassos de 16 passos (4096 por canal), BPM 30–300 e opção de repetição. Escolha o idioma em Exibir → Idioma. A preferência é salva separadamente da música. `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
+
+## Execução, gravação e WAV
+
+Selecione a faixa e pressione K para abrir o teclado. A/S/D/F/G/H/J são as teclas brancas; W/E/T/Y/U, as pretas. Z/X muda a oitava. Clique em IN e OUT para escolher os dispositivos MIDI. A entrada por passos avança 1, 2 ou 4 semicolcheias. REC grava uma tomada a partir do início. Proteger rejeita sobreposições; Sobrescrever substitui apenas o trecho ocupado. Importe MIDI pelo menu Arquivo e use Exportar para gravá-lo; mantenha o .gbseq para preservar os timbres do GB.
+
+Cada canal oferece 128 timbres de fábrica na lista suspensa. Salve e carregue timbres próprios em arquivos .gbpreset separados. A exibição de acordes da mixagem e de cada faixa pode ser ligada separadamente. A transposição da música não altera o canal de ruído.
+
+O WAV respeita a monitoração, o mudo e o solo no início da exportação. Todas mistura os aparelhos ativos; P1–P4 isola um deles. Se houver solo, só as faixas em solo e não silenciadas serão ouvidas. Selecionar uma faixa para edição não a isola. Silenciar todas mantém a duração do WAV.
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 Pressione **E** ou clique duas vezes no cabeçalho de uma faixa para abrir seu editor de notas; E retorna à visão geral. Arraste a borda direita da nota até a próxima nota ou o final da música. No gráfico de onda do CH3, desenhe as 32 amostras; Ctrl+Z desfaz um traço.
 

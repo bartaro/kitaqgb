@@ -38,18 +38,18 @@ pub struct Selection {
 #[derive(Args)]
 pub struct Players {
     /// One-based player number.
-    #[arg(long, default_value_t = 1, value_parser = clap::value_parser!(u8).range(1..=4))]
-    player: u8,
+    #[arg(long, value_parser = clap::value_parser!(u8).range(1..=4))]
+    player: Option<u8>,
     /// Mix all active players, honoring global solo/mute.
     #[arg(long, conflicts_with = "player")]
     all_players: bool,
 }
 impl Players {
-    fn selected(&self) -> Option<usize> {
+    fn selected(&self, default_player: Option<usize>) -> Option<usize> {
         if self.all_players {
             None
         } else {
-            Some(self.player as usize - 1)
+            self.player.map(|n| n as usize - 1).or(default_player)
         }
     }
 }
@@ -442,7 +442,7 @@ impl Command {
                 players,
             } => {
                 let start = Instant::now();
-                render_wav(&load_sequence(&project)?, &out_path, players.selected())?;
+                render_wav(&load_sequence(&project)?, &out_path, players.selected(None))?;
                 println!(
                     "rendered={} elapsed_ms={:.3}",
                     out_path.display(),
@@ -505,7 +505,7 @@ impl Command {
                     frames > 0 && frames <= project_frame_count(&p),
                     "frames must be within the song"
                 );
-                let projects = playback_projects(&p, players.selected())?;
+                let projects = playback_projects(&p, players.selected(Some(0)))?;
                 let mut times = Vec::new();
                 let mut checksum = 0;
                 let mut count = 0;

@@ -18,6 +18,9 @@ variable names (for example `PlitaProgram`, `PLITA_UI_FONT`) remain unchanged.
 
 Unmodified Roboto and Roboto Mono fonts are distributed under SIL OFL 1.1,
 with their original copyrights in `assets/fonts/*-OFL.txt` and `licenses/fonts/`.
+
+The unmodified Noto Sans CJK JP Regular GUI fallback is distributed under
+[SIL OFL 1.1](assets/ui-font/OFL.txt); [pinned font and checksum](assets/ui-font/README.md).
 Fonts must retain those terms when redistributed; they are not under MIT.
 See the [official OFL text](https://openfontlicense.org/open-font-license-official-text/).
 Lucide icons and Feather-derived paths retain ISC and MIT notices in

@@ -1,0 +1,298 @@
+FILE	파일	文件	檔案	Archivo	Arquivo	Fichier	Datei
+EDIT	편집	编辑	編輯	Editar	Editar	Édition	Bearbeiten
+VIEW	보기	视图	顯示	Ver	Exibir	Affichage	Ansicht
+EXPORT	내보내기	导出	匯出	Exportar	Exportar	Exporter	Export
+PLAY	재생	播放	播放	Reproducir	Reproduzir	Lire	Wiedergabe
+TIME	시간	时间	時間	Tiempo	Tempo	Temps	Zeit
+Choose export folder	내보낼 폴더 선택	选择导出目录	選擇匯出資料夾	Elegir carpeta de destino	Escolher pasta de destino	Choisir le dossier de sortie	Zielordner wählen
+Choose export destination...	저장 위치 선택…	选择输出位置…	選擇輸出位置…	Elegir destino…	Escolher destino…	Choisir la destination…	Ziel wählen…
+Writing export in background...	백그라운드에서 저장 중…	正在后台写入…	正在背景寫入…	Exportando en segundo plano…	Exportando em segundo plano…	Export en arrière-plan…	Export läuft im Hintergrund…
+Export cancelled	내보내기 취소됨	已取消导出	已取消匯出	Exportación cancelada	Exportação cancelada	Export annulé	Export abgebrochen
+Export worker disconnected	내보내기 작업 중단	导出任务已断开	匯出工作已中斷	Proceso de exportación interrumpido	Processo de exportação interrompido	Processus d’export interrompu	Exportprozess unterbrochen
+STOP	정지	停止	停止	Detener	Parar	Arrêter	Stopp
+AUDITION	미리 듣기	试听	試聽	Escuchar	Ouvir	Écouter	Vorhören
+SAVE	저장	保存	儲存	Guardar	Salvar	Enregistrer	Speichern
+UNDO	실행 취소	撤销	復原	Deshacer	Desfazer	Annuler	Rückgängig
+REDO	다시 실행	重做	重做	Rehacer	Refazer	Rétablir	Wiederholen
+ADD	추가	添加	新增	Añadir	Adicionar	Ajouter	Hinzufügen
+DUP	복제	复制	複製	Duplicar	Duplicar	Dupliquer	Duplizieren
+DEL	삭제	删除	刪除	Eliminar	Excluir	Supprimer	Löschen
+ALIGN	정렬	对齐	對齊	Alinear	Alinhar	Aligner	Ausrichten
+FIT	전체 보기	适配	全覽	Ajustar	Ajustar	Ajuster	Einpassen
+BAR-	마디−	小节−	小節−	Compás−	Compasso−	Mesure−	Takt−
+BAR+	마디+	小节+	小節+	Compás+	Compasso+	Mesure+	Takt+
+LOOP ON	반복 켬	循环开	循環開	Bucle sí	Loop ligado	Boucle oui	Schleife an
+LOOP OFF	반복 끔	循环关	循環關	Bucle no	Loop desligado	Boucle non	Schleife aus
+LOCAL 4CH	로컬 4CH	本机 4CH	本機 4CH	Local 4CH	Local 4CH	Local 4CH	Lokal 4CH
+CABLE 8CH	케이블 8CH	联机线 8CH	連接線 8CH	Cable 8CH	Cabo 8CH	Câble 8CH	Kabel 8CH
+DMG07 16CH	DMG07 16CH	DMG07 16CH	DMG07 16CH	DMG07 16CH	DMG07 16CH	DMG07 16CH	DMG07 16CH
+ALL16	전체 16CH	全部16轨	全部16軌	Las 16 pistas	16 pistas	16 pistes	Alle 16
+New          Ctrl+N	새로 만들기 Ctrl+N	新建 Ctrl+N	新增 Ctrl+N	Nuevo Ctrl+N	Novo Ctrl+N	Nouveau Ctrl+N	Neu Ctrl+N
+Open         Ctrl+O	열기 Ctrl+O	打开 Ctrl+O	開啟 Ctrl+O	Abrir Ctrl+O	Abrir Ctrl+O	Ouvrir Ctrl+O	Öffnen Ctrl+O
+Save         Ctrl+S	저장  Ctrl+S	保存  Ctrl+S	儲存  Ctrl+S	Guardar  Ctrl+S	Salvar  Ctrl+S	Enregistrer  Ctrl+S	Speichern  Ctrl+S
+Save as  Ctrl+Shift+S	다른 이름으로 Ctrl+Shift+S	另存为 Ctrl+Shift+S	另存新檔 Ctrl+Shift+S	Guardar como Ctrl+Shift+S	Salvar como Ctrl+Shift+S	Enregistrer sous Ctrl+Shift+S	Speichern unter Ctrl+Shift+S
+Undo         Ctrl+Z	실행 취소  Ctrl+Z	撤销  Ctrl+Z	復原  Ctrl+Z	Deshacer  Ctrl+Z	Desfazer  Ctrl+Z	Annuler  Ctrl+Z	Rückgängig  Ctrl+Z
+Redo         Ctrl+Y	다시 실행  Ctrl+Y	重做  Ctrl+Y	重做  Ctrl+Y	Rehacer  Ctrl+Y	Refazer  Ctrl+Y	Rétablir  Ctrl+Y	Wiederholen  Ctrl+Y
+Select lane  Ctrl+A	트랙 선택 Ctrl+A	选择本轨 Ctrl+A	選取本軌 Ctrl+A	Seleccionar pista Ctrl+A	Selecionar pista Ctrl+A	Sélectionner la piste Ctrl+A	Spur auswählen Ctrl+A
+Duplicate    Ctrl+D	복제  Ctrl+D	复制  Ctrl+D	複製  Ctrl+D	Duplicar  Ctrl+D	Duplicar  Ctrl+D	Dupliquer  Ctrl+D	Duplizieren  Ctrl+D
+Delete          Del	삭제  Del	删除  Del	刪除  Del	Eliminar  Del	Excluir  Del	Supprimer  Del	Löschen  Del
+Align to snap     Q	격자 정렬 Q	吸附到网格 Q	貼齊格線 Q	Ajustar a rejilla Q	Alinhar à grade Q	Aligner sur la grille Q	Am Raster ausrichten Q
+Octave up	한 옥타브 위	升八度	升八度	Subir octava	Subir oitava	Monter d’une octave	Oktave höher
+Octave down	한 옥타브 아래	降八度	降八度	Bajar octava	Descer oitava	Descendre d’une octave	Oktave tiefer
+Fit song          F	전체 보기  F	适配  F	全覽  F	Ajustar  F	Ajustar  F	Ajuster  F	Einpassen  F
+Go to start    Home	처음으로 Home	回到开头 Home	回到開頭 Home	Ir al inicio Home	Ir ao início Home	Aller au début Home	Zum Anfang Home
+Zoom in           +	확대 +	放大 +	放大 +	Ampliar +	Ampliar +	Agrandir +	Vergrößern +
+Zoom out          -	축소 −	缩小 −	縮小 −	Reducir −	Reduzir −	Réduire −	Verkleinern −
+Cycle snap        G	격자 변경 G	切换网格 G	切換格線 G	Cambiar rejilla G	Alterar grade G	Changer de grille G	Raster wechseln G
+Render WAV	WAV 렌더링	渲染 WAV	算繪 WAV	Renderizar WAV	Renderizar WAV	Générer un WAV	WAV rendern
+KITAQGB current player	현재 기기 KITAQGB	当前主机 KITAQGB	目前主機 KITAQGB	KITAQGB: consola actual	KITAQGB: console atual	KITAQGB : console active	KITAQGB: aktive Konsole
+LINK16 saves	LINK16 저장 데이터	LINK16 存档	LINK16 存檔	Partidas LINK16	Saves LINK16	Sauvegardes LINK16	LINK16-Spielstände
+TRACKS	트랙	音轨	音軌	Pistas	Pistas	Pistes	Spuren
+MIDI BAR DETAIL	음표 상세	音符详情	音符詳情	Detalle de nota	Detalhes da nota	Détails de la note	Notendetails
+SELECT A MIDI BAR	음표 선택	请选择音符	請選取音符	Selecciona una nota	Selecione uma nota	Sélectionnez une note	Note auswählen
+Double-click empty track space	트랙의 빈 곳을 더블 클릭하여	双击音轨空白处	按兩下音軌空白處	Haz doble clic en un espacio vacío	Clique duas vezes em um espaço vazio	Double-cliquez dans une piste vide	Auf freie Spurfläche doppelklicken,
+to create a bar.	음표를 추가합니다.	以创建音符。	以建立音符。	para crear una nota.	para criar uma nota.	pour ajouter une note.	um eine Note anzulegen.
+DOUBLE-CLICK THE BAR	음표를 더블 클릭하여	双击音符	按兩下音符	Haz doble clic en la nota	Clique duas vezes na nota	Double-cliquez sur la note	Auf die Note doppelklicken,
+to edit timing and sound effects.	시간과 음색을 편집합니다.	以编辑时值和音效。	以編輯時值和音效。	para editar tiempo y timbre.	para editar tempo e timbre.	pour modifier durée et timbre.	um Dauer und Klang zu bearbeiten.
+DUPLICATE	복제	复制	複製	Duplicar	Duplicar	Dupliquer	Duplizieren
+DELETE	삭제	删除	刪除	Eliminar	Excluir	Supprimer	Löschen
+START	시작	起点	起點	Inicio	Início	Début	Anfang
+PITCH	음높이	音高	音高	Altura	Altura	Hauteur	Tonhöhe
+LENGTH	길이	长度	長度	Duración	Duração	Durée	Länge
+LEVEL	레벨	电平	音量	Nivel	Nível	Niveau	Pegel
+PAN	패닝	声像	聲像	Panorama	Panorama	Panoramique	Panorama
+DUTY	듀티비	占空比	工作週期	Ciclo útil	Ciclo ativo	Rapport cyclique	Tastgrad
+ENV PERIOD	엔벌로프 주기	包络周期	包絡週期	Período de envolvente	Período da envoltória	Période d’enveloppe	Hüllkurvenperiode
+SWEEP TIME	스윕 시간	扫频时间	掃頻時間	Tiempo de barrido	Tempo de varredura	Temps de balayage	Sweep-Zeit
+SWEEP SHIFT	스윕 시프트	扫频移位	掃頻移位	Desplazamiento de barrido	Deslocamento da varredura	Décalage du balayage	Sweep-Shift
+WAVE LEVEL	파형 레벨	波形电平	波形音量	Nivel de onda	Nível da onda	Niveau d’onde	Wellenpegel
+LINK16 WAVE	LINK16 파형	LINK16 波形	LINK16 波形	Onda LINK16	Onda LINK16	Onde LINK16	LINK16-Welle
+WAVE SOURCE	파형 소스	波形来源	波形來源	Fuente de onda	Fonte da onda	Source de l’onde	Wellenquelle
+SLOT LEVEL	슬롯 레벨	槽位电平	槽位音量	Nivel de ranura	Nível do slot	Niveau du slot	Slot-Pegel
+NOISE SHIFT	노이즈 시프트	噪声移位	雜訊移位	Desplazamiento de ruido	Deslocamento de ruído	Décalage du bruit	Rausch-Shift
+NOISE DIV	노이즈 분주	噪声分频	雜訊分頻	Divisor de ruido	Divisor de ruído	Diviseur de bruit	Rauschteiler
+ENV DIRECTION	엔벌로프 방향	包络方向	包絡方向	Dirección de envolvente	Direção da envoltória	Direction d’enveloppe	Hüllkurvenrichtung
+SWEEP SIGN	스윕 방향	扫频方向	掃頻方向	Sentido del barrido	Sentido da varredura	Sens du balayage	Sweep-Richtung
+NOISE WIDTH	노이즈 폭	噪声宽度	雜訊寬度	Ancho de ruido	Largura de ruído	Largeur du bruit	Rauschbreite
+ENV INCREASE	엔벌로프 상승	包络上升	包絡上升	Envolvente creciente	Envoltória crescente	Enveloppe croissante	Hüllkurve steigend
+ENV DECREASE	엔벌로프 하강	包络下降	包絡下降	Envolvente decreciente	Envoltória decrescente	Enveloppe décroissante	Hüllkurve fallend
+SWEEP DOWN	스윕 하강	向下扫频	向下掃頻	Barrido descendente	Varredura descendente	Balayage descendant	Sweep abwärts
+SWEEP UP	스윕 상승	向上扫频	向上掃頻	Barrido ascendente	Varredura ascendente	Balayage ascendant	Sweep aufwärts
+WIDTH 7-BIT	7비트 폭	7 位宽	7 位元寬	Ancho 7 bits	Largura 7 bits	Largeur 7 bits	Breite 7 Bit
+WIDTH 15-BIT	15비트 폭	15 位宽	15 位元寬	Ancho 15 bits	Largura 15 bits	Largeur 15 bits	Breite 15 Bit
+NEW USER WAVE	새 사용자 파형	新建用户波形	新增自訂波形	Nueva onda de usuario	Nova onda do usuário	Nouvelle onde utilisateur	Neue Benutzerwelle
+CURVE	곡선	曲线	曲線	Curva	Curva	Courbe	Kurve
+POLYLINE	꺾은선	折线	折線	Polilínea	Polilinha	Ligne brisée	Linienzug
+DRAG TO DRAW / 32 SAMPLES / 0-15	드래그로 그리기 / 32샘플 / 0–15	拖动绘制 / 32个采样 / 0–15	拖曳繪製 / 32個取樣 / 0–15	Arrastrar / 32 muestras / 0–15	Arraste / 32 amostras / 0–15	Tracer / 32 échantillons / 0–15	Ziehen / 32 Werte / 0–15
+POINT {}  VALUE {}	지점 {} 값 {}	点 {} 值 {}	點 {} 值 {}	Punto {} valor {}	Ponto {} valor {}	Point {} valeur {}	Punkt {} Wert {}
+{} / DRAW 32x4-BIT	{} / 32×4비트 그리기	{} / 绘制32×4位	{} / 繪製32×4位元	{} / dibujar 32×4 bits	{} / desenhar 32×4 bits	{} / tracer 32×4 bits	{} / 32×4 Bit zeichnen
+PRESET {}	프리셋 {}	预设 {}	預設 {}	Preajuste {}	Preset {}	Préréglage {}	Klangplatz {}
+User Wave {}	사용자 파형 {}	用户波形 {}	自訂波形 {}	Onda de usuario {}	Onda do usuário {}	Onde utilisateur {}	Benutzerwelle {}
+MISSING USER WAVE	사용자 파형 없음	用户波形缺失	找不到自訂波形	Falta la onda de usuario	Onda do usuário ausente	Onde utilisateur manquante	Benutzerwelle fehlt
+TRIANGLE	삼각파	三角波	三角波	Triangular	Triangular	Triangle	Dreieck
+SAW	톱니파	锯齿波	鋸齒波	Diente de sierra	Dente de serra	Dent de scie	Sägezahn
+VOWEL A	모음 A	元音 A	母音 A	Vocal A	Vogal A	Voyelle A	Vokal A
+VOWEL I	모음 I	元音 I	母音 I	Vocal I	Vogal I	Voyelle I	Vokal I
+VOWEL U	모음 U	元音 U	母音 U	Vocal U	Vogal U	Voyelle U	Vokal U
+VOWEL E	모음 E	元音 E	母音 E	Vocal E	Vogal E	Voyelle E	Vokal E
+VOWEL O	모음 O	元音 O	母音 O	Vocal O	Vogal O	Voyelle O	Vokal O
+LEFT	왼쪽	左	左	Izquierda	Esquerda	Gauche	Links
+RIGHT	오른쪽	右	右	Derecha	Direita	Droite	Rechts
+CENTER	중앙	居中	置中	Centro	Centro	Centre	Mitte
+BOTH	양쪽	两侧	雙側	Ambos	Ambos	Deux côtés	Beide
+OFF	끔	关	關	No	Desl.	Non	Aus
+Pulse 1	펄스 1	脉冲 1	脈波 1	Pulso 1	Pulso 1	Impulsion 1	Puls 1
+Pulse 2	펄스 2	脉冲 2	脈波 2	Pulso 2	Pulso 2	Impulsion 2	Puls 2
+Wave	파형	波形	波形	Onda	Onda	Onde	Welle
+Noise	노이즈	噪声	雜訊	Ruido	Ruído	Bruit	Rauschen
+{} MIDI BARS	음표 {}개	{} 个音符	{} 個音符	{} notas	{} notas	{} notes	{} Noten
+{} beat	{}박	{} 拍	{} 拍	{} pulsos	{} tempos	{} temps	{} Schläge
+LENGTH  {} beats	길이 {}박	长度 {} 拍	長度 {} 拍	Duración: {} pulsos	Duração: {} tempos	Durée : {} temps	Länge: {} Schläge
+START   {}	시작 {}	起点 {}	起點 {}	Inicio {}	Início {}	Début {}	Beginn {}
+NOISE {}	노이즈 {}	噪声 {}	雜訊 {}	Ruido {}	Ruído {}	Bruit {}	Rauschen {}
+STOPPED	정지됨	已停止	已停止	Detenido	Parado	Arrêté	Gestoppt
+PLAYING	재생 중	播放中	播放中	Reproduciendo	Reproduzindo	Lecture	Wiedergabe läuft
+RENDERING	렌더링 중	正在渲染	算繪中	Renderizando	Renderizando	Rendu en cours	Rendering
+FRAME GRID	프레임 격자	帧网格	影格格線	Rejilla de fotogramas	Grade de quadros	Grille en images	Frame-Raster
+1/4-BEAT SNAP	1/4박 격자	1/4拍网格	1/4拍格線	Rejilla de semicorcheas	Grade de semicolcheias	Grille de doubles croches	Sechzehntelraster
+{} FRAME/STEP	{}프레임/스텝	{} 帧/步	{} 影格/步	{} fotogramas/paso	{} quadros/passo	{} images/pas	{} Frames/Schritt
+{}   {}   {} BARS / {} STEPS   {}	{} {} {}마디 / {}스텝 {}	{} {} {}小节 / {}步 {}	{} {} {}小節 / {}步 {}	{} {} {} compases / {} pasos {}	{} {} {} compassos / {} passos {}	{} {} {} mesures / {} pas {}	{} {} {} Takte / {} Schritte {}
+READY - audio output unavailable; WAV/export remain available	준비됨: 오디오 출력 없음. WAV/내보내기는 가능	无音频输出；仍可导出和生成 WAV	沒有音訊輸出；仍可匯出及產生 WAV	Sin audio; WAV y exportación disponibles	Sem áudio; WAV e exportação disponíveis	Pas de sortie audio ; WAV et export disponibles	Kein Audioausgang; WAV und Export verfügbar
+READY - double-click empty lane to add; double-click a bar for detail	빈 곳을 더블 클릭해 추가, 음표를 더블 클릭해 편집	双击空白处添加，双击音符编辑	按兩下空白處新增，按兩下音符編輯	Doble clic en un espacio para añadir, en una nota para editar	Clique duas vezes no espaço para adicionar ou na nota para editar	Double-clic dans le vide pour ajouter, sur une note pour modifier	Doppelklick ins Leere fügt ein, auf eine Note öffnet Details
+DRAWING USER WAVE	사용자 파형 그리는 중	正在绘制用户波形	正在繪製自訂波形	Dibujando onda	Desenhando onda	Tracé de l’onde	Benutzerwelle zeichnen
+USER WAVE updated	사용자 파형 갱신됨	波形已更新	波形已更新	Onda actualizada	Onda atualizada	Onde modifiée	Welle aktualisiert
+USER WAVE limit is 64	사용자 파형은 최대 64개	最多64个用户波形	最多64個自訂波形	Máximo: 64 ondas	Máximo: 64 ondas	Maximum de 64 ondes	Höchstens 64 Wellen
+Select a CH3 MIDI bar first	먼저 CH3 음표 선택	请先选择 CH3 音符	請先選取 CH3 音符	Selecciona una nota de CH3	Selecione uma nota de CH3	Sélectionnez une note de CH3	Zuerst eine CH3-Note wählen
+User waves are available on CH3	사용자 파형은 CH3 전용	用户波形仅用于 CH3	自訂波形僅適用 CH3	Ondas de usuario solo en CH3	Ondas do usuário só no CH3	Ondes utilisateur sur CH3 uniquement	Benutzerwellen nur auf CH3
+USER WAVE {} created and assigned to preset {}	사용자 파형 {} 생성, 프리셋 {}에 할당	已创建波形 {}，分配到预设 {}	已建立波形 {}，指派至預設 {}	Onda {} creada en el preajuste {}	Onda {} criada no preset {}	Onde {} créée pour le préréglage {}	Welle {} erstellt und Platz {} zugewiesen
+Display language changed	표시 언어 변경됨	显示语言已更改	顯示語言已變更	Idioma cambiado	Idioma alterado	Langue modifiée	Sprache geändert
+Language changed for this session; preference could not be saved	언어 변경됨; 설정 저장 실패	语言已更改，但未能保存首选项	語言已變更，但設定未能儲存	Idioma cambiado solo para esta sesión	Idioma alterado apenas nesta sessão	Langue modifiée pour cette session seulement	Sprache nur für diese Sitzung geändert
+NEW sequence	새 시퀀스	新建序列	新增序列	Nueva secuencia	Nova sequência	Nouvelle séquence	Neue Sequenz
+OPENED {}	열기: {}	已打开 {}	已開啟 {}	Abierto: {}	Aberto: {}	Ouvert : {}	Geöffnet: {}
+SAVED {}	저장: {}	已保存 {}	已儲存 {}	Guardado: {}	Salvo: {}	Enregistré : {}	Gespeichert: {}
+OPEN failed: {}	열기 실패: {}	打开失败：{}	開啟失敗：{}	Abrir — error: {}	Abrir — erro: {}	Ouvrir — échec : {}	Öffnen fehlgeschlagen: {}
+SAVE failed: {}	저장 실패: {}	保存失败：{}	儲存失敗：{}	Guardar — error: {}	Salvar — erro: {}	Enregistrer — échec : {}	Speichern fehlgeschlagen: {}
+DROP failed: {}	드롭 실패: {}	拖放失败：{}	拖放失敗：{}	Soltar — error: {}	Soltar — erro: {}	Dépôt — échec : {}	Ablegen fehlgeschlagen: {}
+ADD failed: {}	추가 실패: {}	添加失败：{}	新增失敗：{}	Añadir — error: {}	Adicionar — erro: {}	Ajouter — échec : {}	Hinzufügen fehlgeschlagen: {}
+DUPLICATE failed: {}	복제 실패: {}	复制失败：{}	複製失敗：{}	Duplicar — error: {}	Duplicar — erro: {}	Dupliquer — échec : {}	Duplizieren fehlgeschlagen: {}
+PASTE failed: {}	붙여넣기 실패: {}	粘贴失败：{}	貼上失敗：{}	Pegar — error: {}	Colar — erro: {}	Coller — échec : {}	Einfügen fehlgeschlagen: {}
+EXPORT failed: {}	내보내기 실패: {}	导出失败：{}	匯出失敗：{}	Exportar — error: {}	Exportar — erro: {}	Exporter — échec : {}	Export fehlgeschlagen: {}
+LINK16 SAV failed: {}	LINK16 SAV 실패: {}	LINK16 SAV失败：{}	LINK16 SAV失敗：{}	LINK16 SAV — error: {}	LINK16 SAV — erro: {}	LINK16 SAV — échec : {}	LINK16 SAV fehlgeschlagen: {}
+PLAY failed: {}	재생 실패: {}	播放失败：{}	播放失敗：{}	Reproducir — error: {}	Reproduzir — erro: {}	Lire — échec : {}	Wiedergabe fehlgeschlagen: {}
+AUDITION failed: {}	미리 듣기 실패: {}	试听失败：{}	試聽失敗：{}	Escuchar — error: {}	Ouvir — erro: {}	Écouter — échec : {}	Vorhören fehlgeschlagen: {}
+WAV failed: {}	WAV 실패: {}	WAV失败：{}	WAV失敗：{}	WAV — error: {}	WAV — erro: {}	WAV — échec : {}	WAV fehlgeschlagen: {}
+PLAY render failed: {}	렌더링 중 실패: {}	正在渲染失败：{}	算繪中失敗：{}	Renderizando — error: {}	Renderizando — erro: {}	Rendu en cours — échec : {}	Rendering fehlgeschlagen: {}
+PLAY unavailable: no audio output	오디오 출력이 없어 재생 불가	无音频输出，无法播放	無音訊輸出，無法播放	No se puede reproducir sin salida de audio	Sem saída de áudio para reprodução	Lecture impossible sans sortie audio	Wiedergabe ohne Audioausgang nicht möglich
+AUDITION unavailable: no audio output	오디오 출력이 없어 미리 듣기 불가	无音频输出，无法试听	無音訊輸出，無法試聽	Sin salida para escuchar	Sem saída para ouvir	Écoute impossible sans sortie audio	Vorhören ohne Audioausgang nicht möglich
+PLAYBACK finished	재생 완료	播放完毕	播放完畢	Reproducción terminada	Reprodução concluída	Lecture terminée	Wiedergabe beendet
+PLAYING / CACHE HIT - no render needed	캐시에서 재생	正在播放缓存音频	正在播放快取音訊	Reproducción desde caché	Reprodução do cache	Lecture depuis le cache	Wiedergabe aus dem Cache
+PLAYING ALL16 / LOOP ON	재생 중 16CH / 반복 켬	播放中 16CH / 循环开	播放中 16CH / 循環開	Reproduciendo 16CH / Bucle sí	Reproduzindo 16CH / Loop ligado	Lecture 16CH / Boucle oui	Wiedergabe läuft 16CH / Schleife an
+PLAYING ALL16 / LOOP OFF	재생 중 16CH / 반복 끔	播放中 16CH / 循环关	播放中 16CH / 循環關	Reproduciendo 16CH / Bucle no	Reproduzindo 16CH / Loop desligado	Lecture 16CH / Boucle non	Wiedergabe läuft 16CH / Schleife aus
+PLAYING / LOOP ON	재생 중 / 반복 켬	播放中 / 循环开	播放中 / 循環開	Reproduciendo / Bucle sí	Reproduzindo / Loop ligado	Lecture / Boucle oui	Wiedergabe läuft / Schleife an
+PLAYING / LOOP OFF	재생 중 / 반복 끔	播放中 / 循环关	播放中 / 循環關	Reproduciendo / Bucle no	Reproduzindo / Loop desligado	Lecture / Boucle non	Wiedergabe läuft / Schleife aus
+RENDERING ALL16 playback with KOKURA-Core...	렌더링 중 KOKURA 16CH…	正在渲染 KOKURA 16CH…	算繪中 KOKURA 16CH…	Renderizando KOKURA 16CH…	Renderizando KOKURA 16CH…	Rendu en cours KOKURA 16CH…	Rendering KOKURA 16CH…
+RENDERING playback with KOKURA-Core...	렌더링 중 KOKURA…	正在渲染 KOKURA…	算繪中 KOKURA…	Renderizando KOKURA…	Renderizando KOKURA…	Rendu en cours KOKURA…	Rendering KOKURA…
+AUDITION selected MIDI bar	선택 음표 미리 듣기	试听所选音符	試聽所選音符	Escuchar nota seleccionada	Ouvir nota selecionada	Écouter la note sélectionnée	Gewählte Note vorhören
+EXPORTING WAV snapshot in background - editing remains available	편집 가능 / WAV 내보내는 중	正在后台导出 WAV，可继续编辑	正在背景匯出 WAV，可繼續編輯	Exportando WAV; puedes seguir editando	Exportando WAV; continue editando	Export WAV en cours ; édition possible	WAV-Export läuft; Bearbeitung möglich
+WAV rendered -> {}	WAV 생성 → {}	WAV 已生成 → {}	WAV 已產生 → {}	WAV generado → {}	WAV gerado → {}	WAV généré → {}	WAV erstellt → {}
+WAV worker disconnected	WAV 작업 중단	WAV 任务中断	WAV 工作中斷	Proceso WAV interrumpido	Processo WAV interrompido	Processus WAV interrompu	WAV-Prozess unterbrochen
+PLAY render worker disconnected	재생 생성 작업 중단	播放渲染任务中断	播放算繪工作中斷	Proceso de audio interrumpido	Processo de áudio interrompido	Processus audio interrompu	Audioprozess unterbrochen
+KITAQGB export {} bytes -> {}	KITAQGB {}바이트 → {}	KITAQGB {} 字节 → {}	KITAQGB {} 位元組 → {}	KITAQGB {} bytes → {}	KITAQGB {} bytes → {}	KITAQGB {} octets → {}	KITAQGB {} Byte → {}
+LINK16 {} players / {} steps / {} BPM -> {}	LINK16 {}대 / {}스텝 / {} BPM → {}	LINK16 {}台 / {}步 / {} BPM → {}	LINK16 {}台 / {}步 / {} BPM → {}	LINK16 {} consolas / {} pasos / {} BPM → {}	LINK16 {} consoles / {} passos / {} BPM → {}	LINK16 {} consoles / {} pas / {} BPM → {}	LINK16 {} Konsolen / {} Schritte / {} BPM → {}
+FIT whole song / + zooms back in	곡 전체 보기 / +로 확대	全曲视图 / + 放大	全曲檢視 / + 放大	Vista completa / + para ampliar	Faixa inteira / + para ampliar	Vue d’ensemble / + pour agrandir	Ganzes Stück / + zum Vergrößern
+SNAP {} steps	격자 {}스텝	吸附 {} 步	貼齊 {} 步	Rejilla: {} pasos	Grade: {} passos	Grille : {} pas	Raster: {} Schritte
+ZOOM {} px/beat	확대 {} px/박	缩放 {} px/拍	縮放 {} px/拍	Zoom {} px/pulso	Zoom {} px/tempo	Zoom {} px/temps	Zoom {} px/Schlag
+MEASURES {}	{}마디	{} 小节	{} 小節	{} compases	{} compassos	{} mesures	{} Takte
+TYPE MEASURES {}..{} AND PRESS ENTER	마디 수 {}..{} 입력 후 Enter	输入小节数 {}..{} 并按 Enter	輸入小節數 {}..{} 再按 Enter	Introduce {}..{} compases y pulsa Enter	Digite {}..{} compassos e pressione Enter	Entrez {}..{} mesures puis Entrée	{}..{} Takte eingeben, dann Enter
+MEASURES unchanged at {}	마디 수 {} 유지	保持 {} 小节	維持 {} 小節	Se mantienen {} compases	Mantidos {} compassos	{} mesures conservées	{} Takte unverändert
+DETAIL closed	상세 창 닫힘	已关闭详情	已關閉詳情	Detalles cerrados	Detalhes fechados	Détails fermés	Details geschlossen
+DETAIL opened	상세 창 열림	已打开详情	已開啟詳情	Detalles abiertos	Detalhes abertos	Détails ouverts	Details geöffnet
+DETAIL switch changed	상세 설정 변경됨	详情开关已更改	詳情開關已變更	Opción modificada	Opção alterada	Option modifiée	Option geändert
+DETAIL {} changed	{} 변경됨	{} 已更改	{} 已變更	{} modificado	{} alterado	{} modifié	{} geändert
+DETAIL opened for MIDI bar {}	음표 {} 상세 열림	已打开音符 {} 详情	已開啟音符 {} 詳情	Detalle de nota {}	Detalhes da nota {}	Détails de la note {}	Details für Note {}
+SELECTED MIDI bar {}	음표 {} 선택됨	已选择音符 {}	已選取音符 {}	Nota {} seleccionada	Nota {} selecionada	Note {} sélectionnée	Note {} gewählt
+ADDED {} at {} - DETAIL opened	{} 추가, 위치 {} / 상세	已添加 {}，位置 {} / 详情	已新增 {}，位置 {} / 詳情	{} en {} / detalles	{} em {} / detalhes	{} à {} / détails	{} bei {} / Details
+ADDED {} at {}	{} 추가, 위치 {}	已添加 {}，位置 {}	已新增 {}，位置 {}	{} en {}	{} em {}	{} à {}	{} bei {}
+MIDI bar edit committed	음표 편집 확정	音符编辑已确认	音符編輯已確認	Edición de nota aplicada	Edição de nota confirmada	Modification de note validée	Notenänderung übernommen
+LANE selected / Ctrl+A selects its notes	트랙 선택 / Ctrl+A: 트랙 음표 전체	已选择音轨 / Ctrl+A 选中本轨音符	已選取音軌 / Ctrl+A 選取本軌音符	Pista seleccionada / Ctrl+A selecciona sus notas	Pista selecionada / Ctrl+A seleciona as notas	Piste sélectionnée / Ctrl+A sélectionne ses notes	Spur gewählt / Ctrl+A wählt ihre Noten
+RIGHT CLICK: DEL removes selected bar	우클릭: Del로 선택 음표 삭제	右键：Del 删除所选音符	右鍵：Del 刪除所選音符	Clic derecho: Del elimina la nota	Clique direito: Del exclui a nota	Clic droit : Suppr efface la note	Rechtsklick: Entf löscht die Note
+CURSOR {} {}	커서 {} {}	光标 {} {}	游標 {} {}	Cursor {} {}	Cursor {} {}	Curseur {} {}	Cursor {} {}
+{} MUTE {}	{} 음소거 {}	{} 静音 {}	{} 靜音 {}	{} silencio {}	{} mudo {}	{} muet {}	{} stumm {}
+{} SOLO {}	{} 독주 {}	{} 独奏 {}	{} 獨奏 {}	{} solo {}	{} solo {}	{} solo {}	{} Solo {}
+EDIT PLAYER {} / {}	편집 기기 {} / {}	编辑主机 {} / {}	編輯主機 {} / {}	Editar consola {} / {}	Editar console {} / {}	Modifier console {} / {}	Konsole {} / {} bearbeiten
+EDIT PLAYER {}	편집 기기 {}	编辑主机 {}	編輯主機 {}	Editar consola {}	Editar console {}	Modifier console {}	Konsole {} bearbeiten
+ALL16 overview - PLAY mixes all four players	16CH 전체 / 4대 믹스 재생	16轨总览：混合播放4台	16軌總覽：混合播放4台	16 pistas: mezcla de cuatro consolas	16 pistas: mix de quatro consoles	16 pistes : mixage des quatre consoles	16 Spuren: Mischung aller vier Konsolen
+LOOP ON - playback repeats	반복 재생	循环播放	循環播放	Repetir reproducción	Repetir reprodução	Lecture en boucle	Wiedergabe wiederholen
+LOOP OFF - playback stops at the finale	반복 끔 / 곡 끝에서 정지	不循环，曲终停止	不循環，曲終停止	Sin bucle: parar al final	Sem loop: parar ao final	Sans boucle : arrêt à la fin	Ohne Schleife: am Ende stoppen
+UNDO stack is empty	실행 취소할 내용 없음	没有可撤销的操作	沒有可復原的操作	Nada que deshacer	Nada para desfazer	Rien à annuler	Nichts rückgängig zu machen
+REDO stack is empty	다시 실행할 내용 없음	没有可重做的操作	沒有可重做的操作	Nada que rehacer	Nada para refazer	Rien à rétablir	Nichts zu wiederholen
+GBSEQ - Unsaved changes	GBSEQ - 저장되지 않은 변경	GBSEQ - 未保存的更改	GBSEQ - 尚未儲存的變更	GBSEQ: cambios sin guardar	GBSEQ: alterações não salvas	GBSEQ : modifications non enregistrées	GBSEQ: ungespeicherte Änderungen
+Save this sequence before replacing it?	현재 곡을 바꾸기 전에 저장할까요?	替换前保存当前序列吗？	取代前要儲存目前的序列嗎？	¿Guardar antes de reemplazar la secuencia?	Salvar antes de substituir a sequência?	Enregistrer avant de remplacer la séquence ?	Sequenz vor dem Ersetzen speichern?
+GBSEQ project	GBSEQ 프로젝트	GBSEQ 工程	GBSEQ 專案	Proyecto GBSEQ	Projeto GBSEQ	Projet GBSEQ	GBSEQ-Projekt
+Wave audio	WAV 오디오	WAV 音频	WAV 音訊	Audio WAV	Áudio WAV	Audio WAV	WAV-Audio
+CTRL+S SAVE  SPACE PLAY  DEL DELETE  +/- ZOOM	Ctrl+S 저장 / Space 재생 / Del 삭제 / +− 확대	Ctrl+S 保存 / 空格播放 / Del 删除 / +− 缩放	Ctrl+S 儲存 / 空白播放 / Del 刪除 / +− 縮放	Ctrl+S guardar / Espacio reproducir / Del eliminar / +− zoom	Ctrl+S salvar / Espaço reproduzir / Del excluir / +− zoom	Ctrl+S enregistrer / Espace lire / Suppr effacer / +− zoom	Ctrl+S speichern / Leertaste abspielen / Entf löschen / +− Zoom
+Play from start [Space] - real-time KOKURA audio	처음부터 실시간 재생 [Space]	从头实时播放 [Space]	從頭即時播放 [Space]	Reproducir desde el inicio [Espacio]	Reproduzir do início [Espaço]	Lire depuis le début [Espace]	Echtzeitwiedergabe ab Anfang [Leertaste]
+Stop [Space]	정지  [Space]	停止  [Space]	停止  [Space]	Detener  [Space]	Parar  [Space]	Arrêter  [Space]	Stopp  [Space]
+Save [Ctrl+S] / Save as [Ctrl+Shift+S]	저장 [Ctrl+S] / 다른 이름으로 [Ctrl+Shift+S]	保存 [Ctrl+S] / 另存为 [Ctrl+Shift+S]	儲存 [Ctrl+S] / 另存新檔 [Ctrl+Shift+S]	Guardar [Ctrl+S] / como [Ctrl+Shift+S]	Salvar [Ctrl+S] / como [Ctrl+Shift+S]	Enregistrer [Ctrl+S] / sous [Ctrl+Shift+S]	Speichern [Ctrl+S] / unter [Ctrl+Shift+S]
+Undo [Ctrl+Z]	실행 취소  [Ctrl+Z]	撤销  [Ctrl+Z]	復原  [Ctrl+Z]	Deshacer  [Ctrl+Z]	Desfazer  [Ctrl+Z]	Annuler  [Ctrl+Z]	Rückgängig  [Ctrl+Z]
+Redo [Ctrl+Y]	다시 실행  [Ctrl+Y]	重做  [Ctrl+Y]	重做  [Ctrl+Y]	Rehacer  [Ctrl+Y]	Refazer  [Ctrl+Y]	Rétablir  [Ctrl+Y]	Wiederholen  [Ctrl+Y]
+Duplicate selection [Ctrl+D]	복제  [Ctrl+D]	复制  [Ctrl+D]	複製  [Ctrl+D]	Duplicar  [Ctrl+D]	Duplicar  [Ctrl+D]	Dupliquer  [Ctrl+D]	Duplizieren  [Ctrl+D]
+Delete selection [Del]	삭제  [Del]	删除  [Del]	刪除  [Del]	Eliminar  [Del]	Excluir  [Del]	Supprimer  [Del]	Löschen  [Del]
+Cycle grid [G]: 1/16, 1/8, 1/4 notes	격자 변경 [G]: 1/16, 1/8, 1/4	网格 [G]：1/16、1/8、1/4	格線 [G]：1/16、1/8、1/4	Rejilla [G]: 1/16, 1/8, 1/4	Grade [G]: 1/16, 1/8, 1/4	Grille [G] : 1/16, 1/8, 1/4	Raster [G]: 1/16, 1/8, 1/4
+Align selected starts to grid [Q]; rejects overlaps	선택 음표 시작을 정렬 [Q]; 겹침 방지	对齐所选音符 [Q]，拒绝重叠	對齊所選音符 [Q]，拒絕重疊	Ajustar inicios [Q]; no permite solapes	Alinhar inícios [Q]; sem sobreposição	Aligner les débuts [Q] sans chevauchement	Notenanfänge ausrichten [Q]; keine Überlappung
+Fit entire song [F]	전체 보기  [F]	适配  [F]	全覽  [F]	Ajustar  [F]	Ajustar  [F]	Ajuster  [F]	Einpassen  [F]
+Audition selected note	선택 음표 미리 듣기	试听所选音符	試聽所選音符	Escuchar nota seleccionada	Ouvir nota selecionada	Écouter la note sélectionnée	Gewählte Note vorhören
+Ctrl+A selects the current lane; Ctrl/Shift-click toggles notes	Ctrl+A: 현재 트랙 전체 / Ctrl·Shift+클릭: 개별 선택	Ctrl+A 选本轨；Ctrl/Shift+单击切换选择	Ctrl+A 選本軌；Ctrl/Shift+點選切換選取	Ctrl+A: pista; Ctrl/Mayús+clic: alternar notas	Ctrl+A: pista; Ctrl/Shift+clique: alternar notas	Ctrl+A : piste ; Ctrl/Maj+clic : basculer la sélection	Ctrl+A: Spur; Ctrl/Umschalt+Klick: Notenauswahl umschalten
+KEY EDITOR [E]	피아노 롤 [E]	钢琴卷帘 [E]	鋼琴捲軸 [E]	Editor de notas [E]	Editor de notas [E]	Éditeur de notes [E]	Noteneditor [E]
+ALL TRACKS [E]	모든 트랙 [E]	全部音轨 [E]	全部音軌 [E]	Todas las pistas [E]	Todas as pistas [E]	Toutes les pistes [E]	Alle Spuren [E]
+Key editor / All tracks E	음표 편집 / 전체 트랙 E	音符编辑 / 全部音轨 E	音符編輯 / 全部音軌 E	Editor / todas las pistas E	Editor / todas as pistas E	Éditeur / toutes les pistes E	Editor / alle Spuren E
+KEY EDITOR: drag notes / wheel: pitch / Shift+wheel: time / E: all tracks	드래그: 음표 / 휠: 음높이 / Shift+휠: 시간 / E: 전체	拖动音符；滚轮调音高，Shift+滚轮调时间，E显示全轨	拖曳音符；滾輪調音高，Shift+滾輪調時間，E顯示全軌	Arrastra notas; rueda: altura; Mayús+rueda: tiempo; E: todas	Arraste notas; roda: altura; Shift+roda: tempo; E: todas	Glisser les notes ; molette : hauteur ; Maj+molette : temps ; E : toutes	Noten ziehen; Rad: Tonhöhe; Umschalt+Rad: Zeit; E: alle
+Lead	리드	主旋律	主旋律	Melodía	Melodia	Mélodie	Melodie
+Bass	베이스	贝斯	貝斯	Bajo	Baixo	Basse	Bass
+Wave Pad	웨이브 패드	波形铺底	波形襯底	Fondo de onda	Pad de onda	Nappe d’onde	Wellenfläche
+Drums	드럼	鼓	鼓	Batería	Bateria	Batterie	Schlagzeug
+Select a MIDI bar first	음표를 먼저 선택하세요	请先选择音符	請先選取音符	Selecciona primero una nota	Selecione uma nota primeiro	Sélectionnez d’abord une note	Zuerst eine Note wählen
+MIDI bar deleted	음표 삭제됨	已删除音符	已刪除音符	Nota eliminada	Nota excluída	Note supprimée	Note gelöscht
+MIDI bar duplicated	음표 복제됨	已复制音符	已複製音符	Nota duplicada	Nota duplicada	Note dupliquée	Note dupliziert
+COPIED MIDI bar	음표 복사됨	音符已复制到剪贴板	音符已複製到剪貼簿	Nota copiada	Nota copiada	Note copiée	Note kopiert
+PASTED MIDI bar	음표 붙여넣음	已粘贴音符	已貼上音符	Nota pegada	Nota colada	Note collée	Note eingefügt
+Clipboard is empty	클립보드가 비어 있음	剪贴板为空	剪貼簿空白	Portapapeles vacío	Área de transferência vazia	Presse-papiers vide	Zwischenablage leer
+EDIT {} / {} selected	편집 {} / {}개 선택	编辑 {} / 已选 {}	編輯 {} / 已選 {}	Editar {} / selección: {}	Editar {} / seleção: {}	Modifier {} / sélection : {}	Bearbeiten {} / Auswahl: {}
+EDIT unchanged: {}	편집 변경 없음: {}	未更改：{}	未變更：{}	Sin cambios: {}	Sem alteração: {}	Inchangé : {}	Unverändert: {}
+{} notes selected in current lane / arrows move and transpose	{}개 선택 / 방향키로 이동·조옮김	已选 {} 个音符 / 方向键移动、移调	已選 {} 個音符 / 方向鍵移動、移調	{} notas seleccionadas / flechas: mover y transportar	{} notas selecionadas / setas: mover e transpor	{} notes sélectionnées / flèches : déplacer et transposer	{} Noten gewählt / Pfeile: verschieben und transponieren
+MEASURES must be {}..{}; unchanged at {}	마디 수 {}..{}만 가능; {} 유지	小节数限 {}..{}；保持 {}	小節數限 {}..{}；維持 {}	Compases: {}..{}; se mantienen {}	Compassos: {}..{}; mantidos {}	Mesures : {}..{} ; valeur conservée : {}	Takte: {}..{}; unverändert bei {}
+{} / {} players	{} / {}대	{} / {}台	{} / {}台	{} / {} consolas	{} / {} consoles	{} / {} consoles	{} / {} Konsolen
+NOTE LENGTH {} steps	음표 길이 {}스텝	音长 {} 步	音長 {} 步	Duración: {} pasos	Duração: {} passos	Durée : {} pas	Notenlänge: {} Schritte
+Listen: All	전체 듣기	监听全部	監聽全部	Escuchar todas	Ouvir todas	Tout écouter	Alle abhören
+Hardware SD package	실기용 SD 패키지	实机 SD 包	實機 SD 套件	Paquete SD para consola	Pacote SD para console	Kit SD pour console	SD-Paket für Hardware
+Game Boy ROM (song inside)	곡 내장 Game Boy ROM	内置曲目 Game Boy ROM	內建樂曲 Game Boy ROM	ROM Game Boy con canción	ROM Game Boy com música	ROM Game Boy avec morceau	Game Boy-ROM mit Stück
+Playback ROMs (no SRAM)	재생 ROM (SRAM 불필요)	播放 ROM（无需 SRAM）	播放 ROM（無需 SRAM）	ROM de reproducción (sin SRAM)	ROM de reprodução (sem SRAM)	ROM de lecture (sans SRAM)	Abspiel-ROMs (ohne SRAM)
+Editor ROM (128KB SRAM)	편집 ROM (128KB SRAM)	编辑 ROM（128KB SRAM）	編輯 ROM（128KB SRAM）	ROM de edición (128 KB SRAM)	ROM de edição (128 KB SRAM)	ROM d’édition (128 Ko SRAM)	Editor-ROM (128 KB SRAM)
+Export playback ROMs (no SRAM)	재생 ROM 내보내기 (SRAM 불필요)	导出播放 ROM（无需 SRAM）	匯出播放 ROM（無需 SRAM）	Exportar ROM sin SRAM	Exportar ROM sem SRAM	Exporter les ROM sans SRAM	Abspiel-ROMs ohne SRAM exportieren
+Export song as Game Boy ROM	곡을 Game Boy ROM으로 내보내기	将歌曲导出为 Game Boy ROM	將樂曲匯出為 Game Boy ROM	Exportar canción como ROM Game Boy	Exportar música como ROM Game Boy	Exporter le morceau en ROM Game Boy	Stück als Game Boy-ROM exportieren
+ROM {} players / {} steps -> {}	ROM {}대 / {}스텝 → {}	ROM {}台 / {}步 → {}	ROM {}台 / {}步 → {}	ROM {} consolas / {} pasos → {}	ROM {} consoles / {} passos → {}	ROM {} consoles / {} pas → {}	ROM {} Konsolen / {} Schritte → {}
+ROM export failed: {}	ROM 내보내기 실패: {}	ROM 导出失败：{}	ROM 匯出失敗：{}	Error al exportar ROM: {}	Falha na exportação da ROM: {}	Échec de l’export ROM : {}	ROM-Export fehlgeschlagen: {}
+Choose matching LINK16 V4 ROM	맞는 LINK16 V4 ROM 선택	选择匹配的 LINK16 V4 ROM	選擇相符的 LINK16 V4 ROM	Elegir ROM LINK16 V4 compatible	Escolher ROM LINK16 V4 compatível	Choisir la ROM LINK16 V4 compatible	Passende LINK16-V4-ROM wählen
+Choose SD package output	SD 패키지 저장 위치 선택	选择 SD 包输出位置	選擇 SD 套件輸出位置	Elegir destino del paquete SD	Escolher destino do pacote SD	Choisir la destination du kit SD	Ziel für SD-Paket wählen
+GB Studio music (.uge)	GB Studio 음악 (.uge)	GB Studio 音乐 (.uge)	GB Studio 音樂 (.uge)	Música GB Studio (.uge)	Música GB Studio (.uge)	Musique GB Studio (.uge)	GB Studio-Musik (.uge)
+GB Studio music (.mod)	GB Studio 음악 (.mod)	GB Studio 音乐 (.mod)	GB Studio 音樂 (.mod)	Música GB Studio (.mod)	Música GB Studio (.mod)	Musique GB Studio (.mod)	GB Studio-Musik (.mod)
+Export GB Studio music	GB Studio 음악 내보내기	导出 GB Studio 音乐	匯出 GB Studio 音樂	Exportar música de GB Studio	Exportar música do GB Studio	Exporter la musique GB Studio	GB Studio-Musik exportieren
+Tempo rounded to whole tracker ticks.	템포를 정수 틱에 맞춤.	速度已取整至跟踪器时钟。	速度已取整至追蹤器時脈。	Tempo redondeado a ticks enteros.	Tempo arredondado para ticks inteiros.	Tempo arrondi aux ticks entiers.	Tempo auf ganze Tracker-Ticks gerundet.
+MOD uses one startup row to set tempo without losing a note or its volume.	MOD 첫 행에서 음표·음량 손실 없이 템포 설정.	MOD 用起始行设置速度，保留音符与音量。	MOD 用起始列設定速度，保留音符與音量。	MOD usa una fila inicial para fijar el tempo sin perder notas ni volumen.	MOD usa uma linha inicial para o tempo, preservando notas e volume.	MOD règle le tempo sur une ligne initiale sans perdre note ni volume.	MOD setzt das Tempo in einer Startzeile ohne Noten- oder Lautstärkeverlust.
+The final pattern needs one extra row for its jump.	마지막 패턴 점프에 한 행 더 필요.	末尾跳转需要额外一行。	結尾跳轉需要額外一列。	El salto final necesita otra fila.	O salto final precisa de mais uma linha.	Le saut final nécessite une ligne de plus.	Der letzte Sprung benötigt eine zusätzliche Zeile.
+Noise pitch approximated by the tracker noise table.	트래커 노이즈 표로 근사함.	噪声音高按跟踪器表近似。	雜訊音高依追蹤器對照表近似。	Ruido aproximado con la tabla del tracker.	Ruído aproximado pela tabela do tracker.	Hauteur du bruit approximée par la table du tracker.	Rauschtonhöhe an die Tracker-Tabelle angenähert.
+UGE exceeded 15 instruments of one type; the closest existing timbre was used.	UGE 동종 악기 15개 초과: 유사 음색 사용.	UGE 同类乐器超过15种，使用最接近的音色。	UGE 同類樂器超過15種，使用最接近的音色。	UGE: más de 15 instrumentos del mismo tipo; se usa el más cercano.	UGE: mais de 15 instrumentos do mesmo tipo; usado o mais próximo.	UGE : plus de 15 instruments du même type ; timbre le plus proche utilisé.	UGE: mehr als 15 Instrumente eines Typs; ähnlichster Klang verwendet.
+MOD uses note volume; pan, envelopes and hardware sweep are not exported.	MOD는 음량만 지원; 패닝·엔벌로프·스윕 제외.	MOD 保留音量，不导出声像、包络或扫频。	MOD 保留音量，不匯出聲像、包絡或掃頻。	MOD conserva el volumen, no panorama, envolvente ni barrido.	MOD mantém o volume, não panorama, envoltória ou varredura.	MOD garde le volume, pas le panoramique, l’enveloppe ni le balayage.	MOD behält die Lautstärke, nicht Panorama, Hüllkurven oder Sweep.
+MOD replaces CH3 waves with fixed GBT instruments. Use UGE to keep user waves.	MOD는 고정 GBT 악기로 대체; 사용자 파형은 UGE 사용.	MOD 将CH3波形替换为固定GBT音色。保留用户波形请用UGE。	MOD 將CH3波形替換為固定GBT音色。保留自訂波形請用UGE。	MOD usa instrumentos GBT fijos para CH3. Usa UGE para ondas propias.	MOD usa instrumentos GBT fixos no CH3. Use UGE para ondas próprias.	MOD remplace les ondes CH3 par des instruments GBT fixes. Utilisez UGE pour vos ondes.	MOD ersetzt CH3-Wellen durch feste GBT-Klänge. Benutzerwellen bleiben in UGE erhalten.
+MOD percussion uses the nearest fixed GBT noise instrument.	MOD 타악기는 가장 비슷한 GBT 노이즈 사용.	MOD 打击乐使用最接近的 GBT 噪声。	MOD 打擊樂使用最接近的 GBT 雜訊。	Percusión MOD: ruido GBT más cercano.	Percussão MOD: ruído GBT mais próximo.	Percussions MOD : bruit GBT le plus proche.	MOD-Schlagzeug: ähnlichster GBT-Rauschklang.
+SD package {} players -> {}	SD 패키지 {}대 → {}	SD 包 {} 台 → {}	SD 套件 {} 台 → {}	Paquete SD: {} consolas → {}	Pacote SD: {} consoles → {}	Kit SD : {} consoles → {}	SD-Paket: {} Konsolen → {}
+SD package export failed: {}	SD 패키지 내보내기 실패: {}	SD 包导出失败：{}	SD 套件匯出失敗：{}	Error al exportar el paquete SD: {}	Falha ao exportar pacote SD: {}	Échec de l’export SD : {}	SD-Export fehlgeschlagen: {}
+Change edit view only; the audio monitor stays unchanged	편집 화면만 변경; 모니터는 유지	仅改变编辑视图，不改变监听	只變更編輯檢視，不變更監聽	Solo cambia la vista, no la escucha	Altera só a visão, não a monitoração	Change la vue, pas l’écoute	Nur Ansicht wechseln; Abhörsignal bleibt
+Monitor playback and WAV; switching keeps the song position	재생·WAV 모니터 / 위치 유지	监听播放与 WAV；切换时保持位置	監聽播放與 WAV；切換時維持位置	Escucha y WAV; mantiene la posición	Monitoração e WAV; mantém a posição	Écoute et WAV ; conserve la position	Abhörsignal und WAV; Position bleibt
+Solo P{}	P{} 독주	P{} 独奏	P{} 獨奏	Solo P{}	Solo P{}	Solo P{}	Solo P{}
+ALL16 overview	16CH 전체 보기	16轨总览	16軌總覽	Vista de 16 pistas	Visão de 16 pistas	Vue des 16 pistes	16-Spur-Übersicht
+NOTE LENGTH limited by next note - move the next note to extend further	다음 음표로 길이 제한 / 연장하려면 다음 음표 이동	音长受下一音符限制，请移动下一音符后再延长	音長受下一音符限制，請移動下一音符再延長	La siguiente nota limita la duración; muévela para alargar	A próxima nota limita a duração; mova-a para alongar	La note suivante limite la durée ; déplacez-la pour prolonger	Die nächste Note begrenzt die Länge; zum Verlängern verschieben
+STARTING real-time KOKURA playback...	KOKURA 실시간 재생 준비 중…	正在准备 KOKURA 实时播放…	正在準備 KOKURA 即時播放…	Preparando KOKURA en tiempo real…	Preparando KOKURA em tempo real…	Préparation de la lecture KOKURA en temps réel…	KOKURA-Echtzeitwiedergabe wird vorbereitet…
+Keyboard / MIDI     K	연주 건반 / MIDI K	演奏键盘 / MIDI K	演奏鍵盤 / MIDI K	Teclado / MIDI K	Teclado / MIDI K	Clavier / MIDI K	Klaviatur / MIDI K
+Import MIDI (.mid)	MIDI 가져오기 (.mid)	导入 MIDI (.mid)	匯入 MIDI (.mid)	Importar MIDI (.mid)	Importar MIDI (.mid)	Importer MIDI (.mid)	MIDI importieren (.mid)
+Export MIDI (.mid)	MIDI 내보내기 (.mid)	导出 MIDI (.mid)	匯出 MIDI (.mid)	Exportar MIDI (.mid)	Exportar MIDI (.mid)	Exporter MIDI (.mid)	MIDI exportieren (.mid)
+Selection +1 semitone	선택 음표 반음 올리기	所选音符升半音	所選音符升半音	Selección +1 semitono	Seleção +1 semitom	Sélection +1 demi-ton	Auswahl +1 Halbton
+Selection -1 semitone	선택 음표 반음 내리기	所选音符降半音	所選音符降半音	Selección −1 semitono	Seleção −1 semitom	Sélection −1 demi-ton	Auswahl −1 Halbton
+Song key +1 (no drums)	곡 전체 +1 (드럼 제외)	全曲升半音（鼓除外）	全曲升半音（鼓除外）	Canción +1 (sin batería)	Música +1 (sem bateria)	Morceau +1 (hors batterie)	Stück +1 (ohne Schlagzeug)
+Song key -1 (no drums)	곡 전체 −1 (드럼 제외)	全曲降半音（鼓除外）	全曲降半音（鼓除外）	Canción −1 (sin batería)	Música −1 (sem bateria)	Morceau −1 (hors batterie)	Stück −1 (ohne Schlagzeug)
+Listen	미리 듣기	试听	試聽	Escuchar	Ouvir	Écouter	Vorhören
+Step input	스텝 입력	步进输入	步進輸入	Por pasos	Por passos	Pas à pas	Schritteingabe
+Protect notes	음표 보호	保护音符	保護音符	Proteger notas	Proteger notas	Protéger	Noten schützen
+Overwrite	덮어쓰기	覆盖	覆寫	Sobrescribir	Sobrescrever	Écraser	Überschreiben
+Preset	프리셋	音色预设	音色預設	Preajuste	Preset	Préréglage	Klang
+Chord display...	코드 표시…	和弦显示…	和弦顯示…	Ver acordes…	Exibir acordes…	Afficher les accords…	Akkorde anzeigen…
+Combined chords	전체 코드	综合和弦	綜合和弦	Acordes globales	Acordes globais	Accords combinés	Gesamtakkorde
+All lane labels	모든 트랙 표시	所有音轨标签	所有音軌標籤	Todas las etiquetas	Todos os rótulos	Étiquettes des pistes	Alle Spurbeschriftungen
+Chords	코드	和弦	和弦	Acordes	Acordes	Accords	Akkorde
+Save user preset	사용자 음색 저장	保存用户音色	儲存自訂音色	Guardar timbre de usuario	Salvar timbre do usuário	Enregistrer le timbre	Benutzerklang speichern
+Load user preset	사용자 음색 열기	载入用户音色	載入自訂音色	Cargar timbre de usuario	Carregar timbre do usuário	Charger le timbre	Benutzerklang laden
+REC / STOP	녹음 / 정지	录音 / 停止	錄音 / 停止	Grabar / parar	Gravar / parar	Enreg. / arrêt	Aufnahme / Stopp
+Rest	쉼표	休止符	休止符	Silencio	Pausa	Silence	Pause
+Close	닫기	关闭	關閉	Cerrar	Fechar	Fermer	Schließen
+Grid: {}	입력 길이: {}	步长：{}	步長：{}	Rejilla: {}	Grade: {}	Grille : {}	Raster: {}
+Step {}	스텝 {}	第 {} 步	第 {} 步	Paso {}	Passo {}	Pas {}	Schritt {}
+Take ended / rejected notes: {}	녹음 종료 / 제외된 음표 {}개	录音结束 / 拒绝的音符数：{}	錄音結束 / 未寫入音符數：{}	Toma terminada / notas rechazadas: {}	Gravação concluída / notas rejeitadas: {}	Prise terminée / notes refusées : {}	Aufnahme beendet / verworfene Noten: {}
+No MIDI input ports	MIDI 입력 포트 없음	没有 MIDI 输入端口	沒有 MIDI 輸入埠	Sin puertos de entrada MIDI	Sem portas de entrada MIDI	Aucune entrée MIDI	Keine MIDI-Eingänge
+No MIDI output ports	MIDI 출력 포트 없음	没有 MIDI 输出端口	沒有 MIDI 輸出埠	Sin puertos de salida MIDI	Sem portas de saída MIDI	Aucune sortie MIDI	Keine MIDI-Ausgänge
+REC: occupied or outside song; note not inserted	녹음: 겹치거나 범위 밖이라 삽입하지 않음	录音：音符重叠或越界，未插入	錄音：音符重疊或超出範圍，未插入	Grabación: no se insertó por solape o límite	Gravação: nota sobreposta ou fora da música	Prise : note hors limites ou chevauchée, non insérée	Aufnahme: überlappende oder überstehende Note nicht eingefügt
+AUDITION real-time KOKURA playback...	KOKURA 실시간 미리 듣기…	KOKURA 实时试听…	KOKURA 即時試聽…	Escucha KOKURA en tiempo real…	Audição KOKURA em tempo real…	Écoute KOKURA en temps réel…	KOKURA-Echtzeitvorhören…
+PLAYING / REAL-TIME / {} ms start	실시간 재생 / 시작 {}ms	实时播放 / 启动 {} ms	即時播放 / 啟動 {} ms	En tiempo real / inicio {} ms	Em tempo real / início {} ms	Temps réel / démarrage {} ms	Echtzeit / Start {} ms
+Language	언어 / Language	语言 / Language	語言 / Language	Idioma / Language	Idioma / Language	Langue / Language	Sprache / Language
+Preset: {}	음색: {}	音色：{}	音色：{}	Timbre: {}	Timbre: {}	Timbre : {}	Klang: {}
+User preset: {} / {}	사용자 음색: {} / {}	用户音色：{} / {}	自訂音色：{} / {}	Timbre propio: {} / {}	Timbre do usuário: {} / {}	Timbre utilisateur : {} / {}	Benutzerklang: {} / {}
+IN: {}	입력: {}	输入：{}	輸入：{}	Entrada: {}	Entrada: {}	Entrée : {}	Eingang: {}
+OUT: {}	출력: {}	输出：{}	輸出：{}	Salida: {}	Saída: {}	Sortie : {}	Ausgang: {}
+Oct -  C{}	옥타브 − C{}	八度− C{}	八度− C{}	Octava − C{}	Oitava − C{}	Octave − C{}	Oktave − C{}
+Oct +	옥타브 +	八度+	八度+	Octava +	Oitava +	Octave +	Oktave +
+Song key: {}	곡 조옮김: {}	全曲移调：{}	全曲移調：{}	Transposición: {}	Transposição: {}	Transposition : {}	Transposition: {}
+MIDI input overflow	MIDI 입력 과부하	MIDI 输入溢出	MIDI 輸入溢位	Entrada MIDI saturada	Entrada MIDI sobrecarregada	Entrée MIDI saturée	MIDI-Eingang überlastet
+GBSEQ instrument	GBSEQ 음색	GBSEQ 音色	GBSEQ 音色	Instrumento GBSEQ	Instrumento GBSEQ	Instrument GBSEQ	GBSEQ-Instrument
+note overlaps another note or exceeds the project	음표가 겹치거나 곡 범위를 벗어남	音符重叠或越界	音符重疊或超出範圍	Nota superpuesta o fuera del proyecto	Nota sobreposta ou fora do projeto	Note chevauchée ou hors du projet	Note überlappt oder liegt außerhalb des Stücks
+All 16 CH3 slots are used; existing sounds were preserved	CH3 슬롯 16개 사용 중; 기존 음색 유지	CH3 的16个槽均在使用，已保留原音色	CH3 的16個槽位均在使用，已保留原音色	16 ranuras CH3 en uso; timbres intactos	16 slots CH3 em uso; timbres preservados	16 slots CH3 utilisés ; timbres préservés	Alle 16 CH3-Plätze belegt; Klänge unverändert
+All 64 user waves are used; existing waves were preserved	사용자 파형 64개 사용 중; 기존 파형 유지	64个用户波形均在使用，原波形未变	64個自訂波形均在使用，原波形未變	64 ondas en uso; originales intactas	64 ondas em uso; originais preservadas	64 ondes utilisées ; originaux préservés	64 Benutzerwellen belegt; Wellen unverändert
+transpose exceeds C2..B5; song unchanged	C2..B5 범위를 벗어나 변경하지 않음	移调超出 C2..B5，未更改	移調超出 C2..B5，未變更	Fuera de C2..B5; sin cambios	Fora de C2..B5; sem alteração	Hors de C2..B5 ; morceau inchangé	Außerhalb C2..B5; Stück unverändert

@@ -150,7 +150,14 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
             if self.ticks == 24 {
                 self.app.menu = Some(MenuKind::Export);
             }
-            if self.ticks >= 26 && self.draws.get() >= 4 {
+            if (25..34).contains(&self.ticks) {
+                self.app.language = Language::ALL[(self.ticks - 25) as usize];
+                self.app.menu = Some(MenuKind::Languages);
+                let _ = self.app.draw_list();
+            }
+            if self.ticks >= 34 && self.draws.get() >= 4 {
+                self.app.language = Language::Japanese;
+                self.app.menu = Some(MenuKind::Export);
                 let length = self.resized_length.unwrap_or(0);
                 let player_export = self
                     .app
@@ -169,6 +176,7 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     "performance_preset_and_chord_ui":self.performance_verified,
                     "viewport": [self.app.size.width, self.app.size.height],
                     "language": "ja", "wave_graph": true, "key_editor": self.app.key_editor,
+                    "language_menu_draws": Language::ALL.map(|l|l.code()),
                     "keyboard_width": self.app.keyboard_rect().width,
                     "note_grid_left": self.app.timeline_viewport().x,
                     "synthetic_resize_before": 2, "synthetic_resize_after": length,

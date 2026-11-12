@@ -11,6 +11,7 @@ assert result.returncode==0,(result.returncode,receipt.read_text(encoding='utf-8
 data=json.loads(receipt.read_text(encoding='utf-8'))
 assert data['passed'] and data['ticks']>=24 and data['draws']>=4
 assert data['language']=='ja' and data['wave_graph'] and data['key_editor']
+assert len(set(data['language_menu_draws']))==9
 assert data['sram_free_player_export_menu']
 assert data['gb_studio_export_menus']==2
 assert data['monitor_path_count_solo0based_edit0based']==[[2,None,0],[2,1,0],[4,None,0],[4,3,0]]

@@ -125,7 +125,7 @@ impl Job {
                 format!("MIDI -> {}", path.display())
             }
             Action::RenderWav => {
-                crate::services::render_monitor_wav(p, path, self.monitor)?;
+                crate::services::render_wav(p, path, self.monitor)?;
                 format!("WAV rendered -> {}", path.display())
             }
             Action::Export => {

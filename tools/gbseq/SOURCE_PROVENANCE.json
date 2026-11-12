@@ -3,8 +3,8 @@
     {
       "source": "gbseq/src/app/i18n.rs",
       "destination": "src/app/i18n.rs",
-      "source_sha256": "bf4f9e882973f628a15a3b847aa7ea1b983eda2c60e8d2371e40919683f3057e",
-      "published_sha256": "bf4f9e882973f628a15a3b847aa7ea1b983eda2c60e8d2371e40919683f3057e"
+      "source_sha256": "f9eae0aaf7e2271659a9832a32fdb4f5fe92070c0114408ba5226eaf9f9e4b66",
+      "published_sha256": "f9eae0aaf7e2271659a9832a32fdb4f5fe92070c0114408ba5226eaf9f9e4b66"
     },
     {
       "source": "gbseq/src/app/key_editor.rs",
@@ -15,14 +15,14 @@
     {
       "source": "gbseq/src/app/locale_ja.tsv",
       "destination": "src/app/locale_ja.tsv",
-      "source_sha256": "b651c7bf46915137c38d9524959c1ecfb1cf0fe69b150aa6823bec15d44ab407",
-      "published_sha256": "b651c7bf46915137c38d9524959c1ecfb1cf0fe69b150aa6823bec15d44ab407"
+      "source_sha256": "2aa355879ea4a27051551d1bffd3dba7a4edd6df46386df8047a0705c5c0e936",
+      "published_sha256": "2aa355879ea4a27051551d1bffd3dba7a4edd6df46386df8047a0705c5c0e936"
     },
     {
       "source": "gbseq/src/app/verification.rs",
       "destination": "src/app/verification.rs",
-      "source_sha256": "9526fd6428f07484abf4a6fe96beca532204c33645252e4f1265be80e32f6697",
-      "published_sha256": "9526fd6428f07484abf4a6fe96beca532204c33645252e4f1265be80e32f6697"
+      "source_sha256": "8792b9068bd513ecc5cfc93c02bf3e8c9ea2a12224a7fc7cde1a4638d92a5b12",
+      "published_sha256": "8792b9068bd513ecc5cfc93c02bf3e8c9ea2a12224a7fc7cde1a4638d92a5b12"
     },
     {
       "source": "gbseq/src/app/wave_graph.rs",
@@ -33,8 +33,8 @@
     {
       "source": "gbseq/src/app.rs",
       "destination": "src/app.rs",
-      "source_sha256": "610321a64690b021e39bd7d16e9eea874ce88141d1b92bd68c158e3ab08762ee",
-      "published_sha256": "608dabb8800644dba0d1ebff0528280a5c0cef66a47a5efd7fa480d014d30952"
+      "source_sha256": "cb928b352f3e1ef768bd85a5b7cd6baffd4086e3dac9153cb24fc58354fad9e4",
+      "published_sha256": "c64b287e556f8a3b640d314b7a7cbcd94be7b4639f5f394c0a22a2b72ed7ce0d"
     },
     {
       "source": "gbseq/src/bin/gbseq-cli.rs",
@@ -51,8 +51,8 @@
     {
       "source": "gbseq/src/cli.rs",
       "destination": "src/cli.rs",
-      "source_sha256": "4ff3f1452a53019f2dd3d50b01bb0a81b81fc1327f23344a2b7262141de60c35",
-      "published_sha256": "5da255321d58b40b0c075f3f4b2f19a4049e44e66b8d83521199d5ba3ed48952"
+      "source_sha256": "aaf8d104bcc8154a12e6ab3886bb352de32bb62a38c28d1abc789cfdf34020e9",
+      "published_sha256": "06e4d21e73af24f12be916eb080400e8165a3de5a9125dd9edf0e5c10809b183"
     },
     {
       "source": "gbseq/src/editing.rs",
@@ -75,8 +75,8 @@
     {
       "source": "gbseq/src/main.rs",
       "destination": "src/main.rs",
-      "source_sha256": "18d4c5c56bf4c0dacad4218b5faaeaa563b00604963c435834540fead20581e5",
-      "published_sha256": "179b76f56bc9063582e4323a7b1c86bd206d8a5da29e49380af151cb12b12696"
+      "source_sha256": "bbeafdb99f851d6054dd6437778d360e177e2fc55989500bd54a45f1a03091a2",
+      "published_sha256": "a54113701437db03ead585d62fc4f9d4801ac28f4ee73e5a0ea19165705fb14b"
     },
     {
       "source": "gbseq/src/model.rs",
@@ -87,8 +87,8 @@
     {
       "source": "gbseq/src/services.rs",
       "destination": "src/services.rs",
-      "source_sha256": "b7f9f4ddf6d3ea358b777935ba7c58ec9a4e9cf6059990584a30cfe2e4e635ea",
-      "published_sha256": "50bf43a5cd660a122eba89a59da8a4dd67c9b2a188fc523ff11bd95f2fc91a48"
+      "source_sha256": "158af72e630fed3f9fc0045833d284fbe7f4bfb851a445a972a60c7cccd702aa",
+      "published_sha256": "0867bdd31432c7b2613a9208e42e7d750ff245a91b6c2c63481c9bf5f54cf3ac"
     },
     {
       "source": "gbseq/tests/channel_order.rs",
@@ -255,8 +255,8 @@
     {
       "source": "plita/crates/plita_ui/src/lib.rs",
       "destination": "vendor/plita_ui/src/lib.rs",
-      "source_sha256": "0f10c1ac53bb8962044f80a857f077eb9e3ff69558c7854e1952081a4003ce6b",
-      "published_sha256": "bec908ad11f6ec07c63e24672971b0e1ceb8f85ee57aababb42e862540c847c1"
+      "source_sha256": "18fe1f01bae37cc7764426bd7c283cf1a19453fac9ee6cf7149d59068b15ff06",
+      "published_sha256": "4e1ddd307706511193a1e929590b22bc5ef86ccc20317486bc7f4836141f3a5c"
     },
     {
       "source": "plita/crates/plita_ui/assets/build_icons.py",
@@ -1059,8 +1059,8 @@
     {
       "source": "gbseq/src/app/outputs.rs",
       "destination": "src/app/outputs.rs",
-      "source_sha256": "f9d0d1816a7677864b9e96acb0fe04cb47bad6db57a72ced0a5d8139ea8b3d2f",
-      "published_sha256": "f9d0d1816a7677864b9e96acb0fe04cb47bad6db57a72ced0a5d8139ea8b3d2f"
+      "source_sha256": "e0e120017f68c92ee963f36b413a756d3b7790ba452a430df0d73cc59b4e89a0",
+      "published_sha256": "e0e120017f68c92ee963f36b413a756d3b7790ba452a430df0d73cc59b4e89a0"
     },
     {
       "source": "gbseq/src/app/patch_list.rs",
@@ -1077,8 +1077,8 @@
     {
       "source": "gbseq/src/app/realtime.rs",
       "destination": "src/app/realtime.rs",
-      "source_sha256": "34a3396bba9d9f2b89002f99f5b359438da289f3bf7088022a731b8bc184f207",
-      "published_sha256": "34a3396bba9d9f2b89002f99f5b359438da289f3bf7088022a731b8bc184f207"
+      "source_sha256": "916e6e6d523a06718edff45790ec291f047dca010d99a21b10883f6ae09c8bd8",
+      "published_sha256": "916e6e6d523a06718edff45790ec291f047dca010d99a21b10883f6ae09c8bd8"
     },
     {
       "source": "gbseq/src/midi.rs",
@@ -1109,6 +1109,30 @@
       "destination": "src/harmony.rs",
       "source_sha256": "cf4427fbe3a2e1a1ca45c6e245d19e788a2ffb32af46e06ccda7781230de8f36",
       "published_sha256": "cf4427fbe3a2e1a1ca45c6e245d19e788a2ffb32af46e06ccda7781230de8f36"
+    },
+    {
+      "source": "gbseq/src/app/locale_multi.tsv",
+      "destination": "src/app/locale_multi.tsv",
+      "source_sha256": "2e1f5cf2f759bdd85945ef03b01603321e643350996371da167122d5302f0481",
+      "published_sha256": "2e1f5cf2f759bdd85945ef03b01603321e643350996371da167122d5302f0481"
+    },
+    {
+      "source": "gbseq/assets/ui-font/README.md",
+      "destination": "assets/ui-font/README.md",
+      "source_sha256": "a0c686a6fab8ba3a29f36706c958ef7a7d19e29f47a9233b7e5b12903b7bf54b",
+      "published_sha256": "a0c686a6fab8ba3a29f36706c958ef7a7d19e29f47a9233b7e5b12903b7bf54b"
+    },
+    {
+      "source": "gbseq/assets/ui-font/OFL.txt",
+      "destination": "assets/ui-font/OFL.txt",
+      "source_sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "published_sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "source": "gbseq/assets/ui-font/NotoSansCJKjp-Regular.otf",
+      "destination": "assets/ui-font/NotoSansCJKjp-Regular.otf",
+      "source_sha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+      "published_sha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5"
     }
   ],
   "adjustments": [

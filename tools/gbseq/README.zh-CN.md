@@ -8,7 +8,17 @@
 
 [English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
 
-GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模型、校验、KOKURA音源与导出功能。LOCAL 4CH、CABLE 8CH、DMG07 16CH分别支持1、2、4台Game Boy。每台CH1/CH2为脉冲波、CH3为波形、CH4为噪声。每首1–256小节，每小节16步（每通道最多4096步），BPM 30–300，可保存循环开关。界面支持日语和英语，可在 View 菜单中切换，也可通过 `gbseq --language ja` 或 `en` 启动。显示日语需要系统安装支持日文的字体。
+GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模型、校验、KOKURA音源与导出功能。LOCAL 4CH、CABLE 8CH、DMG07 16CH分别支持1、2、4台Game Boy。每台CH1/CH2为脉冲波、CH3为波形、CH4为噪声。每首1–256小节，每小节16步（每通道最多4096步），BPM 30–300，可保存循环开关。 在「视图 → 语言」选择界面语言。此设置与乐曲分开保存。 `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
+
+## 演奏输入与 WAV 导出
+
+选择目标轨道，按 K 打开键盘。白键为 A/S/D/F/G/H/J，黑键为 W/E/T/Y/U，Z/X 切换八度。点击 IN 和 OUT 切换 MIDI 设备。步进输入每次前进 1、2 或 4 个十六分音符；录音从曲首开始录一遍。保护模式会跳过重叠输入，覆盖模式只替换重叠的区间。从文件菜单导入 MIDI，从导出菜单写出 MIDI。请用 .gbseq 保留 GB 专用音色。
+
+每种声道有 128 个预设，可从下拉列表选择；用户音色可单独保存为 .gbpreset 并重新载入。和弦标记可分别为总混音和各轨道开启。整曲移调不会改变噪声轨。
+
+WAV 遵循开始导出时的监听、静音与独奏设置。监听全部会混合当前模式的所有机器，P1–P4 只导出指定机器。一旦启用独奏，就只输出未静音的独奏轨。仅选中轨道进行编辑不会改变声音。所有轨道静音时，WAV 无声但长度不变。
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 按 **E** 或双击轨道标题即可打开该轨的钢琴卷帘编辑器；再按 E 返回总览。拖动音符右端可将它延长至下一音符之前或曲末。在 CH3 自定义波形图上可直接绘制 32 个采样点，Ctrl+Z 撤销一笔。
 

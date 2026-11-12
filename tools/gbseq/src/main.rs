@@ -13,7 +13,7 @@ struct Cli {
     #[arg(long)]
     open: Option<PathBuf>,
     /// Display language (otherwise saved preference / OS language).
-    #[arg(long, value_parser = ["ja", "en"])]
+    #[arg(long, value_parser = ["en","ja","ko","zh-CN","zh-TW","es","pt-BR","pt","fr","de"],ignore_case=true)]
     language: Option<String>,
     #[command(subcommand)]
     command: Option<gbseq::cli::Command>,
@@ -21,6 +21,20 @@ struct Cli {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
+    // Set this before creating a window, MIDI connection or audio thread.
+    if args.command.is_none() && std::env::var_os("PLITA_UI_FONT_FALLBACK").is_none() {
+        let rel = "assets/ui-font/NotoSansCJKjp-Regular.otf";
+        let packaged = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.join(rel)));
+        if let Some(path) = packaged
+            .into_iter()
+            .chain([PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(rel)])
+            .find(|p| p.is_file())
+        {
+            std::env::set_var("PLITA_UI_FONT_FALLBACK", path);
+        }
+    }
     if let Some(path) = args.startup_smoke {
         return gbseq::app::run_startup_smoke(path).map_err(Into::into);
     }

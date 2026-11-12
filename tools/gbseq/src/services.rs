@@ -55,14 +55,6 @@ pub fn playback_projects(
     project: &SequenceProject,
     player: Option<usize>,
 ) -> Result<Vec<gbdaw_model::Project>> {
-    prepare_playback_projects(project, player, player.is_none())
-}
-
-fn prepare_playback_projects(
-    project: &SequenceProject,
-    player: Option<usize>,
-    global_solo: bool,
-) -> Result<Vec<gbdaw_model::Project>> {
     project.validate()?;
     if let Some(player) = player {
         ensure!(
@@ -71,21 +63,31 @@ fn prepare_playback_projects(
         );
     }
     let targets = player.map_or(0..project.player_count(), |p| p..p + 1);
-    let solo_tracks = if global_solo {
-        0..project.link16_mode.track_count()
-    } else {
-        targets.start * crate::model::TRACK_COUNT..targets.end * crate::model::TRACK_COUNT
-    };
-    let solo = project.tracks[solo_tracks].iter().any(|t| t.solo);
+    let mask = audible_mask(project);
     let mut source = project.clone();
     // The stream renderer consumes note events, not the GUI mixer metadata.
     // Apply mutes only to this snapshot; retain the transport and song length.
-    for track in &mut source.tracks[..project.link16_mode.track_count()] {
-        if track.mute || (solo && !track.solo) {
+    for (i, track) in source
+        .tracks
+        .iter_mut()
+        .take(project.link16_mode.track_count())
+        .enumerate()
+    {
+        if mask & (1 << i) == 0 {
             track.notes.clear();
         }
     }
     targets.map(|p| source.to_gbdaw_player(p)).collect()
+}
+
+/// Mixer state is global among consoles in the active link mode. The lane
+/// selected for editing is deliberately not part of the audio routing.
+pub(crate) fn audible_mask(project: &SequenceProject) -> usize {
+    let tracks = &project.tracks[..project.link16_mode.track_count()];
+    let solo = tracks.iter().any(|t| t.solo);
+    tracks.iter().enumerate().fold(0, |bits, (i, t)| {
+        bits | (usize::from(!t.mute && (!solo || t.solo)) << i)
+    })
 }
 
 pub fn render_mixed_projects(
@@ -189,35 +191,50 @@ pub fn render_sequence_wav(project: &SequenceProject, path: &Path) -> Result<()>
 }
 
 pub fn render_wav(project: &SequenceProject, path: &Path, player: Option<usize>) -> Result<()> {
-    let projects = playback_projects(project, player)?;
-    write_projects_wav(&projects, path, project_frame_count(project))
-}
-
-/// A monitor isolates a console *after* the global track mute/solo rules.
-/// A stream may end early even with the project loop flag. A solo WAV must
-/// use the mix duration regardless of the selected console's last event.
-#[cfg(feature = "gui")]
-pub(crate) fn render_monitor_wav(
-    project: &SequenceProject,
-    path: &Path,
-    player: Option<usize>,
-) -> Result<()> {
-    if let Some(p) = player {
-        let projects = prepare_playback_projects(project, None, true)?;
-        ensure!(p < projects.len(), "invalid monitor player");
-        let mut stems = render_player_stems(&projects, project_frame_count(project), true, None)?;
-        let len = stems.iter().map(|(_, s)| s.len()).max().unwrap_or(0);
-        let (rate, mut solo) = stems.swap_remove(p);
-        solo.resize(len, 0);
-        return write_samples_wav(path, rate, &solo);
+    project.validate()?;
+    let n = project.player_count();
+    ensure!(
+        player.is_none_or(|i| i < n),
+        "player is outside the active link mode"
+    );
+    let mask = audible_mask(project);
+    let limit = project_frame_count(project);
+    let mut source = project.clone();
+    for t in &mut source.tracks {
+        t.mute = false;
+        t.solo = false;
     }
-    let projects = prepare_playback_projects(project, player, true)?;
-    write_projects_wav(&projects, path, project_frame_count(project))
-}
-
-fn write_projects_wav(projects: &[gbdaw_model::Project], path: &Path, frames: u32) -> Result<()> {
-    let (rate, samples) = render_mixed_projects(projects, frames)?;
-    write_samples_wav(path, rate, &samples)
+    let mut end = 0;
+    let rate = gbdaw_kokura::default_output_sample_rate();
+    let mut players = Vec::new();
+    for p in 0..n {
+        let mut r = gbdaw_kokura::ProjectAudioRenderer::new(
+            &source.to_gbdaw_player(p)?,
+            StreamMode::Extended,
+        )?;
+        end = end.max(r.end_frame().unwrap_or(limit).min(limit));
+        let ch = ((mask >> (4 * p)) & 15) as u8;
+        if ch != 0 && player.is_none_or(|i| i == p) {
+            r.set_monitor_mask(ch);
+            players.push(r);
+        }
+    }
+    // Use the complete score for duration, even for an isolated or silent
+    // console. Mask the APU outputs, never the timed note events themselves.
+    let samples_until = |f: u32| (u64::from(f) * 70_224 * u64::from(rate) / 4_194_304) as usize * 2;
+    let mut pcm = Vec::with_capacity(samples_until(end));
+    let divisor = if player.is_some() { 1 } else { n as i32 };
+    for f in (0..end).step_by(32) {
+        let count = 32.min(end - f);
+        let mut mix = vec![0i32; samples_until(f + count) - samples_until(f)];
+        for r in &mut players {
+            for (dst, s) in mix.iter_mut().zip(r.render_next_frames(count)?) {
+                *dst += i32::from(s);
+            }
+        }
+        pcm.extend(mix.into_iter().map(|s| (s / divisor) as i16));
+    }
+    write_samples_wav(path, rate, &pcm)
 }
 
 fn write_samples_wav(path: &Path, rate: u32, samples: &[i16]) -> Result<()> {
@@ -249,6 +266,58 @@ pub fn inspect_sequence(project: &SequenceProject) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn wav_mixer_preserves_timeline_and_only_routes_audible_lanes() {
+        for mode in [crate::Link16Mode::Cable8, crate::Link16Mode::Dmg07_16] {
+            let mut p = SequenceProject::empty();
+            p.measures = 1;
+            p.loop_playback = false;
+            p.set_link16_mode(mode);
+            let peer = (p.player_count() - 1) * 4;
+            p.insert_note_exact(0, 0, 8, 20, 12).unwrap();
+            p.insert_note_exact(peer, 0, 5, 31, 14).unwrap();
+            p.insert_note_exact(peer + 1, 13, 3, 40, 10).unwrap();
+            let path = std::env::temp_dir().join(format!(
+                "gbseq-active-wav-{}-{}.wav",
+                std::process::id(),
+                peer
+            ));
+            let wav = |p: &SequenceProject, player| {
+                render_wav(p, &path, player).unwrap();
+                let bytes = fs::read(&path).unwrap();
+                bytes[44..]
+                    .chunks_exact(2)
+                    .map(|v| i16::from_le_bytes(v.try_into().unwrap()))
+                    .collect::<Vec<_>>()
+            };
+            let full = wav(&p, None);
+            p.tracks[peer].solo = true;
+            let isolated = wav(&p, Some(peer / 4));
+            assert!(isolated.iter().any(|s| *s != 0));
+            let solo = wav(&p, None);
+            assert_ne!(full, solo);
+            assert_eq!(full.len(), isolated.len());
+            assert!(solo
+                .iter()
+                .zip(&isolated)
+                .all(|(&mix, &one)| mix == one / p.player_count() as i16));
+            let expected_muted = wav(&p, Some(0));
+            assert_eq!(expected_muted, vec![0; full.len()]);
+            p.tracks[peer].solo = false;
+            for (i, t) in p.tracks.iter_mut().enumerate() {
+                t.mute = i != peer;
+            }
+            assert_eq!(wav(&p, None), solo);
+            p.tracks[peer].solo = true;
+            p.tracks[peer].mute = true;
+            assert_eq!(wav(&p, None), expected_muted);
+            p.set_link16_mode(crate::Link16Mode::Local4);
+            p.tracks[0].mute = false;
+            assert_eq!(audible_mask(&p), 1);
+            assert!(wav(&p, None).iter().any(|&s| s != 0));
+            fs::remove_file(path).unwrap();
+        }
+    }
     #[test]
     fn cancellation_and_chunked_audio_match_the_export_path() {
         let p = SequenceProject::demo();

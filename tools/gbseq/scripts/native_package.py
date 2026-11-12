@@ -13,6 +13,7 @@ for name in ['LICENSE','THIRD_PARTY_NOTICES.md','LICENSE_AUDIT.json']:
 for name in ['licenses','assets','docs','python']:
     # Runtime templates and the title font are embedded in both executables.
     shutil.copytree(ROOT/name,dest/name,dirs_exist_ok=True,ignore=shutil.ignore_patterns('__pycache__','*.gb','*.otf'))
+shutil.copy2(ROOT/'assets/ui-font/NotoSansCJKjp-Regular.otf',dest/'assets/ui-font')
 for file in ROOT.glob('README*.md'):
     # Source-relative download links must also work in an extracted package.
     text=file.read_text(encoding='utf-8')
@@ -48,6 +49,25 @@ with tempfile.TemporaryDirectory() as tmp:
             info={'players':players,'sample_rate':w.getframerate(),'frames':w.getnframes(),
                   'pcm_sha256':hashlib.sha256(data).hexdigest()}
         run('export-link16-sav',song,saves)
+        default=tmp/'default.wav'
+        run('render-wav',song,default)
+        assert default.read_bytes()==wav.read_bytes()
+        mixer=json.loads(song.read_text(encoding='utf-8'))
+        mixer['tracks'][-1]['solo']=True
+        test_song=tmp/'mixer.gbseq'; test_song.write_text(json.dumps(mixer),encoding='utf-8')
+        run('render-wav',test_song,default,'--player',str(players))
+        with wave.open(str(default)) as w:
+            assert w.getnframes()==info['frames'] and any(w.readframes(w.getnframes()))
+        if players>1:
+            run('render-wav',test_song,default,'--player','1')
+            with wave.open(str(default)) as w:
+                assert w.getnframes()==info['frames'] and not any(w.readframes(w.getnframes()))
+        mixer['tracks'][-1]['mute']=True
+        test_song.write_text(json.dumps(mixer),encoding='utf-8')
+        run('render-wav',test_song,default)
+        with wave.open(str(default)) as w:
+            assert w.getnframes()==info['frames'] and not any(w.readframes(w.getnframes()))
+        info['wav_global_solo_mute_and_duration']=True
         images=list(saves.glob('*.sav'))
         assert len(images)==players and all(f.stat().st_size==131072 for f in images)
         package=json.loads(run('export-player-roms',song,tmp/f'player-{players}'))

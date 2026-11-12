@@ -28,10 +28,7 @@ impl Control {
 }
 
 pub(super) fn audible(project: &SequenceProject) -> usize {
-    let solo = project.tracks.iter().any(|t| t.solo);
-    project.tracks.iter().enumerate().fold(0, |bits, (ch, t)| {
-        bits | (usize::from(!t.mute && (!solo || t.solo)) << ch)
-    })
+    crate::services::audible_mask(project)
 }
 
 pub(super) struct Ready {
