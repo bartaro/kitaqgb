@@ -21,6 +21,7 @@ WAV 會套用開始匯出時的監聽、靜音與獨奏設定。監聽全部會�
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [匯出 VBlank 驅動程式與樂曲的 C 原始碼](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+記錄採用 audio.h 的聲道順序。VBlank 驅動程式的 CH3 只有三角波與鋸齒波；若不允許近似，請使用 --strict。各主機的原始碼分開編譯。
 
 按 **E** 或按兩下音軌標題即可開啟該軌的鋼琴捲軸編輯器；再按 E 返回總覽。拖曳音符右端可延長至下一個音符之前或曲末。在 CH3 自訂波形圖上可直接繪製 32 個取樣點，Ctrl+Z 可復原一筆。
 

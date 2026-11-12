@@ -1,7 +1,11 @@
 # Native downloads
 
-These builds include **GB Studio UGE and MOD export** in both the GUI and CLI.
+These builds include the nine-language GUI, MIDI file and device I/O, live/step recording, 512 channel instruments, chord overlays, and WAV export that matches the active mixer and console monitor. See the [performance guide](../docs/MIDI_PERFORMANCE.md) or a localized user manual. GB Studio UGE and MOD export are available in both the GUI and CLI.
 See the [format guide](../docs/GB_STUDIO_EXPORT.md) and the [GB Studio importer checks](GB_STUDIO_INTEROP.json).
+
+The separate [KITAQGB VBlank C exporter](../docs/KITAQGB_VBLANK.md) writes a
+buildable package for each console. The bundled library is the published
+KITAQGB snapshot; `--driver-dir` selects your installed library.
 
 Each platform package contains both the **gbseq GUI** and **gbseq-cli**, the
 optional C ABI/Python library, all nine user manuals, fonts and full licenses.

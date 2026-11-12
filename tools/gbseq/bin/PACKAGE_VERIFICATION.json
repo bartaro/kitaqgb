@@ -1,38 +1,13 @@
 {
   "passed": true,
-  "source_commit": "b3d0cca190be106534bc49459d2c669a792f6c49",
-  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43069572840",
+  "source_commit": "18741b5396da6e5b00236d6fd3385c1f953abc8a",
+  "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43232674045",
   "packages": [
-    {
-      "platform": "linux-x86_64",
-      "archive": "gbseq-linux-x86_64.tar.gz",
-      "sha256": "929dff941dc71d981415d2db313d01299e169e4e95b6b19a30126f8354213c36",
-      "file_count": 567,
-      "architectures": {
-        "gbseq": "ELF-x86_64",
-        "gbseq-cli": "ELF-x86_64",
-        "libgbseq.so": "ELF-x86_64"
-      },
-      "executable_modes": {
-        "gbseq": "0o755",
-        "gbseq-cli": "0o755"
-      },
-      "gui_startup": true,
-      "audio_and_save_players": [
-        1,
-        2,
-        4
-      ],
-      "dependency_notices_complete": true,
-      "fonts_match_official_binaries": true,
-      "nine_manuals": true,
-      "music_player_exports_and_live_monitor": true
-    },
     {
       "platform": "windows-x86_64",
       "archive": "gbseq-windows-x86_64.zip",
-      "sha256": "58065dd6a7040456595b35f287e6dc9b6d2ac462e6e0bd8d27395ad12bfbda07",
-      "file_count": 567,
+      "sha256": "b0f344bf86b909f537f7c8bfb3862639c6a0994afa3f16fb68e4b6900c913c48",
+      "file_count": 593,
       "architectures": {
         "gbseq.exe": "PE-x86_64",
         "gbseq-cli.exe": "PE-x86_64",
@@ -48,13 +23,15 @@
       "dependency_notices_complete": true,
       "fonts_match_official_binaries": true,
       "nine_manuals": true,
-      "music_player_exports_and_live_monitor": true
+      "music_player_exports_and_live_monitor": true,
+      "vblank_music_export_and_published_sdk": true,
+      "active_wav_and_nine_ui_locales": true
     },
     {
       "platform": "macos-x86_64",
       "archive": "gbseq-macos-x86_64.tar.gz",
-      "sha256": "b6a213eed6180169e1008da36ffa33a3676c43bfe9c0a0cd2cf715912f76b44c",
-      "file_count": 567,
+      "sha256": "a89b18b54079626533eb12dc78493bd925c9d4b1b43e68584916b695d702473d",
+      "file_count": 593,
       "architectures": {
         "gbseq": "Mach-O-x86_64",
         "gbseq-cli": "Mach-O-x86_64",
@@ -73,13 +50,15 @@
       "dependency_notices_complete": true,
       "fonts_match_official_binaries": true,
       "nine_manuals": true,
-      "music_player_exports_and_live_monitor": true
+      "music_player_exports_and_live_monitor": true,
+      "vblank_music_export_and_published_sdk": true,
+      "active_wav_and_nine_ui_locales": true
     },
     {
       "platform": "macos-arm64",
       "archive": "gbseq-macos-arm64.tar.gz",
-      "sha256": "07b821a16f53fd229c2b2dc52cb4958dfaf52867371b72f7a17943791b01c32d",
-      "file_count": 567,
+      "sha256": "d540818c2c12c6ac065b037e3d6deafbc665d09fe31b380e54054cf0ced13285",
+      "file_count": 593,
       "architectures": {
         "gbseq": "Mach-O-arm64",
         "gbseq-cli": "Mach-O-arm64",
@@ -98,7 +77,36 @@
       "dependency_notices_complete": true,
       "fonts_match_official_binaries": true,
       "nine_manuals": true,
-      "music_player_exports_and_live_monitor": true
+      "music_player_exports_and_live_monitor": true,
+      "vblank_music_export_and_published_sdk": true,
+      "active_wav_and_nine_ui_locales": true
+    },
+    {
+      "platform": "linux-x86_64",
+      "archive": "gbseq-linux-x86_64.tar.gz",
+      "sha256": "456a0e593879c6fcb5a8bba20421438f0b17afe8d657806d5f8f052091360e87",
+      "file_count": 593,
+      "architectures": {
+        "gbseq": "ELF-x86_64",
+        "gbseq-cli": "ELF-x86_64",
+        "libgbseq.so": "ELF-x86_64"
+      },
+      "executable_modes": {
+        "gbseq": "0o755",
+        "gbseq-cli": "0o755"
+      },
+      "gui_startup": true,
+      "audio_and_save_players": [
+        1,
+        2,
+        4
+      ],
+      "dependency_notices_complete": true,
+      "fonts_match_official_binaries": true,
+      "nine_manuals": true,
+      "music_player_exports_and_live_monitor": true,
+      "vblank_music_export_and_published_sdk": true,
+      "active_wav_and_nine_ui_locales": true
     }
   ],
   "physical_hardware_tested": false,

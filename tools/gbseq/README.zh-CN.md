@@ -21,6 +21,7 @@ WAV 遵循开始导出时的监听、静音与独奏设置。监听全部会混�
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [导出 VBlank 驱动和乐曲的 C 源码](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+记录采用 audio.h 的声道顺序。VBlank 驱动的 CH3 仅有三角波和锯齿波；如不允许近似，请使用 --strict。每台机器的源码单独编译。
 
 按 **E** 或双击轨道标题即可打开该轨的钢琴卷帘编辑器；再按 E 返回总览。拖动音符右端可将它延长至下一音符之前或曲末。在 CH3 自定义波形图上可直接绘制 32 个采样点，Ctrl+Z 撤销一笔。
 

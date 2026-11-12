@@ -21,6 +21,7 @@ Beim WAV-Export gelten die aktuellen Abhör-, Stumm- und Soloschaltungen. Alle a
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [VBlank-Treiber und Musik als C-Code exportieren](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+Die Datensätze verwenden die Kanalreihenfolge aus audio.h. Der VBlank-Treiber unterstützt auf CH3 nur Dreieck und Sägezahn. Mit --strict werden Annäherungen abgelehnt. Die Quellen jeder Konsole separat übersetzen.
 
 Mit **E** oder einem Doppelklick auf den Spurkopf öffnet sich der Piano-Roll-Editor der Spur; E führt zurück zur Übersicht. Ziehen Sie den rechten Notenrand bis zur nächsten Note oder zum Stückende. Im CH3-Welleneditor können Sie die 32 Abtastwerte zeichnen; Strg+Z nimmt einen Strich zurück.
 

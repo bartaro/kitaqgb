@@ -21,6 +21,7 @@ Le WAV respecte l’écoute, les pistes muettes et les solos au lancement de l�
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [Exporter le pilote VBlank et la musique en C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+Les enregistrements suivent l’ordre d’audio.h. Le pilote VBlank ne propose que le triangle et la dent de scie sur CH3. Utilisez --strict pour refuser les approximations et compilez chaque console séparément.
 
 Appuyez sur **E** ou double-cliquez sur l’en-tête d’une piste pour ouvrir son éditeur de notes ; E ramène à la vue d’ensemble. Tirez le bord droit d’une note jusqu’à la note suivante ou à la fin du morceau. Le graphe d’onde du CH3 permet de dessiner les 32 échantillons ; Ctrl+Z annule un trait.
 

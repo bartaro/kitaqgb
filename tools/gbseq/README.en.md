@@ -21,6 +21,7 @@ WAV follows the monitor and mixer at the moment of export: All mixes the active 
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [VBlank C export](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+The records use audio.h channel order. The IRQ driver has two CH3 waveforms; use --strict to reject approximations. Keep each player’s sources together.
 
 Press **E** or double-click a track header to edit that track on the piano roll (E returns to the overview). Drag a note’s right edge to extend it up to the next note or the song end. In the CH3 user-wave graph, draw across the 32 samples; Ctrl+Z undoes one stroke.
 

@@ -21,6 +21,7 @@ El WAV respeta la escucha, el silencio y el solo elegidos al iniciar la exportac
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [Exportar el controlador VBlank y la música en C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+Los registros siguen el orden de audio.h. El controlador VBlank solo admite ondas triangulares y de sierra en CH3. Usa --strict para rechazar aproximaciones y compila cada consola por separado.
 
 Pulsa **E** o haz doble clic en la cabecera de una pista para abrir su editor de piano; E vuelve a la vista general. Arrastra el borde derecho de una nota hasta la nota siguiente o el final de la canción. En el gráfico de ondas de CH3 puedes dibujar las 32 muestras; Ctrl+Z deshace un trazo.
 

@@ -21,6 +21,7 @@ WAV에는 내보낼 때의 모니터·음소거·솔로 설정이 적용됩니�
 `gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
 
 [VBlank 드라이버와 곡의 C 소스 내보내기](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+레코드는 audio.h의 채널 순서를 따릅니다. VBlank 드라이버의 CH3 파형은 삼각파와 톱니파뿐입니다. 근사를 허용하지 않으려면 --strict를 쓰고 각 기기의 소스를 별도로 빌드하세요.
 
 **E**를 누르거나 트랙 머리글을 두 번 클릭하면 해당 트랙의 피아노 롤이 열립니다. E를 다시 누르면 전체 보기로 돌아갑니다. 음표 오른쪽 끝을 끌어 다음 음표 직전이나 곡 끝까지 늘릴 수 있습니다. CH3 사용자 파형 그래프에서는 32개 샘플을 선으로 그리며, Ctrl+Z로 한 획을 취소합니다.
 
