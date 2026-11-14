@@ -4,7 +4,7 @@
 
 재생은 짧은 오디오 블록을 순서대로 생성합니다. 모니터와 음소거/솔로 변경은 재생 위치를 유지하며, 음표와 템포 편집은 다음 재생에 적용됩니다.
 
-[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). [Native packages updated 2026-11-15](bin/README.md) include this source update. 配布バイナリも更新済みです。
 
 [MIDI 파일 및 장치, 연주 키보드, 녹음, 512개 음색](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 

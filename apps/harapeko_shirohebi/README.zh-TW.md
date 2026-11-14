@@ -1,5 +1,7 @@
 # HARAPEKO SHIROHEBI
 
+**2026-11-15 ROM:** [Download / ダウンロード](bin/README.md) · [ZIP](bin/harapeko-shirohebi.zip).
+
 <!-- readme-language-links:start -->
 [English](README.md#english) | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
@@ -36,7 +38,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\harapeko_shirohebi\bu
 
 指令碼會合併分割的遊戲原始碼、搭配儲存庫程式庫編譯、確認中斷函式位於固定 ROM，接著安裝 VBlank 向量並更新卡匣校驗和。產生的配置為 **64 KiB MBC5 ROM、8 KiB 電池備援 RAM**，可在 DMG 與 CGB 模式下遊玩。請勿單獨編譯分割檔案，也不要省略向量與校驗和處理。
 
-本遊戲目錄**不含預先建置的執行檔或 ROM**。編譯器位於儲存庫根目錄；已發行的遊戲 ROM 請從 itch.io 下載。
+重新建置的ROM與驗證紀錄可從 [bin/](bin/README.md) 下載。編譯器位於儲存庫根目錄，itch.io是獨立的發佈管道。
 
 ## 操作方式
 

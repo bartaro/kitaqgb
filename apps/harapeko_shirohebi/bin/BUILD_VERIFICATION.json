@@ -1,0 +1,94 @@
+{
+  "published_on": "2026-11-15",
+  "source_repository": "https://github.com/bartaro/kitaqgb",
+  "source_commit": "1caf80ef6346a52f15b3aaae07e97350f3e6b62b",
+  "rom": "shirohebi.gb",
+  "rom_bytes": 65536,
+  "rom_sha256": "68c138293341285c103e9b6b8aa4e0174b84fa6db1d5cd79448b06af659b742f",
+  "compiler_sha256": "033c3fe6fd6f5ce624eab7087b15351807d0dc8f5f146f65f1d821d55062fa13",
+  "header_and_global_checksums_valid": true,
+  "cartridge": "MBC5 + 8 KiB battery RAM",
+  "hardware_modes": [
+    "DMG",
+    "CGB"
+  ],
+  "emulator_checks": {
+    "rom_sha256": "68c138293341285c103e9b6b8aa4e0174b84fa6db1d5cd79448b06af659b742f",
+    "rom_bytes": 65536,
+    "states": [
+      {
+        "label": "title",
+        "SND_State": 0,
+        "AudioVBlank_Step": 0,
+        "AudioVBlank_MusicPlaying": 0,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 0,
+        "SND_PrevKeys": 0,
+        "nr52": 240
+      },
+      {
+        "label": "start",
+        "SND_State": 6,
+        "AudioVBlank_Step": 0,
+        "AudioVBlank_MusicPlaying": 0,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "pause",
+        "SND_State": 3,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "return dialog",
+        "SND_State": 8,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 64,
+        "nr52": 240
+      },
+      {
+        "label": "cancel dialog",
+        "SND_State": 3,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 32,
+        "nr52": 240
+      },
+      {
+        "label": "resume",
+        "SND_State": 1,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "playing",
+        "SND_State": 1,
+        "AudioVBlank_Step": 2,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 0,
+        "SND_PrevKeys": 0,
+        "nr52": 242
+      }
+    ],
+    "title_start_pause_return_confirm_cancel_resume": true,
+    "physical_hardware_tested": false
+  },
+  "physical_hardware_tested": false
+}

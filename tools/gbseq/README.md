@@ -1,6 +1,6 @@
 # GBSEQ
 
-**2026-11-14 source update:** continuous keyboard audio, Ctrl+K/piano shortcut, unsaved-song dialog, quantize fixes, refreshed player ROMs, and the latest KOKURA APU. See the [source update and checks](../../SOURCE_UPDATE_20261114.md), [English manual](README.en.md) and [日本語](README.ja.md). Existing `bin/` archives retain the source revisions recorded in their build manifests.
+**2026-11-14 source update:** continuous keyboard audio, Ctrl+K/piano shortcut, unsaved-song dialog, quantize fixes, refreshed player ROMs, and the latest KOKURA APU. See the [source update and checks](../../SOURCE_UPDATE_20261114.md), [English manual](README.en.md) and [日本語](README.ja.md). [Native packages updated 2026-11-15](bin/README.md) include this source update.
 
 [MIDI files/devices, keyboard, recording and 512 instruments](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 

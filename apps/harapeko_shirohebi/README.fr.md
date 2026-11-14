@@ -1,5 +1,7 @@
 # HARAPEKO SHIROHEBI
 
+**2026-11-15 ROM:** [Download / ダウンロード](bin/README.md) · [ZIP](bin/harapeko-shirohebi.zip).
+
 <!-- readme-language-links:start -->
 [English](README.md#english) | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
@@ -36,7 +38,7 @@ La sortie par défaut est `out/shirohebi.gb`, accompagnée de `out/shirohebi.map
 
 Le script assemble les fragments du jeu, compile avec les bibliothèques du dépôt, vérifie que les routines d’interruption sont en ROM fixe, installe le vecteur VBlank et met à jour les sommes de contrôle du cartouche. Il produit une **ROM MBC5 de 64 KiB avec 8 KiB de RAM sauvegardée par pile**, jouable en modes DMG et CGB. Ne compilez pas les fragments séparément et ne sautez pas l’étape du vecteur et des sommes de contrôle.
 
-Ce répertoire d’application ne contient **aucun exécutable ni aucune ROM précompilés**. Le compilateur est fourni à la racine du dépôt ; la ROM publiée du jeu se télécharge sur itch.io.
+La ROM reconstruite et ses vérifications sont disponibles dans [bin/](bin/README.md). Le compilateur reste à la racine ; itch.io est une distribution distincte.
 
 ## Commandes
 

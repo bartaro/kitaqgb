@@ -1,0 +1,213 @@
+{
+  "published_on": "2026-11-15",
+  "gbseq": {
+    "passed": true,
+    "source_commit": "1caf80ef6346a52f15b3aaae07e97350f3e6b62b",
+    "build_url": "https://github.com/bartaro/kitaqgb/actions/runs/43608173869",
+    "packages": [
+      {
+        "platform": "linux-x86_64",
+        "archive": "gbseq-linux-x86_64.tar.gz",
+        "sha256": "d8de3f52c8454543ebf8c414c0ff35292a91b141d1f08aaa36cca7cd20840192",
+        "file_count": 593,
+        "architectures": {
+          "gbseq": "ELF-x86_64",
+          "gbseq-cli": "ELF-x86_64",
+          "libgbseq.so": "ELF-x86_64"
+        },
+        "executable_modes": {
+          "gbseq": "0o755",
+          "gbseq-cli": "0o755"
+        },
+        "gui_startup": true,
+        "audio_and_save_players": [
+          1,
+          2,
+          4
+        ],
+        "dependency_notices_complete": true,
+        "fonts_match_official_binaries": true,
+        "nine_manuals": true,
+        "music_player_exports_and_live_monitor": true,
+        "vblank_music_export_and_published_sdk": true,
+        "active_wav_and_nine_ui_locales": true
+      },
+      {
+        "platform": "macos-arm64",
+        "archive": "gbseq-macos-arm64.tar.gz",
+        "sha256": "5e06361542ddbf0b95d5ba63401ddb0c20805003a59fe5b8c032a4201613bcb4",
+        "file_count": 593,
+        "architectures": {
+          "gbseq": "Mach-O-arm64",
+          "gbseq-cli": "Mach-O-arm64",
+          "libgbseq.dylib": "Mach-O-arm64"
+        },
+        "executable_modes": {
+          "gbseq": "0o755",
+          "gbseq-cli": "0o755"
+        },
+        "gui_startup": true,
+        "audio_and_save_players": [
+          1,
+          2,
+          4
+        ],
+        "dependency_notices_complete": true,
+        "fonts_match_official_binaries": true,
+        "nine_manuals": true,
+        "music_player_exports_and_live_monitor": true,
+        "vblank_music_export_and_published_sdk": true,
+        "active_wav_and_nine_ui_locales": true
+      },
+      {
+        "platform": "macos-x86_64",
+        "archive": "gbseq-macos-x86_64.tar.gz",
+        "sha256": "141e291a2382b60ec724f42ae6fbc58f0a278a305d72d1ac817c048fa3f9b690",
+        "file_count": 593,
+        "architectures": {
+          "gbseq": "Mach-O-x86_64",
+          "gbseq-cli": "Mach-O-x86_64",
+          "libgbseq.dylib": "Mach-O-x86_64"
+        },
+        "executable_modes": {
+          "gbseq": "0o755",
+          "gbseq-cli": "0o755"
+        },
+        "gui_startup": true,
+        "audio_and_save_players": [
+          1,
+          2,
+          4
+        ],
+        "dependency_notices_complete": true,
+        "fonts_match_official_binaries": true,
+        "nine_manuals": true,
+        "music_player_exports_and_live_monitor": true,
+        "vblank_music_export_and_published_sdk": true,
+        "active_wav_and_nine_ui_locales": true
+      },
+      {
+        "platform": "windows-x86_64",
+        "archive": "gbseq-windows-x86_64.zip",
+        "sha256": "aac90b68293e9123a866a3f705a547ebdf7848151289b335d686f956cc660ed3",
+        "file_count": 593,
+        "architectures": {
+          "gbseq.exe": "PE-x86_64",
+          "gbseq-cli.exe": "PE-x86_64",
+          "gbseq.dll": "PE-x86_64"
+        },
+        "executable_modes": null,
+        "gui_startup": true,
+        "audio_and_save_players": [
+          1,
+          2,
+          4
+        ],
+        "dependency_notices_complete": true,
+        "fonts_match_official_binaries": true,
+        "nine_manuals": true,
+        "music_player_exports_and_live_monitor": true,
+        "vblank_music_export_and_published_sdk": true,
+        "active_wav_and_nine_ui_locales": true
+      }
+    ],
+    "physical_hardware_tested": false,
+    "audio_device_output_tested": false
+  },
+  "shirohebi": {
+    "published_on": "2026-11-15",
+    "source_repository": "https://github.com/bartaro/kitaqgb",
+    "source_commit": "1caf80ef6346a52f15b3aaae07e97350f3e6b62b",
+    "rom": "shirohebi.gb",
+    "rom_bytes": 65536,
+    "rom_sha256": "68c138293341285c103e9b6b8aa4e0174b84fa6db1d5cd79448b06af659b742f",
+    "compiler_sha256": "033c3fe6fd6f5ce624eab7087b15351807d0dc8f5f146f65f1d821d55062fa13",
+    "header_and_global_checksums_valid": true,
+    "cartridge": "MBC5 + 8 KiB battery RAM",
+    "hardware_modes": [
+      "DMG",
+      "CGB"
+    ],
+    "emulator_checks": {
+      "rom_sha256": "68c138293341285c103e9b6b8aa4e0174b84fa6db1d5cd79448b06af659b742f",
+      "rom_bytes": 65536,
+      "states": [
+        {
+          "label": "title",
+          "SND_State": 0,
+          "AudioVBlank_Step": 0,
+          "AudioVBlank_MusicPlaying": 0,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 0,
+          "SND_PrevKeys": 0,
+          "nr52": 240
+        },
+        {
+          "label": "start",
+          "SND_State": 6,
+          "AudioVBlank_Step": 0,
+          "AudioVBlank_MusicPlaying": 0,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 1,
+          "SND_PrevKeys": 128,
+          "nr52": 240
+        },
+        {
+          "label": "pause",
+          "SND_State": 3,
+          "AudioVBlank_Step": 1,
+          "AudioVBlank_MusicPlaying": 1,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 1,
+          "SND_PrevKeys": 128,
+          "nr52": 240
+        },
+        {
+          "label": "return dialog",
+          "SND_State": 8,
+          "AudioVBlank_Step": 1,
+          "AudioVBlank_MusicPlaying": 1,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 1,
+          "SND_PrevKeys": 64,
+          "nr52": 240
+        },
+        {
+          "label": "cancel dialog",
+          "SND_State": 3,
+          "AudioVBlank_Step": 1,
+          "AudioVBlank_MusicPlaying": 1,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 1,
+          "SND_PrevKeys": 32,
+          "nr52": 240
+        },
+        {
+          "label": "resume",
+          "SND_State": 1,
+          "AudioVBlank_Step": 1,
+          "AudioVBlank_MusicPlaying": 1,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 1,
+          "SND_PrevKeys": 128,
+          "nr52": 240
+        },
+        {
+          "label": "playing",
+          "SND_State": 1,
+          "AudioVBlank_Step": 2,
+          "AudioVBlank_MusicPlaying": 1,
+          "SND_ReturnChoice": 0,
+          "SND_InputReleaseLock": 0,
+          "SND_PrevKeys": 0,
+          "nr52": 242
+        }
+      ],
+      "title_start_pause_return_confirm_cancel_resume": true,
+      "physical_hardware_tested": false
+    },
+    "physical_hardware_tested": false
+  },
+  "physical_hardware_tested": false,
+  "human_listening_tested": false
+}

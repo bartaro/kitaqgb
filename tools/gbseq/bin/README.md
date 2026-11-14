@@ -1,6 +1,8 @@
 # Native downloads
 
-The 2026-11-14 source changes are newer than these archived packages. Check `BUILD_VERIFICATION.json` for each package revision, or build the current source as described in the manuals.
+Updated 2026-11-15 from source `1caf80e`: Windows x86_64, Linux x86_64, macOS Apple Silicon and Intel. All four native builds passed their tests, CLI/audio/export checks and automated GUI startup. `BUILD_VERIFICATION.json` records the exact source commit and executable hashes.
+
+2026-11-15更新。4環境とも最新ソースのネイティブビルドと自動検証を通過しています。連続鍵盤音声、Ctrl+K、未保存曲の確認画面、最新APUとVBlankドライバを含みます。
 
 Keyboard audition uses the current lane's selected note (including edited
 duty, envelope, pan and custom CH3 wave), then its input preset or cursor

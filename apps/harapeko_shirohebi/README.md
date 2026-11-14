@@ -1,5 +1,7 @@
 # HARAPEKO SHIROHEBI
 
+**2026-11-15 ROM:** [Download / ダウンロード](bin/README.md) · [ZIP](bin/harapeko-shirohebi.zip).
+
 **2026-11-14:** The published controls already match the local source. `music.c` now checks for standard VBlank instrument IDs (CH3=2, CH4=3) at compile time. Use the matching current `lib/` and rebuild with `build.ps1`; note columns and game controls are unchanged.
 
 **2026-11-14 更新:** 公開済みの操作処理はローカル最新版と一致しています。今回、曲データにVBlank標準音色番号のコンパイル時チェックを加えました。同じリポジトリの最新 `lib/` と `build.ps1` でビルドしてください。操作と音符列は従来のままです。検証結果は [更新記録](../../SOURCE_UPDATE_20261114.md) を参照してください。
@@ -42,7 +44,7 @@ The default output is `out/shirohebi.gb`, with `out/shirohebi.map` and `out/buil
 
 The script assembles the split game sources, compiles against this repository's libraries, verifies interrupt routines are in fixed ROM, installs the VBlank vector, and updates cartridge checksums. It produces a **64 KiB MBC5 ROM with 8 KiB battery-backed RAM**, playable in DMG and CGB modes. Do not compile individual split files independently or omit the vector/checksum step.
 
-This application directory contains **no prebuilt executable or ROM**. The compiler is provided at the repository root; download the released game ROM from itch.io.
+A freshly rebuilt ROM and its verification record are available in [bin/](bin/README.md). The compiler remains at the repository root. The itch.io page is a separate distribution.
 
 ### Controls
 
@@ -91,7 +93,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\harapeko_shirohebi\bu
 
 スクリプトは分割ソースを結合し、リポジトリのライブラリとコンパイルして、割り込み処理の固定バンク配置を確認します。その後VBlankベクタとカートリッジのチェックサムを設定します。出力はDMG・CGB両対応の**64 KiB MBC5 ROM、8 KiBバッテリーバックアップRAM**です。分割ソースを個別にコンパイルしたり、ベクタ・チェックサム処理を省略したりしないでください。
 
-このアプリのディレクトリには**実行ファイルとROMを収録していません**。コンパイラはリポジトリ直下、公開済みのゲームROMはitch.ioから入手できます。
+再ビルドしたROMと検証記録を [bin/](bin/README.md) から取得できます。コンパイラはリポジトリ直下です。itch.ioは別の配布先です。
 
 ### 操作
 

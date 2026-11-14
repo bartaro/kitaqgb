@@ -4,7 +4,7 @@
 
 播放時按需產生短音訊區塊。切換監聽、靜音或獨奏會保留播放位置；音符和速度編輯在下次播放時生效。
 
-[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). [Native packages updated 2026-11-15](bin/README.md) include this source update. 配布バイナリも更新済みです。
 
 [MIDI 檔案與裝置、演奏鍵盤、錄音及 512 種音色](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 

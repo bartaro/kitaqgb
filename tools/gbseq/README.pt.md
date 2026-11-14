@@ -4,7 +4,7 @@
 
 A reprodução gera blocos curtos de áudio conforme necessário. Alterar monitor, mute ou solo mantém a posição; notas e andamento editados entram na próxima reprodução.
 
-[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). [Native packages updated 2026-11-15](bin/README.md) include this source update. 配布バイナリも更新済みです。
 
 [Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 

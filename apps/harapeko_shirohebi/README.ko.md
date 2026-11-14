@@ -1,5 +1,7 @@
 # HARAPEKO SHIROHEBI
 
+**2026-11-15 ROM:** [Download / ダウンロード](bin/README.md) · [ZIP](bin/harapeko-shirohebi.zip).
+
 <!-- readme-language-links:start -->
 [English](README.md#english) | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->
@@ -36,7 +38,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\apps\harapeko_shirohebi\bu
 
 스크립트는 분할된 소스를 합치고 저장소의 라이브러리와 컴파일한 뒤, 인터럽트 루틴이 고정 ROM에 있는지 검사합니다. 이어서 VBlank 벡터를 설치하고 카트리지 체크섬을 갱신합니다. 결과는 DMG와 CGB에서 실행할 수 있는 **64 KiB MBC5 ROM, 8 KiB 배터리 백업 RAM** 구성입니다. 분할 파일을 따로 컴파일하거나 벡터·체크섬 단계를 생략하지 마세요.
 
-이 게임 디렉터리에는 **미리 빌드한 실행 파일이나 ROM이 없습니다**. 컴파일러는 저장소 최상위에 있으며, 배포된 게임 ROM은 itch.io에서 받으세요.
+다시 빌드한 ROM과 검증 기록은 [bin/](bin/README.md)에서 받습니다. 컴파일러는 저장소 최상위에 있으며 itch.io는 별도 배포 경로입니다.
 
 ## 조작
 

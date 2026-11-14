@@ -1,5 +1,7 @@
 # Source update — 2026-11-14
 
+**Follow-up, 2026-11-15:** [GBSEQ native packages](tools/gbseq/bin/README.md) and [Shirohebi ROM](apps/harapeko_shirohebi/bin/README.md) now include this update. The binary status below describes the original source-only publication.
+
 Compared the current local sources with GitHub `main` (`3ef8bcc`).
 
 - VBlank: standard SET_INST channel IDs, invalid-ID guard, and preservation of
