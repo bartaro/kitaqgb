@@ -1,5 +1,7 @@
 # Bibliothèques KITAQGB
 
+[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+
 `wire3d_dmg` est un moteur de rendu filaire monochrome pour Game Boy. Choisissez `wire3d_dmg_96.c` pour 128 × 96 ou `wire3d_dmg.c` pour 128 × 120, puis utilisez `Wire3DDMG_*`. `wire3d` et `dmg3d` sont d’autres points d’entrée pour les profils de 96 et 120 lignes, respectivement. Compilez un seul point d’entrée par programme. `wire3d_cgb` est le moteur dédié à la couleur.
 
 [Guide du moteur commun (anglais)](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)

@@ -17,7 +17,7 @@ REDO	다시 실행	重做	重做	Rehacer	Refazer	Rétablir	Wiederholen
 ADD	추가	添加	新增	Añadir	Adicionar	Ajouter	Hinzufügen
 DUP	복제	复制	複製	Duplicar	Duplicar	Dupliquer	Duplizieren
 DEL	삭제	删除	刪除	Eliminar	Excluir	Supprimer	Löschen
-ALIGN	정렬	对齐	對齊	Alinear	Alinhar	Aligner	Ausrichten
+Quantize	퀀타이즈	量化	量化	Cuantizar	Quantizar	Quantifier	Quantisieren
 FIT	전체 보기	适配	全覽	Ajustar	Ajustar	Ajuster	Einpassen
 BAR-	마디−	小节−	小節−	Compás−	Compasso−	Mesure−	Takt−
 BAR+	마디+	小节+	小節+	Compás+	Compasso+	Mesure+	Takt+
@@ -36,7 +36,7 @@ Redo         Ctrl+Y	다시 실행  Ctrl+Y	重做  Ctrl+Y	重做  Ctrl+Y	Rehacer 
 Select lane  Ctrl+A	트랙 선택 Ctrl+A	选择本轨 Ctrl+A	選取本軌 Ctrl+A	Seleccionar pista Ctrl+A	Selecionar pista Ctrl+A	Sélectionner la piste Ctrl+A	Spur auswählen Ctrl+A
 Duplicate    Ctrl+D	복제  Ctrl+D	复制  Ctrl+D	複製  Ctrl+D	Duplicar  Ctrl+D	Duplicar  Ctrl+D	Dupliquer  Ctrl+D	Duplizieren  Ctrl+D
 Delete          Del	삭제  Del	删除  Del	刪除  Del	Eliminar  Del	Excluir  Del	Supprimer  Del	Löschen  Del
-Align to snap     Q	격자 정렬 Q	吸附到网格 Q	貼齊格線 Q	Ajustar a rejilla Q	Alinhar à grade Q	Aligner sur la grille Q	Am Raster ausrichten Q
+Quantize selection   Q	선택 음표 퀀타이즈 Q	量化所选音符 Q	量化所選音符 Q	Cuantizar selección Q	Quantizar seleção Q	Quantifier la sélection Q	Auswahl quantisieren Q
 Octave up	한 옥타브 위	升八度	升八度	Subir octava	Subir oitava	Monter d’une octave	Oktave höher
 Octave down	한 옥타브 아래	降八度	降八度	Bajar octava	Descer oitava	Descendre d’une octave	Oktave tiefer
 Fit song          F	전체 보기  F	适配  F	全覽  F	Ajustar  F	Ajustar  F	Ajuster  F	Einpassen  F
@@ -188,6 +188,9 @@ LOOP OFF - playback stops at the finale	반복 끔 / 곡 끝에서 정지	不循
 UNDO stack is empty	실행 취소할 내용 없음	没有可撤销的操作	沒有可復原的操作	Nada que deshacer	Nada para desfazer	Rien à annuler	Nichts rückgängig zu machen
 REDO stack is empty	다시 실행할 내용 없음	没有可重做的操作	沒有可重做的操作	Nada que rehacer	Nada para refazer	Rien à rétablir	Nichts zu wiederholen
 GBSEQ - Unsaved changes	GBSEQ - 저장되지 않은 변경	GBSEQ - 未保存的更改	GBSEQ - 尚未儲存的變更	GBSEQ: cambios sin guardar	GBSEQ: alterações não salvas	GBSEQ : modifications non enregistrées	GBSEQ: ungespeicherte Änderungen
+Discard changes	저장하지 않고 계속	不保存并继续	不儲存並繼續	Continuar sin guardar	Continuar sem salvar	Ne pas enregistrer	Nicht speichern
+Cancel	취소	取消	取消	Cancelar	Cancelar	Annuler	Abbrechen
+Waiting for the file dialog	파일 대화상자에서 선택하세요	请在文件对话框中选择	請在檔案對話框中選擇	Elija en el diálogo de archivos	Escolha na janela de arquivos	Choisissez dans la fenêtre de fichiers	Im Dateidialog auswählen
 Save this sequence before replacing it?	현재 곡을 바꾸기 전에 저장할까요?	替换前保存当前序列吗？	取代前要儲存目前的序列嗎？	¿Guardar antes de reemplazar la secuencia?	Salvar antes de substituir a sequência?	Enregistrer avant de remplacer la séquence ?	Sequenz vor dem Ersetzen speichern?
 GBSEQ project	GBSEQ 프로젝트	GBSEQ 工程	GBSEQ 專案	Proyecto GBSEQ	Projeto GBSEQ	Projet GBSEQ	GBSEQ-Projekt
 Wave audio	WAV 오디오	WAV 音频	WAV 音訊	Audio WAV	Áudio WAV	Audio WAV	WAV-Audio
@@ -199,7 +202,9 @@ Undo [Ctrl+Z]	실행 취소  [Ctrl+Z]	撤销  [Ctrl+Z]	復原  [Ctrl+Z]	Deshacer
 Redo [Ctrl+Y]	다시 실행  [Ctrl+Y]	重做  [Ctrl+Y]	重做  [Ctrl+Y]	Rehacer  [Ctrl+Y]	Refazer  [Ctrl+Y]	Rétablir  [Ctrl+Y]	Wiederholen  [Ctrl+Y]
 Duplicate selection [Ctrl+D]	복제  [Ctrl+D]	复制  [Ctrl+D]	複製  [Ctrl+D]	Duplicar  [Ctrl+D]	Duplicar  [Ctrl+D]	Dupliquer  [Ctrl+D]	Duplizieren  [Ctrl+D]
 Delete selection [Del]	삭제  [Del]	删除  [Del]	刪除  [Del]	Eliminar  [Del]	Excluir  [Del]	Supprimer  [Del]	Löschen  [Del]
-Cycle grid [G]: 1/16, 1/8, 1/4 notes	격자 변경 [G]: 1/16, 1/8, 1/4	网格 [G]：1/16、1/8、1/4	格線 [G]：1/16、1/8、1/4	Rejilla [G]: 1/16, 1/8, 1/4	Grade [G]: 1/16, 1/8, 1/4	Grille [G] : 1/16, 1/8, 1/4	Raster [G]: 1/16, 1/8, 1/4
+Cycle grid [G]: 1/16, 1/8, 1/4, 1/2	격자 [G]: 1/16, 1/8, 1/4, 1/2	网格 [G]：1/16、1/8、1/4、1/2	格線 [G]：1/16、1/8、1/4、1/2	Rejilla [G]: 1/16, 1/8, 1/4, 1/2	Grade [G]: 1/16, 1/8, 1/4, 1/2	Grille [G] : 1/16, 1/8, 1/4, 1/2	Raster [G]: 1/16, 1/8, 1/4, 1/2
+Quantized {} notes to 1/{}	{}개 음표를 1/{}에 정렬	已将 {} 个音符量化至 1/{}	已將 {} 個音符量化至 1/{}	{} notas cuantizadas a 1/{}	{} notas quantizadas em 1/{}	{} notes quantifiées à 1/{}	{} Noten auf 1/{} quantisiert
+Quantize would overlap notes; nothing changed	음표가 겹쳐 변경하지 않았습니다	量化会造成音符重叠，未作更改	量化會造成音符重疊，未作變更	Se superpondrían notas; sin cambios	As notas se sobreporiam; nada alterado	Chevauchement de notes ; aucun changement	Noten würden sich überlappen; nichts geändert
 Align selected starts to grid [Q]; rejects overlaps	선택 음표 시작을 정렬 [Q]; 겹침 방지	对齐所选音符 [Q]，拒绝重叠	對齊所選音符 [Q]，拒絕重疊	Ajustar inicios [Q]; no permite solapes	Alinhar inícios [Q]; sem sobreposição	Aligner les débuts [Q] sans chevauchement	Notenanfänge ausrichten [Q]; keine Überlappung
 Fit entire song [F]	전체 보기  [F]	适配  [F]	全覽  [F]	Ajustar  [F]	Ajustar  [F]	Ajuster  [F]	Einpassen  [F]
 Audition selected note	선택 음표 미리 듣기	试听所选音符	試聽所選音符	Escuchar nota seleccionada	Ouvir nota selecionada	Écouter la note sélectionnée	Gewählte Note vorhören
@@ -254,7 +259,14 @@ Solo P{}	P{} 독주	P{} 独奏	P{} 獨奏	Solo P{}	Solo P{}	Solo P{}	Solo P{}
 ALL16 overview	16CH 전체 보기	16轨总览	16軌總覽	Vista de 16 pistas	Visão de 16 pistas	Vue des 16 pistes	16-Spur-Übersicht
 NOTE LENGTH limited by next note - move the next note to extend further	다음 음표로 길이 제한 / 연장하려면 다음 음표 이동	音长受下一音符限制，请移动下一音符后再延长	音長受下一音符限制，請移動下一音符再延長	La siguiente nota limita la duración; muévela para alargar	A próxima nota limita a duração; mova-a para alongar	La note suivante limite la durée ; déplacez-la pour prolonger	Die nächste Note begrenzt die Länge; zum Verlängern verschieben
 STARTING real-time KOKURA playback...	KOKURA 실시간 재생 준비 중…	正在准备 KOKURA 实时播放…	正在準備 KOKURA 即時播放…	Preparando KOKURA en tiempo real…	Preparando KOKURA em tempo real…	Préparation de la lecture KOKURA en temps réel…	KOKURA-Echtzeitwiedergabe wird vorbereitet…
-Keyboard / MIDI     K	연주 건반 / MIDI K	演奏键盘 / MIDI K	演奏鍵盤 / MIDI K	Teclado / MIDI K	Teclado / MIDI K	Clavier / MIDI K	Klaviatur / MIDI K
+Keyboard / MIDI   Ctrl+K	연주 건반 / MIDI Ctrl+K	演奏键盘 / MIDI Ctrl+K	演奏鍵盤 / MIDI Ctrl+K	Teclado / MIDI Ctrl+K	Teclado / MIDI Ctrl+K	Clavier / MIDI Ctrl+K	Klaviatur / MIDI Ctrl+K
+Performance keyboard [Ctrl+K]: listen, step input or record	연주 건반 [Ctrl+K]: 시청, 스텝 입력, 녹음	演奏键盘 [Ctrl+K]：试听、步进输入或录音	演奏鍵盤 [Ctrl+K]：試聽、步進輸入或錄音	Teclado [Ctrl+K]: escuchar, introducir o grabar	Teclado [Ctrl+K]: ouvir, inserir ou gravar	Clavier [Ctrl+K] : écouter, saisir ou enregistrer	Klaviatur [Ctrl+K]: Anhören, Schritteingabe oder Aufnahme
+Record live	실시간 녹음	实时录音	即時錄音	Grabar en vivo	Gravar ao vivo	Enregistrer	Aufnehmen
+Recording	녹음 중	录音中	錄音中	Grabando	Gravando	Enregistrement	Aufnahme läuft
+Performance keyboard	연주 건반	演奏键盘	演奏鍵盤	Teclado de interpretación	Teclado de execução	Clavier de jeu	Spielklaviatur
+Stop recording	녹음 정지	停止录音	停止錄音	Parar grabación	Parar gravação	Arrêter la prise	Aufnahme stoppen
+Step: 1/{}	스텝: 1/{}	步长：1/{}	步長：1/{}	Paso: 1/{}	Passo: 1/{}	Pas : 1/{}	Schritt: 1/{}
+REC Q: 1/{}	녹음 Q: 1/{}	录音量化：1/{}	錄音量化：1/{}	Cuant. REC: 1/{}	Quant. REC: 1/{}	Quant. REC : 1/{}	Aufn.-Q: 1/{}
 Import MIDI (.mid)	MIDI 가져오기 (.mid)	导入 MIDI (.mid)	匯入 MIDI (.mid)	Importar MIDI (.mid)	Importar MIDI (.mid)	Importer MIDI (.mid)	MIDI importieren (.mid)
 Export MIDI (.mid)	MIDI 내보내기 (.mid)	导出 MIDI (.mid)	匯出 MIDI (.mid)	Exportar MIDI (.mid)	Exportar MIDI (.mid)	Exporter MIDI (.mid)	MIDI exportieren (.mid)
 Selection +1 semitone	선택 음표 반음 올리기	所选音符升半音	所選音符升半音	Selección +1 semitono	Seleção +1 semitom	Sélection +1 demi-ton	Auswahl +1 Halbton

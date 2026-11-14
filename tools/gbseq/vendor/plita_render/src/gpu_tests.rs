@@ -56,6 +56,10 @@ impl Offscreen {
     }
 
     fn render(&mut self, list: &DrawList) {
+        self.render_scaled(list, 1.0);
+    }
+
+    fn render_scaled(&mut self, list: &DrawList, scale_factor: f64) {
         let mut encoder = self.device.create_command_encoder(&Default::default());
         self.renderer.encode(
             &self.device,
@@ -63,7 +67,7 @@ impl Offscreen {
             &mut encoder,
             &self.view,
             self.size,
-            self.size.to_ui_size(),
+            self.size.to_ui_size_with_scale_factor(scale_factor),
             list,
         );
         self.queue.submit(Some(encoder.finish()));
@@ -390,4 +394,32 @@ fn offscreen_cache_keeps_images_distinct_and_releases_old_sources() {
     gpu.wait();
     assert!(last.upgrade().is_none());
     assert!(gpu.renderer.image_cache.is_empty());
+}
+#[test]
+#[ignore = "requires GPU and PLITA_GPU_EVIDENCE / PLITA_DRAW_FIXTURE"]
+fn offscreen_fixture_snapshot_with_dpi() {
+    let root = PathBuf::from(std::env::var_os("PLITA_GPU_EVIDENCE").unwrap());
+    let fixture = PathBuf::from(std::env::var_os("PLITA_DRAW_FIXTURE").unwrap());
+    let data: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&fixture).unwrap()).unwrap();
+    let scale = data["scale_factor"].as_f64().unwrap_or(1.0);
+    assert!(scale.is_finite() && scale > 0.0);
+    let (list, _, _) = exported_list(&fixture);
+    let width = (data["width"].as_f64().unwrap() * scale).round() as u32;
+    let height = (data["height"].as_f64().unwrap() * scale).round() as u32;
+    let mut gpu = Offscreen::new(width, height);
+    gpu.render_scaled(&list, scale);
+    gpu.wait();
+    std::fs::create_dir_all(&root).unwrap();
+    let result = serde_json::json!({
+        "adapter": gpu.adapter, "fixture": fixture, "width": width,
+        "height": height, "scale_factor": scale,
+        "method": "production GPU encoder; physical target and DPI-derived logical viewport; offscreen snapshot",
+    });
+    std::fs::write(
+        root.join("gpu.json"),
+        serde_json::to_vec_pretty(&result).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(root.join("desktop.rgba"), gpu.read()).unwrap();
 }

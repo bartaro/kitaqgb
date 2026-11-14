@@ -15,6 +15,9 @@
 #include "audio_vblank.h"
 
 /* REST keeps a channel's current sound; it is not a note-off command. */
+#ifndef AUDIO_VBLANK_STANDARD_INST_ORDER
+#error SHIROHEBI requires the standard VBlank instrument order (CH3=2, CH4=3).
+#endif
 #define N  AUDIO_VBLANK_REST
 #define SND_VB_LOOP AUDIO_VBLANK_LOOP
 #define SND_VB_END AUDIO_VBLANK_END

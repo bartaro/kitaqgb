@@ -2,11 +2,12 @@
 
 ## 1. システム構成
 
-再生専用ROMは各台の4CHをROMから直接読み、SRAMやSAVは使いません。
-形式・操作は[再生専用ROM仕様](LINK16_PLAYER_ROM_FORMAT.md)を参照してください。
-以下のSRAMに関する説明は従来の編集用ROM向けです。
+追加の再生専用方式: `export-player-roms`は各台専用の512KB ROMを出力します。
+各ROMが自分の4CHを直接読み、SRAM/SAV/SRMを使いません。
+詳細は[LINK16_PLAYER_ROM_FORMAT.md](LINK16_PLAYER_ROM_FORMAT.md)を参照してください。
+以下のSRAM記述は従来の編集用ROMに関するものです。
 
-`gbseq` はWindows上で曲を編集するplita版GUI/CLIです。`LINK16 SEQUENCER`
+`gbseq` はWindows上で曲を編集するPLITA版GUI/CLIです。`LINK16 SEQUENCER`
 はGame Boyで動く別ROMで、GBSEQが出力したbattery SRAMを読み込みます。
 
 ```text

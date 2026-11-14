@@ -1,6 +1,12 @@
 # GBSEQ — 使用手冊
 
-[MIDI 檔案與裝置、演奏鍵盤、錄音及 512 種音色](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** 按 Ctrl+K 或鋼琴圖示開啟演奏鍵盤，鍵盤音訊連續輸出。新增或開啟曲目前，視窗內會提示儲存、捨棄或取消未儲存的編輯。播放ROM在SOLO/MASTER模式下按B切換循環，TIME顯示目前位置／總時長。
+
+播放時按需產生短音訊區塊。切換監聽、靜音或獨奏會保留播放位置；音符和速度編輯在下次播放時生效。
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[MIDI 檔案與裝置、演奏鍵盤、錄音及 512 種音色](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 匯出的ROM包含用於啟動相容性驗證的48位元組任天堂標誌資料。GBSEQ的MIT授權不授予任天堂標誌或商標的獨立使用權，GBSEQ與任天堂沒有合作關係，也未獲其認可。[英文／日文聲明](docs/NINTENDO_NOTICE.md)。
 
@@ -12,7 +18,7 @@ GBSEQ由DAISUKE OBA製作，提供plita桌面GUI與獨立CLI，共用編輯模�
 
 ## 演奏輸入與 WAV 匯出
 
-選擇目標軌道，按 K 開啟鍵盤。白鍵是 A/S/D/F/G/H/J，黑鍵是 W/E/T/Y/U，Z/X 切換八度。按 IN 和 OUT 切換 MIDI 裝置。步進輸入每次前進 1、2 或 4 個十六分音符；錄音從曲首開始錄一遍。保護模式會略過重疊的輸入，覆寫模式只替換重疊的區段。從檔案選單匯入 MIDI，從匯出選單寫出 MIDI。請用 .gbseq 保留 GB 專用音色。
+選擇目標軌道，按 Ctrl+K 開啟鍵盤。白鍵是 A/S/D/F/G/H/J，黑鍵是 W/E/T/Y/U，Z/X 切換八度。按 IN 和 OUT 切換 MIDI 裝置。步進輸入每次前進 1、2 或 4 個十六分音符；錄音從曲首開始錄一遍。保護模式會略過重疊的輸入，覆寫模式只替換重疊的區段。從檔案選單匯入 MIDI，從匯出選單寫出 MIDI。請用 .gbseq 保留 GB 專用音色。
 
 每種聲道有 128 個預設音色，可從下拉選單挑選；使用者音色可另存為 .gbpreset 並再次載入。和弦標記可分別為整體混音和各軌道開啟。全曲移調不會改動雜訊軌。
 
@@ -39,7 +45,7 @@ GUI需要桌面環境、相容GPU驅動及試聽用音訊裝置。Linux面向Ubu
 
 ## GUI編輯
 
-選擇連線模式與P1–P4。DMG07的ALL16同時顯示16聲道。雙擊空白軌道建立音符，雙擊音符開啟詳細面板。拖曳主體改變時間與音高，拖右緣改長度。每軌為單音，拒絕重疊。小節數為1–256。滾輪及底部捲軸移動；F顯示全曲，Home回開頭，+/-縮放。播放時畫面跟隨位置。Space播放/停止，LOOP ON/OFF控制循環。首次播放會先算出整曲音訊，長曲需要準備時間。
+選擇連線模式與P1–P4。DMG07的ALL16同時顯示16聲道。雙擊空白軌道建立音符，雙擊音符開啟詳細面板。拖曳主體改變時間與音高，拖右緣改長度。每軌為單音，拒絕重疊。小節數為1–256。滾輪及底部捲軸移動；F顯示全曲，Home回開頭，+/-縮放。播放時畫面跟隨位置。Space播放/停止，LOOP ON/OFF控制循環。播放時按需產生短音訊區塊。切換監聽、靜音或獨奏會保留播放位置；音符和速度編輯在下次播放時生效。
 
 Ctrl/Shift點擊切換選取，Ctrl+A選取目前軌道。左右按格線移動，上下半音，Shift+上下八度。Ctrl+D複製，Delete刪除；G切換格線，Q對齊起點；Ctrl+Z/Y復原/重做，Ctrl+C/V複製/貼上。Ctrl+O開啟，Ctrl+S儲存，Ctrl+Shift+S另存新檔。取代未儲存編輯前會確認，覆寫前請備份原件。
 

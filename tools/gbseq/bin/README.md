@@ -1,5 +1,7 @@
 # Native downloads
 
+The 2026-11-14 source changes are newer than these archived packages. Check `BUILD_VERIFICATION.json` for each package revision, or build the current source as described in the manuals.
+
 Keyboard audition uses the current lane's selected note (including edited
 duty, envelope, pan and custom CH3 wave), then its input preset or cursor
 instrument. PC keys, mouse keys and MIDI share that path. The source tests

@@ -98,6 +98,7 @@ impl MachineState {
         machine.cgb_double_speed = self.cgb_double_speed;
         machine.cgb_speed_switch_armed = self.cgb_speed_switch_armed;
         machine.cgb_speed_switch_freeze_cycles = self.cgb_speed_switch_freeze_cycles;
+        machine.active_interrupt_vector = None;
         machine.ppu.restore_runtime_state(&machine.memory);
     }
 

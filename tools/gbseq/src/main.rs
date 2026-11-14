@@ -21,6 +21,11 @@ struct Cli {
 
 fn main() -> Result<()> {
     let args = Cli::parse();
+    // Mouse-wheel debug logging on every event can block the window thread
+    // on the Windows console. An explicit diagnostic filter still wins.
+    if args.command.is_none() && std::env::var_os("RUST_LOG").is_none() {
+        std::env::set_var("RUST_LOG", "warn");
+    }
     // Set this before creating a window, MIDI connection or audio thread.
     if args.command.is_none() && std::env::var_os("PLITA_UI_FONT_FALLBACK").is_none() {
         let rel = "assets/ui-font/NotoSansCJKjp-Regular.otf";

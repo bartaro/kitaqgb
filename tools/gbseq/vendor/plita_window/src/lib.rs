@@ -6,6 +6,8 @@ use std::{
 };
 
 use plita_render::{ClearColor, GpuRenderer, RenderConfig, RenderError, RenderSize};
+#[cfg(test)]
+mod ime_tests;
 mod render_worker;
 use plita_ui::{CreativeShell, DrawList, Point, PointerButton, Size, UiEvent, UiResponse};
 use render_worker::WindowRenderer;
@@ -25,6 +27,9 @@ const MIN_CONTINUOUS_TICK_INTERVAL: Duration = Duration::from_micros(500);
 const DOUBLE_CLICK_INTERVAL: Duration = Duration::from_millis(500);
 const DOUBLE_CLICK_DISTANCE: f32 = 6.0;
 
+fn configure_program_ime(window: &Window, program: &dyn PlitaProgram) {
+    window.set_ime_allowed(program.ime_allowed());
+}
 #[derive(Clone, Copy, Debug)]
 struct CompletedClick {
     at: Instant,
@@ -200,6 +205,9 @@ impl AuxiliaryWindowDescriptor {
 /// domain state, consumes normalized UI events, and emits a `DrawList`.
 pub trait PlitaProgram {
     /// Minimum logical client size; None leaves resizing unconstrained.
+    fn ime_allowed(&self) -> bool {
+        true
+    }
     fn minimum_window_size(&self) -> Option<Size> {
         None
     }
@@ -210,6 +218,13 @@ pub trait PlitaProgram {
     /// Return false to cancel closing, for example when a document is unsaved.
     fn close_requested(&mut self) -> bool {
         true
+    }
+
+    /// Main-window physical pixels per logical UI unit. Called before the first
+    /// draw and before resize when the OS DPI is refreshed or changed.
+    /// Pixel-oriented programs can use this to align their content and effects.
+    fn scale_factor_changed(&mut self, _scale_factor: f64) -> UiResponse {
+        UiResponse::none()
     }
 
     /// Called when the window is resized.
@@ -271,6 +286,11 @@ pub trait PlitaProgram {
     /// A stable token never repeatedly steals focus. None requests no activation.
     fn auxiliary_window_activation_request(&self, _id: u64) -> Option<u64> {
         None
+    }
+
+    /// Physical pixels per logical unit for an auxiliary window on its own monitor.
+    fn auxiliary_scale_factor_changed(&mut self, _id: u64, _scale: f64) -> UiResponse {
+        UiResponse::none()
     }
 
     /// Called when an auxiliary window is resized.
@@ -601,7 +621,6 @@ impl Phase1WindowApp {
         // Keep IME available for the retained TextInput prototype. The UI layer
         // accepts IME commits only while its TextInput has focus, so enabling IME
         // here is safe and lets Japanese input work on Windows.
-        window.set_ime_allowed(true);
         let scale_factor = window.scale_factor();
         let inner_size = window.inner_size();
 
@@ -623,7 +642,9 @@ impl Phase1WindowApp {
             .program_factory
             .take()
             .expect("program factory is used once");
-        let ui = factory(renderer.ui_size());
+        let mut ui = factory(renderer.ui_size());
+        configure_program_ime(&window, ui.as_ref());
+        ui.scale_factor_changed(scale_factor);
         if let Some(size) = ui.minimum_window_size() {
             window.set_min_inner_size(Some(LogicalSize::new(
                 f64::from(size.width.max(1.0)),
@@ -751,6 +772,10 @@ impl Phase1WindowApp {
             };
             renderer.set_ui_scale_factor(state.window.scale_factor());
             renderer.resize(state.window.inner_size().into());
+            if let Some(ui) = self.ui.as_mut() {
+                ui.auxiliary_scale_factor_changed(state.id, state.window.scale_factor());
+                ui.resize_auxiliary_window(state.id, renderer.ui_size());
+            }
             if let Some(list) = self
                 .ui
                 .as_ref()
@@ -824,7 +849,9 @@ impl Phase1WindowApp {
                     continue;
                 }
             };
-            window.set_ime_allowed(true);
+            if let Some(ui) = self.ui.as_ref() {
+                configure_program_ime(&window, ui.as_ref());
+            }
             let prepared = match GpuRenderer::prepare_surface(Arc::clone(&window)) {
                 Ok(prepared) => prepared,
                 Err(err) => {
@@ -1063,6 +1090,7 @@ impl Phase1WindowApp {
                     state.renderer.ui_size()
                 };
                 if let Some(ui) = self.ui.as_mut() {
+                    ui.auxiliary_scale_factor_changed(auxiliary_id, scale_factor);
                     ui.resize_auxiliary_window(auxiliary_id, ui_size);
                 }
                 self.rebuild_all_draw_lists();
@@ -1361,6 +1389,7 @@ impl ApplicationHandler for Phase1WindowApp {
                     ui_size = Some(renderer.ui_size());
                 }
                 if let (Some(ui), Some(size)) = (self.ui.as_mut(), ui_size) {
+                    ui.scale_factor_changed(scale_factor);
                     ui.resize(size);
                 }
                 self.sync_auxiliary_windows_or_exit(event_loop);
@@ -1375,6 +1404,7 @@ impl ApplicationHandler for Phase1WindowApp {
                     ui_size = Some(renderer.ui_size());
                 }
                 if let (Some(ui), Some(size)) = (self.ui.as_mut(), ui_size) {
+                    ui.scale_factor_changed(scale_factor);
                     ui.resize(size);
                 }
                 self.sync_auxiliary_windows_or_exit(event_loop);

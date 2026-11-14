@@ -49,7 +49,7 @@ __wram u8 AudioVBlank_QueueUnderruns;
 // payload in switchable WRAM so existing fixed-WRAM control ABI is unchanged.
 #ifdef AUDIO_VBLANK_QUEUE_WRAM0
 // Fixed WRAM avoids the DMG renderer's complete D000..DFFF reservation.
-// The ISR's SVBK selection does not affect this fixed 80-byte queue.
+// Fixed placement also lets the ISR leave an active HDMA source bank intact.
 __wram u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
 #else
 __wramx_bank(1) u8 AudioVBlank_QueueBuffer[AUDIO_VBLANK_QUEUE_BYTES];
@@ -84,10 +84,16 @@ __unsafe void __kq_vblank_vector()
         PUSH_BC
         PUSH_DE
         PUSH_HL
+    }
+#ifndef AUDIO_VBLANK_QUEUE_WRAM0
+    __asm {
         LDH_A_MEM 0x70
         PUSH_AF
         LD_A_IMM 1
         LDH_MEM_A 0x70
+    }
+#endif
+    __asm {
         /* B remains live across an IMMEDIATE record chain. Zero means the
            legacy APU phase wait has not run yet in this VBlank. */
         LD_B_IMM 0
@@ -247,8 +253,16 @@ audiovb_irq_control_inst_not_ch1:
         LD_MEM_A AudioVBlank_Ch2Envelope
         JP audiovb_irq_control_done
 audiovb_irq_control_inst_not_ch2:
+        CP_IMM 0x04
+        JP_NC audiovb_irq_control_done
         CP_IMM 0x02
-        JR_NZ audiovb_irq_control_inst_ch3
+    }
+#ifdef AUDIO_VBLANK_LEGACY_INST_ORDER
+    __asm { JR_NZ audiovb_irq_control_inst_ch3 }
+#else
+    __asm { JR_Z audiovb_irq_control_inst_ch3 }
+#endif
+    __asm {
         LD_A_MEM AudioVBlank_ControlArg2
         LD_MEM_A AudioVBlank_Ch4Envelope
         JP audiovb_irq_control_done
@@ -646,8 +660,14 @@ audiovb_irq_really_done:
         JP_HL
 audiovb_irq_hook_return:
 audiovb_irq_no_hook:
+    }
+#ifndef AUDIO_VBLANK_QUEUE_WRAM0
+    __asm {
         POP_AF
         LDH_MEM_A 0x70
+    }
+#endif
+    __asm {
         POP_HL
         POP_DE
         POP_BC

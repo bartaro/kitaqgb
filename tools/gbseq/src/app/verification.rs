@@ -21,6 +21,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
         monitor_path: Vec<(usize, Option<usize>, usize)>,
         resized_length: Option<u32>,
         performance_verified: bool,
+        keyboard_input_verified: bool,
+        replace_prompt_verified: bool,
     }
     impl PlitaProgram for Probe {
         fn resize(&mut self, size: Size) -> UiResponse {
@@ -36,7 +38,21 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
         fn tick(&mut self) -> UiResponse {
             self.ticks += 1;
             if self.ticks == 4 {
-                self.app.apply_action(Action::Keyboard);
+                let icon = self
+                    .app
+                    .link16_buttons()
+                    .into_iter()
+                    .find(|b| b.action == Action::Keyboard)
+                    .unwrap();
+                let position = Point::new(icon.rect.x + 8., icon.rect.y + 10.);
+                self.app.handle_event(UiEvent::PointerDown {
+                    position,
+                    button: PointerButton::Primary,
+                });
+                self.app.handle_event(UiEvent::PointerUp {
+                    position,
+                    button: PointerButton::Primary,
+                });
                 self.app.apply_action(Action::ChordMix);
                 self.app.apply_action(Action::ChordLane(0));
                 self.app.menu = None;
@@ -64,7 +80,45 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     .as_ref()
                     .is_some_and(|p| p.name.starts_with("002 "))
                     && self.app.chords.mix;
-                self.app.apply_action(Action::Keyboard);
+                let snapshot = self.app.project.clone();
+                self.app.cursor_step = self.app.project.total_steps() - 1;
+                self.app.project.tracks[self.app.selected_track]
+                    .notes
+                    .clear();
+                let click = |app: &mut GbseqApp, r: Rect| {
+                    let position = Point::new(r.x + 5., r.bottom() - 5.);
+                    app.handle_event(UiEvent::PointerDown {
+                        position,
+                        button: PointerButton::Primary,
+                    });
+                    app.handle_event(UiEvent::PointerUp {
+                        position,
+                        button: PointerButton::Primary,
+                    });
+                };
+                let step = self.app.panel_cell(1, 1, 6);
+                let rec = self.app.panel_cell(1, 2, 6);
+                click(&mut self.app, step);
+                let panel = self.app.perf_rect();
+                // The exposed bottom end of the first white key.
+                let white = Rect::new(panel.x + 8., panel.bottom() - 20., 15., 12.);
+                click(&mut self.app, white);
+                click(&mut self.app, rec);
+                click(&mut self.app, white);
+                click(&mut self.app, rec);
+                let notes = &self.app.project.tracks[self.app.selected_track].notes;
+                self.keyboard_input_verified = notes.len() == 2
+                    && notes[0].start == 0
+                    && notes[1].start == self.app.project.total_steps() - 1;
+                self.app.project = snapshot;
+                self.app.handle_event(UiEvent::KeyDown {
+                    key: "k|Code(KeyK)".into(),
+                    ctrl: true,
+                    shift: false,
+                    alt: false,
+                    meta: false,
+                });
+                self.keyboard_input_verified &= !self.app.live.open;
                 self.app.apply_action(Action::ChordMix);
                 self.app.menu = None;
             }
@@ -73,6 +127,40 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                 let id = self.app.project.insert_note_exact(0, 4, 2, 24, 15).unwrap();
                 self.app.selected_note = Some(id);
                 self.app.open_key_track(0);
+            }
+            if self.ticks == 8 {
+                self.app.toggle_keyboard();
+                self.app.apply_action(Action::Menu(MenuKind::File));
+                let r = self
+                    .app
+                    .menu_buttons()
+                    .into_iter()
+                    .find(|s| s.action == Action::New)
+                    .unwrap()
+                    .rect;
+                let position = Point::new(r.x + 6., r.y + 6.);
+                self.app.handle_event(UiEvent::PointerDown {
+                    position,
+                    button: PointerButton::Primary,
+                });
+                self.app.handle_event(UiEvent::PointerUp {
+                    position,
+                    button: PointerButton::Primary,
+                });
+                self.replace_prompt_verified = self.app.files.active();
+            }
+            if self.ticks == 11 {
+                let before = self.app.project.clone();
+                self.app.handle_event(UiEvent::KeyDown {
+                    key: "Named(Escape)".into(),
+                    ctrl: false,
+                    shift: false,
+                    alt: false,
+                    meta: false,
+                });
+                self.replace_prompt_verified &=
+                    !self.app.files.active() && self.app.live.open && self.app.project == before;
+                self.app.toggle_keyboard();
             }
             if self.ticks == 14 {
                 let r = self.app.note_rect(
@@ -165,6 +253,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                     .iter()
                     .any(|b| b.action == Action::ExportPlayerRoms);
                 let passed = self.performance_verified
+                    && self.replace_prompt_verified
+                    && self.keyboard_input_verified
                     && length == 6
                     && self.monitor_path
                         == [(2, None, 0), (2, Some(1), 0), (4, None, 0), (4, Some(3), 0)]
@@ -174,6 +264,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
                 let report = serde_json::json!({
                     "passed": passed, "ticks": self.ticks, "draws": self.draws.get(),
                     "performance_preset_and_chord_ui":self.performance_verified,
+                    "keyboard_icon_shortcut_mouse_step_and_record": self.keyboard_input_verified,
+                    "dirty_new_with_keyboard_cancel_kept_edits":self.replace_prompt_verified,
                     "viewport": [self.app.size.width, self.app.size.height],
                     "language": "ja", "wave_graph": true, "key_editor": self.app.key_editor,
                     "language_menu_draws": Language::ALL.map(|l|l.code()),
@@ -210,6 +302,8 @@ pub fn run_startup_smoke(receipt: PathBuf) -> plita::prelude::Result<()> {
             monitor_path: Vec::new(),
             resized_length: None,
             performance_verified: false,
+            keyboard_input_verified: false,
+            replace_prompt_verified: false,
         })
 }
 

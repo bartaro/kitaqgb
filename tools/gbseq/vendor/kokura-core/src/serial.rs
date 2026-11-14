@@ -19,6 +19,14 @@ pub struct SerialLinkExchangeResult {
     pub peer_trace: Vec<SerialTraceEvent>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct SerialExternalClockResult {
+    pub completed: bool,
+    pub outgoing: u8,
+    pub interrupt_requested: bool,
+    pub trace: Vec<SerialTraceEvent>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Serial {
     pub sb: u8,
@@ -49,6 +57,10 @@ impl Serial {
                 sc: self.read_sc(),
                 internal_clock: self.internal_clock(),
             });
+        } else {
+            self.transfer_active = false;
+            self.bits_remaining = 0;
+            self.cycle_accum = 0;
         }
         trace
     }
@@ -103,6 +115,28 @@ impl Serial {
         self.sc & 0x01 != 0
     }
 
+    pub fn clock_external_byte(&mut self, incoming: u8) -> SerialExternalClockResult {
+        let mut out = SerialExternalClockResult::default();
+        if !self.transfer_active || self.internal_clock() {
+            return out;
+        }
+
+        out.outgoing = self.sb;
+        self.sb = incoming;
+        self.sc &= !0x80;
+        self.cycle_accum = 0;
+        self.bits_remaining = 0;
+        self.transfer_active = false;
+
+        out.completed = true;
+        out.interrupt_requested = true;
+        out.trace.push(SerialTraceEvent::TransferComplete {
+            sb: self.sb,
+            sc: self.read_sc(),
+            internal_clock: false,
+        });
+        out
+    }
     pub fn exchange_with_peer(&mut self, peer: &mut Serial) -> SerialLinkExchangeResult {
         let mut out = SerialLinkExchangeResult::default();
         if !self.transfer_active || !peer.transfer_active {

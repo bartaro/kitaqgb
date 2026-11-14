@@ -17,7 +17,7 @@ REDO	やり直す
 ADD	追加
 DUP	複製
 DEL	削除
-ALIGN	整列
+Quantize	クオンタイズ
 FIT	全体
 BAR-	小節-
 BAR+	小節+
@@ -36,7 +36,7 @@ Redo         Ctrl+Y	やり直す     Ctrl+Y
 Select lane  Ctrl+A	トラック内を選択 Ctrl+A
 Duplicate    Ctrl+D	複製         Ctrl+D
 Delete          Del	削除         Del
-Align to snap     Q	グリッドに揃える Q
+Quantize selection   Q	選択音符をクオンタイズ　Q
 Octave up	1オクターブ上げる
 Octave down	1オクターブ下げる
 Fit song          F	曲全体を表示 F
@@ -188,6 +188,9 @@ LOOP OFF - playback stops at the finale	ループ OFF・曲の最後で停止し
 UNDO stack is empty	元に戻せる編集はありません
 REDO stack is empty	やり直せる編集はありません
 GBSEQ - Unsaved changes	GBSEQ - 未保存の変更
+Discard changes	保存せずに続ける
+Cancel	キャンセル
+Waiting for the file dialog	ファイル選択画面で操作してください
 Save this sequence before replacing it?	現在のプロジェクトを保存してから切り替えますか？
 GBSEQ project	GBSEQプロジェクト
 Wave audio	WAV音声
@@ -199,7 +202,9 @@ Undo [Ctrl+Z]	元に戻す [Ctrl+Z]
 Redo [Ctrl+Y]	やり直す [Ctrl+Y]
 Duplicate selection [Ctrl+D]	選択ノートを複製 [Ctrl+D]
 Delete selection [Del]	選択ノートを削除 [Del]
-Cycle grid [G]: 1/16, 1/8, 1/4 notes	グリッド切替 [G]：16分・8分・4分音符
+Cycle grid [G]: 1/16, 1/8, 1/4, 1/2	グリッド切替 [G]：16分・8分・4分・2分音符
+Quantized {} notes to 1/{}	{}音を1/{}グリッドに揃えました
+Quantize would overlap notes; nothing changed	クオンタイズすると音符が重なるため、変更しませんでした
 Align selected starts to grid [Q]; rejects overlaps	開始位置をグリッドに揃える [Q]（重なりは拒否）
 Fit entire song [F]	曲全体を表示 [F]
 Audition selected note	選択ノートを試聴
@@ -254,7 +259,14 @@ Solo P{}	P{} 単独
 ALL16 overview	全16CH表示
 NOTE LENGTH limited by next note - move the next note to extend further	次の音符が延長の上限です・さらに伸ばすには次の音符を移動してください
 STARTING real-time KOKURA playback...	KOKURAリアルタイム再生を準備中...
-Keyboard / MIDI     K	演奏鍵盤 / MIDI     K
+Keyboard / MIDI   Ctrl+K	演奏鍵盤 / MIDI　Ctrl+K
+Performance keyboard [Ctrl+K]: listen, step input or record	演奏鍵盤 [Ctrl+K]：試奏・ステップ入力・リアルタイム録音
+Record live	リアルタイム録音
+Recording	録音中
+Performance keyboard	演奏鍵盤
+Stop recording	■ 録音停止
+Step: 1/{}	入力長：1/{}
+REC Q: 1/{}	録音Q：1/{}
 Import MIDI (.mid)	MIDIを読み込み (.mid)
 Export MIDI (.mid)	MIDIを書き出し (.mid)
 Selection +1 semitone	選択音符を半音上げる

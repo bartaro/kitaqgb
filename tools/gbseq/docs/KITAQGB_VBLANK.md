@@ -13,3 +13,9 @@
 **Limits:** this unmodified IRQ driver can load only its triangle and saw CH3 waves. Other shapes are matched by the smallest squared difference over all 32 samples. CH4 noise parameters FD/FF conflict with stop/hold and use FC/FE respectively. Every approximation is listed in `manifest.json` and reported in the GUI. Pass `--strict` to reject such a project before any files are written. To preserve an arbitrary user wave exactly, use normal KITAQGB extended export instead.
 
 **組み込み:** P1～P4それぞれのフォルダで `build.txt` のコマンドを実行します。ゲームに組み込む場合は `example.c` の代わりに自分のメインループを使い、初期化後に `GbseqVB_Start()`、毎フレーム前景で `GbseqVB_Pump()` を呼んでください。音符順は実機のCH1～4のままです。ドライバの波形は三角波・のこぎり波の2種で、ユーザー波形などを近似した場合は明示します。近似を認めない場合は `--strict` を使います。
+
+## 2026-11-14 bundled driver
+
+The embedded fallback now uses the same standard instrument IDs as `lib/` and includes the fixed-WRAM/SVBK correction. See [driver integration](../../../lib/AUDIO_VBLANK.md). Use one driver configuration throughout a game; old exported directories are not modified by updating GBSEQ.
+
+同梱ドライバも最新 `lib/` と同じ番号体系・固定WRAM設定です。既存の書き出し先は自動更新されないため、新しいフォルダへ書き出してください。

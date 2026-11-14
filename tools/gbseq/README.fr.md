@@ -1,6 +1,12 @@
 # GBSEQ — manuel d’utilisation
 
-[Fichiers et périphériques MIDI, clavier, enregistrement et 512 sons](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** Ctrl+K ou l’icône de piano ouvre le clavier avec une sortie audio continue. Nouveau/Ouvrir propose Enregistrer/Ignorer/Annuler dans la fenêtre pour les modifications non enregistrées. Les ROM de lecture permettent de basculer la boucle avec B en SOLO/MASTER ; TIME indique position/durée.
+
+La lecture génère de courts blocs audio à la demande. Le moniteur, le silence et le solo conservent la position ; les notes et le tempo modifiés sont appliqués à la prochaine lecture.
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[Fichiers et périphériques MIDI, clavier, enregistrement et 512 sons](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 Les ROM exportées contiennent les 48 octets du logo Nintendo pour la compatibilité avec la vérification au démarrage. La licence MIT de GBSEQ n’accorde aucun droit indépendant sur le logo ou les marques. GBSEQ n’est ni affilié à Nintendo ni approuvé par Nintendo. [Avis en anglais/japonais](docs/NINTENDO_NOTICE.md).
 
@@ -12,7 +18,7 @@ GBSEQ, par DAISUKE OBA, propose une interface plita et une CLI indépendante. El
 
 ## Jeu au clavier, enregistrement et WAV
 
-Sélectionnez une piste et appuyez sur K pour ouvrir le clavier. A/S/D/F/G/H/J jouent les touches blanches, W/E/T/Y/U les noires ; Z/X change l’octave. Cliquez sur IN et OUT pour choisir les ports MIDI. La saisie pas à pas avance de 1, 2 ou 4 doubles croches. REC enregistre une prise depuis le début. La protection refuse les chevauchements ; l’écrasement ne remplace que la partie recouverte. Importez le MIDI depuis Fichier et enregistrez-le depuis Exporter ; gardez le .gbseq pour conserver les timbres GB.
+Sélectionnez une piste et appuyez sur Ctrl+K pour ouvrir le clavier. A/S/D/F/G/H/J jouent les touches blanches, W/E/T/Y/U les noires ; Z/X change l’octave. Cliquez sur IN et OUT pour choisir les ports MIDI. La saisie pas à pas avance de 1, 2, 4 ou 8 doubles croches. REC enregistre une prise depuis le début. La protection refuse les chevauchements ; l’écrasement ne remplace que la partie recouverte. Importez le MIDI depuis Fichier et enregistrez-le depuis Exporter ; gardez le .gbseq pour conserver les timbres GB.
 
 Chaque canal propose 128 timbres d’usine dans la liste déroulante. Vos timbres se sauvegardent et se rechargent séparément au format .gbpreset. L’affichage des accords peut être activé pour le mixage et pour chaque piste indépendamment. La transposition globale ne modifie pas la piste de bruit.
 
@@ -39,7 +45,7 @@ L’interface demande un bureau graphique, un pilote GPU compatible et un périp
 
 ## Édition graphique
 
-Choisissez le mode et P1–P4. ALL16 en DMG07 affiche les seize canaux. Double-cliquez une piste vide pour créer une note, une note pour ouvrir l’inspecteur. Déplacez son corps pour changer temps/hauteur, son bord droit pour la durée. Chaque piste est monophonique : les chevauchements sont refusés. Réglez 1–256 mesures. Molette/barre inférieure déplacent la vue ; F ajuste au morceau, Home revient au début, +/- zoome. La vue suit la lecture. Space lance/arrête ; LOOP ON/OFF gère la boucle. La première lecture calcule tout le morceau et peut demander du temps.
+Choisissez le mode et P1–P4. ALL16 en DMG07 affiche les seize canaux. Double-cliquez une piste vide pour créer une note, une note pour ouvrir l’inspecteur. Déplacez son corps pour changer temps/hauteur, son bord droit pour la durée. Chaque piste est monophonique : les chevauchements sont refusés. Réglez 1–256 mesures. Molette/barre inférieure déplacent la vue ; F ajuste au morceau, Home revient au début, +/- zoome. La vue suit la lecture. Space lance/arrête ; LOOP ON/OFF gère la boucle. La lecture génère de courts blocs audio à la demande. Le moniteur, le silence et le solo conservent la position ; les notes et le tempo modifiés sont appliqués à la prochaine lecture.
 
 Ctrl/Shift-clic bascule la sélection ; Ctrl+A sélectionne la piste. Gauche/droite déplace selon la grille ; haut/bas transpose par demi-ton, Shift+haut/bas par octave. Ctrl+D duplique, Delete supprime, G change la grille, Q aligne les débuts. Ctrl+Z/Y annule/rétablit, Ctrl+C/V copie/colle. Ctrl+O ouvre, Ctrl+S enregistre, Ctrl+Shift+S enregistre sous. Le remplacement de modifications non enregistrées demande confirmation ; conservez une copie avant écrasement.
 

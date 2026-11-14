@@ -1,6 +1,12 @@
 # GBSEQ — manual do usuário
 
-[Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** Ctrl+K ou o ícone de piano abre o teclado com áudio contínuo. Novo/Abrir oferece Salvar/Descartar/Cancelar na própria janela para alterações pendentes. Nas ROMs de reprodução, B alterna o loop em SOLO/MASTER e TIME mostra posição/duração.
+
+A reprodução gera blocos curtos de áudio conforme necessário. Alterar monitor, mute ou solo mantém a posição; notas e andamento editados entram na próxima reprodução.
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 As ROMs exportadas contêm os 48 bytes do logotipo da Nintendo para compatibilidade com a verificação de inicialização. A licença MIT do GBSEQ não concede direitos independentes sobre o logotipo ou as marcas. O GBSEQ não é afiliado à Nintendo nem aprovado por ela. [Aviso em inglês/japonês](docs/NINTENDO_NOTICE.md).
 
@@ -12,7 +18,7 @@ GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando 
 
 ## Execução, gravação e WAV
 
-Selecione a faixa e pressione K para abrir o teclado. A/S/D/F/G/H/J são as teclas brancas; W/E/T/Y/U, as pretas. Z/X muda a oitava. Clique em IN e OUT para escolher os dispositivos MIDI. A entrada por passos avança 1, 2 ou 4 semicolcheias. REC grava uma tomada a partir do início. Proteger rejeita sobreposições; Sobrescrever substitui apenas o trecho ocupado. Importe MIDI pelo menu Arquivo e use Exportar para gravá-lo; mantenha o .gbseq para preservar os timbres do GB.
+Selecione a faixa e pressione Ctrl+K para abrir o teclado. A/S/D/F/G/H/J são as teclas brancas; W/E/T/Y/U, as pretas. Z/X muda a oitava. Clique em IN e OUT para escolher os dispositivos MIDI. A entrada por passos avança 1, 2 ou 4 semicolcheias. REC grava uma tomada a partir do início. Proteger rejeita sobreposições; Sobrescrever substitui apenas o trecho ocupado. Importe MIDI pelo menu Arquivo e use Exportar para gravá-lo; mantenha o .gbseq para preservar os timbres do GB.
 
 Cada canal oferece 128 timbres de fábrica na lista suspensa. Salve e carregue timbres próprios em arquivos .gbpreset separados. A exibição de acordes da mixagem e de cada faixa pode ser ligada separadamente. A transposição da música não altera o canal de ruído.
 
@@ -39,7 +45,7 @@ A GUI precisa de desktop, driver gráfico compatível e dispositivo de áudio pa
 
 ## Edição gráfica
 
-Escolha modo e P1–P4. ALL16 no DMG07 exibe os dezesseis canais. Clique duas vezes numa faixa vazia para inserir nota; numa nota para abrir o inspetor. Arraste o corpo para mudar tempo/altura ou a borda direita para duração. Cada faixa é monofônica e rejeita sobreposições. Ajuste 1–256 compassos. Navegue com roda/barra inferior, F para enquadrar a música, Home para início, +/- para zoom. A tela acompanha a reprodução. Space inicia/para; LOOP ON/OFF controla repetição. A primeira reprodução renderiza a música inteira e pode demorar.
+Escolha modo e P1–P4. ALL16 no DMG07 exibe os dezesseis canais. Clique duas vezes numa faixa vazia para inserir nota; numa nota para abrir o inspetor. Arraste o corpo para mudar tempo/altura ou a borda direita para duração. Cada faixa é monofônica e rejeita sobreposições. Ajuste 1–256 compassos. Navegue com roda/barra inferior, F para enquadrar a música, Home para início, +/- para zoom. A tela acompanha a reprodução. Space inicia/para; LOOP ON/OFF controla repetição. A reprodução gera blocos curtos de áudio conforme necessário. Alterar monitor, mute ou solo mantém a posição; notas e andamento editados entram na próxima reprodução.
 
 Ctrl/Shift-clique alterna seleção; Ctrl+A seleciona a faixa atual. Esquerda/direita move pela grade; cima/baixo muda semitons, Shift+cima/baixo oitavas. Ctrl+D duplica, Delete exclui, G troca grade, Q alinha inícios. Ctrl+Z/Y desfaz/refaz, Ctrl+C/V copia/cola. Ctrl+O abre, Ctrl+S salva, Ctrl+Shift+S salva como. A troca de alterações não salvas pede confirmação; guarde uma cópia antes de sobrescrever.
 

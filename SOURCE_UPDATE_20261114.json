@@ -1,0 +1,515 @@
+{
+  "date": "2026-11-14",
+  "baseline": "3ef8bcc2330de2caf7e9e4b97d3c7b60fc85f8f9",
+  "gbseq_tests": {
+    "passed": 106,
+    "failed": 0,
+    "ignored": 7
+  },
+  "kokura_pcm_match": "KOKURA CLI vs GBSEQ host: 41695 identical stereo frames at 65536 Hz",
+  "vblank_variants": [
+    {
+      "rom": "player.gb",
+      "sha256": "0d60ccf68db314ae11eab05285371f092282cf8c3029ba4b2c4d6f35c89d8022",
+      "driver": "installed KITAQGB library",
+      "legacy": false,
+      "fixed_wram": false,
+      "frames": 118,
+      "expected_frames": 119,
+      "notes": [
+        14,
+        23,
+        31,
+        67
+      ],
+      "ch3_nr32": 64,
+      "ch4_nr42": 147,
+      "four_channels_on": true,
+      "queue_underruns": 0,
+      "one_shot_stop": true
+    },
+    {
+      "rom": "player.gb",
+      "sha256": "0386fccd08028bf8ca427c157468f79cf86626172f9f176f2cfea3068468bf5f",
+      "driver": "installed KITAQGB library",
+      "legacy": true,
+      "fixed_wram": false,
+      "frames": 119,
+      "expected_frames": 119,
+      "notes": [
+        14,
+        23,
+        31,
+        67
+      ],
+      "ch3_nr32": 64,
+      "ch4_nr42": 147,
+      "four_channels_on": true,
+      "queue_underruns": 0,
+      "one_shot_stop": true
+    },
+    {
+      "rom": "player.gb",
+      "sha256": "f87e94e7deb5ad6d92f04484b25cb0d04f62592dfe754ac140be9280055c8f7a",
+      "driver": "installed KITAQGB library",
+      "legacy": false,
+      "fixed_wram": true,
+      "frames": 118,
+      "expected_frames": 119,
+      "notes": [
+        14,
+        23,
+        31,
+        67
+      ],
+      "ch3_nr32": 64,
+      "ch4_nr42": 147,
+      "four_channels_on": true,
+      "queue_underruns": 0,
+      "one_shot_stop": true
+    },
+    {
+      "rom": "player.gb",
+      "sha256": "0d60ccf68db314ae11eab05285371f092282cf8c3029ba4b2c4d6f35c89d8022",
+      "driver": "bundled published KITAQGB library",
+      "legacy": false,
+      "fixed_wram": false,
+      "frames": 118,
+      "expected_frames": 119,
+      "notes": [
+        14,
+        23,
+        31,
+        67
+      ],
+      "ch3_nr32": 64,
+      "ch4_nr42": 147,
+      "four_channels_on": true,
+      "queue_underruns": 0,
+      "one_shot_stop": true
+    }
+  ],
+  "shirohebi": {
+    "rom_sha256": "68c138293341285c103e9b6b8aa4e0174b84fa6db1d5cd79448b06af659b742f",
+    "rom_bytes": 65536,
+    "states": [
+      {
+        "label": "title",
+        "SND_State": 0,
+        "AudioVBlank_Step": 0,
+        "AudioVBlank_MusicPlaying": 0,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 0,
+        "SND_PrevKeys": 0,
+        "nr52": 240
+      },
+      {
+        "label": "start",
+        "SND_State": 6,
+        "AudioVBlank_Step": 0,
+        "AudioVBlank_MusicPlaying": 0,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "pause",
+        "SND_State": 3,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "return dialog",
+        "SND_State": 8,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 64,
+        "nr52": 240
+      },
+      {
+        "label": "cancel dialog",
+        "SND_State": 3,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 32,
+        "nr52": 240
+      },
+      {
+        "label": "resume",
+        "SND_State": 1,
+        "AudioVBlank_Step": 1,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 1,
+        "SND_PrevKeys": 128,
+        "nr52": 240
+      },
+      {
+        "label": "playing",
+        "SND_State": 1,
+        "AudioVBlank_Step": 2,
+        "AudioVBlank_MusicPlaying": 1,
+        "SND_ReturnChoice": 0,
+        "SND_InputReleaseLock": 0,
+        "SND_PrevKeys": 0,
+        "nr52": 242
+      }
+    ],
+    "title_start_pause_return_confirm_cancel_resume": true,
+    "physical_hardware_tested": false
+  },
+  "binaries_updated": false,
+  "physical_hardware_tested": false,
+  "publication_date": "2026-11-15",
+  "files": [
+    {
+      "path": "apps/harapeko_shirohebi/README.md",
+      "sha256": "b545b95ed0c78e9729e10df258daf3b13b254282a984b618b5177cdde57d8f4d",
+      "bytes": 9857
+    },
+    {
+      "path": "apps/harapeko_shirohebi/music.c",
+      "sha256": "3b663b5a4622e0e2a497359fce7037b7c1ae446429a14cbc1e36b19ee4494ffe",
+      "bytes": 12757
+    },
+    {
+      "path": "lib/AUDIO_VBLANK.md",
+      "sha256": "1cc47b1b0d1a73344d11ea302bb1b74471542ade6a9fc6a70cb91f7c4c1d71a9",
+      "bytes": 3312
+    },
+    {
+      "path": "lib/README.de.md",
+      "sha256": "ca85390104446948abaa801c967f3bd9083eeb9ffec9b218e1dc74ac51bbf855",
+      "bytes": 31788
+    },
+    {
+      "path": "lib/README.es.md",
+      "sha256": "f128517c6885a35788ca49a628f7c52a19f7c6dc916785c95b55a0d2dab6047d",
+      "bytes": 32997
+    },
+    {
+      "path": "lib/README.fr.md",
+      "sha256": "8b5645f927186d64b449256c88ca3697321a45d55b2cd2bb64f7811f751bcffd",
+      "bytes": 33068
+    },
+    {
+      "path": "lib/README.ja.md",
+      "sha256": "d1235c89ec9174c39918c0e46ddda347807d074f358578e84523133fd6cebd49",
+      "bytes": 35891
+    },
+    {
+      "path": "lib/README.ko.md",
+      "sha256": "1f96bcd2861a2f39e1d69519b50fc0a432b1bed1d1304c6582ec95de459b8be9",
+      "bytes": 33548
+    },
+    {
+      "path": "lib/README.md",
+      "sha256": "94f6251d796bee11715f55e100fad1582680de745e49d1aa218b0365deee4f06",
+      "bytes": 30128
+    },
+    {
+      "path": "lib/README.pt-BR.md",
+      "sha256": "607928fe393cb19c83d8abe679bceedf1e928fdc3b2baa8f11316b12a7b72b00",
+      "bytes": 31317
+    },
+    {
+      "path": "lib/README.zh-CN.md",
+      "sha256": "4ddab360b6e65a3c6c58394ac68bd53d6749b4306b31728332331ba100e7a4eb",
+      "bytes": 26803
+    },
+    {
+      "path": "lib/README.zh-TW.md",
+      "sha256": "653bb769ac8f757b53123045aa6fe9124d7211955a0561576433970b325507ef",
+      "bytes": 28552
+    },
+    {
+      "path": "lib/audio_vblank.c",
+      "sha256": "24fa84fe382156c668ede5141b52a1c455e722d17fea9871fea66418f44232f7",
+      "bytes": 26364
+    },
+    {
+      "path": "lib/audio_vblank.h",
+      "sha256": "3a7ae0b28693d86aa94962ecd113e0be02b4cadb8354c6a5acbe7f98fb276a7e",
+      "bytes": 3994
+    },
+    {
+      "path": "tools/gbseq/README.de.md",
+      "sha256": "9798a25284edf060462544cce649ab1a26747d8ee0bf8bc294099c0584345237",
+      "bytes": 11923
+    },
+    {
+      "path": "tools/gbseq/README.en.md",
+      "sha256": "d2ed5b512a111152179353c93ec8443751749261fdc5d0f31fb734bcc1d4adde",
+      "bytes": 12012
+    },
+    {
+      "path": "tools/gbseq/README.es.md",
+      "sha256": "ae5bf39aedf8239cad8840fddcb1d7072815310c0c84a46839ef900d8cb32356",
+      "bytes": 11569
+    },
+    {
+      "path": "tools/gbseq/README.fr.md",
+      "sha256": "9dab0ddd2a6fe0611374000b75c401aaba30a0ef8cbe55450d147fc9b8928bcd",
+      "bytes": 12284
+    },
+    {
+      "path": "tools/gbseq/README.ja.md",
+      "sha256": "a91e5af14212a522dcf7afcd3b1b8fdc6cc154e7eafb6684e74becb4d807f2a8",
+      "bytes": 13573
+    },
+    {
+      "path": "tools/gbseq/README.ko.md",
+      "sha256": "dbcb72519ae6c7eaaadfc7158c9d625c8303acdf2213bb700aa09788af63bd7e",
+      "bytes": 13045
+    },
+    {
+      "path": "tools/gbseq/README.md",
+      "sha256": "d5d2290a37548996d6dc389193022f47ea8625e4a23684ac11526c7e9f8e81ae",
+      "bytes": 2214
+    },
+    {
+      "path": "tools/gbseq/README.pt.md",
+      "sha256": "5683324b6b587f098c20b36a48a0bd880217b594156460a1bda6fda3214c078e",
+      "bytes": 11249
+    },
+    {
+      "path": "tools/gbseq/README.zh-CN.md",
+      "sha256": "5d358104024a5eb42f5da17a60853a9693a84541c8e5cfe3d2c35bf814aa783f",
+      "bytes": 10358
+    },
+    {
+      "path": "tools/gbseq/README.zh-TW.md",
+      "sha256": "98ca0c02e214b6bdc4b387b959ab14b4b2bda6af82ad2831e8f87048d74de135",
+      "bytes": 10417
+    },
+    {
+      "path": "tools/gbseq/SOURCE_PROVENANCE.json",
+      "sha256": "128015a7121cd4f8853504a2611b0ff92e9e013742747fa4f91a198c779492b2",
+      "bytes": 67916
+    },
+    {
+      "path": "tools/gbseq/assets/kitaqgb-vblank/audio_vblank.c",
+      "sha256": "24fa84fe382156c668ede5141b52a1c455e722d17fea9871fea66418f44232f7",
+      "bytes": 26364
+    },
+    {
+      "path": "tools/gbseq/assets/kitaqgb-vblank/audio_vblank.h",
+      "sha256": "3a7ae0b28693d86aa94962ecd113e0be02b4cadb8354c6a5acbe7f98fb276a7e",
+      "bytes": 3994
+    },
+    {
+      "path": "tools/gbseq/assets/roms/link16_player_cable.gb",
+      "sha256": "44319725e387a612d40f3b6f6a54fa905ca2a4c00e6bde4f62124cb74acf139a",
+      "bytes": 524288
+    },
+    {
+      "path": "tools/gbseq/assets/roms/link16_player_dmg07.gb",
+      "sha256": "6052bba201d738bb80e599f0d6a83cbf69dfc89b3fb836b8b2683b73b507446f",
+      "bytes": 524288
+    },
+    {
+      "path": "tools/gbseq/bin/README.md",
+      "sha256": "fce00b73a93d7bb6ed12d23d3823b91ca13728fd4059ef5de2937127292357e4",
+      "bytes": 2542
+    },
+    {
+      "path": "tools/gbseq/docs/CLI_PYTHON.md",
+      "sha256": "2b76f997b7437703eb88ad79ef7af6f226595c010fef2b612493d5a06aa27829",
+      "bytes": 7076
+    },
+    {
+      "path": "tools/gbseq/docs/KITAQGB_VBLANK.md",
+      "sha256": "a7985058b74f113ca0acf62d0b66c9bcdafeb04f4f277060230da5966722cc8b",
+      "bytes": 4398
+    },
+    {
+      "path": "tools/gbseq/docs/LINK16_PLAYER_ROM_FORMAT.md",
+      "sha256": "c6df37f847b21cede674048cc5372781188063977edd7fd26d80b6fbcbd3cde1",
+      "bytes": 5441
+    },
+    {
+      "path": "tools/gbseq/docs/MIDI_PERFORMANCE.md",
+      "sha256": "d2d6a085a0bcda1f19f595353591cc87fec58c3763e8229cbc1ae5e864154b74",
+      "bytes": 10998
+    },
+    {
+      "path": "tools/gbseq/docs/README.md",
+      "sha256": "5e0244eeb01d7df7c4ad3efb4db2ff6fa1a51796aac6db2b1e131f606befc6da",
+      "bytes": 3093
+    },
+    {
+      "path": "tools/gbseq/docs/SEQUENCER_SYSTEM_SPEC.md",
+      "sha256": "8e81812247b1be3cf14cf30df7f3a9acb3e9b13d8bc76a19c09d4c45ee7ef790",
+      "bytes": 7147
+    },
+    {
+      "path": "tools/gbseq/scripts/verify_vblank_export.py",
+      "sha256": "4db72a02653d9db31d1c6619f0921373d6c78a84c6b690e193436336213e401a",
+      "bytes": 4266
+    },
+    {
+      "path": "tools/gbseq/src/app.rs",
+      "sha256": "2c3835da135a5925a23e8adbeb988849559f0abcb815bd4d2d48bf3852a6edeb",
+      "bytes": 163440
+    },
+    {
+      "path": "tools/gbseq/src/app/key_monitor.rs",
+      "sha256": "e90e141f35128749988ba6d55547a7a2994c4a67cd6c2d6319a489346d6b3266",
+      "bytes": 6417
+    },
+    {
+      "path": "tools/gbseq/src/app/locale_ja.tsv",
+      "sha256": "32ef194725d32119515f5f4580819d10c3f571f4c40e9f8cffcc0a54ed4aabe4",
+      "bytes": 15849
+    },
+    {
+      "path": "tools/gbseq/src/app/locale_multi.tsv",
+      "sha256": "da8eeec774023d00fb22d542b88e7d3374c5f6f52c54c469b5d0c468488b2e89",
+      "bytes": 52566
+    },
+    {
+      "path": "tools/gbseq/src/app/performance.rs",
+      "sha256": "729d44a73130e5349010acc0fc0d8ec3609712128238c906b6a174c26db89538",
+      "bytes": 46974
+    },
+    {
+      "path": "tools/gbseq/src/app/project_files.rs",
+      "sha256": "010f70a4da6f9c27d670b3f03e44fb506e54d5a8c956c1da0a8a50c3bdb8ea6e",
+      "bytes": 13066
+    },
+    {
+      "path": "tools/gbseq/src/app/verification.rs",
+      "sha256": "137c933eba8088afb9f30414fc4ff83246043c4550d516b1c7a367e3b576728b",
+      "bytes": 25552
+    },
+    {
+      "path": "tools/gbseq/src/editing.rs",
+      "sha256": "c9ded24df9d9a2f7d963a11a52c1d015528a9ff091f738aba597581565e66d19",
+      "bytes": 8950
+    },
+    {
+      "path": "tools/gbseq/src/main.rs",
+      "sha256": "77b82bd171a1ad0859f0531749b6d91ced859e690525d93a043d01825a5bb75b",
+      "bytes": 1979
+    },
+    {
+      "path": "tools/gbseq/src/player_rom.rs",
+      "sha256": "ed2eed9033052e6e3101ea0129734969c6c324ad424dbfee55fcc6aeffcbcdd9",
+      "bytes": 12731
+    },
+    {
+      "path": "tools/gbseq/src/presets.rs",
+      "sha256": "303affb7624daa1360aa55cc6ced54d8f2e01e5761fd447531db71a1e6bd951c",
+      "bytes": 12255
+    },
+    {
+      "path": "tools/gbseq/src/presets/wave_bank.rs",
+      "sha256": "2657aab1325ba24be9dc8ff104600b1e100fff1ab5bd719b0c50ca3da01e8cb2",
+      "bytes": 9226
+    },
+    {
+      "path": "tools/gbseq/tests/kokura_audio.rs",
+      "sha256": "4aeb12647fef08625ab9a17903dc9535bae5a60c6d38904249f0d77393365988",
+      "bytes": 5825
+    },
+    {
+      "path": "tools/gbseq/vendor/gbdaw-kokura/src/lib.rs",
+      "sha256": "2cb584492e176c5d44ff8ace9ad8dd1ad7e5c951163864bdbe1f9c4bd5d4c406",
+      "bytes": 27021
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/apu.rs",
+      "sha256": "b588c01d8e11c14286d488bf494bc56f6fc3103ca30784be4e3812a8d4a82a70",
+      "bytes": 57881
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/apu/accuracy_tests.rs",
+      "sha256": "3ceef7798ccdac8dc280b87ed468ac858494319ba552f44bf49ef361b58ac250",
+      "bytes": 18487
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/apu/register_write_tests.rs",
+      "sha256": "7bece0b0075293b30ff3b1548c7f178d653c3df5a73c0bdd48ecf1b58541fa1e",
+      "bytes": 12138
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/audio_timing.rs",
+      "sha256": "a946893576829647dfd35ac1f024581a142e197f5f5086bc7a6542bb6a16944f",
+      "bytes": 1851
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/audio_timing/tests.rs",
+      "sha256": "03557388eda5d9ac1b4c6498844bf311b971f0becf344ce5003df7fbea2f71ba",
+      "bytes": 9504
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/diagnostic_events.rs",
+      "sha256": "7394ceb7e7817d1242e955a1c7cd6438822bf1023c4dcbb00f0c29b349dafc4a",
+      "bytes": 5212
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/lib.rs",
+      "sha256": "1fae54fcd7551df017d6a8ae9bc681b9f1f7ba42bd564757bdee9cd8b1c8ec71",
+      "bytes": 167985
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/memory.rs",
+      "sha256": "97b3fb36137a0cc0508c7d7f647216c6c62b8a104f9675f67cf95b14a7956929",
+      "bytes": 9914
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/serial.rs",
+      "sha256": "2282780d44a79bf274d0f68b6b56e073069052087fbdd89008ab52ef7b9e9eea",
+      "bytes": 5553
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/state.rs",
+      "sha256": "5c13a06ab0205b850082e290f46966bcfec839bec14e9637145dc1e8347465e4",
+      "bytes": 9585
+    },
+    {
+      "path": "tools/gbseq/vendor/kokura-core/src/timer.rs",
+      "sha256": "7055732802e141884292c7600d91dc291e2c12e40837fbd3d7da18bc9f8edadc",
+      "bytes": 8417
+    },
+    {
+      "path": "tools/gbseq/vendor/plita/src/lib.rs",
+      "sha256": "495a5c0b2ab40b63342fb8ad23c96f469a1e96657e70d51a3970ee2d79f3f4bd",
+      "bytes": 3281
+    },
+    {
+      "path": "tools/gbseq/vendor/plita_render/src/gpu_tests.rs",
+      "sha256": "65dd74d21121da633f2048044e41264fd3323e1bd4c50d3528af823853fe5d0c",
+      "bytes": 17001
+    },
+    {
+      "path": "tools/gbseq/vendor/plita_ui/src/lib.rs",
+      "sha256": "5d8dd32fec67ab6dc23b8221cfd55e70fc44ae8273473af78308868819c7ca69",
+      "bytes": 473518
+    },
+    {
+      "path": "tools/gbseq/vendor/plita_ui/src/menu_button.rs",
+      "sha256": "c4ff7a4b83e6af1ba84b1f8d732f45ab1e90a1481017b43daa24993ea35d210d",
+      "bytes": 7480
+    },
+    {
+      "path": "tools/gbseq/vendor/plita_window/src/ime_tests.rs",
+      "sha256": "21ffb5e6936ad5156d21717fd6ed48618304e67c7a3622324ef47b1ba1a6a9ad",
+      "bytes": 3400
+    },
+    {
+      "path": "tools/gbseq/vendor/plita_window/src/lib.rs",
+      "sha256": "53658f1befd14fec77bee3085651b4237c703c15bf422813e1dfdabe7789d5f4",
+      "bytes": 86315
+    }
+  ]
+}

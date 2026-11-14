@@ -159,11 +159,10 @@ pub fn edit_notes(project: &mut SequenceProject, ids: &[u64], edit: NoteEdit) ->
                             grid > 0 && grid <= project.total_steps(),
                             "invalid quantize grid"
                         );
-                        note.start = ((u64::from(note.start) + u64::from(grid) / 2)
-                            / u64::from(grid)
-                            * u64::from(grid))
-                        .try_into()
-                        .map_err(|_| anyhow::anyhow!("quantize position overflow"))?;
+                        let nearest =
+                            (u64::from(note.start) + u64::from(grid) / 2) / u64::from(grid);
+                        let last_line = project.total_steps().saturating_sub(note.length) / grid;
+                        note.start = nearest.min(u64::from(last_line)) as u32 * grid;
                     }
                     _ => bail!("unsupported edit"),
                 }
@@ -207,6 +206,23 @@ mod tests {
         let before = p.clone();
         assert!(edit_notes(&mut p, &[a, b], NoteEdit::Duplicate).is_err());
         assert_eq!(p, before);
+    }
+    #[test]
+    fn quantize_keeps_gate_near_song_end_and_collisions_are_atomic() {
+        let mut p = SequenceProject::empty();
+        p.measures = 1;
+        let a = p.insert_note_exact(0, 3, 2, 20, 8).unwrap();
+        let b = p.insert_note_exact(1, 15, 1, 22, 9).unwrap();
+        edit_notes(&mut p, &[a, b], NoteEdit::Quantize(4)).unwrap();
+        assert_eq!(
+            (p.note(a).unwrap().start, p.note(a).unwrap().length),
+            (4, 2)
+        );
+        assert_eq!(p.note(b).unwrap().start, 12);
+        let c = p.insert_note_exact(0, 6, 1, 24, 10).unwrap();
+        let snapshot = p.clone();
+        assert!(edit_notes(&mut p, &[a, c, b], NoteEdit::Quantize(8)).is_err());
+        assert_eq!(p, snapshot);
     }
     #[test]
     fn invalid_quantize_and_unknown_ids_leave_project_untouched() {

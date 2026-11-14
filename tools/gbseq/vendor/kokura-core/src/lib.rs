@@ -2,6 +2,7 @@ pub mod apu;
 pub mod bus;
 pub mod cartridge;
 pub mod cpu;
+pub mod diagnostic_events;
 pub mod dma;
 pub mod error;
 pub mod interrupt;
@@ -14,9 +15,11 @@ pub mod state;
 pub mod timer;
 pub mod types;
 
+mod audio_timing;
 use apu::Apu;
 use cartridge::Cartridge;
 use cpu::Cpu;
+use diagnostic_events::{DiagnosticEvent, DiagnosticEventEmitter};
 use dma::DmaState;
 use interrupt::{InterruptState, INT_JOYPAD, INT_LCD_STAT, INT_SERIAL, INT_TIMER, INT_VBLANK};
 use joypad::Joypad;
@@ -43,6 +46,13 @@ pub struct SerialLinkTraceResult {
     pub peer_interrupt_trace: Vec<InterruptTraceEvent>,
 }
 
+#[derive(Debug, Clone, Default)]
+pub struct SerialExternalClockTraceResult {
+    pub completed: bool,
+    pub outgoing: u8,
+    pub io_trace: Vec<IoTraceEvent>,
+    pub interrupt_trace: Vec<InterruptTraceEvent>,
+}
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct RunSliceResult {
     pub instructions: usize,
@@ -59,6 +69,7 @@ pub struct Machine {
     pub joypad: Joypad,
     pub dma: DmaState,
     pub serial: Serial,
+    serial_link_attached: bool,
     pub apu: Apu,
     pub cartridge: Cartridge,
     pub memory: Memory,
@@ -70,7 +81,10 @@ pub struct Machine {
     pending_apu_trace: Vec<ApuTraceEvent>,
     pending_cgb_trace: Vec<CgbTraceEvent>,
     pending_interrupt_trace: Vec<InterruptTraceEvent>,
+    diagnostic_events: DiagnosticEventEmitter,
+    active_interrupt_vector: Option<u16>,
     pending_cpu_stall_cycles: u32,
+    instruction_clock: audio_timing::InstructionClock,
     pub cgb_double_speed: bool,
     pub cgb_speed_switch_armed: bool,
     pub cgb_speed_switch_freeze_cycles: u32,
@@ -86,9 +100,10 @@ impl Machine {
             joypad: Joypad::default(),
             dma: DmaState::default(),
             serial: Serial::default(),
+            serial_link_attached: false,
             apu: Apu::default(),
             cartridge: Cartridge::empty(),
-            memory: Memory::default(),
+            memory: Memory::power_on(),
             clocks: ClockState::default(),
             mode: HardwareMode::Dmg,
             pending_dma_trace: Vec::new(),
@@ -97,7 +112,10 @@ impl Machine {
             pending_apu_trace: Vec::new(),
             pending_cgb_trace: Vec::new(),
             pending_interrupt_trace: Vec::new(),
+            diagnostic_events: DiagnosticEventEmitter::default(),
+            active_interrupt_vector: None,
             pending_cpu_stall_cycles: 0,
+            instruction_clock: audio_timing::InstructionClock::default(),
             cgb_double_speed: false,
             cgb_speed_switch_armed: false,
             cgb_speed_switch_freeze_cycles: 0,
@@ -138,8 +156,9 @@ impl Machine {
         self.joypad = Joypad::default();
         self.dma = DmaState::default();
         self.serial = Serial::default();
+        self.serial_link_attached = false;
         self.apu = Apu::default();
-        self.memory = Memory::default();
+        self.memory = Memory::power_on();
         self.clocks = ClockState::default();
         self.mode = selected_mode;
         self.apu.set_cgb_mode(self.mode == HardwareMode::Cgb);
@@ -164,7 +183,10 @@ impl Machine {
         self.pending_apu_trace.clear();
         self.pending_cgb_trace.clear();
         self.pending_interrupt_trace.clear();
+        self.diagnostic_events.clear();
+        self.active_interrupt_vector = None;
         self.pending_cpu_stall_cycles = 0;
+        self.instruction_clock = audio_timing::InstructionClock::default();
         self.cgb_speed_switch_freeze_cycles = 0;
         self.pending_cgb_trace.push(CgbTraceEvent::ModeSelected {
             cgb_enabled: self.mode == HardwareMode::Cgb,
@@ -194,7 +216,7 @@ impl Machine {
 
                 self.ppu.lcdc = 0x91;
                 self.ppu.stat = 0x80;
-                self.ppu.ly = 0x91;
+                self.ppu.ly = 0x00;
                 self.ppu.lyc = 0x00;
                 self.ppu.scx = 0x00;
                 self.ppu.scy = 0x00;
@@ -244,6 +266,8 @@ impl Machine {
         self.interrupt.ie = 0x00;
         self.interrupt.iflag = 0x01;
         self.apu.initialize_post_boot_state(self.mode);
+        self.apu
+            .sync_divider_phase(self.timer.divider_counter(), self.cgb_double_speed);
         self.clocks.frame_phase_ppu_cycles = u32::from(self.ppu.ly) * 456 + self.ppu.mode_cycles;
     }
 
@@ -343,7 +367,46 @@ impl Machine {
         out
     }
 
+    pub fn clock_external_serial_byte(&mut self, incoming: u8) -> SerialExternalClockTraceResult {
+        let exchange = self.serial.clock_external_byte(incoming);
+        let mut out = SerialExternalClockTraceResult {
+            completed: exchange.completed,
+            outgoing: exchange.outgoing,
+            io_trace: exchange
+                .trace
+                .into_iter()
+                .map(IoTraceEvent::Serial)
+                .collect(),
+            ..SerialExternalClockTraceResult::default()
+        };
+        if !out.completed {
+            return out;
+        }
+
+        self.memory.write8(0xFF01, self.serial.sb);
+        self.memory.write8(0xFF02, self.serial.read_sc());
+        if exchange.interrupt_requested {
+            let before = self.pending_interrupt_trace.len();
+            self.request_interrupt(INT_SERIAL, InterruptSource::Serial);
+            out.interrupt_trace
+                .extend(self.pending_interrupt_trace.split_off(before));
+        }
+        out
+    }
+
+    /// Marks this machine as attached to a cooperative in-process link
+    /// backplane. While attached, an internal-clock transfer waits for the
+    /// runner to exchange it with a peer instead of completing against the
+    /// standalone open-bus value.
+    pub fn set_serial_link_attached(&mut self, attached: bool) {
+        self.serial_link_attached = attached;
+    }
+
+    pub fn serial_link_attached(&self) -> bool {
+        self.serial_link_attached
+    }
     pub fn step_instruction(&mut self) -> Result<StepResult, error::CoreError> {
+        self.instruction_clock.fast = false;
         let mut serviced_interrupt = false;
         if self.interrupt.has_pending() {
             let pending_mask = self.interrupt.pending_mask();
@@ -382,11 +445,10 @@ impl Machine {
     }
 
     pub fn step_instruction_fast(&mut self) -> Result<(), error::CoreError> {
+        self.instruction_clock.fast = true;
         let mut serviced_interrupt = false;
         if self.interrupt.has_pending() {
-            if !self.cpu.ime {
                 self.cpu.halted = false;
-            }
             if self.cpu.ime {
                 self.service_interrupt()?;
                 serviced_interrupt = true;
@@ -497,6 +559,8 @@ impl Machine {
         state.apply_to(self);
         self.apu.set_cgb_mode(self.mode == HardwareMode::Cgb);
         self.ppu.restore_runtime_state(&self.memory);
+        self.apu
+            .sync_divider_phase(self.timer.divider_counter(), self.cgb_double_speed);
         self.ppu.render_visible_area_from_memory_with_mode(
             &self.memory,
             self.mode == HardwareMode::Cgb,
@@ -509,7 +573,9 @@ impl Machine {
         self.pending_apu_trace.clear();
         self.pending_cgb_trace.clear();
         self.pending_interrupt_trace.clear();
+        self.diagnostic_events.clear();
         self.pending_cpu_stall_cycles = 0;
+        self.instruction_clock = audio_timing::InstructionClock::default();
     }
 
     pub fn framebuffer(&self) -> &[u8; 160 * 144] {
@@ -585,6 +651,56 @@ impl Machine {
 
     pub fn current_ram_bank(&self) -> u16 {
         self.cartridge.current_ram_bank()
+    }
+
+    pub fn set_diagnostic_events_enabled(&mut self, enabled: bool) {
+        self.diagnostic_events.set_enabled(enabled);
+    }
+
+    pub fn clear_diagnostic_events(&mut self) {
+        self.diagnostic_events.clear();
+    }
+
+    pub fn diagnostic_events(&self) -> &[DiagnosticEvent] {
+        self.diagnostic_events.events()
+    }
+
+    fn record_diagnostic_event(
+        &mut self,
+        event_type: &str,
+        severity: &str,
+        addr: Option<u16>,
+        value: Option<u8>,
+        access_kind: Option<&str>,
+    ) {
+        if !self.diagnostic_events.enabled() {
+            return;
+        }
+        let frame = self.clocks.frames;
+        let scanline = Some(self.ppu.ly);
+        let dot = Some(self.ppu.mode_cycles);
+        let pc = Some(self.cpu.pc);
+        let bank = Some(self.current_rom_bank());
+        let ppu_mode = Some(self.ppu.current_mode() as u8);
+        let lcdc = Some(self.ppu.lcdc);
+        let stat = Some(self.ppu.read_stat());
+        let dma_active = Some(self.dma.active);
+        self.diagnostic_events.record_gb_event(
+            event_type,
+            severity,
+            frame,
+            scanline,
+            dot,
+            pc,
+            bank,
+            addr,
+            value,
+            access_kind,
+            ppu_mode,
+            lcdc,
+            stat,
+            dma_active,
+        );
     }
 
     pub fn peek8(&self, addr: u16) -> u8 {
@@ -692,7 +808,36 @@ impl Machine {
     }
 
     pub fn read8(&mut self, addr: u16) -> u8 {
+        let dma_blocked = self.dma_blocks_cpu_access(addr);
         let value = self.peek8(addr);
+        if dma_blocked {
+            self.record_diagnostic_event(
+                "DMA_OR_HDMA_CONFLICT",
+                "error",
+                Some(addr),
+                Some(value),
+                Some("read_blocked_by_dma"),
+            );
+        }
+        if (0x8000..=0x9FFF).contains(&addr) && !self.ppu.can_cpu_access_vram() {
+            self.record_diagnostic_event(
+                "VRAM_READ_DURING_BLOCKED_PERIOD",
+                "warn",
+                Some(addr),
+                Some(value),
+                Some("read"),
+            );
+        }
+        if (0xFE00..=0xFE9F).contains(&addr) && (!self.ppu.can_cpu_access_oam() || self.dma.active)
+        {
+            self.record_diagnostic_event(
+                "OAM_ACCESS_DURING_FORBIDDEN_PERIOD",
+                "error",
+                Some(addr),
+                Some(value),
+                Some("read"),
+            );
+        }
         if addr == 0xFF00 {
             self.pending_io_trace
                 .push(IoTraceEvent::Joypad(JoypadTraceEvent::Read {
@@ -705,6 +850,10 @@ impl Machine {
     }
 
     fn read8_timed(&mut self, addr: u16, cpu_cycles_until_sample: u32) -> u8 {
+        if audio_timing::is_audio_io(addr) {
+            self.advance_to_audio_io(cpu_cycles_until_sample);
+            return self.read8(addr);
+        }
         if let Some(value) = self.predict_timed_io_read(addr, cpu_cycles_until_sample) {
             value
         } else {
@@ -731,10 +880,26 @@ impl Machine {
 
     pub fn write8(&mut self, addr: u16, value: u8) {
         if self.dma_blocks_cpu_access(addr) {
+            self.record_diagnostic_event(
+                "DMA_OR_HDMA_CONFLICT",
+                "error",
+                Some(addr),
+                Some(value),
+                Some("write_blocked_by_dma"),
+            );
             return;
         }
         match addr {
             0x0000..=0x7FFF => {
+                if self.active_interrupt_vector.is_some() {
+                    self.record_diagnostic_event(
+                        "IRQ_UNSAFE_RUNTIME_STATE_ACCESS",
+                        "error",
+                        Some(addr),
+                        Some(value),
+                        Some("irq_mapper_write"),
+                    );
+                }
                 let mapper = self.cartridge.mapper_kind();
                 let before_rom_bank = self.cartridge.current_rom_bank();
                 let before_ram_bank = self.cartridge.current_ram_bank();
@@ -775,6 +940,14 @@ impl Machine {
             0x8000..=0x9FFF => {
                 if self.ppu.can_cpu_access_vram() {
                     self.memory.write8(addr, value);
+                } else {
+                    self.record_diagnostic_event(
+                        "VRAM_WRITE_OUTSIDE_SAFE_PERIOD",
+                        "error",
+                        Some(addr),
+                        Some(value),
+                        Some("write"),
+                    );
                 }
             }
             0xA000..=0xBFFF => self.cartridge.write_ram(addr, value),
@@ -793,10 +966,7 @@ impl Machine {
                 self.memory.write8(addr, self.serial.read_sc());
             }
             0xFF04 => {
-                let mut trace = Vec::new();
-                self.timer.write_div(&mut trace);
-                self.pending_io_trace
-                    .extend(trace.into_iter().map(IoTraceEvent::Timer));
+                self.reset_divider();
             }
             0xFF05 => self.timer.write_tima(value),
             0xFF06 => self.timer.write_tma(value),
@@ -843,9 +1013,18 @@ impl Machine {
                 self.dma.bytes_copied = 0;
                 self.dma.cycle_accum = 0;
                 self.dma.start_delay_cycles = 4;
-                self.pending_dma_trace.push(DmaTraceEvent::OamDmaStart {
-                    source: self.dma.source,
-                });
+                let dma_source = self.dma.source;
+                if !(0xC000..=0xDFFF).contains(&dma_source) {
+                    self.record_diagnostic_event(
+                        "OAM_DMA_SOURCE_UNSAFE",
+                        "warn",
+                        Some(dma_source),
+                        Some(value),
+                        Some("oam_dma_source"),
+                    );
+                }
+                self.pending_dma_trace
+                    .push(DmaTraceEvent::OamDmaStart { source: dma_source });
             }
             0xFF47 => self.ppu.bgp = value,
             0xFF48 => self.ppu.obp0 = value,
@@ -876,7 +1055,30 @@ impl Machine {
                 self.dma.hdma4 = value & 0xF0;
                 self.memory.write8(addr, value & 0xF0);
             }
-            0xFF55 => self.write_hdma_control(value),
+            0xFF55 => {
+                if self.mode == HardwareMode::Cgb && self.ppu.lcd_enabled() {
+                    let mode = self.ppu.current_mode() as u8;
+                    // A bit-7 write arms HBlank DMA; it does not access VRAM
+                    // immediately. Starting it in mode 0 is the unsafe case.
+                    // Bit-7-clear writes cancel active HDMA, or start GDMA.
+                    let control_only = self.dma.hdma_active && self.dma.hdma_hblank_mode;
+                    let unsafe_start = if value & 0x80 != 0 {
+                        mode == 0
+                    } else {
+                        mode == 2 || mode == 3
+                    };
+                    if !control_only && unsafe_start {
+                        self.record_diagnostic_event(
+                            "HDMA_TRANSFER_DURING_UNSAFE_MODE",
+                            "warn",
+                            Some(addr),
+                            Some(value),
+                            Some("hdma_control_write"),
+                        );
+                    }
+                }
+                self.write_hdma_control(value)
+            }
             0xFF68 => {
                 if self.mode == HardwareMode::Cgb {
                     let reg = self.memory.set_bg_palette_index(value);
@@ -937,6 +1139,14 @@ impl Machine {
             0xFE00..=0xFE9F => {
                 if self.ppu.can_cpu_access_oam() && !self.dma.active {
                     self.memory.write8(addr, value);
+                } else {
+                    self.record_diagnostic_event(
+                        "OAM_ACCESS_DURING_FORBIDDEN_PERIOD",
+                        "error",
+                        Some(addr),
+                        Some(value),
+                        Some("write"),
+                    );
                 }
             }
             _ => self.memory.write8(addr, value),
@@ -1139,7 +1349,7 @@ impl Machine {
             3 => self.cpu.e,
             4 => self.cpu.h,
             5 => self.cpu.l,
-            6 => self.read8(self.cpu.hl()),
+            6 => self.read8_audio_timed(self.cpu.hl(), 4),
             _ => self.cpu.a,
         }
     }
@@ -1154,7 +1364,7 @@ impl Machine {
             5 => self.cpu.l = value,
             6 => {
                 let addr = self.cpu.hl();
-                self.write8(addr, value);
+                self.write8_timed(addr, value, 4);
             }
             _ => self.cpu.a = value,
         }
@@ -1198,6 +1408,7 @@ impl Machine {
             self.interrupt.acknowledge(mask);
             self.push16(self.cpu.pc);
             self.cpu.pc = vector;
+            self.active_interrupt_vector = Some(vector);
             self.pending_interrupt_trace
                 .push(InterruptTraceEvent::Serviced {
                     source: self.interrupt_source_from_mask(mask),
@@ -1250,7 +1461,9 @@ impl Machine {
     fn finish_step(&mut self, cycles: u32) -> StepResult {
         let total_cycles =
             cycles.saturating_add(std::mem::take(&mut self.pending_cpu_stall_cycles));
-        let total_ppu_cycles = self.cpu_cycles_to_ppu_cycles(total_cycles);
+        let mut prefix = std::mem::take(&mut self.instruction_clock);
+        let remaining_cycles = total_cycles.saturating_sub(prefix.cpu_cycles);
+        let total_ppu_cycles = self.cpu_cycles_to_ppu_cycles(remaining_cycles);
         let (
             frame_completed,
             ppu_trace,
@@ -1258,7 +1471,13 @@ impl Machine {
             mapper_trace_from_clocks,
             io_trace_from_clocks,
             apu_trace_from_clocks,
-        ) = self.advance_clocks(total_cycles, total_ppu_cycles);
+        ) = self.advance_clocks(remaining_cycles, total_ppu_cycles);
+        let ppu_trace = if prefix.ppu_trace.is_empty() {
+            ppu_trace
+        } else {
+            prefix.ppu_trace.extend(ppu_trace);
+            prefix.ppu_trace
+        };
         let mut dma_trace = std::mem::take(&mut self.pending_dma_trace);
         dma_trace.extend(dma_trace_from_clocks);
         let mut mapper_trace = std::mem::take(&mut self.pending_mapper_trace);
@@ -1272,7 +1491,7 @@ impl Machine {
         self.commit_ime_enable_delay();
         StepResult {
             cycles: total_cycles,
-            frame_completed,
+            frame_completed: frame_completed || prefix.frame_completed,
             ppu_trace,
             dma_trace,
             mapper_trace,
@@ -1286,8 +1505,10 @@ impl Machine {
     fn finish_step_fast(&mut self, cycles: u32) {
         let total_cycles =
             cycles.saturating_add(std::mem::take(&mut self.pending_cpu_stall_cycles));
-        let total_ppu_cycles = self.cpu_cycles_to_ppu_cycles(total_cycles);
-        self.advance_clocks_fast(total_cycles, total_ppu_cycles);
+        let prefix = std::mem::take(&mut self.instruction_clock);
+        let remaining_cycles = total_cycles.saturating_sub(prefix.cpu_cycles);
+        let total_ppu_cycles = self.cpu_cycles_to_ppu_cycles(remaining_cycles);
+        self.advance_clocks_fast(remaining_cycles, total_ppu_cycles);
         self.clear_pending_traces();
         self.commit_ime_enable_delay();
     }
@@ -1299,6 +1520,7 @@ impl Machine {
         self.pending_apu_trace.clear();
         self.pending_cgb_trace.clear();
         self.pending_interrupt_trace.clear();
+        self.diagnostic_events.clear();
     }
 
     fn commit_ime_enable_delay(&mut self) {
@@ -1343,15 +1565,23 @@ impl Machine {
             if remaining_ppu == 0 {
                 let fast_only = remaining_cpu;
                 self.clocks.cycles += fast_only as u64;
+                let divider_before = self.timer.divider_counter();
                 let timer_result = self.timer.tick(fast_only);
+                apu_trace.extend(self.apu.observe_divider_only(
+                    divider_before,
+                    self.timer.divider_counter(),
+                    self.cgb_double_speed,
+                ));
                 io_trace.extend(timer_result.trace.into_iter().map(IoTraceEvent::Timer));
                 if timer_result.interrupt_requested {
                     self.request_interrupt(INT_TIMER, InterruptSource::Timer);
                 }
+                if !self.serial_link_attached {
                 let serial_result = self.serial.tick(fast_only);
                 io_trace.extend(serial_result.trace.into_iter().map(IoTraceEvent::Serial));
                 if serial_result.interrupt_requested {
                     self.request_interrupt(INT_SERIAL, InterruptSource::Serial);
+                    }
                 }
                 if self.dma.active {
                     self.tick_dma(fast_only, &mut dma_trace);
@@ -1373,15 +1603,19 @@ impl Machine {
 
             self.clocks.cycles += step_cpu as u64;
 
+            self.apu
+                .sync_divider_phase(self.timer.divider_counter(), self.cgb_double_speed);
             let timer_result = self.timer.tick(step_cpu);
             io_trace.extend(timer_result.trace.into_iter().map(IoTraceEvent::Timer));
             if timer_result.interrupt_requested {
                 self.request_interrupt(INT_TIMER, InterruptSource::Timer);
             }
+            if !self.serial_link_attached {
             let serial_result = self.serial.tick(step_cpu);
             io_trace.extend(serial_result.trace.into_iter().map(IoTraceEvent::Serial));
             if serial_result.interrupt_requested {
                 self.request_interrupt(INT_SERIAL, InterruptSource::Serial);
+                }
             }
             let apu_result = self.apu.tick(step_ppu);
             apu_trace.extend(apu_result.trace);
@@ -1455,10 +1689,16 @@ impl Machine {
             if remaining_ppu == 0 {
                 let fast_only = remaining_cpu;
                 self.clocks.cycles += fast_only as u64;
+                let divider_before = self.timer.divider_counter();
                 if self.timer.tick_fast(fast_only) {
                     self.request_interrupt(INT_TIMER, InterruptSource::Timer);
                 }
-                if self.serial.tick_fast(fast_only) {
+                self.apu.observe_divider_only(
+                    divider_before,
+                    self.timer.divider_counter(),
+                    self.cgb_double_speed,
+                );
+                if !self.serial_link_attached && self.serial.tick_fast(fast_only) {
                     self.request_interrupt(INT_SERIAL, InterruptSource::Serial);
                 }
                 if self.dma.active {
@@ -1481,10 +1721,12 @@ impl Machine {
 
             self.clocks.cycles += step_cpu as u64;
 
+            self.apu
+                .sync_divider_phase(self.timer.divider_counter(), self.cgb_double_speed);
             if self.timer.tick_fast(step_cpu) {
                 self.request_interrupt(INT_TIMER, InterruptSource::Timer);
             }
-            if self.serial.tick_fast(step_cpu) {
+            if !self.serial_link_attached && self.serial.tick_fast(step_cpu) {
                 self.request_interrupt(INT_SERIAL, InterruptSource::Serial);
             }
             self.apu.tick_fast(step_ppu);
@@ -1633,10 +1875,21 @@ impl Machine {
         });
     }
 
+    fn reset_divider(&mut self) {
+        self.pending_apu_trace.extend(
+            self.apu
+                .reset_divider(self.timer.divider_counter(), self.cgb_double_speed),
+        );
+        let mut trace = Vec::new();
+        self.timer.write_div(&mut trace);
+        self.pending_io_trace
+            .extend(trace.into_iter().map(IoTraceEvent::Timer));
+    }
     fn perform_speed_switch(&mut self) {
         if self.mode != HardwareMode::Cgb || !self.cgb_speed_switch_armed {
             return;
         }
+        self.reset_divider();
         self.cgb_speed_switch_armed = false;
         self.cgb_double_speed = !self.cgb_double_speed;
         self.cgb_speed_switch_freeze_cycles = self
@@ -1694,7 +1947,21 @@ impl Machine {
         }
         match self.mode {
             HardwareMode::Dmg => !(0xFF80..=0xFFFE).contains(&addr),
-            HardwareMode::Cgb => false,
+            HardwareMode::Cgb => {
+                // CGB has separate cartridge, VRAM, and WRAM buses. OAM DMA
+                // blocks only its source bus, plus OAM itself.
+                if (0xFE00..=0xFEFF).contains(&addr) {
+                    return true;
+                }
+                match self.dma.source {
+                    0x0000..=0x7FFF | 0xA000..=0xBFFF => {
+                        (0x0000..=0x7FFF).contains(&addr) || (0xA000..=0xBFFF).contains(&addr)
+                    }
+                    0x8000..=0x9FFF => (0x8000..=0x9FFF).contains(&addr),
+                    0xC000..=0xDFFF => (0xC000..=0xFDFF).contains(&addr),
+                    _ => false,
+                }
+            }
         }
     }
 
@@ -1918,7 +2185,11 @@ impl Machine {
     }
 
     fn write_r8_cb(&mut self, index: u8, value: u8) {
+        if index & 7 == 6 {
+            self.write8_timed(self.cpu.hl(), value, 12);
+        } else {
         self.write_r8(index, value);
+        }
     }
 
     fn cb_rlc(&mut self, value: u8) -> u8 {
@@ -2004,6 +2275,9 @@ impl Machine {
 
     fn execute_cb_opcode(&mut self, opcode: u8) -> u32 {
         let target = opcode & 0x07;
+        if target == 6 && audio_timing::is_audio_io(self.cpu.hl()) {
+            self.advance_to_audio_io(8);
+        }
         let group = opcode >> 6;
         let y = (opcode >> 3) & 0x07;
         match group {
@@ -2115,7 +2389,7 @@ impl Machine {
                 Ok(12)
             }
             0x02 => {
-                self.write8(self.ld_bc(), self.cpu.a);
+                self.write8_timed(self.ld_bc(), self.cpu.a, 4);
                 Ok(8)
             }
             0x03 => {
@@ -2186,8 +2460,8 @@ impl Machine {
             0x08 => {
                 let addr = self.read16_imm();
                 let sp = self.cpu.sp;
-                self.write8(addr, sp as u8);
-                self.write8(addr.wrapping_add(1), (sp >> 8) as u8);
+                self.write8_timed(addr, sp as u8, 12);
+                self.write8_timed(addr.wrapping_add(1), (sp >> 8) as u8, 16);
                 Ok(20)
             }
             0x11 => {
@@ -2196,7 +2470,7 @@ impl Machine {
                 Ok(12)
             }
             0x12 => {
-                self.write8(self.ld_de(), self.cpu.a);
+                self.write8_timed(self.ld_de(), self.cpu.a, 4);
                 Ok(8)
             }
             0x13 => {
@@ -2287,7 +2561,7 @@ impl Machine {
             }
             0x22 => {
                 let addr = self.cpu.hl();
-                self.write8(addr, self.cpu.a);
+                self.write8_timed(addr, self.cpu.a, 4);
                 self.cpu.set_hl(addr.wrapping_add(1));
                 Ok(8)
             }
@@ -2374,7 +2648,7 @@ impl Machine {
             }
             0x32 => {
                 let addr = self.cpu.hl();
-                self.write8(addr, self.cpu.a);
+                self.write8_timed(addr, self.cpu.a, 4);
                 self.cpu.set_hl(addr.wrapping_sub(1));
                 Ok(8)
             }
@@ -2394,22 +2668,22 @@ impl Machine {
             }
             0x34 => {
                 let addr = self.cpu.hl();
-                let value = self.read8(addr);
+                let value = self.read8_audio_timed(addr, 4);
                 let result = self.inc8(value);
-                self.write8(addr, result);
+                self.write8_timed(addr, result, 8);
                 Ok(12)
             }
             0x35 => {
                 let addr = self.cpu.hl();
-                let value = self.read8(addr);
+                let value = self.read8_audio_timed(addr, 4);
                 let result = self.dec8(value);
-                self.write8(addr, result);
+                self.write8_timed(addr, result, 8);
                 Ok(12)
             }
             0x36 => {
                 let value = self.read8(self.cpu.pc);
                 self.cpu.pc = self.cpu.pc.wrapping_add(1);
-                self.write8(self.cpu.hl(), value);
+                self.write8_timed(self.cpu.hl(), value, 8);
                 Ok(12)
             }
             0x37 => {
@@ -3090,12 +3364,13 @@ impl Machine {
             0xD9 => {
                 self.cpu.pc = self.pop16();
                 self.cpu.ime = true;
+                self.active_interrupt_vector = None;
                 Ok(16)
             }
             0xE0 => {
                 let offset = self.read8(self.cpu.pc) as u16;
                 self.cpu.pc = self.cpu.pc.wrapping_add(1);
-                self.write8(0xFF00 | offset, self.cpu.a);
+                self.write8_timed(0xFF00 | offset, self.cpu.a, 8);
                 Ok(12)
             }
             0xE1 => {
@@ -3104,7 +3379,7 @@ impl Machine {
                 Ok(12)
             }
             0xE2 => {
-                self.write8(0xFF00 | self.cpu.c as u16, self.cpu.a);
+                self.write8_timed(0xFF00 | self.cpu.c as u16, self.cpu.a, 4);
                 Ok(8)
             }
             0xE5 => {
@@ -3113,7 +3388,7 @@ impl Machine {
             }
             0xEA => {
                 let addr = self.read16_imm();
-                self.write8(addr, self.cpu.a);
+                self.write8_timed(addr, self.cpu.a, 12);
                 Ok(16)
             }
             0xE6 => {
@@ -3279,6 +3554,109 @@ mod tests {
     }
 
     #[test]
+    fn pending_enabled_interrupt_wakes_halt_in_traced_and_fast_execution() {
+        for (cgb, double_speed) in [(false, false), (true, false), (true, true)] {
+            for ime in [false, true] {
+                for fast in [false, true] {
+                    let mut rom = make_test_rom(&[0x76, 0x3E, 0x42]);
+                    rom[0x143] = if cgb { 0x80 } else { 0 };
+                    rom[0x0050] = 0x04; // INC B makes handler execution observable.
+                    rom[0x0051] = 0xD9; // RETI returns to the instruction after HALT.
+                    let mut machine = Machine::new();
+                    machine.load_rom(rom).unwrap();
+                    machine.cgb_double_speed = double_speed;
+                    machine.cpu.ime = ime;
+                    machine.interrupt.ie = INT_TIMER;
+                    machine.interrupt.iflag = 0;
+                    machine.cpu.b = 0;
+
+                    let step = |machine: &mut Machine| {
+                        if fast {
+                            machine.step_instruction_fast().unwrap();
+                        } else {
+                            machine.step_instruction().unwrap();
+                        }
+                    };
+                    step(&mut machine);
+                    assert!(machine.cpu.halted);
+                    assert_eq!(machine.cpu.pc, 0x0101);
+                    assert_eq!(machine.clocks.cycles, 4);
+
+                    machine.interrupt.iflag = INT_TIMER;
+                    step(&mut machine);
+                    assert!(!machine.cpu.halted,
+                        "HALT wake failed: cgb={cgb}, double_speed={double_speed}, ime={ime}, fast={fast}");
+                    assert!(!machine.cpu.halt_bug);
+                    if ime {
+                        assert_eq!(machine.cpu.pc, 0x0050);
+                        assert_eq!(machine.cpu.sp, 0xFFFC);
+                        assert_eq!(machine.peek8(0xFFFC), 0x01);
+                        assert_eq!(machine.peek8(0xFFFD), 0x01);
+                        assert_eq!(machine.interrupt.iflag & INT_TIMER, 0);
+                        assert!(!machine.cpu.ime);
+                        assert_eq!(machine.clocks.cycles, 24);
+                        step(&mut machine);
+                        assert_eq!(machine.cpu.b, 1);
+                        assert_eq!(machine.cpu.pc, 0x0051);
+                        step(&mut machine);
+                        assert!(machine.cpu.ime);
+                        assert_eq!(machine.cpu.pc, 0x0101);
+                        assert_eq!(machine.cpu.sp, 0xFFFE);
+                        step(&mut machine);
+                        assert_eq!(machine.clocks.cycles, 52);
+                    } else {
+                        // Wake without servicing: execute the following load and leave IF pending.
+                        assert_eq!(machine.interrupt.iflag & INT_TIMER, INT_TIMER);
+                        assert_eq!(machine.cpu.sp, 0xFFFE);
+                        assert!(!machine.cpu.ime);
+                        assert_eq!(machine.clocks.cycles, 12);
+                    }
+                    assert_eq!(machine.cpu.pc, 0x0103);
+                    assert_eq!(machine.cpu.a, 0x42);
+                }
+            }
+        }
+    }
+
+    // IF alone must not wake HALT while its source is masked in IE; enabling it must wake and service.
+    #[test]
+    fn masked_interrupt_preserves_halt_until_enabled_in_both_execution_paths() {
+        for (cgb, double_speed) in [(false, false), (true, false), (true, true)] {
+            for fast in [false, true] {
+                let mut machine = if cgb {
+                    make_cgb_machine(&[0x76])
+                } else {
+                    make_machine(&[0x76])
+                };
+                machine.cgb_double_speed = double_speed;
+                machine.cpu.ime = true;
+                machine.interrupt.ie = 0;
+                machine.interrupt.iflag = 0;
+                let step = |machine: &mut Machine| {
+                    if fast {
+                        machine.step_instruction_fast().unwrap();
+                    } else {
+                        machine.step_instruction().unwrap();
+                    }
+                };
+                step(&mut machine);
+                machine.interrupt.iflag = INT_TIMER;
+                step(&mut machine);
+                assert!(machine.cpu.halted);
+                assert_eq!(machine.cpu.pc, 0x0101);
+                assert_eq!(machine.cpu.sp, 0xFFFE);
+                assert_eq!(machine.clocks.cycles, 8);
+                machine.interrupt.ie = INT_TIMER;
+                step(&mut machine);
+                assert!(!machine.cpu.halted);
+                assert_eq!(machine.cpu.pc, 0x0050);
+                assert_eq!(machine.interrupt.iflag & INT_TIMER, 0);
+                assert_eq!(machine.clocks.cycles, 28);
+            }
+        }
+    }
+
+    #[test]
     fn ei_is_applied_after_the_following_instruction() {
         let mut machine = make_machine(&[0xFB, 0x00, 0x00]);
         machine.interrupt.ie = INT_TIMER;
@@ -3380,6 +3758,7 @@ mod tests {
     #[test]
     fn oam_dma_blocks_cpu_bus_and_copies_over_time() {
         let mut machine = make_machine(&[0x00]);
+        let power_on_hram = machine.memory.read8(0xFF80);
         for i in 0..0xA0u16 {
             machine.memory.write8(0xC000 + i, i as u8);
         }
@@ -3387,7 +3766,7 @@ mod tests {
         machine.write8(0xFF46, 0xC0);
         assert!(machine.dma.active);
         assert_eq!(machine.read8(0xC000), 0xFF);
-        assert_eq!(machine.read8(0xFF80), 0x00);
+        assert_eq!(machine.read8(0xFF80), power_on_hram);
 
         machine.advance_clocks(4, 4);
         assert!(machine.dma.active);
@@ -3398,6 +3777,50 @@ mod tests {
         assert!(!machine.dma.active);
         assert_eq!(machine.memory.read8(0xFE00), 0x00);
         assert_eq!(machine.memory.read8(0xFE9F), 0x9F);
+    }
+
+    #[test]
+    fn cgb_oam_dma_blocks_only_the_source_bus() {
+        let mut machine = make_cgb_machine(&[0x00]);
+        machine.memory.write8(0xC000, 0x12);
+        machine.memory.write8(0xFF80, 0x34);
+        machine.set_diagnostic_events_enabled(true);
+
+        machine.write8(0xFF46, 0xC0);
+
+        assert_eq!(machine.read8(0x0100), 0x00);
+        assert_eq!(machine.read8(0xC000), 0xFF);
+        assert_eq!(machine.read8(0xE000), 0xFF);
+        assert_eq!(machine.read8(0xFF80), 0x34);
+        assert!(machine.diagnostic_events().iter().any(|event| {
+            event.event_type == "DMA_OR_HDMA_CONFLICT"
+                && event.access_kind.as_deref() == Some("read_blocked_by_dma")
+                && event.addr.as_deref() == Some("0xC000")
+        }));
+
+        machine.dma.active = false;
+        machine.write8(0xFF46, 0x01);
+
+        assert_eq!(machine.read8(0x0100), 0xFF);
+        assert_eq!(machine.read8(0xC000), 0x12);
+    }
+
+    #[test]
+    fn cgb_wram_oam_dma_reports_stack_access_from_rom_code() {
+        let mut machine = make_cgb_machine(&[0xF5]);
+        machine.cpu.sp = 0xDFFF;
+        machine.set_diagnostic_events_enabled(true);
+        machine.write8(0xFF46, 0xC0);
+
+        machine.step_instruction().unwrap();
+
+        assert_eq!(machine.cpu.pc, 0x0101);
+        assert_eq!(machine.cpu.sp, 0xDFFD);
+        assert!(machine.diagnostic_events().iter().any(|event| {
+            event.event_type == "DMA_OR_HDMA_CONFLICT"
+                && event.access_kind.as_deref() == Some("write_blocked_by_dma")
+                && matches!(event.addr.as_deref(), Some("0xDFFD") | Some("0xDFFE"))
+        }));
     }
 
     #[test]
@@ -3610,6 +4033,46 @@ mod tests {
                 ..
             }
         )));
+    }
+
+    #[test]
+    fn hdma_diagnostics_distinguish_arming_from_immediate_transfer() {
+        for (ly, dot, control, expected) in [
+            (0, 0, 0x80, false),
+            (0, 100, 0x80, false),
+            (0, 300, 0x80, true),
+            (144, 0, 0x80, false),
+            (0, 0, 0x00, true),
+            (0, 100, 0x00, true),
+            (0, 300, 0x00, false),
+            (144, 0, 0x00, false),
+        ] {
+            let mut machine = make_cgb_machine(&[0x00]);
+            machine.ppu.lcdc = 0x91;
+            machine.ppu.ly = ly;
+            machine.ppu.mode_cycles = dot;
+            machine.set_diagnostic_events_enabled(true);
+            machine.write8(0xFF51, 0xC0);
+            machine.write8(0xFF55, control);
+            assert_eq!(
+                machine
+                    .diagnostic_events()
+                    .iter()
+                    .any(|event| { event.event_type == "HDMA_TRANSFER_DURING_UNSAFE_MODE" }),
+                expected,
+                "LY={ly}, dot={dot}, control={control:#x}"
+            );
+        }
+        let mut machine = make_cgb_machine(&[0x00]);
+        machine.ppu.lcdc = 0x91;
+        machine.ppu.ly = 0;
+        machine.ppu.mode_cycles = 100;
+        machine.set_diagnostic_events_enabled(true);
+        machine.write8(0xFF51, 0xC0);
+        machine.write8(0xFF55, 0x81);
+        machine.write8(0xFF55, 0x00);
+        assert!(machine.diagnostic_events().is_empty());
+        assert!(!machine.dma.hdma_active);
     }
 
     #[test]
@@ -3828,6 +4291,82 @@ mod tests {
     }
 
     #[test]
+    fn external_serial_device_clocks_only_external_mode_and_records_irq() {
+        let mut machine = make_machine(&[0x00]);
+        machine.write8(0xFF01, 0xA5);
+        machine.write8(0xFF02, 0x80);
+
+        let result = machine.clock_external_serial_byte(0x3C);
+
+        assert!(result.completed);
+        assert_eq!(result.outgoing, 0xA5);
+        assert_eq!(machine.serial.sb, 0x3C);
+        assert_eq!(machine.read8(0xFF01), 0x3C);
+        assert_eq!(machine.interrupt.iflag & INT_SERIAL, INT_SERIAL);
+        assert!(result.io_trace.iter().any(|event| matches!(
+            event,
+            IoTraceEvent::Serial(SerialTraceEvent::TransferComplete {
+                sb: 0x3C,
+                internal_clock: false,
+                ..
+            })
+        )));
+        assert!(result.interrupt_trace.iter().any(|event| matches!(
+            event,
+            InterruptTraceEvent::Requested {
+                source: crate::types::InterruptSource::Serial,
+                ..
+            }
+        )));
+
+        machine.write8(0xFF01, 0x11);
+        machine.write8(0xFF02, 0x81);
+        let blocked = machine.clock_external_serial_byte(0x22);
+        assert!(!blocked.completed);
+        assert!(machine.serial.transfer_active());
+        assert_eq!(machine.serial.sb, 0x11);
+    }
+
+    #[test]
+    fn attached_serial_waits_for_peer_instead_of_completing_open_bus() {
+        let mut left = make_machine(&[0x00]);
+        let mut right = make_machine(&[0x00]);
+        left.set_serial_link_attached(true);
+        right.set_serial_link_attached(true);
+        left.write8(0xFF01, 0xA5);
+        left.write8(0xFF02, 0x81);
+
+        let step = left.finish_step(8 * 512);
+
+        assert!(left.serial.transfer_active());
+        assert_eq!(left.interrupt.iflag & INT_SERIAL, 0);
+        assert!(!step.io_trace.iter().any(|event| matches!(
+            event,
+            IoTraceEvent::Serial(SerialTraceEvent::TransferComplete { .. })
+        )));
+
+        right.write8(0xFF01, 0x3C);
+        right.write8(0xFF02, 0x80);
+        let exchange = left.exchange_serial_with_peer(&mut right);
+        assert!(exchange.completed);
+        assert_eq!(left.serial.sb, 0x3C);
+        assert_eq!(right.serial.sb, 0xA5);
+    }
+
+    #[test]
+    fn clearing_serial_start_bit_cancels_pending_transfer() {
+        let mut machine = make_machine(&[0x00]);
+        machine.write8(0xFF01, 0xA5);
+        machine.write8(0xFF02, 0x81);
+        assert!(machine.serial.transfer_active());
+
+        machine.write8(0xFF02, 0x00);
+
+        assert!(!machine.serial.transfer_active());
+        assert_eq!(machine.read8(0xFF02) & 0x80, 0);
+    }
+
+    #[test]
     fn joypad_press_requests_interrupt_when_selected() {
         let mut machine = make_machine(&[0x00]);
         machine.write8(0xFF00, 0x20);
@@ -3924,6 +4463,24 @@ mod tests {
     }
 
     #[test]
+    fn irq_mapper_write_emits_sarakura_runtime_state_diagnostic() {
+        let mut rom = vec![0u8; 0x8000];
+        rom[0x147] = 0x20;
+        let mut machine = Machine::new();
+        machine.load_rom(rom).unwrap();
+        machine.set_diagnostic_events_enabled(true);
+        machine.active_interrupt_vector = Some(0x0040);
+
+        machine.write8(0x4000, 0x02);
+
+        assert!(machine.diagnostic_events().iter().any(|event| {
+            event.event_type == "IRQ_UNSAFE_RUNTIME_STATE_ACCESS"
+                && event.access_kind.as_deref() == Some("irq_mapper_write")
+                && event.addr.as_deref() == Some("0x4000")
+        }));
+    }
+
+    #[test]
     fn apu_master_toggle_and_trigger_emit_trace() {
         let mut machine = make_machine(&[0x00]);
         machine.write8(0xFF26, 0x00);
@@ -3985,6 +4542,7 @@ mod tests {
     #[test]
     fn apu_length_expiry_is_observable() {
         let mut machine = make_machine(&[0x00]);
+        machine.write8(0xFF26, 0);
         machine.write8(0xFF26, 0x80);
         machine.write8(0xFF11, 0xFF);
         machine.write8(0xFF12, 0xF3);

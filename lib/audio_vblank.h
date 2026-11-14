@@ -1,4 +1,19 @@
 #pragma once
+#include "audio.h"
+
+// CONTROL/SET_INST follows audio.h. Define AUDIO_VBLANK_LEGACY_INST_ORDER
+// for the driver and its clients only when rebuilding old raw VBlank songs.
+// This never changes the note columns or panning bits.
+#define AUDIO_VBLANK_INST_CH1 AUDIO_STREAM_CHANNEL_CH1
+#define AUDIO_VBLANK_INST_CH2 AUDIO_STREAM_CHANNEL_CH2
+#ifdef AUDIO_VBLANK_LEGACY_INST_ORDER
+#define AUDIO_VBLANK_INST_CH3 ((u8)3)
+#define AUDIO_VBLANK_INST_CH4 ((u8)2)
+#else
+#define AUDIO_VBLANK_STANDARD_INST_ORDER 1
+#define AUDIO_VBLANK_INST_CH3 AUDIO_STREAM_CHANNEL_CH3
+#define AUDIO_VBLANK_INST_CH4 AUDIO_STREAM_CHANNEL_CH4
+#endif
 
 // Fixed-bank VBlank BGM driver.
 //

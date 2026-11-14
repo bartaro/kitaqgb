@@ -21,6 +21,7 @@ pub use plita_ui::{
     ToolKind, UiEvent, UiResponse, Widget, WidgetId, WidgetNode, WidgetRole, WidgetTree,
     WidgetVisualState, CREATIVE_MEMORY_WINDOW_ID, DEFAULT_FONT_FAMILY,
 };
+pub use plita_ui::{draw_menu_button, MenuButtonLayout, MenuButtonStyle, MENU_BUTTON_CHROME_WIDTH};
 pub use plita_window::{AuxiliaryWindowDescriptor, PlitaProgram};
 
 #[cfg(feature = "python")]
@@ -45,6 +46,9 @@ pub mod prelude {
         DEFAULT_FONT_FAMILY,
     };
 
+    pub use crate::{
+        draw_menu_button, MenuButtonLayout, MenuButtonStyle, MENU_BUTTON_CHROME_WIDTH,
+    };
     #[cfg(feature = "python")]
     pub use crate::python;
 }

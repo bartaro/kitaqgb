@@ -1,6 +1,12 @@
 # GBSEQ — Benutzerhandbuch
 
-[MIDI-Dateien und Geräte, Bildschirmklavier, Aufnahme und 512 Klangfarben](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** Ctrl+K oder das Klaviersymbol öffnet die Tastatur mit kontinuierlicher Audioausgabe. Neu/Öffnen bietet bei ungespeicherten Änderungen Speichern/Verwerfen/Abbrechen im Fenster. In Wiedergabe-ROMs schaltet B die Schleife in SOLO/MASTER um; TIME zeigt Position/Dauer.
+
+Die Wiedergabe erzeugt kurze Audioblöcke nach Bedarf. Monitor, Stumm und Solo behalten die Position bei; Noten- und Tempoänderungen gelten beim nächsten Start.
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[MIDI-Dateien und Geräte, Bildschirmklavier, Aufnahme und 512 Klangfarben](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 Exportierte ROMs enthalten die 48 Byte der Nintendo-Logodaten zur Kompatibilität mit der Startprüfung. Die MIT-Lizenz von GBSEQ gewährt keine eigenständigen Rechte am Logo oder an den Marken. GBSEQ ist weder mit Nintendo verbunden noch von Nintendo genehmigt. [Hinweis auf Englisch/Japanisch](docs/NINTENDO_NOTICE.md).
 
@@ -12,7 +18,7 @@ GBSEQ von DAISUKE OBA bietet eine plita-GUI und eine unabhängige CLI. Beide ver
 
 ## Einspielen, aufnehmen und WAV ausgeben
 
-Zielspur wählen und mit K die Klaviatur öffnen. A/S/D/F/G/H/J spielen die weißen Tasten, W/E/T/Y/U die schwarzen; Z/X wechselt die Oktave. Mit IN und OUT das MIDI-Gerät wählen. Die Schritteingabe rückt um 1, 2 oder 4 Sechzehntel vor. REC nimmt einen Durchgang ab Stückanfang auf. Der Schutz überspringt überlappende Noten; Überschreiben ersetzt nur den belegten Abschnitt. MIDI über Datei importieren und über Export ausgeben. Für GB-Klangfarben das .gbseq-Projekt behalten.
+Zielspur wählen und mit Ctrl+K die Klaviatur öffnen. A/S/D/F/G/H/J spielen die weißen Tasten, W/E/T/Y/U die schwarzen; Z/X wechselt die Oktave. Mit IN und OUT das MIDI-Gerät wählen. Die Schritteingabe rückt um 1, 2, 4 oder 8 Sechzehntel vor. REC nimmt einen Durchgang ab Stückanfang auf. Der Schutz überspringt überlappende Noten; Überschreiben ersetzt nur den belegten Abschnitt. MIDI über Datei importieren und über Export ausgeben. Für GB-Klangfarben das .gbseq-Projekt behalten.
 
 Pro Kanal stehen 128 Werksklänge im Auswahlmenü. Eigene Klänge lassen sich getrennt als .gbpreset speichern und laden. Akkorde können für die Mischung und für jede Spur unabhängig ein- und ausgeblendet werden. Die globale Transposition lässt die Rauschspur unverändert.
 
@@ -39,7 +45,7 @@ Die GUI benötigt Desktop, passenden GPU-Treiber und ein Audiogerät zum Anhöre
 
 ## GUI-Bearbeitung
 
-Modus und P1–P4 wählen. ALL16 in DMG07 zeigt alle sechzehn Kanäle. Doppelklick auf eine leere Spur erstellt eine Note, auf eine Note öffnet den Inspektor. Ziehen des Körpers ändert Zeit/Tonhöhe, der rechten Kante die Dauer. Jede Spur ist einstimmig; Überlappungen werden abgewiesen. Taktzahl 1–256. Mausrad/untere Leiste verschieben die Ansicht; F passt das Stück ein, Home springt zum Anfang, +/- zoomt. Die Ansicht folgt der Wiedergabe. Space startet/stoppt, LOOP ON/OFF schaltet die Schleife. Beim ersten Start wird das gesamte Stück berechnet; lange Stücke benötigen Vorbereitungszeit.
+Modus und P1–P4 wählen. ALL16 in DMG07 zeigt alle sechzehn Kanäle. Doppelklick auf eine leere Spur erstellt eine Note, auf eine Note öffnet den Inspektor. Ziehen des Körpers ändert Zeit/Tonhöhe, der rechten Kante die Dauer. Jede Spur ist einstimmig; Überlappungen werden abgewiesen. Taktzahl 1–256. Mausrad/untere Leiste verschieben die Ansicht; F passt das Stück ein, Home springt zum Anfang, +/- zoomt. Die Ansicht folgt der Wiedergabe. Space startet/stoppt, LOOP ON/OFF schaltet die Schleife. Die Wiedergabe erzeugt kurze Audioblöcke nach Bedarf. Monitor, Stumm und Solo behalten die Position bei; Noten- und Tempoänderungen gelten beim nächsten Start.
 
 Ctrl/Shift-Klick ändert die Auswahl; Ctrl+A wählt die Spur. Links/rechts verschiebt im Raster, oben/unten in Halbtönen, Shift+oben/unten in Oktaven. Ctrl+D dupliziert, Delete löscht, G wechselt das Raster, Q richtet Anfänge aus. Ctrl+Z/Y macht rückgängig/wiederholt, Ctrl+C/V kopiert/fügt ein. Ctrl+O öffnet, Ctrl+S speichert, Ctrl+Shift+S speichert unter. Vor dem Ersetzen ungespeicherter Änderungen erfolgt eine Abfrage; vor Überschreiben eine Kopie behalten.
 

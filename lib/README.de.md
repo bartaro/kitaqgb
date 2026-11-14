@@ -1,5 +1,7 @@
 # KITAQGB-Bibliotheken
 
+[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+
 
 
 <!-- local-library-20261003:start -->

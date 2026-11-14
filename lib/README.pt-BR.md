@@ -1,5 +1,7 @@
 # Bibliotecas da KITAQGB
 
+[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+
 <!-- local-library-20261003:start -->
 ## Alterações e verificação da biblioteca local, 2026-10-03
 
@@ -248,7 +250,7 @@ Os oito últimos índices de nota atualmente reutilizam as frequências da oitav
 - `AUDIO_CMD_NOTE` e `AUDIO_CMD_SET_INST` mantêm a codificação antiga dos canais: `0=CH1`, `1=CH2`, `2=CH4`, `3=CH3`.
 - Para uma onda própria do CH3, passe a `Audio_LoadCustomWave()` 16 bytes com 32 amostras de 4 bits compactadas.
 - O fade de `Audio_FadeToMasterVolume()` avança em `Audio_Update()`. Continue chamando essa atualização a cada quadro durante o fade.
-- `audio_vblank.c` define o símbolo de vetor de IRQ de VBlank `__kq_vblank_vector`. Cada evento de BGM ocupa cinco bytes: `delay, ch2_note, ch1_note, ch3_note, ch4_noise_param`. Use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` e `AUDIO_VBLANK_END` para pausa, repetição e fim.
+- `audio_vblank.c` define o símbolo de vetor de IRQ de VBlank `__kq_vblank_vector`. Cada evento de BGM ocupa cinco bytes: `delay, ch1_note, ch2_note, ch3_note, ch4_noise_param`. Use `AUDIO_VBLANK_REST`, `AUDIO_VBLANK_LOOP` e `AUDIO_VBLANK_END` para pausa, repetição e fim.
 - Músicas de VBlank acessadas por ponteiro direto devem ficar no banco fixo. O modo de fila pode ser abastecido a partir de outros bancos. Depois do link com `lib/audio_vblank.c`, execute `scripts/patch_gb_vblank_irq.ps1 <rom> <map>` para fazer o vetor `0x0040` saltar para a ISR e atualizar os checksums da ROM.
 - Não combine `audio_vblank.c` com outra biblioteca ou rotina do jogo que também controle o vetor VBlank `0x0040`, salvo se criar um despachante de IRQ compartilhado.
 - `Scroll_SplitCommit()` ativa automaticamente os bits IE `0x01 | 0x02` e usa os tratadores VBlank/STAT do compilador para executar a divisão da tela.

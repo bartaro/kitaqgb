@@ -27,6 +27,15 @@ pub struct Memory {
 }
 
 impl Memory {
+    pub fn power_on() -> Self {
+        let mut out = Self::default();
+        let mut state = 0x6Du8;
+        for addr in 0xFF80usize..=0xFFFE {
+            state = state.wrapping_mul(17).wrapping_add(0x3D);
+            out.data[addr] = state ^ addr as u8;
+        }
+        out
+    }
     pub fn read8(&self, addr: u16) -> u8 {
         match addr {
             0x8000..=0x9FFF => self.read_vram8(addr),
@@ -284,5 +293,27 @@ impl Default for Memory {
         out.data[0xFF6B] = 0x00;
         out.data[0xFF70] = 0xF9;
         out
+    }
+}
+#[cfg(test)]
+mod tests {
+    use super::Memory;
+
+    #[test]
+    fn power_on_hram_is_nonzero_and_reproducible() {
+        let first = Memory::power_on();
+        let second = Memory::power_on();
+
+        assert_ne!(first.read8(0xFF9F), 0);
+        assert_eq!(first.read8(0xFF80), second.read8(0xFF80));
+        assert_eq!(first.read8(0xFF9F), second.read8(0xFF9F));
+        assert_eq!(first.read8(0xFFFE), second.read8(0xFFFE));
+    }
+
+    #[test]
+    fn plain_default_remains_zero_for_component_fixtures() {
+        let memory = Memory::default();
+
+        assert_eq!(memory.read8(0xFF9F), 0);
     }
 }

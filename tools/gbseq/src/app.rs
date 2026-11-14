@@ -11,7 +11,6 @@ use gbdaw_export_kitaqgb::{export_project_to_dir, ExportPolicy, StreamMode};
 #[cfg(test)]
 use gbdaw_kokura::render_project_to_samples;
 use plita::prelude::*;
-use rfd::FileDialog;
 use rodio::{OutputStream, OutputStreamHandle, Sink, Source};
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
@@ -29,11 +28,13 @@ use std::collections::BTreeSet;
 mod chords;
 mod i18n;
 mod key_editor;
+mod key_monitor;
 #[cfg(test)]
 mod monitor_tests;
 mod outputs;
 mod patch_list;
 mod performance;
+mod project_files;
 mod realtime;
 mod verification;
 mod wave_graph;
@@ -52,7 +53,7 @@ const SCROLLBAR_H: f32 = 13.0;
 const MAX_HALF_STEP_W: f32 = 96.0;
 const NOTE_H: f32 = 17.0;
 const NOTE_HANDLE_W: f32 = 8.0;
-const MEASURES_INPUT_X: f32 = 806.0;
+const MEASURES_INPUT_X: f32 = 846.0;
 const MEASURES_INPUT_W: f32 = 58.0;
 const GB_FRAME_RATE_HZ: f64 = 4_194_304.0 / 70_224.0;
 
@@ -174,7 +175,7 @@ fn action_icon(action: Action) -> Option<&'static str> {
         | Action::ChordBulk => "grid-2x2",
         Action::ImportMidi => "folder-open",
         Action::ExportMidi | Action::ExportVblank => "download",
-        Action::Keyboard => "grid-2x2",
+        Action::Keyboard => return None, // Draw a piano, not the computer-keyboard glyph.
         Action::SongKey(n) => {
             if n > 0 {
                 "arrow-up"
@@ -446,6 +447,7 @@ fn render_mixed_projects(
 }
 
 pub struct GbseqApp {
+    files: project_files::Files,
     chords: chords::Labels,
     patches: patch_list::Browser,
     live: performance::Performance,
@@ -456,6 +458,7 @@ pub struct GbseqApp {
     selected_notes: BTreeSet<u64>,
     selection_modifier: bool,
     space_down: bool,
+    keyboard_shortcut_down: bool,
     menu: Option<MenuKind>,
     snap_steps: u32,
     saved_project: SequenceProject,
@@ -520,6 +523,7 @@ impl GbseqApp {
         };
         Self {
             size: size.clamped(),
+            files: Default::default(),
             chords: Default::default(),
             patches: Default::default(),
             live: Default::default(),
@@ -529,6 +533,7 @@ impl GbseqApp {
             selected_notes: BTreeSet::new(),
             selection_modifier: false,
             space_down: false,
+            keyboard_shortcut_down: false,
             menu: None,
             snap_steps: 1,
             saved_project: SequenceProject::demo(),
@@ -906,13 +911,14 @@ impl GbseqApp {
             (Action::Add, "ADD", 72.0),
             (Action::Duplicate, "DUP", 88.0),
             (Action::Delete, "DEL", 76.0),
-            (Action::Quantize, "ALIGN", 88.0),
+            (Action::Quantize, "Quantize", 128.0),
             (
                 Action::Snap,
                 match self.snap_steps {
                     1 => "1/16",
                     2 => "1/8",
-                    _ => "1/4",
+                    4 => "1/4",
+                    _ => "1/2",
                 },
                 100.0,
             ),
@@ -1138,7 +1144,11 @@ impl GbseqApp {
     fn link16_buttons(&self) -> Vec<ButtonSpec> {
         let y = 46.0;
         let mut x = 104.0;
-        let mut buttons = Vec::new();
+        let mut buttons = vec![ButtonSpec {
+            action: Action::Keyboard,
+            rect: Rect::new(12., y, 82., 28.),
+            label: "Ctrl+K".into(),
+        }];
         for (mode, label, width) in [
             (Link16Mode::Local4, "LOCAL 4CH", 82.0),
             (Link16Mode::Cable8, "CABLE 8CH", 86.0),
@@ -1289,7 +1299,7 @@ impl GbseqApp {
                     (Action::SelectAll, "Select lane  Ctrl+A"),
                     (Action::Duplicate, "Duplicate    Ctrl+D"),
                     (Action::Delete, "Delete          Del"),
-                    (Action::Quantize, "Align to snap     Q"),
+                    (Action::Quantize, "Quantize selection   Q"),
                     (Action::Transpose(12), "Octave up"),
                     (Action::Transpose(1), "Selection +1 semitone"),
                     (Action::Transpose(-1), "Selection -1 semitone"),
@@ -1303,7 +1313,7 @@ impl GbseqApp {
                 vec![
                     (Action::FitSong, "Fit song          F"),
                     (Action::Menu(MenuKind::Harmony), "Chord display..."),
-                    (Action::Keyboard, "Keyboard / MIDI     K"),
+                    (Action::Keyboard, "Keyboard / MIDI   Ctrl+K"),
                     (Action::Home, "Go to start    Home"),
                     (Action::Zoom(1), "Zoom in           +"),
                     (Action::Zoom(-1), "Zoom out          -"),
@@ -1364,31 +1374,20 @@ impl GbseqApp {
                 self.selected_note = ids.first().copied();
                 self.selected_notes = ids.into_iter().collect();
                 self.push_undo(before);
-                self.status = format!("EDIT {:?} / {} selected", edit, self.selected_notes.len());
+                self.status = if let NoteEdit::Quantize(grid) = edit {
+                    format!(
+                        "Quantized {} notes to 1/{}",
+                        self.selected_notes.len(),
+                        16 / grid
+                    )
+                } else {
+                    format!("EDIT {:?} / {} selected", edit, self.selected_notes.len())
+                };
+            }
+            Err(_) if matches!(edit, NoteEdit::Quantize(_)) && !ids.is_empty() => {
+                self.status = "Quantize would overlap notes; nothing changed".into()
             }
             Err(error) => self.status = format!("EDIT unchanged: {error}"),
-        }
-    }
-
-    fn confirm_replace(&mut self) -> bool {
-        if self.project == self.saved_project {
-            return true;
-        }
-        match rfd::MessageDialog::new()
-            .set_title(self.language.translate("GBSEQ - Unsaved changes"))
-            .set_description(
-                self.language
-                    .translate("Save this sequence before replacing it?"),
-            )
-            .set_buttons(rfd::MessageButtons::YesNoCancel)
-            .show()
-        {
-            rfd::MessageDialogResult::Yes => {
-                self.save_dialog();
-                self.project == self.saved_project
-            }
-            rfd::MessageDialogResult::No => true,
-            _ => false,
         }
     }
 
@@ -1850,6 +1849,9 @@ impl GbseqApp {
     }
 
     fn apply_action(&mut self, action: Action) {
+        if self.files.active() {
+            return;
+        }
         if !matches!(action, Action::Menu(_)) {
             self.menu = None;
         }
@@ -1878,17 +1880,7 @@ impl GbseqApp {
                 };
                 self.menu = Some(MenuKind::Harmony);
             }
-            Action::SaveAs => {
-                if let Some(path) = FileDialog::new()
-                    .add_filter(self.language.translate("GBSEQ project"), &["gbseq"])
-                    .set_file_name("sequence.gbseq")
-                    .save_file()
-                {
-                    if let Err(error) = self.save_path(&path) {
-                        self.status = format!("SAVE failed: {error}");
-                    }
-                }
-            }
+            Action::SaveAs => self.request_save(true, None),
             Action::SelectAll => {
                 self.selected_notes = self.project.tracks[self.selected_track]
                     .notes
@@ -1913,18 +1905,7 @@ impl GbseqApp {
                     Err(e) => self.status = e.to_string(),
                 }
             }
-            Action::ImportMidi => {
-                if let Some(path) = FileDialog::new()
-                    .add_filter("MIDI", &["mid", "midi"])
-                    .pick_file()
-                {
-                    if self.confirm_replace() {
-                        if let Err(e) = self.load_path(&path) {
-                            self.status = format!("MIDI: {e:#}");
-                        }
-                    }
-                }
-            }
+            Action::ImportMidi => self.choose_project(true),
             Action::Transpose(delta) => self.edit_selection(NoteEdit::Transpose(delta)),
             Action::FitSong => {
                 self.half_step_w = (self.timeline_viewport().width
@@ -1941,41 +1922,14 @@ impl GbseqApp {
                 self.snap_steps = match self.snap_steps {
                     1 => 2,
                     2 => 4,
+                    4 => 8,
                     _ => 1,
                 };
                 self.status = format!("SNAP {} steps", self.snap_steps);
             }
-            Action::New => {
-                if !self.confirm_replace() {
-                    return;
-                }
-                self.stop_audio();
-                self.drag = None;
-                self.drag_before = None;
-                self.wave_dragging = false;
-                self.wave_drag_before = None;
-                self.project = SequenceProject::empty();
-                self.chords.clear();
-                self.reset_monitor();
-                self.saved_project = self.project.clone();
-                self.selected_notes.clear();
-                self.current_path = None;
-                self.selected_note = None;
-                self.active_player = 0;
-                self.all_players_view = false;
-                self.selected_track = 0;
-                self.detail_open = false;
-                self.undo.clear();
-                self.redo.clear();
-                self.timeline_scroll = ScrollAreaState::new();
-                self.status = "NEW sequence".to_string();
-            }
-            Action::Open => {
-                if self.confirm_replace() {
-                    self.open_dialog();
-                }
-            }
-            Action::Save => self.save_dialog(),
+            Action::New => self.request_replace(project_files::Replace::New),
+            Action::Open => self.choose_project(false),
+            Action::Save => self.request_save(false, None),
             Action::Undo => self.undo(),
             Action::Redo => self.redo(),
             Action::Add => self.add_note_at_cursor(),
@@ -2189,32 +2143,6 @@ impl GbseqApp {
         self.current_path = Some(path.to_path_buf());
         self.status = format!("SAVED {}", path.display());
         Ok(())
-    }
-
-    fn open_dialog(&mut self) {
-        let Some(path) = FileDialog::new()
-            .add_filter(self.language.translate("GBSEQ project"), &["gbseq", "json"])
-            .pick_file()
-        else {
-            return;
-        };
-        if let Err(error) = self.load_path(&path) {
-            self.status = format!("OPEN failed: {error}");
-        }
-    }
-
-    fn save_dialog(&mut self) {
-        let path = self.current_path.clone().or_else(|| {
-            FileDialog::new()
-                .add_filter(self.language.translate("GBSEQ project"), &["gbseq"])
-                .set_file_name("sequence.gbseq")
-                .save_file()
-        });
-        if let Some(path) = path {
-            if let Err(error) = self.save_path(&path) {
-                self.status = format!("SAVE failed: {error}");
-            }
-        }
     }
 
     fn start_playback(&mut self) {
@@ -2582,7 +2510,6 @@ impl GbseqApp {
         }
 
         match upper.as_str() {
-            "K" => self.apply_action(Action::Keyboard),
             "E" => self.apply_action(Action::KeyEditor),
             "F" => self.apply_action(Action::FitSong),
             "HOME" => self.apply_action(Action::Home),
@@ -2660,10 +2587,14 @@ impl GbseqApp {
         list.fill_rect(Rect::new(0.0, HEADER_H - 2.0, self.size.width, 2.0), ACCENT);
         self.text(list, 15.0, 15.0, "GBSEQ", 1.55, TEXT);
         let (position, total) = self.transport_times();
-        let clock = format!("{} / {}", transport_stamp(position), transport_stamp(total));
-        // Reserve the numeric field, even with long song titles or a narrow window.
-        let clock_x = (self.size.width - 178.0).max(0.0);
-        let show_time_label = self.size.width >= 700.0;
+        let elapsed = transport_stamp(position);
+        let duration = format!("/ {}", transport_stamp(total));
+        // Reserve stable fields; neither tenths nor a long title should move the clock.
+        let elapsed_scale = if self.size.width >= 600. { 2.8 } else { 2.2 };
+        let elapsed_width = measure_text_width("88:88.8", elapsed_scale).ceil() + 8.;
+        let duration_width = measure_text_width("/ 88:88.8", 1.55).ceil() + 12.;
+        let clock_x = (self.size.width - elapsed_width - duration_width - 8.).max(0.);
+        let show_time_label = self.size.width >= 780.0;
         let time_left = clock_x - if show_time_label { 62.0 } else { 0.0 };
         let mode_x = time_left - 104.0;
         let timing_label = self
@@ -2725,14 +2656,21 @@ impl GbseqApp {
         }
         self.text_in(
             list,
-            Rect::new(clock_x, 17.0, self.size.width - clock_x - 4.0, 26.0),
-            &clock,
-            1.0,
+            Rect::new(clock_x, 4., elapsed_width, 40.),
+            &elapsed,
+            elapsed_scale,
             if self.play_started.is_some() {
                 PLAYHEAD
             } else {
                 TEXT
             },
+        );
+        self.text_in(
+            list,
+            Rect::new(clock_x + elapsed_width, 17., duration_width, 26.),
+            &duration,
+            1.55,
+            MUTED,
         );
         for spec in self.link16_buttons() {
             let active = match spec.action {
@@ -2742,6 +2680,7 @@ impl GbseqApp {
                 }
                 Action::ToggleAllPlayers => self.all_players_visible(),
                 Action::SetMonitor(p) => p == self.monitor_player(),
+                Action::Keyboard => self.live.open,
                 _ => false,
             };
             self.draw_button(list, &spec, active);
@@ -2775,7 +2714,19 @@ impl GbseqApp {
             TEXT
         };
         let icon = action_icon(spec.action);
-        if let Some(icon) = icon {
+        let has_icon = icon.is_some() || spec.action == Action::Keyboard;
+        if spec.action == Action::Keyboard {
+            let x = spec.rect.x + 7.;
+            let y = spec.rect.y + (spec.rect.height - 14.) * 0.5;
+            list.fill_rect(Rect::new(x, y, 21., 14.), text_color);
+            for k in 1..5 {
+                let xx = x + k as f32 * 4.;
+                list.fill_rect(Rect::new(xx, y, 1., 14.), fill);
+                if k != 3 {
+                    list.fill_rect(Rect::new(xx - 1., y, 3., 8.), fill);
+                }
+            }
+        } else if let Some(icon) = icon {
             draw_lucide_icon(
                 list,
                 Rect::new(spec.rect.x + 8.0, spec.rect.y + 7.0, 18.0, 18.0),
@@ -2787,9 +2738,9 @@ impl GbseqApp {
         self.text_in(
             list,
             Rect::new(
-                spec.rect.x + if icon.is_some() { 33.0 } else { 7.0 },
+                spec.rect.x + if has_icon { 33.0 } else { 7.0 },
                 spec.rect.y + text_top,
-                spec.rect.width - if icon.is_some() { 39.0 } else { 14.0 },
+                spec.rect.width - if has_icon { 39.0 } else { 14.0 },
                 spec.rect.height - text_top - 2.0,
             ),
             &spec.label,
@@ -3319,6 +3270,29 @@ impl PlitaProgram for GbseqApp {
     }
 
     fn handle_event(&mut self, event: UiEvent) -> UiResponse {
+        if self.project_file_event(&event) {
+            return UiResponse::redraw();
+        }
+        match &event {
+            UiEvent::KeyDown {
+                key,
+                ctrl: true,
+                alt: false,
+                shift: false,
+                ..
+            } if normalized_key(key) == "K" && self.measures_input.is_none() => {
+                if !self.keyboard_shortcut_down {
+                    self.keyboard_shortcut_down = true;
+                    self.apply_action(Action::Keyboard);
+                }
+                return UiResponse::redraw();
+            }
+            UiEvent::KeyUp { key, .. } if normalized_key(key) == "K" => {
+                self.keyboard_shortcut_down = false
+            }
+            UiEvent::FocusChanged { focused: false } => self.keyboard_shortcut_down = false,
+            _ => {}
+        }
         if self.performance_event(&event) {
             return UiResponse::redraw();
         }
@@ -3651,12 +3625,7 @@ impl PlitaProgram for GbseqApp {
                 }
             }
             UiEvent::FileDropped { path } => {
-                if !self.confirm_replace() {
-                    return UiResponse::redraw();
-                }
-                if let Err(error) = self.load_path(&path) {
-                    self.status = format!("DROP failed: {error}");
-                }
+                self.request_replace(project_files::Replace::Load(path));
                 UiResponse::redraw()
             }
             UiEvent::FocusChanged { focused: false } => {
@@ -3696,10 +3665,11 @@ impl PlitaProgram for GbseqApp {
     fn tick(&mut self) -> UiResponse {
         let patch_redraw = self.poll_patch_file();
         let live_redraw = self.poll_performance();
+        let file_redraw = self.poll_project_picker();
         let redraw = self.poll_audio_render();
         let export_redraw = self.poll_export();
         self.follow_playhead();
-        if redraw || export_redraw || live_redraw || patch_redraw {
+        if redraw || export_redraw || live_redraw || patch_redraw || file_redraw {
             UiResponse::redraw()
         } else {
             UiResponse::none()
@@ -3733,8 +3703,11 @@ impl PlitaProgram for GbseqApp {
                     Action::Redo => "Redo [Ctrl+Y]",
                     Action::Duplicate => "Duplicate selection [Ctrl+D]",
                     Action::Delete => "Delete selection [Del]",
-                    Action::Snap => "Cycle grid [G]: 1/16, 1/8, 1/4 notes",
+                    Action::Snap => "Cycle grid [G]: 1/16, 1/8, 1/4, 1/2",
                     Action::Quantize => "Align selected starts to grid [Q]; rejects overlaps",
+                    Action::Keyboard => {
+                        "Performance keyboard [Ctrl+K]: listen, step input or record"
+                    }
                     Action::FitSong => "Fit entire song [F]",
                     Action::Preview => "Audition selected note",
                     Action::SetPlayer(_) | Action::ToggleAllPlayers => {
@@ -3761,6 +3734,7 @@ impl PlitaProgram for GbseqApp {
                 );
             }
         }
+        self.draw_project_prompt(&mut list);
         list
     }
 }
@@ -4070,8 +4044,10 @@ mod tests {
         ] {
             app.menu = Some(menu);
             for button in app.menu_buttons() {
-                let name = action_icon(button.action).expect("menu icon");
-                assert!(lucide_icon_names().any(|n| n == name));
+                if button.action != Action::Keyboard {
+                    let name = action_icon(button.action).expect("menu icon");
+                    assert!(lucide_icon_names().any(|n| n == name));
+                }
                 if !app.action_enabled(button.action) {
                     assert!(app
                         .action_at(Point::new(button.rect.x + 5.0, button.rect.y + 5.0))

@@ -71,7 +71,7 @@ impl Default for KokuraApuHost {
 
 impl KokuraApuHost {
     pub fn advance_tcycles(&mut self, cycles: u32) {
-        self.apu.tick(cycles);
+        self.apu.tick_fast(cycles);
         self.cycle_counter += cycles as u64;
     }
 

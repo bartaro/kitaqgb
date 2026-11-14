@@ -37,10 +37,14 @@ The four physical channels remain CH1/CH2/CH3/CH4. LINK16 uses separate four-cha
 
 ## CLI
 
-`gbseq-cli export-player-roms song.gbseq output_folder` exports one SRAM-free
-512 KiB music player ROM per part. Start any part alone, or select MASTER/PEER
-in the link menu. `export-rom` is the separate 128 KiB SRAM editor workflow;
-`export-link16-sd` prepares matching raw save files for that workflow.
+`gbseq-cli export-player-roms song.gbseq output_folder` creates a new
+`LINK16_PLAYER_<song-ID>` package with a separate 512 KiB ROM per console.
+These playback-only ROMs use no SRAM/SAV/SRM; edit in GBSEQ and export again.
+In V2 the filenames identify musical parts (`P1.gb`..`P4.gb`), not transport
+roles. All boot in SOLO. START auditions one console; for link playback open
+SELECT while stopped and choose A=MASTER or B=PEER on each console. Only the
+DMG-07 master requires port 1. Never mix sets or player runtime versions.
+The older `export-rom` command remains the unified editor-ROM / 128 KiB SRAM option.
 
 CLI tracks and players are **one-based**. Starts are **zero-based sixteenth-note steps**;
 length 1 = 0.25 beat, length 2 = 0.5 beat, length 16 = one 4/4 bar.
@@ -111,11 +115,12 @@ Use separate Project objects if multiple threads are editing simultaneously.
 ## Playback Performance
 
 - The existing KOKURA tick path is retained. The trace-free path was tested for PCM equality, but timing did not establish a reliable speed benefit in this workload.
-- Independent players render concurrently (maximum four). Mixing order and integer normalization stay deterministic.
-- One completed playback is cached by the entire project snapshot and player selection, capped at 128 MiB.
-- Replay shares the cached PCM buffer; edits, tempo, wave data, mute/solo and player changes invalidate the key.
-- Stop cancels the worker between 16-frame chunks. Audition remains a short, uncached render.
-- First playback still renders the complete song. This is not a streaming playback engine.
+- GUI playback and note audition synthesize two Game Boy frames at a time on a worker thread. Two blocks prime playback; a bounded queue holds at most four blocks. The audio callback never runs emulation or waits for the renderer.
+- All 1/2/4 consoles advance on one timeline. Listen: All / P1..P4 switches on stereo-frame boundaries without replacing the sink. Track mute/solo (including undo/redo) changes monitor routing without stopping oscillators, sweeps or envelopes.
+- No whole-song PCM cache is retained. Looping resets the APU/command cursors at the exact exported PCM boundary; fractional sample counts are carried across blocks.
+- Stop cancels both a preparing worker and a producer waiting on the full queue. Underruns return stereo silence without discarding musical samples and are counted separately from generated audio.
+- Playback uses a score snapshot: note, wave, BPM and length edits are heard after restarting. Mute/solo and console monitoring are live controls.
+- WAV export and CLI/Python rendering remain offline, preserving the deterministic reference path and exact output length.
 
 `bench-render --serial` provides the reference mixing path. Compare PCM checksums as well as elapsed times.
 Performance depends on machine load and song length; timings are measurements, not guarantees.

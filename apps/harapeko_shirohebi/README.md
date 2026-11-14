@@ -1,5 +1,9 @@
 # HARAPEKO SHIROHEBI
 
+**2026-11-14:** The published controls already match the local source. `music.c` now checks for standard VBlank instrument IDs (CH3=2, CH4=3) at compile time. Use the matching current `lib/` and rebuild with `build.ps1`; note columns and game controls are unchanged.
+
+**2026-11-14 更新:** 公開済みの操作処理はローカル最新版と一致しています。今回、曲データにVBlank標準音色番号のコンパイル時チェックを加えました。同じリポジトリの最新 `lib/` と `build.ps1` でビルドしてください。操作と音符列は従来のままです。検証結果は [更新記録](../../SOURCE_UPDATE_20261114.md) を参照してください。
+
 <!-- readme-language-links:start -->
 **English** | [日本語](README.md#%E6%97%A5%E6%9C%AC%E8%AA%9E) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
 <!-- readme-language-links:end -->

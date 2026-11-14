@@ -7,6 +7,10 @@ LINK16 SRAM (`.sav`)、およびKITAQGB音楽ストリームの現行実装仕�
 
 ## 文書一覧
 
+- [2026-11-14 ソース更新・検証](../../../SOURCE_UPDATE_20261114.md)
+- [VBlank C書き出し・ドライバ互換性](KITAQGB_VBLANK.md)
+- [演奏鍵盤・MIDI・録音](MIDI_PERFORMANCE.md)
+
 - [再生専用ROM仕様](LINK16_PLAYER_ROM_FORMAT.md) — 台別の512KBプレイヤー、単独試聴と通信同期
 
 1. [SEQUENCER_SYSTEM_SPEC.md](SEQUENCER_SYSTEM_SPEC.md)

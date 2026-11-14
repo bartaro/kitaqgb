@@ -1,6 +1,12 @@
 # GBSEQ — user manual
 
-[MIDI file and device I/O, keyboard, recording and 512 instruments](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** Ctrl+K or the piano icon opens the performance keyboard. Its audio runs continuously while keys are played. New/Open uses an in-window Save/Discard/Cancel prompt for unsaved edits. Playback ROMs support B to toggle looping in SOLO/MASTER, and TIME shows position / duration.
+
+Playback generates short audio blocks on demand. Monitor and mute/solo changes keep the current position; note and tempo edits apply on the next Play.
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[MIDI file and device I/O, keyboard, recording and 512 instruments](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 ROM exports retain the 48-byte Nintendo logo data for boot-time compatibility. GBSEQ's MIT license grants no independent logo/trademark rights, and GBSEQ is not affiliated with or approved by Nintendo. [English/Japanese scope notice](docs/NINTENDO_NOTICE.md).
 
@@ -12,7 +18,7 @@ GBSEQ by DAISUKE OBA is a Game Boy sequencer with a plita desktop GUI and an ind
 
 ## Keyboard, recording and WAV
 
-K opens the performance keyboard for the selected lane. Play white keys with A/S/D/F/G/H/J and black keys with W/E/T/Y/U; Z/X changes octave. IN and OUT cycle through MIDI devices. Step input advances by 1, 2 or 4 sixteenths; REC records one pass from the beginning. Protect skips overlapping notes; Overwrite replaces only the overlap. Import and export .mid via File and Export; keep a .gbseq for chip-specific effects.
+Ctrl+K opens the performance keyboard for the selected lane. Play white keys with A/S/D/F/G/H/J and black keys with W/E/T/Y/U; Z/X changes octave. IN and OUT cycle through MIDI devices. Step input advances by 1, 2, 4 or 8 sixteenths; REC records one pass from the beginning. Protect skips overlapping notes; Overwrite replaces only the overlap. Import and export .mid via File and Export; keep a .gbseq for chip-specific effects.
 
 Each channel has 128 factory instruments. Choose one from the dropdown or save and load your own .gbpreset separately. The chord overlay has separate switches for the mix and each lane; song transpose excludes noise.
 
@@ -39,7 +45,7 @@ The GUI needs a graphical desktop, compatible GPU driver and an audio device for
 
 ## Compose in the GUI
 
-Choose the link layout and P1–P4; ALL16 displays all sixteen lanes in DMG07 mode. Double-click an empty lane to create a note; double-click a note to open its inspector. Drag its body to move time/pitch, or its right edge to change duration. Each physical lane is monophonic: overlapping notes are rejected. Edit the bar-count box to set 1–256 bars. The mouse wheel and bottom scrollbar navigate long songs; F fits the song, Home returns to its beginning, +/- zooms. Playback follows the current position. Space starts/stops; LOOP ON/OFF determines whether the end repeats. The first playback renders the complete song, so long songs can take time to prepare.
+Choose the link layout and P1–P4; ALL16 displays all sixteen lanes in DMG07 mode. Double-click an empty lane to create a note; double-click a note to open its inspector. Drag its body to move time/pitch, or its right edge to change duration. Each physical lane is monophonic: overlapping notes are rejected. Edit the bar-count box to set 1–256 bars. The mouse wheel and bottom scrollbar navigate long songs; F fits the song, Home returns to its beginning, +/- zooms. Playback follows the current position. Space starts/stops; LOOP ON/OFF determines whether the end repeats. Playback generates short audio blocks on demand. Monitor and mute/solo changes keep the current position; note and tempo edits apply on the next Play.
 
 Ctrl/Shift-click toggles a selection; Ctrl+A selects the current lane. Left/Right moves by the grid, Up/Down changes semitones, Shift+Up/Down changes octaves. Ctrl+D duplicates; Delete removes. G cycles the grid; Q quantizes starts. Ctrl+Z/Y undo/redo and Ctrl+C/V copy/paste. Ctrl+O opens, Ctrl+S saves, Ctrl+Shift+S saves as. Unsaved changes are confirmed before replacement. Keep a copy before overwriting an existing project.
 

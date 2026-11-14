@@ -1,6 +1,12 @@
 # GBSEQ — 用户手册
 
-[MIDI 文件与设备、演奏键盘、录音与 512 种音色](docs/MIDI_PERFORMANCE.md) · `K` · `import-midi` / `export-midi`
+**2026-11-14 — source update / ソース更新:** 按 Ctrl+K 或钢琴图标打开演奏键盘，键盘音频连续输出。新建或打开曲目前，窗口内会提示保存、放弃或取消未保存的编辑。播放ROM在SOLO/MASTER模式下按B切换循环，TIME显示当前位置／总时长。
+
+播放时按需生成短音频块。切换监听、静音或独奏会保留播放位置；音符和速度编辑在下次播放时生效。
+
+[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). The packages in `bin/` retain their recorded build revisions; build the current source for this update.
+
+[MIDI 文件与设备、演奏键盘、录音与 512 种音色](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
 导出的ROM包含用于启动兼容性验证的48字节任天堂标志数据。GBSEQ的MIT许可证不授予任天堂标志或商标的独立使用权，GBSEQ与任天堂没有合作关系，也未获其认可。[英文／日文声明](docs/NINTENDO_NOTICE.md)。
 
@@ -12,7 +18,7 @@ GBSEQ由DAISUKE OBA制作，提供plita桌面GUI和独立CLI，共享编辑模�
 
 ## 演奏输入与 WAV 导出
 
-选择目标轨道，按 K 打开键盘。白键为 A/S/D/F/G/H/J，黑键为 W/E/T/Y/U，Z/X 切换八度。点击 IN 和 OUT 切换 MIDI 设备。步进输入每次前进 1、2 或 4 个十六分音符；录音从曲首开始录一遍。保护模式会跳过重叠输入，覆盖模式只替换重叠的区间。从文件菜单导入 MIDI，从导出菜单写出 MIDI。请用 .gbseq 保留 GB 专用音色。
+选择目标轨道，按 Ctrl+K 打开键盘。白键为 A/S/D/F/G/H/J，黑键为 W/E/T/Y/U，Z/X 切换八度。点击 IN 和 OUT 切换 MIDI 设备。步进输入每次前进 1、2 或 4 个十六分音符；录音从曲首开始录一遍。保护模式会跳过重叠输入，覆盖模式只替换重叠的区间。从文件菜单导入 MIDI，从导出菜单写出 MIDI。请用 .gbseq 保留 GB 专用音色。
 
 每种声道有 128 个预设，可从下拉列表选择；用户音色可单独保存为 .gbpreset 并重新载入。和弦标记可分别为总混音和各轨道开启。整曲移调不会改变噪声轨。
 
@@ -39,7 +45,7 @@ GUI需要桌面、兼容GPU驱动及试听用音频设备。Linux面向Ubuntu 24
 
 ## GUI编辑
 
-选择连接模式及P1–P4。DMG07的ALL16可同时显示16通道。双击空白轨道创建音符，双击音符打开详细面板。拖动主体改变时间和音高，拖右边缘改变长度。每轨单音，拒绝重叠。小节数为1–256。滚轮和底部滚动条导航；F适应全曲，Home回开头，+/-缩放。播放时画面跟随位置。Space播放/停止，LOOP ON/OFF控制循环。首次播放先渲染整曲，长曲需要准备时间。
+选择连接模式及P1–P4。DMG07的ALL16可同时显示16通道。双击空白轨道创建音符，双击音符打开详细面板。拖动主体改变时间和音高，拖右边缘改变长度。每轨单音，拒绝重叠。小节数为1–256。滚轮和底部滚动条导航；F适应全曲，Home回开头，+/-缩放。播放时画面跟随位置。Space播放/停止，LOOP ON/OFF控制循环。播放时按需生成短音频块。切换监听、静音或独奏会保留播放位置；音符和速度编辑在下次播放时生效。
 
 Ctrl/Shift点击切换选择，Ctrl+A选择当前轨道。左右按网格移动，上下半音，Shift+上下八度。Ctrl+D复制，Delete删除；G切换网格，Q对齐起点；Ctrl+Z/Y撤销/重做，Ctrl+C/V复制/粘贴。Ctrl+O打开，Ctrl+S保存，Ctrl+Shift+S另存为。替换未保存的编辑前会确认，上写前请保留原件。
 

@@ -4,14 +4,36 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{ApuTraceEvent, HardwareMode};
 
+#[cfg(test)]
+mod accuracy_tests;
+#[cfg(test)]
+mod register_write_tests;
 const APU_FRAME_SEQUENCER_CYCLES: u16 = 8192;
 const APU_MIX_TRACE_CYCLES: u16 = 1024;
 const APU_PCM_SAMPLE_CYCLES: u16 = 64;
-const APU_PCM_OVERSAMPLE_CYCLES: u16 = 16;
 pub const APU_OUTPUT_SAMPLE_RATE: u32 = 65_536;
 const DEFAULT_APU_PCM_BUFFER_CAPACITY_FRAMES: usize = 65_536;
-const APU_HPF_CHARGE_FACTOR_DMG: f64 = 0.997_315_553_139_174_5;
-const APU_HPF_CHARGE_FACTOR_CGB: f64 = 0.934_555_954_774_141;
+const APU_HPF_CHARGE_FACTOR_DMG: f64 = 0.999_958;
+const APU_HPF_CHARGE_FACTOR_CGB: f64 = 0.998_943;
+const APU_HPF_SAMPLE_FACTOR_DMG: f64 = sample_charge_factor(APU_HPF_CHARGE_FACTOR_DMG);
+const APU_HPF_SAMPLE_FACTOR_CGB: f64 = sample_charge_factor(APU_HPF_CHARGE_FACTOR_CGB);
+const REGISTER_READ_MASKS: [u8; 0x16] = [
+    0x80, 0x3F, 0x00, 0xFF, 0xBF, 0xFF, 0x3F, 0x00, 0xFF, 0xBF, 0x7F, 0xFF, 0x9F, 0xFF, 0xBF, 0xFF,
+    0xFF, 0x00, 0x00, 0xBF, 0x00, 0x00,
+];
+
+// Hardware charge factors are per T-cycle, not per output sample.
+const fn sample_charge_factor(per_clock: f64) -> f64 {
+    let mut factor = 1.0;
+    let mut clocks = 0;
+    while clocks < APU_PCM_SAMPLE_CYCLES {
+        factor *= per_clock;
+        clocks += 1;
+    }
+    factor
+}
+const APU_OUTPUT_LPF_ALPHA_DMG: f64 = 0.68;
+const APU_OUTPUT_LPF_ALPHA_CGB: f64 = 0.78;
 const DUTY_PATTERNS: [[u8; 8]; 4] = [
     [0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1],
@@ -20,6 +42,9 @@ const DUTY_PATTERNS: [[u8; 8]; 4] = [
 ];
 const NOISE_DIVISORS: [u16; 8] = [8, 16, 32, 48, 64, 80, 96, 112];
 
+const CONTROL_LATCHES_VALID: u8 = 0x80;
+const ENVELOPE_RUNNING: u8 = 0x01;
+const SWEEP_ENABLED: u8 = 0x02;
 #[derive(Debug, Clone, Default)]
 pub struct ApuTickResult {
     pub trace: Vec<ApuTraceEvent>,
@@ -68,9 +93,29 @@ impl Default for ChannelState {
             wave_position: 0,
             wave_sample_buffer: 0,
             lfsr: 0x7FFF,
-            force_zero_until_advance: false,
+            force_zero_until_advance: true,
             sweep_negate_used: false,
         }
+    }
+}
+
+impl ChannelState {
+    // Only call for CH1/CH2/CH4. Legacy states lack trigger history; infer once,
+    // before a live register write changes the parameters used for migration.
+    fn ensure_control_latches(&mut self) {
+        if self.wave_sample_buffer & CONTROL_LATCHES_VALID == 0 {
+            self.wave_sample_buffer = CONTROL_LATCHES_VALID;
+            if self.enabled {
+                self.wave_sample_buffer |= ENVELOPE_RUNNING;
+                if self.sweep_period != 0 || self.sweep_shift != 0 {
+                    self.wave_sample_buffer |= SWEEP_ENABLED;
+                }
+            }
+        }
+    }
+
+    fn envelope_running(&self) -> bool {
+        self.wave_sample_buffer & ENVELOPE_RUNNING != 0
     }
 }
 
@@ -92,6 +137,10 @@ pub struct Apu {
     pcm_frames_dropped: u64,
     pcm_hpf_left: f64,
     pcm_hpf_right: f64,
+    #[serde(skip, default)]
+    pcm_lpf_left: f64,
+    #[serde(skip, default)]
+    pcm_lpf_right: f64,
     pcm_accum_left: i32,
     pcm_accum_right: i32,
     pcm_accum_cycles: u16,
@@ -109,7 +158,7 @@ impl Default for Apu {
             master_enabled: false,
             channel_enable: 0,
             frame_seq_cycles: 0,
-            frame_seq_step: 0,
+            frame_seq_step: 7,
             channels: [ChannelState::default(); 4],
             mix_trace_cycles: 0,
             pcm_sample_cycles: 0,
@@ -119,6 +168,8 @@ impl Default for Apu {
             pcm_frames_dropped: 0,
             pcm_hpf_left: 0.0,
             pcm_hpf_right: 0.0,
+            pcm_lpf_left: 0.0,
+            pcm_lpf_right: 0.0,
             pcm_accum_left: 0,
             pcm_accum_right: 0,
             pcm_accum_cycles: 0,
@@ -159,6 +210,8 @@ impl Apu {
         self.pcm_buffer.clear();
         self.pcm_hpf_left = 0.0;
         self.pcm_hpf_right = 0.0;
+        self.pcm_lpf_left = 0.0;
+        self.pcm_lpf_right = 0.0;
         self.pcm_accum_left = 0;
         self.pcm_accum_right = 0;
         self.pcm_accum_cycles = 0;
@@ -169,11 +222,14 @@ impl Apu {
 
     pub fn read(&self, addr: u16) -> u8 {
         match addr {
-            0xFF10..=0xFF25 => self.regs[(addr - 0xFF10) as usize],
+            0xFF10..=0xFF25 => {
+                let index = (addr - 0xFF10) as usize;
+                self.regs[index] | REGISTER_READ_MASKS[index]
+            }
             0xFF26 => 0x70 | (u8::from(self.master_enabled) << 7) | (self.channel_enable & 0x0F),
             0xFF30..=0xFF3F => {
                 let requested = (addr - 0xFF30) as usize;
-                if !self.cgb_mode && self.is_ch3_active() {
+                if self.wave_ram_access_blocked() {
                     0xFF
                 } else {
                     self.wave_ram[self.wave_ram_visible_index(requested)]
@@ -189,6 +245,21 @@ impl Apu {
         let mut trace = Vec::new();
         match addr {
             0xFF10..=0xFF25 => {
+                if !self.master_enabled {
+                    if !self.cgb_mode {
+                        let length = match addr {
+                            0xFF11 => Some((0, 64 - u16::from(value & 0x3F))),
+                            0xFF16 => Some((1, 64 - u16::from(value & 0x3F))),
+                            0xFF1B => Some((2, 256 - u16::from(value))),
+                            0xFF20 => Some((3, 64 - u16::from(value & 0x3F))),
+                            _ => None,
+                        };
+                        if let Some((index, counter)) = length {
+                            self.channels[index].length_counter = counter;
+                        }
+                    }
+                    return trace;
+                }
                 let reg_index = (addr - 0xFF10) as usize;
                 let old_value = self.regs[reg_index];
                 self.regs[reg_index] = value;
@@ -207,6 +278,9 @@ impl Apu {
                     });
                 }
                 if let Some(channel) = trigger_channel(addr) {
+                    if self.frame_seq_step & 1 == 0 && old_value & 0x40 == 0 && value & 0x40 != 0 {
+                        self.clock_channel_length(channel, value & 0x80 == 0, &mut trace);
+                    }
                     if value & 0x80 != 0 && self.master_enabled {
                         self.trigger_channel(channel, &mut trace, addr, value);
                     }
@@ -219,17 +293,13 @@ impl Apu {
                     if !enabled {
                         self.regs = [0; 0x17];
                         self.channel_enable = 0;
-                        self.frame_seq_cycles = 0;
-                        self.frame_seq_step = 0;
+                        self.frame_seq_step = 7;
                         self.channels = [ChannelState::default(); 4];
                         self.mix_trace_cycles = 0;
-                        self.pcm_sample_cycles = 0;
-                        self.pcm_buffer.clear();
                         self.pcm_hpf_left = 0.0;
                         self.pcm_hpf_right = 0.0;
-                        self.pcm_accum_left = 0;
-                        self.pcm_accum_right = 0;
-                        self.pcm_accum_cycles = 0;
+                        self.pcm_lpf_left = 0.0;
+                        self.pcm_lpf_right = 0.0;
                         self.last_mixed_left = 0;
                         self.last_mixed_right = 0;
                         self.last_mixed_mask = 0;
@@ -247,7 +317,7 @@ impl Apu {
             }
             0xFF30..=0xFF3F => {
                 let requested_index = (addr - 0xFF30) as usize;
-                if !self.cgb_mode && self.is_ch3_active() {
+                if self.wave_ram_access_blocked() {
                     trace.push(ApuTraceEvent::WaveRamAccessAliased {
                         requested_index: requested_index as u8,
                         actual_index: 0xFF,
@@ -276,9 +346,6 @@ impl Apu {
 
     pub fn tick(&mut self, cycles: u32) -> ApuTickResult {
         let mut out = ApuTickResult::default();
-        if !self.master_enabled {
-            return out;
-        }
         let mut remaining = cycles;
         let mut generated_frames = 0u16;
         let mut dropped_frames = 0u16;
@@ -310,9 +377,6 @@ impl Apu {
     }
 
     pub fn tick_fast(&mut self, cycles: u32) {
-        if !self.master_enabled {
-            return;
-        }
         let mut remaining = cycles;
         let mut dropped_frames = 0u16;
         let mut generated_frames = 0u16;
@@ -334,6 +398,35 @@ impl Apu {
 
     pub fn frame_sequencer_step(&self) -> u8 {
         self.frame_seq_step
+    }
+
+    pub(crate) fn sync_divider_phase(&mut self, divider: u16, double_speed: bool) {
+        self.frame_seq_cycles = (divider >> u8::from(double_speed)) & 0x1FFF;
+    }
+
+    pub(crate) fn reset_divider(&mut self, divider: u16, double_speed: bool) -> Vec<ApuTraceEvent> {
+        self.sync_divider_phase(divider, double_speed);
+        let mut trace = Vec::new();
+        if self.frame_seq_cycles & 0x1000 != 0 {
+            self.clock_frame_sequencer(&mut trace, true);
+        }
+        self.frame_seq_cycles = 0;
+        trace
+    }
+
+    pub(crate) fn observe_divider_only(
+        &mut self,
+        before: u16,
+        after: u16,
+        double_speed: bool,
+    ) -> Vec<ApuTraceEvent> {
+        let mask = 1 << (12 + u8::from(double_speed));
+        let mut trace = Vec::new();
+        if before & mask != 0 && after & mask == 0 {
+            self.clock_frame_sequencer(&mut trace, true);
+        }
+        self.sync_divider_phase(after, double_speed);
+        trace
     }
 
     pub fn output_sample_rate(&self) -> u32 {
@@ -400,7 +493,6 @@ impl Apu {
         chunk = chunk.min((APU_PCM_SAMPLE_CYCLES - self.pcm_sample_cycles).max(1));
         chunk = chunk.min((APU_FRAME_SEQUENCER_CYCLES - self.frame_seq_cycles).max(1));
         chunk = chunk.min((APU_MIX_TRACE_CYCLES - self.mix_trace_cycles).max(1));
-        chunk = chunk.min(APU_PCM_OVERSAMPLE_CYCLES);
         chunk.max(1)
     }
 
@@ -412,48 +504,51 @@ impl Apu {
         generated_frames: &mut u16,
         dropped_frames: &mut u16,
     ) {
-        self.advance_channels(chunk);
-        self.frame_seq_cycles = self.frame_seq_cycles.saturating_add(chunk);
-        self.mix_trace_cycles = self.mix_trace_cycles.saturating_add(chunk);
+        let (mixed_left, mixed_right) = self.advance_channels(chunk);
         self.pcm_sample_cycles = self.pcm_sample_cycles.saturating_add(chunk);
-        let (mixed_left, mixed_right, _) = self.mix_output();
-        self.pcm_accum_left = self
-            .pcm_accum_left
-            .saturating_add(i32::from(mixed_left) * i32::from(chunk));
-        self.pcm_accum_right = self
-            .pcm_accum_right
-            .saturating_add(i32::from(mixed_right) * i32::from(chunk));
+        self.pcm_accum_left += mixed_left;
+        self.pcm_accum_right += mixed_right;
         self.pcm_accum_cycles = self.pcm_accum_cycles.saturating_add(chunk);
         if self.pcm_sample_cycles >= APU_PCM_SAMPLE_CYCLES {
             self.pcm_sample_cycles -= APU_PCM_SAMPLE_CYCLES;
             self.enqueue_pcm_frame(dropped_frames);
             *generated_frames = generated_frames.saturating_add(1);
         }
+        self.frame_seq_cycles += chunk;
         if self.frame_seq_cycles >= APU_FRAME_SEQUENCER_CYCLES {
             self.frame_seq_cycles -= APU_FRAME_SEQUENCER_CYCLES;
-            self.frame_seq_step = (self.frame_seq_step + 1) & 0x07;
-            if emit_trace {
-                trace.push(ApuTraceEvent::FrameSequencerStep {
-                    step: self.frame_seq_step,
-                });
-            }
-            match self.frame_seq_step {
-                0 | 2 | 4 | 6 => self.clock_length(trace),
-                _ => {}
-            }
-            match self.frame_seq_step {
-                2 | 6 => self.clock_sweep(trace),
-                _ => {}
-            }
-            if self.frame_seq_step == 7 {
-                self.clock_envelopes(trace);
-            }
+            self.clock_frame_sequencer(trace, emit_trace);
         }
+        if !self.master_enabled {
+            return;
+        }
+        self.mix_trace_cycles += chunk;
         if self.mix_trace_cycles >= APU_MIX_TRACE_CYCLES {
             self.mix_trace_cycles %= APU_MIX_TRACE_CYCLES;
             if emit_trace {
                 self.emit_mixed_output_if_changed(trace);
             }
+        }
+    }
+
+    fn clock_frame_sequencer(&mut self, trace: &mut Vec<ApuTraceEvent>, emit_trace: bool) {
+        if !self.master_enabled {
+            return;
+        }
+        self.frame_seq_step = (self.frame_seq_step + 1) & 7;
+            if emit_trace {
+                trace.push(ApuTraceEvent::FrameSequencerStep {
+                    step: self.frame_seq_step,
+                });
+            }
+        if self.frame_seq_step & 1 == 0 {
+            self.clock_length(trace);
+            }
+        if matches!(self.frame_seq_step, 2 | 6) {
+            self.clock_sweep(trace);
+            }
+            if self.frame_seq_step == 7 {
+                self.clock_envelopes(trace);
         }
     }
 
@@ -465,6 +560,7 @@ impl Apu {
     ) {
         match addr {
             0xFF10 => {
+                self.channels[0].ensure_control_latches();
                 let old_negate = self.channels[0].sweep_negate;
                 let used_negate = self.channels[0].sweep_negate_used;
                 let was_enabled = self.channels[0].enabled;
@@ -503,14 +599,34 @@ impl Apu {
     fn update_envelope_from_reg(&mut self, channel: u8, value: u8, trace: &mut Vec<ApuTraceEvent>) {
         let idx = (channel - 1) as usize;
         let st = &mut self.channels[idx];
-        st.envelope_volume = (value >> 4) & 0x0F;
+        st.ensure_control_latches();
+        if st.enabled {
+            let old_volume = st.envelope_volume;
+            if self.cgb_mode {
+                // Documented CGB-02/04 zombie behavior. DMG revisions differ.
+                if st.envelope_period == 0 && st.envelope_running() {
+                    st.envelope_volume += 1;
+                } else if !st.envelope_increase {
+                    st.envelope_volume += 2;
+                }
+                if st.envelope_increase != (value & 0x08 != 0) {
+                    st.envelope_volume = 16u8.wrapping_sub(st.envelope_volume);
+                }
+                st.envelope_volume &= 0x0F;
+            } else if st.envelope_period == 0 && st.envelope_increase && value & 0x0F == 0x08 {
+                // The portable manual-volume case is consistent across DMGs.
+                st.envelope_volume = (st.envelope_volume + 1) & 0x0F;
+            }
+            if st.envelope_volume != old_volume {
+                trace.push(ApuTraceEvent::ChannelEnvelopeStep {
+                    channel,
+                    volume: st.envelope_volume,
+                    increasing: st.envelope_volume > old_volume,
+                });
+            }
+        }
         st.envelope_increase = value & 0x08 != 0;
         st.envelope_period = value & 0x07;
-        st.envelope_counter = if st.envelope_period == 0 {
-            8
-        } else {
-            st.envelope_period
-        };
         let dac_enabled = value & 0xF8 != 0;
         self.update_dac_state(
             channel,
@@ -567,16 +683,7 @@ impl Apu {
     ) {
         let idx = (channel - 1) as usize;
         let max_length = max_length(channel);
-        if !self.channels[idx].dac_enabled {
-            self.channels[idx].enabled = false;
-            self.channel_enable &= !(1 << idx);
-            trace.push(ApuTraceEvent::ChannelDisabled {
-                channel,
-                reason: 1,
-                reg,
-            });
-            return;
-        }
+        let extra_length_clock = self.frame_seq_step & 1 == 0 && self.length_enabled(channel);
         let freq = self.current_frequency(channel);
         let period = self.period_for_channel(channel).max(1);
         let sweep_period = (self.regs[0] >> 4) & 0x07;
@@ -589,19 +696,29 @@ impl Apu {
             _ => 0,
         };
         let buffered_sample_before = self.channels[idx].wave_sample_buffer;
+        if channel == 3 {
+            self.corrupt_wave_ram_on_retrigger();
+            let st = &mut self.channels[idx];
+            // Keep the playing nibble when resetting the wave index, including
+            // legacy states that did not store a separate nibble selector.
+            if st.duty_position & 0x80 == 0 {
+                st.duty_position = 0x80 | (st.wave_position & 1);
+            }
+            st.envelope_counter = 0;
+        }
         {
             let st = &mut self.channels[idx];
-            st.enabled = true;
+            st.enabled = st.dac_enabled;
             if st.length_counter == 0 {
-                st.length_counter = max_length;
+                st.length_counter = max_length - u16::from(extra_length_clock);
             }
             st.shadow_frequency = freq;
-            st.freq_timer = period;
-            st.duty_position = 0;
+            st.freq_timer = match channel {
+                1 | 2 => (period & !3) | (st.freq_timer & 3),
+                3 => period + 6,
+                _ => period,
+            };
             st.wave_position = 0;
-            if matches!(channel, 1 | 2) {
-                st.force_zero_until_advance = true;
-            }
             st.lfsr = 0x7FFF;
             if channel == 1 {
                 st.sweep_period = sweep_period;
@@ -615,6 +732,10 @@ impl Apu {
                 st.sweep_negate_used = false;
             }
             if matches!(channel, 1 | 2 | 4) {
+                st.wave_sample_buffer = CONTROL_LATCHES_VALID | ENVELOPE_RUNNING;
+                if channel == 1 && (sweep_period != 0 || sweep_shift != 0) {
+                    st.wave_sample_buffer |= SWEEP_ENABLED;
+                }
                 st.envelope_volume = (env_reg >> 4) & 0x0F;
                 st.envelope_increase = env_reg & 0x08 != 0;
                 st.envelope_period = env_reg & 0x07;
@@ -622,8 +743,20 @@ impl Apu {
                     8
                 } else {
                     st.envelope_period
-                };
+                } + u8::from(self.frame_seq_step == 6);
             }
+        }
+        if channel == 4 {
+            self.set_noise_timer(self.noise_period());
+        }
+        if !self.channels[idx].enabled {
+            self.channel_enable &= !(1 << idx);
+            trace.push(ApuTraceEvent::ChannelDisabled {
+                channel,
+                reason: 1,
+                reg,
+            });
+            return;
         }
         self.channel_enable |= 1 << idx;
         trace.push(ApuTraceEvent::ChannelTrigger {
@@ -668,8 +801,13 @@ impl Apu {
     }
 
     fn sync_frequency_from_regs(&mut self, channel: u8) {
+        if channel == 4 {
+            if self.noise_timer() == 0 {
+                self.set_noise_timer(self.noise_period());
+            }
+            return;
+        }
         let idx = (channel - 1) as usize;
-        self.channels[idx].shadow_frequency = self.current_frequency(channel);
         if self.channels[idx].freq_timer == 0 {
             self.channels[idx].freq_timer = self.period_for_channel(channel).max(1);
         }
@@ -680,7 +818,7 @@ impl Apu {
             1 => ((u16::from(self.regs[4] & 0x07)) << 8) | u16::from(self.regs[3]),
             2 => ((u16::from(self.regs[9] & 0x07)) << 8) | u16::from(self.regs[8]),
             3 => ((u16::from(self.regs[14] & 0x07)) << 8) | u16::from(self.regs[13]),
-            _ => self.channels[3].shadow_frequency,
+            _ => 0,
         }
     }
 
@@ -704,14 +842,30 @@ impl Apu {
         }
         let idx = (channel - 1) as usize;
         self.channels[idx].shadow_frequency = frequency;
-        self.channels[idx].freq_timer = self.period_for_channel(channel).max(1);
     }
 
     fn wave_ram_visible_index(&self, requested_index: usize) -> usize {
-        if self.cgb_mode && self.is_ch3_active() {
+        if self.is_ch3_active() {
             self.current_wave_ram_byte_index()
         } else {
             requested_index.min(self.wave_ram.len().saturating_sub(1))
+        }
+    }
+
+    fn wave_ram_access_blocked(&self) -> bool {
+        !self.cgb_mode && self.is_ch3_active() && self.channels[2].envelope_counter == 0
+    }
+
+    fn corrupt_wave_ram_on_retrigger(&mut self) {
+        if self.cgb_mode || !self.is_ch3_active() || self.channels[2].freq_timer != 2 {
+            return;
+        }
+        let next_byte = usize::from(((self.channels[2].wave_position + 1) & 31) / 2);
+        if next_byte < 4 {
+            self.wave_ram[0] = self.wave_ram[next_byte];
+        } else {
+            let start = next_byte & !3;
+            self.wave_ram.copy_within(start..start + 4, 0);
         }
     }
 
@@ -725,25 +879,51 @@ impl Apu {
             && (self.channel_enable & 0x04 != 0)
     }
 
-    fn advance_channels(&mut self, cycles: u16) {
-        self.advance_square(1, cycles);
-        self.advance_square(2, cycles);
-        self.advance_wave(cycles);
-        self.advance_noise(cycles);
+    fn advance_channels(&mut self, cycles: u16) -> (i32, i32) {
+        if !self.master_enabled {
+            return (0, 0);
     }
 
-    fn advance_square(&mut self, channel: u8, cycles: u16) {
+        let areas = [
+            self.advance_square(1, cycles),
+            self.advance_square(2, cycles),
+            self.advance_wave(cycles),
+            self.advance_noise(cycles),
+        ];
+        let mut left = 0;
+        let mut right = 0;
+        for (index, area) in areas.into_iter().enumerate() {
+            if !self.channels[index].dac_enabled {
+                continue;
+            }
+            let analog_area = 15 * i32::from(cycles) - 2 * area;
+            if self.regs[0x15] & (1 << index) != 0 {
+                right += analog_area;
+            }
+            if self.regs[0x15] & (1 << (index + 4)) != 0 {
+                left += analog_area;
+            }
+        }
+        (
+            left * i32::from(((self.regs[0x14] >> 4) & 7) + 1),
+            right * i32::from((self.regs[0x14] & 7) + 1),
+        )
+    }
+
+    fn advance_square(&mut self, channel: u8, cycles: u16) -> i32 {
         let idx = (channel - 1) as usize;
         if !self.channels[idx].enabled {
-            return;
+            return 0;
         }
         let period = self.period_for_channel(channel).max(1);
         let mut remaining = u32::from(cycles);
+        let mut area = 0;
         while remaining > 0 {
             if self.channels[idx].freq_timer == 0 {
                 self.channels[idx].freq_timer = period;
             }
             let timer = u32::from(self.channels[idx].freq_timer.max(1));
+            area += i32::from(self.channel_digital_output(channel)) * remaining.min(timer) as i32;
             if remaining < timer {
                 self.channels[idx].freq_timer -= remaining as u16;
                 break;
@@ -753,20 +933,27 @@ impl Apu {
             self.channels[idx].duty_position = (self.channels[idx].duty_position + 1) & 0x07;
             self.channels[idx].force_zero_until_advance = false;
         }
+        area
     }
 
-    fn advance_wave(&mut self, cycles: u16) {
+    fn advance_wave(&mut self, cycles: u16) -> i32 {
         let idx = 2usize;
         if !self.channels[idx].enabled {
-            return;
+            return 0;
         }
         let period = self.period_for_channel(3).max(1);
         let mut remaining = u32::from(cycles);
+        let mut area = 0;
         while remaining > 0 {
             if self.channels[idx].freq_timer == 0 {
                 self.channels[idx].freq_timer = period;
             }
             let timer = u32::from(self.channels[idx].freq_timer.max(1));
+            let elapsed = remaining.min(timer);
+            area += i32::from(self.channel_digital_output(3)) * elapsed as i32;
+            self.channels[idx].envelope_counter = self.channels[idx]
+                .envelope_counter
+                .saturating_sub(elapsed.min(2) as u8);
             if remaining < timer {
                 self.channels[idx].freq_timer -= remaining as u16;
                 break;
@@ -776,31 +963,51 @@ impl Apu {
             self.channels[idx].wave_position = (self.channels[idx].wave_position + 1) & 0x1F;
             let sample_index = self.channels[idx].wave_position as usize;
             self.channels[idx].wave_sample_buffer = self.wave_ram[sample_index / 2];
+            self.channels[idx].duty_position = 0x80 | (sample_index as u8 & 1);
+            self.channels[idx].envelope_counter = 2;
         }
+        area
     }
 
-    fn advance_noise(&mut self, cycles: u16) {
+    fn noise_period(&self) -> u32 {
+        let nr43 = self.regs[0x12];
+        u32::from(NOISE_DIVISORS[(nr43 & 7) as usize]) << (nr43 >> 4)
+    }
+
+    fn noise_timer(&self) -> u32 {
+        (u32::from(self.channels[3].shadow_frequency) << 16)
+            | u32::from(self.channels[3].freq_timer)
+    }
+
+    fn set_noise_timer(&mut self, cycles: u32) {
+        self.channels[3].freq_timer = cycles as u16;
+        self.channels[3].shadow_frequency = (cycles >> 16) as u16;
+    }
+
+    fn advance_noise(&mut self, cycles: u16) -> i32 {
         let idx = 3usize;
         if !self.channels[idx].enabled {
-            return;
+            return 0;
         }
         let nr43 = self.regs[0x12];
         if nr43 >> 4 >= 14 {
-            return;
+            return i32::from(self.channel_digital_output(4)) * i32::from(cycles);
         }
-        let period = self.period_for_channel(4).max(1);
+        let period = self.noise_period();
         let mut remaining = u32::from(cycles);
+        let mut area = 0;
         while remaining > 0 {
-            if self.channels[idx].freq_timer == 0 {
-                self.channels[idx].freq_timer = period;
+            if self.noise_timer() == 0 {
+                self.set_noise_timer(period);
             }
-            let timer = u32::from(self.channels[idx].freq_timer.max(1));
+            let timer = self.noise_timer();
+            area += i32::from(self.channel_digital_output(4)) * remaining.min(timer) as i32;
             if remaining < timer {
-                self.channels[idx].freq_timer -= remaining as u16;
+                self.set_noise_timer(timer - remaining);
                 break;
             }
             remaining -= timer;
-            self.channels[idx].freq_timer = period;
+            self.set_noise_timer(period);
             let mut lfsr = self.channels[idx].lfsr;
             let xor_bit = (lfsr ^ (lfsr >> 1)) & 0x01;
             lfsr = (lfsr >> 1) | (xor_bit << 14);
@@ -809,21 +1016,33 @@ impl Apu {
             }
             self.channels[idx].lfsr = lfsr;
         }
+        area
     }
 
     fn clock_length(&mut self, trace: &mut Vec<ApuTraceEvent>) {
         for channel in 1..=4 {
-            let idx = (channel - 1) as usize;
-            if !self.channels[idx].enabled || !self.length_enabled(channel) {
-                continue;
+            if self.length_enabled(channel) {
+                self.clock_channel_length(channel, true, trace);
             }
-            if self.channels[idx].length_counter > 0 {
-                self.channels[idx].length_counter -= 1;
-                if self.channels[idx].length_counter == 0 {
-                    self.channels[idx].enabled = false;
-                    self.channel_enable &= !(1 << idx);
+        }
+    }
+
+    fn clock_channel_length(
+        &mut self,
+        channel: u8,
+        disable_on_expiry: bool,
+        trace: &mut Vec<ApuTraceEvent>,
+    ) {
+        let idx = usize::from(channel - 1);
+        let st = &mut self.channels[idx];
+        if st.length_counter > 0 {
+            st.length_counter -= 1;
+            if st.length_counter == 0 && disable_on_expiry {
+                if st.enabled {
                     trace.push(ApuTraceEvent::ChannelLengthExpired { channel });
                 }
+                st.enabled = false;
+                self.channel_enable &= !(1 << idx);
             }
         }
     }
@@ -832,9 +1051,10 @@ impl Apu {
         for channel in [1u8, 2u8, 4u8] {
             let idx = (channel - 1) as usize;
             let st = &mut self.channels[idx];
-            if !st.enabled || !st.dac_enabled || st.envelope_period == 0 {
+            if !st.enabled || !st.dac_enabled {
                 continue;
             }
+            st.ensure_control_latches();
             if st.envelope_counter > 0 {
                 st.envelope_counter -= 1;
             }
@@ -844,12 +1064,19 @@ impl Apu {
                 } else {
                     st.envelope_period
                 };
-                let old = st.envelope_volume;
-                if st.envelope_increase {
-                    st.envelope_volume = st.envelope_volume.saturating_add(1).min(15);
-                } else {
-                    st.envelope_volume = st.envelope_volume.saturating_sub(1);
+                if st.envelope_period == 0 || !st.envelope_running() {
+                    continue;
                 }
+                let old = st.envelope_volume;
+                if (st.envelope_increase && old == 15) || (!st.envelope_increase && old == 0) {
+                    st.wave_sample_buffer &= !ENVELOPE_RUNNING;
+                    continue;
+                }
+                st.envelope_volume = if st.envelope_increase {
+                    old + 1
+                } else {
+                    old - 1
+                };
                 if st.envelope_volume != old {
                     trace.push(ApuTraceEvent::ChannelEnvelopeStep {
                         channel,
@@ -865,9 +1092,7 @@ impl Apu {
         if !self.channels[0].enabled || !self.channels[0].dac_enabled {
             return;
         }
-        if self.channels[0].sweep_period == 0 && self.channels[0].sweep_shift == 0 {
-            return;
-        }
+        self.channels[0].ensure_control_latches();
         if self.channels[0].sweep_counter > 0 {
             self.channels[0].sweep_counter -= 1;
         }
@@ -879,7 +1104,9 @@ impl Apu {
         } else {
             self.channels[0].sweep_period
         };
-        if self.channels[0].sweep_shift == 0 {
+        if self.channels[0].wave_sample_buffer & SWEEP_ENABLED == 0
+            || self.channels[0].sweep_period == 0
+        {
             return;
         }
         let old = self.channels[0].shadow_frequency;
@@ -900,6 +1127,9 @@ impl Apu {
                 reason: 3,
                 reg: 0xFF10,
             });
+            return;
+        }
+        if shift == 0 {
             return;
         }
         let delta2 = next >> shift;
@@ -991,10 +1221,25 @@ impl Apu {
 
     fn hpf_charge_factor(&self) -> f64 {
         if self.cgb_mode {
-            APU_HPF_CHARGE_FACTOR_CGB
+            APU_HPF_SAMPLE_FACTOR_CGB
         } else {
-            APU_HPF_CHARGE_FACTOR_DMG
+            APU_HPF_SAMPLE_FACTOR_DMG
         }
+    }
+
+    fn output_lpf_alpha(&self) -> f64 {
+        if self.cgb_mode {
+            APU_OUTPUT_LPF_ALPHA_CGB
+        } else {
+            APU_OUTPUT_LPF_ALPHA_DMG
+        }
+    }
+
+    fn apply_output_low_pass(&mut self, left: f64, right: f64) -> (f64, f64) {
+        let alpha = self.output_lpf_alpha();
+        self.pcm_lpf_left += (left - self.pcm_lpf_left) * alpha;
+        self.pcm_lpf_right += (right - self.pcm_lpf_right) * alpha;
+        (self.pcm_lpf_left, self.pcm_lpf_right)
     }
 
     fn channel_digital_output(&self, channel: u8) -> u8 {
@@ -1023,29 +1268,25 @@ impl Apu {
     }
 
     fn enqueue_pcm_frame(&mut self, dropped_frames: &mut u16) {
-        let accum_cycles = i32::from(self.pcm_accum_cycles.max(1));
-        let averaged_left = self.pcm_accum_left / accum_cycles;
-        let averaged_right = self.pcm_accum_right / accum_cycles;
+        let has_partial_signal = self.pcm_accum_left != 0 || self.pcm_accum_right != 0;
+        let accum_cycles = f64::from(self.pcm_accum_cycles.max(1));
+        let raw_left = f64::from(self.pcm_accum_left) * 64.0 / accum_cycles;
+        let raw_right = f64::from(self.pcm_accum_right) * 64.0 / accum_cycles;
         self.pcm_accum_left = 0;
         self.pcm_accum_right = 0;
         self.pcm_accum_cycles = 0;
-        let raw_left = f64::from(averaged_left * 64);
-        let raw_right = f64::from(averaged_right * 64);
-        let (filtered_left, filtered_right) = if self.any_channel_dac_enabled() {
+        let (filtered_left, filtered_right) =
+            if self.any_channel_dac_enabled() || has_partial_signal {
             let charge = self.hpf_charge_factor();
             let out_left = raw_left - self.pcm_hpf_left;
             let out_right = raw_right - self.pcm_hpf_right;
             self.pcm_hpf_left = raw_left - out_left * charge;
             self.pcm_hpf_right = raw_right - out_right * charge;
-            (
-                out_left
-                    .round()
-                    .clamp(f64::from(i16::MIN), f64::from(i16::MAX)) as i16,
-                out_right
-                    .round()
-                    .clamp(f64::from(i16::MIN), f64::from(i16::MAX)) as i16,
-            )
+                let (out_left, out_right) = self.apply_output_low_pass(out_left, out_right);
+                (clamp_pcm_i16(out_left), clamp_pcm_i16(out_right))
         } else {
+                self.pcm_lpf_left = 0.0;
+                self.pcm_lpf_right = 0.0;
             (0, 0)
         };
         while self.buffered_frames() >= self.pcm_buffer_capacity_frames {
@@ -1069,15 +1310,7 @@ impl Apu {
                 let freq = self.current_frequency(3).min(2047);
                 (2048u16.saturating_sub(freq)).max(1) * 2
             }
-            _ => {
-                let nr43 = self.regs[0x12];
-                let shift = nr43 >> 4;
-                let divisor = NOISE_DIVISORS[(nr43 & 0x07) as usize];
-                divisor
-                    .checked_shl(u32::from(shift))
-                    .unwrap_or(u16::MAX)
-                    .max(8)
-            }
+            _ => 0,
         }
     }
 
@@ -1105,11 +1338,22 @@ fn square_digital_output(duty_reg: u8, st: &ChannelState) -> i16 {
 }
 
 fn wave_channel_sample(st: &ChannelState) -> u8 {
-    if st.wave_position & 1 == 0 {
+    let selector = if st.duty_position & 0x80 != 0 {
+        st.duty_position
+    } else {
+        st.wave_position
+    };
+    if selector & 1 == 0 {
         st.wave_sample_buffer >> 4
     } else {
         st.wave_sample_buffer & 0x0F
     }
+}
+
+fn clamp_pcm_i16(sample: f64) -> i16 {
+    sample
+        .round()
+        .clamp(f64::from(i16::MIN), f64::from(i16::MAX)) as i16
 }
 
 fn decode_length_square(value: u8) -> u16 {
@@ -1169,12 +1413,17 @@ mod tests {
     #[test]
     fn frame_sequencer_advances_only_when_enabled() {
         let mut apu = Apu::default();
-        assert!(apu.tick(8192).trace.is_empty());
+        assert!(!apu
+            .tick(8192)
+            .trace
+            .iter()
+            .any(|event| matches!(event, ApuTraceEvent::FrameSequencerStep { .. })));
+        assert_eq!(apu.frame_sequencer_step(), 7);
         apu.write(0xFF26, 0x80);
         let trace = apu.tick(8192).trace;
         assert!(trace
             .iter()
-            .any(|event| matches!(event, ApuTraceEvent::FrameSequencerStep { step: 1 })));
+            .any(|event| matches!(event, ApuTraceEvent::FrameSequencerStep { step: 0 })));
     }
 
     #[test]
@@ -1302,7 +1551,7 @@ mod tests {
         let trace = apu.write(0xFF1E, 0x80);
         assert_eq!(apu.channels[2].wave_sample_buffer, 0xBC);
         assert_eq!(apu.channel_digital_output(3), 0x0B);
-        apu.advance_wave(apu.period_for_channel(3));
+        apu.advance_wave(apu.period_for_channel(3) + 6);
         assert_eq!(apu.channels[2].wave_position, 1);
         assert_eq!(apu.channels[2].wave_sample_buffer, 0x12);
         assert_eq!(apu.channel_digital_output(3), 0x02);
@@ -1360,14 +1609,51 @@ mod tests {
         apu.write(0xFF26, 0x80);
         apu.pcm_hpf_left = 1234.0;
         apu.pcm_hpf_right = -432.0;
-        apu.pcm_accum_left = 5120;
-        apu.pcm_accum_right = -4096;
+        apu.pcm_accum_left = 0;
+        apu.pcm_accum_right = 0;
         apu.pcm_accum_cycles = APU_PCM_SAMPLE_CYCLES;
         let mut dropped = 0;
         apu.enqueue_pcm_frame(&mut dropped);
         assert_eq!(apu.drain_interleaved_i16(1), vec![0, 0]);
         assert_eq!(apu.pcm_hpf_left, 1234.0);
         assert_eq!(apu.pcm_hpf_right, -432.0);
+    }
+
+    #[test]
+    fn output_low_pass_smooths_abrupt_pcm_edges() {
+        let mut apu = Apu::default();
+
+        let (first_left, first_right) = apu.apply_output_low_pass(1_000.0, -1_000.0);
+        let (second_left, second_right) = apu.apply_output_low_pass(1_000.0, -1_000.0);
+        let (reversed_left, reversed_right) = apu.apply_output_low_pass(-1_000.0, 1_000.0);
+
+        assert!(first_left > 0.0 && first_left < 1_000.0);
+        assert!(first_right < 0.0 && first_right > -1_000.0);
+        assert!(second_left > first_left && second_left < 1_000.0);
+        assert!(second_right < first_right && second_right > -1_000.0);
+        assert!(reversed_left < second_left && reversed_left > -1_000.0);
+        assert!(reversed_right > second_right && reversed_right < 1_000.0);
+    }
+
+    #[test]
+    fn cgb_hpf_rejects_constant_dc_input() {
+        let mut apu = Apu::default();
+        apu.set_cgb_mode(true);
+        apu.write(0xFF26, 0x80);
+        apu.channels[0].dac_enabled = true;
+        let mut dropped = 0;
+        let mut drained = vec![0, 0];
+
+        for _ in 0..120 {
+            apu.pcm_accum_left = 32 * i32::from(APU_PCM_SAMPLE_CYCLES);
+            apu.pcm_accum_right = 32 * i32::from(APU_PCM_SAMPLE_CYCLES);
+            apu.pcm_accum_cycles = APU_PCM_SAMPLE_CYCLES;
+            apu.enqueue_pcm_frame(&mut dropped);
+            drained = apu.drain_interleaved_i16(1);
+        }
+
+        assert!(drained[0].abs() < 2);
+        assert!(drained[1].abs() < 2);
     }
 
     #[test]

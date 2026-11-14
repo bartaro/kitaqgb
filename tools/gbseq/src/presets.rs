@@ -3,6 +3,7 @@ use crate::{NoteEffects, SequenceProject, TrackKind, UserWave};
 use anyhow::{ensure, Context, Result};
 use serde::{Deserialize, Serialize};
 use std::{collections::BTreeSet, path::Path};
+mod wave_bank;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Patch {
@@ -55,24 +56,7 @@ const FAMILIES: [[&str; 16]; 4] = [
         "Tin Horn",
         "Frost",
     ],
-    [
-        "Flute",
-        "Reed Pipe",
-        "Mallet",
-        "Glass",
-        "Soft Brass",
-        "Air Column",
-        "Drawbar",
-        "Hollow Tube",
-        "Marimba",
-        "Crystal",
-        "Copper Bell",
-        "Clavinet",
-        "Reed Bass",
-        "Silver String",
-        "Chime",
-        "Prism",
-    ],
+    [""; 16], // CH3 has an individually voiced bank.
     [
         "Silk Hat",
         "Closed Hat",
@@ -101,8 +85,24 @@ pub fn factory(kind: TrackKind, id: u8) -> Preset {
     e.duty = f % 4;
     e.envelope_period = v;
     e.envelope_increase = false;
-    let mut volume = 15 - f / 4 * 2;
-    let mut wave = None;
+    if kind == TrackKind::Wave {
+        let (name, bytes) = wave_bank::voice(id);
+        return Preset {
+            format: FMT.into(),
+            channel: kind,
+            patch: Patch {
+                name: format!("{:03} {name}", (id & 127) + 1),
+                volume: 15,
+                effects: NoteEffects {
+                    wave_level: 1,
+                    pan: crate::model::PanPosition::Center,
+                    ..NoteEffects::for_track(kind)
+                },
+            },
+            wave: Some(bytes),
+        };
+    }
+    let volume = 15 - f / 4 * 2;
     match kind {
         TrackKind::Pulse1 => {
             if f >= 4 {
@@ -118,22 +118,7 @@ pub fn factory(kind: TrackKind, id: u8) -> Preset {
             e.noise_divisor = v;
             e.envelope_period = 1 + f % 5;
         }
-        TrackKind::Wave => {
-            volume = 15;
-            e.wave_level = 1;
-            let mut a = [0.; 32];
-            for (i, s) in a.iter_mut().enumerate() {
-                let t = i as f64 * std::f64::consts::TAU / 32.;
-                let b = 2. + f64::from(f % 7);
-                let c = 2. + f64::from(f / 4);
-                *s = t.sin()
-                    + (0.16 + f64::from(v) * 0.095) * (t * b + f64::from(f / 7) * 0.7).sin()
-                    + (0.12 + f64::from(f) * 0.017) * (t * c + f64::from(v) * 0.41).cos();
-            }
-            let peak = a.iter().map(|x| x.abs()).fold(0., f64::max);
-            let nib = |i: usize| ((a[i] / peak + 1.) * 7.5).round().clamp(0., 15.) as u8;
-            wave = Some(std::array::from_fn(|i| (nib(i * 2) << 4) | nib(i * 2 + 1)));
-        }
+        TrackKind::Wave => unreachable!(),
     }
     Preset {
         format: FMT.into(),
@@ -148,7 +133,7 @@ pub fn factory(kind: TrackKind, id: u8) -> Preset {
             volume,
             effects: e,
         },
-        wave,
+        wave: None,
     }
 }
 impl Patch {
@@ -303,6 +288,36 @@ impl Preset {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn all_wave_names_and_oscillators_are_distinct_after_four_bit_packing() {
+        let mut names = BTreeSet::new();
+        let mut waves = BTreeSet::new();
+        for i in 0..128 {
+            let (name, wave) = wave_bank::voice(i);
+            assert!(names.insert(name));
+            let samples: Vec<_> = wave.iter().flat_map(|p| [p >> 4, p & 15]).collect();
+            assert!(samples.iter().max().unwrap() - samples.iter().min().unwrap() >= 8);
+            // Even a phase rotation, inverted polarity, or reversed cycle is
+            // not sufficient to count as a separate voice.
+            let signature = (0..128)
+                .map(|variant| {
+                    (0..32)
+                        .map(|n| {
+                            let direction = if variant & 32 != 0 { 31 - n } else { n };
+                            let s = samples[(direction + variant) % 32];
+                            if variant & 64 != 0 {
+                                15 - s
+                            } else {
+                                s
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .min()
+                .unwrap();
+            assert!(waves.insert(signature), "duplicate CH3 oscillator: {name}");
+        }
+    }
     #[test]
     fn four_banks_have_distinct_sounding_parameters_and_travel_with_the_song() {
         for (lane, kind) in TrackKind::ALL.into_iter().enumerate() {

@@ -1,4 +1,5 @@
 //! The input voice is independent of the song sink: playing a key never restarts transport.
+use super::key_monitor::KeyMonitor;
 use super::*;
 use crate::{midi, model::PanPosition, NoteEffects};
 use gbdaw_kokura::KokuraApuHost;
@@ -12,7 +13,9 @@ struct Held {
     v: u8,
     base_volume: u8,
     fx: NoteEffects,
-    start: Option<u32>,
+    // Latch the actual attack and grid at key-down. Snapping the release
+    // separately would shorten a late attack or stretch a staccato note.
+    start: Option<(f32, u32)>,
 }
 type Message = (Instant, [u8; 3]);
 type Input = (
@@ -30,6 +33,7 @@ pub(super) struct Performance {
     step: bool,
     initialized: bool,
     overwrite: bool,
+    rec_resolution: usize,
     input: Option<Input>,
     output: Option<Output>,
     held: Option<Held>,
@@ -37,7 +41,7 @@ pub(super) struct Performance {
     // MIDI velocity into the following note a second time.
     inserted_volume: Option<(usize, u64, u8, u8)>,
     down: BTreeSet<u16>,
-    voice: Option<Arc<AtomicBool>>,
+    monitor: Option<KeyMonitor>,
     pub take_before: Option<SequenceProject>,
     pub rejected: usize,
     events: Vec<(u32, bool, usize, u8, u8)>,
@@ -195,10 +199,24 @@ impl Performance {
         Ok(())
     }
     fn stop_voice(&mut self) {
-        if let Some(flag) = self.voice.take() {
-            flag.store(true, Ordering::Release);
+        if let Some(monitor) = &mut self.monitor {
+            monitor.release();
         }
     }
+}
+
+const REC_GRID: [u32; 4] = [1, 2, 4, 8];
+
+fn recorded_interval(on: f32, off: f32, grid: u32, total: u32) -> Option<(u32, u32)> {
+    if total == 0 || on >= total as f32 || off < on {
+        return None;
+    }
+    let last_line = (total - 1) / grid;
+    let at = (((on / grid as f32).round() as u32).min(last_line)) * grid;
+    let length = (off.round() as u32)
+        .saturating_sub(on.round() as u32)
+        .max(1);
+    Some((at, length.min(total - at)))
 }
 impl Drop for Performance {
     fn drop(&mut self) {
@@ -235,6 +253,88 @@ mod tests {
                 meta: false,
             }
         }
+    }
+    #[test]
+    fn shortcut_icon_and_mouse_record_with_no_midi_device() {
+        let mut a = fresh();
+        a.toggle_keyboard();
+        let control_k = || UiEvent::KeyDown {
+            key: "k|Code(KeyK)".into(),
+            ctrl: true,
+            shift: false,
+            alt: false,
+            meta: false,
+        };
+        a.handle_event(key("k", true));
+        assert!(!a.live.open);
+        a.handle_event(key("k", false));
+        a.handle_event(control_k());
+        a.handle_event(control_k());
+        assert!(a.live.open);
+        a.handle_event(key("k", false));
+        a.handle_event(control_k());
+        assert!(!a.live.open);
+        a.handle_event(key("k", false));
+        fn click(a: &mut GbseqApp, r: Rect) {
+            let position = Point::new(r.x + 4., r.bottom() - 4.);
+            a.handle_event(UiEvent::PointerDown {
+                position,
+                button: PointerButton::Primary,
+            });
+            a.handle_event(UiEvent::PointerUp {
+                position,
+                button: PointerButton::Primary,
+            });
+        }
+        let icon = a
+            .link16_buttons()
+            .into_iter()
+            .find(|b| b.action == Action::Keyboard)
+            .unwrap()
+            .rect;
+        click(&mut a, icon);
+        assert!(a.live.open);
+        let step = a.panel_cell(1, 1, 6);
+        let rec = a.panel_cell(1, 2, 6);
+        let quant = a.panel_cell(2, 3, 6);
+        let c = a.perf_keys()[0].1;
+        click(&mut a, step);
+        click(&mut a, c);
+        assert_eq!(a.project.tracks[0].notes.len(), 1);
+        assert_eq!(a.cursor_step, 1);
+        click(&mut a, quant);
+        click(&mut a, quant);
+        click(&mut a, rec);
+        let dur =
+            Duration::from_secs_f64(f64::from(a.project.frames_per_step()) / GB_FRAME_RATE_HZ);
+        a.play_started = Some(Instant::now() - dur * 3);
+        click(&mut a, c);
+        click(&mut a, rec);
+        assert_eq!(
+            (
+                a.project.tracks[0].notes[1].start,
+                a.project.tracks[0].notes[1].length
+            ),
+            (4, 1)
+        );
+        a.undo();
+        assert_eq!(a.project.tracks[0].notes.len(), 1);
+        // A key pressed before the first audio buffer must also be recorded.
+        click(&mut a, rec);
+        a.play_started = None;
+        a.live.overwrite = true;
+        a.handle_event(key("d", true));
+        a.handle_event(key("d", false));
+        click(&mut a, rec);
+        assert_eq!(a.project.tracks[0].notes[0].pitch, 28);
+    }
+    #[test]
+    fn record_quantize_preserves_gate_and_handles_boundaries() {
+        assert_eq!(recorded_interval(2.1, 5.1, 4, 16), Some((4, 3)));
+        assert_eq!(recorded_interval(1.9, 1.95, 4, 16), Some((0, 1)));
+        assert_eq!(recorded_interval(14.8, 16., 4, 16), Some((12, 1)));
+        assert_eq!(recorded_interval(16., 16., 1, 16), None);
+        assert_eq!(recorded_interval(3.1, 18., 8, 16), Some((0, 15)));
     }
     #[test]
     fn pc_and_midi_input_protect_split_and_undo() {
@@ -449,6 +549,54 @@ mod tests {
         }
     }
     #[test]
+    #[ignore = "requires a native audio output device; does not open MIDI ports"]
+    fn native_pc_and_mouse_monitor_reaches_output_on_each_channel() {
+        let mut a = GbseqApp::new(Size::new(1366., 700.));
+        assert!(a.audio.is_some());
+        a.toggle_keyboard();
+        for ch in 0..4 {
+            a.selected_track = ch;
+            a.selected_note = Some(a.project.tracks[ch].notes[0].id);
+            for mouse in [false, true] {
+                let r = a.perf_rect();
+                let position = Point::new(r.x + 10., r.bottom() - 12.);
+                let before = a
+                    .live
+                    .monitor
+                    .as_ref()
+                    .map_or(0, |m| m.active_blocks.load(Ordering::Relaxed));
+                a.handle_event(if mouse {
+                    UiEvent::PointerDown {
+                        position,
+                        button: PointerButton::Primary,
+                    }
+                } else {
+                    key("a", true)
+                });
+                let deadline = Instant::now() + Duration::from_secs(2);
+                let monitor = a.live.monitor.as_ref().unwrap();
+                while monitor.active_blocks.load(Ordering::Relaxed) < before + 3 {
+                    assert!(
+                        Instant::now() < deadline,
+                        "device failed to consume CH{} (mouse={mouse})",
+                        ch + 1
+                    );
+                    thread::sleep(Duration::from_millis(4));
+                }
+                a.handle_event(if mouse {
+                    UiEvent::PointerUp {
+                        position,
+                        button: PointerButton::Primary,
+                    }
+                } else {
+                    key("a", false)
+                });
+                assert!(!a.live.monitor.as_ref().unwrap().is_playing());
+                thread::sleep(Duration::from_millis(25));
+            }
+        }
+    }
+    #[test]
     #[ignore = "explicit native audio/MIDI device check"]
     fn native_keyboard_and_ports() {
         let mut a = GbseqApp::new(Size::new(950., 700.));
@@ -465,14 +613,14 @@ mod tests {
             a.selected_note = Some(id);
             a.project.note_mut(id).unwrap().effects.duty = 3;
             a.handle_event(key("a", true));
-            assert!(a.live.voice.is_some());
+            assert!(a.live.monitor.as_ref().is_some_and(KeyMonitor::is_playing));
             assert_eq!(
                 a.live.held.as_ref().unwrap().fx,
                 a.project.note(id).unwrap().effects
             );
             thread::sleep(Duration::from_millis(50));
             a.handle_event(key("a", false));
-            assert!(a.live.voice.is_none());
+            assert!(!a.live.monitor.as_ref().unwrap().is_playing());
         }
         eprintln!("{}", a.live.cycle_input().unwrap());
         eprintln!("{}", a.live.cycle_output().unwrap());
@@ -536,35 +684,13 @@ mod tests {
     }
 }
 
-fn monitor_voice(
-    audio: &AudioPlayer,
+pub(super) fn voice_host(
     ch: u8,
     p: u8,
     v: u8,
     fx: &NoteEffects,
     wave: Option<[u8; 16]>,
-) -> Result<Arc<AtomicBool>> {
-    let sink = Sink::try_new(&audio.handle)?;
-    let mut host = voice_host(ch, p, v, fx, wave);
-    let cancel = Arc::new(AtomicBool::new(false));
-    let flag = cancel.clone();
-    thread::spawn(move || {
-        let rate = host.audio_sample_rate();
-        while !flag.load(Ordering::Acquire) {
-            if sink.len() < 3 {
-                host.advance_tcycles(16384);
-                let pcm = host.drain_audio_frames_interleaved_i16(1024);
-                sink.append(rodio::buffer::SamplesBuffer::new(2, rate, pcm));
-            } else {
-                thread::sleep(Duration::from_millis(1));
-            }
-        }
-        sink.stop();
-    });
-    Ok(cancel)
-}
-
-fn voice_host(ch: u8, p: u8, v: u8, fx: &NoteEffects, wave: Option<[u8; 16]>) -> KokuraApuHost {
+) -> KokuraApuHost {
     let mut host = KokuraApuHost::default();
     let env = (v << 4) | (u8::from(fx.envelope_increase) << 3) | fx.envelope_period.min(7);
     host.set_inst(
@@ -612,10 +738,15 @@ impl GbseqApp {
         }
         self.live.open = !self.live.open;
     }
-    fn record_step(&self, now: Instant) -> Option<u32> {
+    fn record_position(&self, now: Instant) -> Option<f32> {
         let timing = self.playback_timing?;
-        let elapsed = self.transport_elapsed()?.saturating_sub(now.elapsed());
-        Some(timing.step_at(elapsed).round() as u32)
+        // The take is armed while the first backing buffer is being primed.
+        // A key pressed here belongs at the downbeat, not in a discarded gap.
+        let elapsed = self
+            .transport_elapsed()
+            .unwrap_or_default()
+            .saturating_sub(now.elapsed());
+        Some(timing.step_at(elapsed))
     }
     fn store_key(&mut self, h: &Held, start: u32, len: u32) -> Result<()> {
         let id = crate::editing::input_note(
@@ -683,13 +814,20 @@ impl GbseqApp {
         let base_volume = preset.patch.volume;
         let v = ((u16::from(v) * u16::from(base_volume) + 7) / 15) as u8;
         if let Some(a) = self.audio.as_ref() {
-            match monitor_voice(a, (lane % 4) as u8, pitch, v, &fx, preset.wave) {
-                Ok(flag) => self.live.voice = Some(flag),
-                Err(e) => self.status = format!("Monitor: {e}"),
+            let host = voice_host((lane % 4) as u8, pitch, v, &fx, preset.wave);
+            if self.live.monitor.is_none() {
+                match KeyMonitor::new(&a.handle, host.audio_sample_rate()) {
+                    Ok(monitor) => self.live.monitor = Some(monitor),
+                    Err(e) => self.status = format!("Monitor: {e}"),
+                }
+            }
+            if let Some(monitor) = &mut self.live.monitor {
+                monitor.play(host);
             }
         }
         let start = if self.live.take_before.is_some() {
-            self.record_step(now)
+            self.record_position(now)
+                .map(|at| (at, REC_GRID[self.live.rec_resolution]))
         } else {
             None
         };
@@ -727,22 +865,16 @@ impl GbseqApp {
         }
         self.live.stop_voice();
         if let Some(h) = self.live.held.take() {
-            if let Some(start) = h.start {
+            if let Some((on, grid)) = h.start {
                 let end = if self.play_started.is_some()
                     && self.audio.as_ref().is_some_and(AudioPlayer::finished)
                 {
-                    self.project.total_steps()
+                    self.project.total_steps() as f32
                 } else {
-                    self.record_step(now)
-                        .unwrap_or(start + 1)
-                        .max(start + 1)
-                        .min(self.project.total_steps())
+                    self.record_position(now).unwrap_or(on)
                 };
-                if end <= start
-                    || self
-                        .store_key(&h, start, end.saturating_sub(start))
-                        .is_err()
-                {
+                let span = recorded_interval(on, end, grid, self.project.total_steps());
+                if !span.is_some_and(|(at, len)| self.store_key(&h, at, len).is_ok()) {
                     self.live.rejected += 1;
                     self.status = "REC: occupied or outside song; note not inserted".into();
                 }
@@ -792,7 +924,9 @@ impl GbseqApp {
             let Some((now, b)) = self.live.input.as_ref().and_then(|i| i.3.try_recv().ok()) else {
                 break;
             };
-            self.receive_key(now, b);
+            if !self.files.active() {
+                self.receive_key(now, b);
+            }
             redraw = true;
         }
         if self.live.has_output() {
@@ -817,9 +951,9 @@ impl GbseqApp {
         let w = (self.size.width - 24.).clamp(200., 740.);
         Rect::new(
             (self.size.width - w) * 0.5,
-            (self.size.height - 251.).max(0.),
+            (self.size.height - 279.).max(0.),
             w,
-            214.,
+            242.,
         )
     }
     pub(super) fn panel_cell(&self, row: usize, i: usize, n: usize) -> Rect {
@@ -827,7 +961,8 @@ impl GbseqApp {
         let w = (r.width - 12.) / n as f32;
         Rect::new(
             r.x + 6. + w * i as f32,
-            r.y + 5. + row as f32 * 29.,
+            // Performance modes first; optional external MIDI ports last.
+            r.y + 33. + [2, 0, 1, 3][row] as f32 * 29.,
             w - 2.,
             27.,
         )
@@ -835,7 +970,7 @@ impl GbseqApp {
     fn perf_keys(&self) -> Vec<(usize, Rect, bool)> {
         let r = self.perf_rect();
         let w = (r.width - 12.) / 7.;
-        let y = r.y + 122.;
+        let y = r.y + 150.;
         let mut keys = Vec::new();
         for (i, k) in [0, 2, 4, 5, 7, 9, 11].into_iter().enumerate() {
             keys.push((k, Rect::new(r.x + 6. + i as f32 * w, y, w - 2., 85.), false));
@@ -850,10 +985,49 @@ impl GbseqApp {
         keys
     }
     pub(super) fn draw_performance(&self, list: &mut DrawList) {
-        list.fill_rect(self.perf_rect(), HEADER);
+        let panel = self.perf_rect();
+        list.fill_rect(panel, HEADER);
+        list.stroke_rect(panel, 1., BORDER);
+        let recording = self.live.take_before.is_some();
+        let stripe = if recording { PLAYHEAD } else { ACCENT };
+        list.fill_rect(Rect::new(panel.x + 1., panel.y + 1., 4., 26.), stripe);
+        self.text_in(
+            list,
+            Rect::new(panel.x + 10., panel.y + 6., panel.width - 20., 22.),
+            &format!(
+                "{}   ·   P{} / CH{}   ·   {}",
+                self.language.translate("Performance keyboard"),
+                self.selected_track / 4 + 1,
+                self.selected_track % 4 + 1,
+                self.language.translate(if recording {
+                    "Recording"
+                } else if self.live.step {
+                    "Step input"
+                } else {
+                    "Listen"
+                })
+            ),
+            1.2,
+            TEXT,
+        );
         let mut cell = |r: Rect, label: &str, on: bool| {
-            list.fill_rect(r, if on { ACCENT } else { PANEL_RAISED });
-            self.text_in(list, r, label, 0.9, if on { BG } else { TEXT });
+            list.fill_rect(
+                r,
+                if on && recording && label == "Stop recording" {
+                    PLAYHEAD
+                } else if on {
+                    ACCENT
+                } else {
+                    PANEL_RAISED
+                },
+            );
+            self.text_in(
+                list,
+                Rect::new(r.x + 5., r.y + 4., r.width - 10., r.height - 5.),
+                label,
+                1.05,
+                if on { BG } else { TEXT },
+            );
         };
         cell(
             self.panel_cell(0, 0, 2),
@@ -874,7 +1048,11 @@ impl GbseqApp {
         for (i, s) in [
             "Listen",
             "Step input",
-            "REC / STOP",
+            if self.live.take_before.is_some() {
+                "Stop recording"
+            } else {
+                "Record live"
+            },
             "Rest",
             if self.live.overwrite {
                 "Overwrite"
@@ -899,14 +1077,15 @@ impl GbseqApp {
             );
         }
         let pos = if self.live.take_before.is_some() {
-            self.record_step(Instant::now()).unwrap_or(0)
+            self.record_position(Instant::now()).unwrap_or(0.) as u32
         } else {
             self.cursor_step
         };
         for (i, s) in [
             format!("Oct -  C{}", self.live.octave + 2),
             "Oct +".into(),
-            format!("Grid: {}", self.snap_steps),
+            format!("Step: 1/{}", 16 / self.snap_steps),
+            format!("REC Q: 1/{}", 16 / REC_GRID[self.live.rec_resolution]),
             format!(
                 "P{} CH{}",
                 self.selected_track / 4 + 1,
@@ -917,7 +1096,7 @@ impl GbseqApp {
         .iter()
         .enumerate()
         {
-            cell(self.panel_cell(2, i, 5), s, false);
+            cell(self.panel_cell(2, i, 6), s, false);
         }
         for (k, r, black) in self.perf_keys() {
             let sel =
@@ -1007,24 +1186,27 @@ impl GbseqApp {
                 return;
             }
         }
-        for i in 0..3 {
-            if self.panel_cell(2, i, 5).contains(p) {
+        for i in 0..4 {
+            if self.panel_cell(2, i, 6).contains(p) {
                 match i {
                     0 => self.live.octave = self.live.octave.saturating_sub(1),
                     1 => self.live.octave = (self.live.octave + 1).min(3),
-                    _ => self.apply_action(Action::Snap),
+                    2 => self.apply_action(Action::Snap),
+                    _ => self.live.rec_resolution = (self.live.rec_resolution + 1) % REC_GRID.len(),
                 }
                 return;
             }
         }
-        if let Some((k, _, _)) = self
-            .perf_keys()
+        if let Some(pitch) = self.mouse_pitch(p) {
+            self.press_key(3000, pitch, 15, Instant::now());
+        }
+    }
+    fn mouse_pitch(&self, p: Point) -> Option<u8> {
+        self.perf_keys()
             .into_iter()
             .rev()
             .find(|(_, r, _)| r.contains(p))
-        {
-            self.press_key(3000, self.live.octave * 12 + k as u8, 15, Instant::now());
-        }
+            .map(|(k, _, _)| self.live.octave * 12 + k as u8)
     }
     pub(super) fn performance_event(&mut self, e: &UiEvent) -> bool {
         if matches!(e, UiEvent::FocusChanged { focused: false }) {
@@ -1061,6 +1243,21 @@ impl GbseqApp {
             return false;
         }
         match e {
+            UiEvent::PointerMove { position } if self.live.down.contains(&3000) => {
+                if let Some(pitch) = self.mouse_pitch(*position) {
+                    if self
+                        .live
+                        .held
+                        .as_ref()
+                        .is_some_and(|h| h.id == 3000 && h.pitch != pitch)
+                    {
+                        let now = Instant::now();
+                        self.release_key(Some(3000), now);
+                        self.press_key(3000, pitch, 15, now);
+                    }
+                }
+                true
+            }
             UiEvent::KeyDown {
                 key, ctrl: false, ..
             } => {

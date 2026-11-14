@@ -235,6 +235,10 @@ impl Color {
     }
 }
 
+mod menu_button;
+pub use menu_button::{
+    draw_menu_button, MenuButtonLayout, MenuButtonStyle, MENU_BUTTON_CHROME_WIDTH,
+};
 pub mod icons;
 pub use icons::{draw_lucide_icon, lucide_icon_names};
 
