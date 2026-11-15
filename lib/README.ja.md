@@ -1,49 +1,13 @@
 # KITAQGB ライブラリ
 
-[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+[English](README.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Deutsch](README.de.md)
 
-[简体中文](README.zh-CN.md) · [简体中文 HTML](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html)
+lib/ のCヘッダーとソースをゲームと一緒にコンパイルします。PC上のコンパイラと補助ツールはRust製ですが、ゲームとライブラリのAPIはCで記述します。
 
-
-
-<!-- local-library-20261003:start -->
-## 2026-10-03 ローカル版ライブラリの差分と検証
-
-C:/kitaqgb_project/lib のソースを、公開版 2de7f4b と比較しました。更新日時だけでは最新版を決められません。ローカル版には追加機能があり、公開版には別の追加機能と修正があります。以下は保存したローカルソースの契約です。従来の公開版APIの検証結果とは対象を区別します。
-
-physics2d.c は既存の接触APIを保ち、KQ2D_CACHE_SURFACE による接触・速度制限のキャッシュ実装を追加しています。この設定はROMバンク13を使うため、そのバンクを確保してください。KQ2D_EXTERNAL_SCALE_Q8、KQ2D_EXTERNAL_REST_COMPONENT、KQ2D_EXTERNAL_SURFACE を定義した場合は、対応する実装を呼び出し側で提供します。今回の8,872ケースはこれらを定義しない標準経路の結果です。
-
-KQ3D_BODY_SPHERE=0x04 は球と箱の接触を選びます。球の半径は half_x です。kq3d_overlap_sphere_aabb(sphere, box) は接する境界を含めて判定し、NULLまたは半径が0以下なら0を返します。球同士の専用ソルバはありません。座標差、積、二乗和を16ビットの範囲に収めてください。
-
-KQ3D_BODY_KINEMATIC=0x02 を持つ有効なbodyは、kq3d_step で逆質量が0でもX/Y速度と位置を更新します。Z位置とZ速度は更新しません。逆質量0のbodyは接触で押し戻されません。kq3d_integrate_body は従来どおり静的bodyを積分しません。break_speed と KQ3D_BODY_BROKEN による自動破壊は行いません。
-
-ローカルの bank_switch は kq_bank_current と0x2000へ書き込みます。公開版の __bankswitch 経由の処理とは、コンパイラのバンク追跡状態の更新が異なります。切替処理は固定バンクから実行し、コンパイラのバンク復帰状態も必要な場合は __bankswitch を使ってください。
-
-ローカルの cgb_bg_color/cgb_obj_color（RGB単色ラッパーも同様）は、パレットのインデックスに自動インクリメントを設定しません。CGB実行では0x1234の下位バイトが0x12で上書きされることを確認しました。単色設定には公開版の修正、または colors 系の配列APIを使ってください。DMGでは書き込みを行いません。
-
-ローカルの metasprite_draw は完了時に first_id+count へ使用数を伸ばします。上限40で途中終了した場合は使用数を更新しません。再現例では first_id=39、count=2 の戻り値は1、スロット39は有効、使用数は0でした。公開版は各スロットを処理する際に使用数を更新します。
-
-ローカル版は vram_get_queue_used と vram_get_queue_free を提供しますが、公開版の vram_get_queue_capacity はありません。容量には VRAM_QUEUE_MAX（既定32）を使えます。1件の登録後は使用数1、空き31でした。
-
-wire3d_dmg.h は DrawRect2D の宣言を96行プロファイルに限定します。DrawBoxEdges2D は両プロファイルで宣言され、DrawIndexedEdges は120行プロファイルだけです。プロファイルに対応するソースを1つ選んでください。今回これらの描画結果は再検証していません。 保存したlib内には DrawRect2D と DrawBoxEdges2D の実装が見つかりません。宣言だけの項目なので、呼び出すには別途実装が必要です。
-
-ローカルの audio_vblank は公開版の AudioVBlank_QueueReset/QueueRefill/QueuePlay と audio_vblank_queue.inc を含みません。ZX0も公開版だけにあります。これらは公開版の追加機能として扱い、ローカル版の検証済み機能に含めません。
-
-### 今回実行した検証
-
-2D標準経路：KOKURA C APIの自動ハードウェア選択で8,872ケース。全件成功。速度制限、接触、符号付きQ8乗算、接触時刻を照合しました。明示的なDMG/CGB別試験ではありません。
-
-物理境界試験：19ケースをDMG・CGBで実行し、計38実行が全件成功しました。3D追加機能とスプライト/VRAM/パレットの再現試験も、それぞれ両モードで期待値と一致しました。パレットとスプライトは不具合の再現成功であり、正常動作の合格とは区別します。
-
-これはC#版コンパイラが生成したROMのエミュレータ検証です。Rust版の同等性、実機、音声、描画、全APIの正常動作を証明する結果ではありません。既存の画像・検証結果は各記録のソース指紋に結び付いた過去の結果です。
-
-[ソース指紋・入力・期待値・実測値・再実行手順](https://bartaro.github.io/kitaq-docs/gb-library.html#local-library-20261003-heading)
-<!-- local-library-20261003:end -->
-
+[マニュアル](https://bartaro.github.io/kitaq-docs/gb-library.html)
 
 [日本語のライブラリ説明書](https://bartaro.github.io/kitaq-docs/gb-library.html)には、各関数の使い方とサンプルコードを掲載しています。
 
-`wire3d_dmg` はゲームボーイ用のモノクロ・ワイヤーフレーム描画ライブラリです。128×96では `wire3d_dmg_96.c`、128×120では `wire3d_dmg.c` を選び、`Wire3DDMG_*` 関数を使います。`wire3d` と `dmg3d` は、それぞれの解像度に対応する互換用の入口として残しています。同じROMに組み込む入口は一つだけにしてください。カラー専用の `wire3d_cgb` は別のライブラリです。
 
 [ワイヤーフレーム描画ガイド](wire3d_dmg_guide_ja.md)
 
@@ -59,55 +23,55 @@ wire3d_dmg.h は DrawRect2D の宣言を96行プロファイルに限定しま�
 
 | ファイル | 用途 | 基本的な使い方 |
 | --- | --- | --- |
+| `system.h` / `system.c` | 初期化、フレーム数、VBlank待ち、協調的なVBlankコールバック、DI/EIラッパー。 | フレーム単位のゲームループで組み込みます。 |
+| `input.h` / `input.c` | ボタンの押下中・押した瞬間・離した瞬間・リピートの状態管理。 | メニュー、アクション、パズル、SLGなどの入力処理で組み込みます。 |
+| `vram.h` / `vram.c` | BGタイル書き込み、矩形塗りつぶし、マップ転送、memcpy、memsetを予約するVRAMキュー。 | 処理中に更新を予約し、安全な時間帯に `vram_flush()` または `vram_flush_now()` で転送します。 |
+| `cgb_tile.h` | CGBのタイル・属性を扱うコンパイラ組み込み命令の公開宣言。 | `__settile...` などを使うゲームソースから読み込みます。 |
+| `cgb_palette.h` / `cgb_palette.c` | CGBのBG/OBJパレットを扱う上位API。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
+| `sprite.h` / `sprite.c` | OAMの作業用コピー、スプライト割り当て、メタスプライト、アニメーション、OAM DMA、走査線上の個数超過の確認。 | OBJによる描画でヘッダーとソースを組み込みます。 |
+| `sprite_order.h` / `sprite_order.c` | 4段階の選択優先度とOAM順の交替。符号付き画面座標で画面外を除外し、最大255件から40件まで出力して未使用枠を隠します。 | ヘッダーとソースを組み込み、前景処理で影OAMを作成してVBlank中に転送します。[画像付きサンプルと関数説明](https://bartaro.github.io/kitaq-docs/gb-library.html#module-sprite_order)を参照してください。 |
+| `scroll.h` / `scroll.c` | コンパイラ組み込み命令を使うスクロールと画面分割テーブル。 | `Scroll_*` 関数を使う場合に組み込みます。 |
+| `raster.h` / `raster.c` | 帯状のラスタースクロールと、走査線ごとのX方向の変形パターン。 | `raster.h` を読み込み、`raster.c` と `scroll.c` を組み込みます。 |
+| `camera.h` / `camera.c` | `scroll.*` を基にした8.8固定小数点カメラ、簡易グローバルAPI、ワールド座標と画面座標の変換。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
+| `audio.h` / `audio.c` | BGM、効果音、パン、波形、フェードを扱う共通音源ドライバー。音符番号67（`G6`）までの68番号に対応します。 | 音を使うゲームに組み込みます。 |
+| `audio_vblank.h` / `audio_vblank.c` | 同じ68音符番号を使うVBlank割り込みBGMドライバー。バンク付き楽曲向けの16レコードWRAMキューと任意のフレームフック。 | 直接ポインターの楽曲は固定バンク0へ配置します。バンク付き楽曲はキューへ補充し、`scripts/patch_gb_vblank_irq.ps1` で0040番地のベクターを設定します。 |
+| `fixed.h` / `fixed.c` | Q8.8固定小数点、`Vec2`、`KQRect`、clamp/min/max/lerp、基本的な矩形判定。 | 移動、物理、カメラ、AIの評価値などに使います。 |
+| `rng.c` | `rng8`、`rng16`、`rand_range`、`weighted_choice`、`rng_seed`、`rng_next8`、`rng_next16`、`rng_range`、`rng_chance`。 | `rpg.h` の乱数関数を使う場合に組み込みます。 |
+| `scene.h` / `scene.c` | タイトル・ゲーム・ポーズなどのシーン表と、切り替え・更新・描画の振り分け。 | ゲーム全体の状態遷移を整理するときに組み込みます。 |
+| `entity.h` / `entity.c` | 最大 `ENTITY_MAX` 個の小さなゲームオブジェクトを固定配列で管理するプール。 | コールバックにはIDが渡されます。実体は `entity_get(id)` で取得できます。 |
+| `chain.h` / `chain.c` | ヘビ、ロープ、列車、関節スプライトなどに使う座標履歴のリングバッファ。 | 過去の位置を後続パーツへ伝える移動に使います。 |
+| `danmaku.h` / `danmaku.c` | 固定小数点の96発プール、32方向の扇状弾、命中・かすり判定、OAMの個数制限に依存しないCGB用BG合成。 | ヘッダーとソースを組み込みます。詳細は `danmaku_guide.md` とゲーム `ressen_gbc` を参照してください。 |
+| `text.c` | タイル文字列のウィンドウ、ページ待ち、選択肢、XY位置指定、数値表示、消去・ウィンドウ操作の別名。 | `rpg.h` の文字表示機能を使う場合に組み込みます。 |
+| `menu.c` | 縦型メニュー、最小限の持ち物メニュー、処理を止めないメニュー状態API。 | `rpg.h` のメニュー機能を使う場合に組み込みます。 |
+| `flags.c` | 2048個のフラグを扱うビット集合と、クエスト状態の保存領域。 | `rpg.h` のフラグ・クエスト機能を使う場合に組み込みます。 |
+| `script.c` | RPG・ADV向けの小さなバイトコード実行器。 | `rpg.h` のスクリプト機能を使う場合に組み込みます。 |
+| `map.c` | 圧縮配置されたマップの読み込み、衝突・イベント・カメラ、任意の16×16メタタイル。 | `rpg.h` のマップ機能を使う場合に組み込みます。 |
+| `slg.h` / `slg_board.c` | ボードゲームや戦術ゲーム向けの盤面、手の一覧、取り消しスタック。 | `slg.h` と `slg_board.c` を組み込みます。ゲーム固有の評価処理はゲーム側へ置きます。 |
+| `save.c` | ヘッダー、版、長さ、チェックサムを持つMBC5方式のSRAM保存・読み込み・確認・消去。 | `rpg.h` のセーブ機能を使う場合に組み込みます。 |
+| `bank.h` / `bank.c` | コンパイラ組み込み命令を使う遠方データ・ポインター・関数呼び出しと、基本的なMBCバンク切り替え。 | バンクをまたぐデータアクセスに使います。 |
+| `asset.h` / `asset.c` | 素材IDの記述子表と、生データ・タイルの読み込み。 | ヘッダーとソースを組み込みます。将来の `assets.h/c/json` 生成先としても使える形式です。 |
+| `link.h` / `link.c` | 通信ケーブル用の1バイト転送と、協調的な論理4人通信 `Link4_*`。 | 通信を使うゲームに組み込みます。 |
+| `link_packet.c` | `link.c` に追加するパケット層。`Link4_*` の相手別受信箱を含みます。 | パケット送受信が必要な場合だけ `link.c` と一緒にコンパイルします。 |
+| `link_dmg07.h` / `link_dmg07.c` | 実物のNintendo DMG-07 Four Player Adapter向けの、外部クロックを使うポーリングドライバー。 | `link_hwregs_gb.c` と組み込みます。論理4人通信の `Link4_*` とは別です。 |
 | `physics2d.h` / `physics2d.c` | 軸に平行な矩形（AABB）による2D物理。重力を反映し、接触を反復計算で解決します。 | `physics2d.h` を読み込み、`physics2d.c` を一緒にコンパイルします。 |
 | `physics2d_circle.h` / `physics2d_circle.c` | ボールを使うゲーム向けの円形物体の2D物理。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
 | `physics3d.h` / `physics3d.c` | AABBによる3D物理。加速度、質量を考慮した反発、破壊フラグ、`kq3d_dot_q8_8()` を提供します。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
 | `wire3d.h` / `wire3d.c` | 固定小数点による3Dワイヤーフレーム描画。WRAM上で描画し、モデルの隠線処理とシーンの遮蔽マスクを扱います。 | `wire3d.h` を読み込み、`wire3d.c` を一緒にコンパイルします。 |
 | `dmg3d.h` / `dmg3d.c` | DMG向けの128×120描画。D000の作業領域にアセンブリで線を描き、STATを確認しながら8900へ転送します。 | 1bppの作業バッファを使う場合に、ヘッダーとソースを組み込みます。 |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB専用の8MHzカラー描画。2bppのWRAMバッファ、隠線・遮蔽処理、クリッピング付きアセンブリ描画、HBlank DMAによる画面更新。 | CGB専用ROMとしてビルドし、ヘッダーとソースを組み込みます。 |
-| `system.h` / `system.c` | 初期化、フレーム数、VBlank待ち、協調的なVBlankコールバック、DI/EIラッパー。 | フレーム単位のゲームループで組み込みます。 |
-| `input.h` / `input.c` | ボタンの押下中・押した瞬間・離した瞬間・リピートの状態管理。 | メニュー、アクション、パズル、SLGなどの入力処理で組み込みます。 |
-| `vram.h` / `vram.c` | BGタイル書き込み、矩形塗りつぶし、マップ転送、memcpy、memsetを予約するVRAMキュー。 | 処理中に更新を予約し、安全な時間帯に `vram_flush()` または `vram_flush_now()` で転送します。 |
-| `sprite.h` / `sprite.c` | OAMの作業用コピー、スプライト割り当て、メタスプライト、アニメーション、OAM DMA、走査線上の個数超過の確認。 | OBJによる描画でヘッダーとソースを組み込みます。 |
-| `sprite_order.h` / `sprite_order.c` | 4段階の選択優先度とOAM順の交替。符号付き画面座標で画面外を除外し、最大255件から40件まで出力して未使用枠を隠します。 | ヘッダーとソースを組み込み、前景処理で影OAMを作成してVBlank中に転送します。[画像付きサンプルと関数説明](https://bartaro.github.io/kitaq-docs/gb-library.html#module-sprite_order)を参照してください。 |
-| `fixed.h` / `fixed.c` | Q8.8固定小数点、`Vec2`、`KQRect`、clamp/min/max/lerp、基本的な矩形判定。 | 移動、物理、カメラ、AIの評価値などに使います。 |
-| `scene.h` / `scene.c` | タイトル・ゲーム・ポーズなどのシーン表と、切り替え・更新・描画の振り分け。 | ゲーム全体の状態遷移を整理するときに組み込みます。 |
-| `entity.h` / `entity.c` | 最大 `ENTITY_MAX` 個の小さなゲームオブジェクトを固定配列で管理するプール。 | コールバックにはIDが渡されます。実体は `entity_get(id)` で取得できます。 |
-| `danmaku.h` / `danmaku.c` | 固定小数点の96発プール、32方向の扇状弾、命中・かすり判定、OAMの個数制限に依存しないCGB用BG合成。 | ヘッダーとソースを組み込みます。詳細は `danmaku_guide.md` とゲーム `ressen_gbc` を参照してください。 |
-| `bank.h` / `bank.c` | コンパイラ組み込み命令を使う遠方データ・ポインター・関数呼び出しと、基本的なMBCバンク切り替え。 | バンクをまたぐデータアクセスに使います。 |
-| `asset.h` / `asset.c` | 素材IDの記述子表と、生データ・タイルの読み込み。 | ヘッダーとソースを組み込みます。将来の `assets.h/c/json` 生成先としても使える形式です。 |
 | `debug.h` / `debug.c` | KOKURAなどから確認するための、ROM内の軽量なトレース・アサート・マーカーバッファ。 | 重い集計はROM外で行い、ROM側では小さな記録だけを残します。 |
-| `chain.h` / `chain.c` | ヘビ、ロープ、列車、関節スプライトなどに使う座標履歴のリングバッファ。 | 過去の位置を後続パーツへ伝える移動に使います。 |
-| `cgb_tile.h` | CGBのタイル・属性を扱うコンパイラ組み込み命令の公開宣言。 | `__settile...` などを使うゲームソースから読み込みます。 |
-| `cgb_palette.h` / `cgb_palette.c` | CGBのBG/OBJパレットを扱う上位API。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
-| `scroll.h` / `scroll.c` | コンパイラ組み込み命令を使うスクロールと画面分割テーブル。 | `Scroll_*` 関数を使う場合に組み込みます。 |
-| `raster.h` / `raster.c` | 帯状のラスタースクロールと、走査線ごとのX方向の変形パターン。 | `raster.h` を読み込み、`raster.c` と `scroll.c` を組み込みます。 |
-| `camera.h` / `camera.c` | `scroll.*` を基にした8.8固定小数点カメラ、簡易グローバルAPI、ワールド座標と画面座標の変換。 | ヘッダーを読み込み、ソースを一緒にコンパイルします。 |
-| `audio.h` / `audio.c` | BGM、効果音、パン、波形、フェードを扱う共通音源ドライバー。音符番号67（`G6`）までの68番号に対応します。 | 音を使うゲームに組み込みます。 |
-| `audio_vblank.h` / `audio_vblank.c` | 同じ68音符番号を使うVBlank割り込みBGMドライバー。バンク付き楽曲向けの16レコードWRAMキューと任意のフレームフック。 | 直接ポインターの楽曲は固定バンク0へ配置します。バンク付き楽曲はキューへ補充し、`scripts/patch_gb_vblank_irq.ps1` で0040番地のベクターを設定します。 |
-| `link.h` / `link.c` | 通信ケーブル用の1バイト転送と、協調的な論理4人通信 `Link4_*`。 | 通信を使うゲームに組み込みます。 |
-| `link_packet.c` | `link.c` に追加するパケット層。`Link4_*` の相手別受信箱を含みます。 | パケット送受信が必要な場合だけ `link.c` と一緒にコンパイルします。 |
-| `link_dmg07.h` / `link_dmg07.c` | 実物のNintendo DMG-07 Four Player Adapter向けの、外部クロックを使うポーリングドライバー。 | `link_hwregs_gb.c` と組み込みます。論理4人通信の `Link4_*` とは別です。 |
 | `rpg.h` | RPG・ADV・SLGの共通宣言と、下位の組み込み命令の宣言。 | この機能群を使うゲームソースから読み込みます。 |
-| `rng.c` | `rng8`、`rng16`、`rand_range`、`weighted_choice`、`rng_seed`、`rng_next8`、`rng_next16`、`rng_range`、`rng_chance`。 | `rpg.h` の乱数関数を使う場合に組み込みます。 |
-| `flags.c` | 2048個のフラグを扱うビット集合と、クエスト状態の保存領域。 | `rpg.h` のフラグ・クエスト機能を使う場合に組み込みます。 |
 | `rle.c` | RAMや遠方ROMから `[個数][値]` 形式のRLEデータを展開。 | `rpg.h` の `rle_decode*` 関数を使う場合に組み込みます。 |
-| `text.c` | タイル文字列のウィンドウ、ページ待ち、選択肢、XY位置指定、数値表示、消去・ウィンドウ操作の別名。 | `rpg.h` の文字表示機能を使う場合に組み込みます。 |
-| `menu.c` | 縦型メニュー、最小限の持ち物メニュー、処理を止めないメニュー状態API。 | `rpg.h` のメニュー機能を使う場合に組み込みます。 |
-| `script.c` | RPG・ADV向けの小さなバイトコード実行器。 | `rpg.h` のスクリプト機能を使う場合に組み込みます。 |
-| `map.c` | 圧縮配置されたマップの読み込み、衝突・イベント・カメラ、任意の16×16メタタイル。 | `rpg.h` のマップ機能を使う場合に組み込みます。 |
-| `save.c` | ヘッダー、版、長さ、チェックサムを持つMBC5方式のSRAM保存・読み込み・確認・消去。 | `rpg.h` のセーブ機能を使う場合に組み込みます。 |
 | `slg_unit.c` | SLGの移動・攻撃範囲。 | `rpg.h` のユニット機能を使う場合に組み込みます。 |
 | `slg_path.c` | 幅優先探索による経路検索と、移動コストを使う到達範囲計算。 | `rpg.h` の経路機能を使う場合に組み込みます。 |
-| `slg.h` / `slg_board.c` | ボードゲームや戦術ゲーム向けの盤面、手の一覧、取り消しスタック。 | `slg.h` と `slg_board.c` を組み込みます。ゲーム固有の評価処理はゲーム側へ置きます。 |
 
 ### 補助ファイル
 
 | ファイル | 用途 | 注意点 |
 | --- | --- | --- |
+| `cgb_tile.c` | 意図的に空にしてあるCGBタイル機能のソース。 | 公開宣言は `cgb_tile.h` にあります。このソースはコンパイルしても支障ありませんが、処理には不要です。 |
 | `audio_hwregs_gb.c` | APUと波形RAMの最小限のレジスター宣言。 | 別のファイルですでに同じレジスターを宣言している場合は組み込みません。 |
 | `link_hwregs_gb.c` | 通信用の `SB`、`SC`、`IF`、`IE` の最小限の宣言。 | 別のファイルですでに通信レジスターを宣言している場合は組み込みません。 |
-| `cgb_tile.c` | 意図的に空にしてあるCGBタイル機能のソース。 | 公開宣言は `cgb_tile.h` にあります。このソースはコンパイルしても支障ありませんが、処理には不要です。 |
 | `math.c` | ROM上の正弦テーブル `MATH_SIN`。 | 現時点では安定した公開APIとして扱わず、補助データとして使ってください。 |
 
 ### 参考資料
@@ -275,32 +239,9 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 現在の構成では、`random`、`collision`、`ui`、`tilemap`、`dialog`、`board_game`、`simple_physics` という別ライブラリを追加する必要はありません。順に `rng`、`physics2d`、`text`/`menu`、`map`、`script`、`slg`、`physics2d` を使います。
 - `scene.c` と `entity.c` は、ポインターサイズの引数を関数ポインター経由で渡すことを避けています。現在のKITAQGBでは、引数なし、または1バイトのIDを渡す形式が最も安定しています。
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
 
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
-| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
-<!-- manual-language-links:end -->
+## 3D描画
 
-<!-- rust-native-20261004:start -->
-## Rust製コンパイラでのライブラリ利用
+`wire3d_dmg` はゲームボーイ用のモノクロ・ワイヤーフレーム描画ライブラリです。128×96では `wire3d_dmg_96.c`、128×120では `wire3d_dmg.c` を選び、`Wire3DDMG_*` 関数を使います。`wire3d` と `dmg3d` は、それぞれの解像度に対応する互換用の入口として残しています。同じROMに組み込む入口は一つだけにしてください。カラー専用の `wire3d_cgb` は別のライブラリです。
 
-lib/はゲーム機のROMに組み込むCヘッダーとCソースです。PC用コンパイラと補助ツールはRust製で、ゲームのソース、対象機のライブラリとAPIはCのまま使用します。収録するSOURCE_MANIFEST.jsonとLIBRARY_MERGE.jsonにはライブラリの選択元を記録しています。
-
-Windows・Linux・macOS ARM・macOS Intelでネイティブビルドと実行検証が成功しています。KITAQGBは各環境48件のテストと395件の補助ツール検証、KITAQFCは55件と401件が成功しました。Rust 1.85でも確認済みです。PUBLIC_DISTRIBUTION.jsonに配置済みバイナリのハッシュと検証の出典を記録しています。公開GitHub Actionsでもこのソースを独立してビルド・検証します。
-
-保存済みの比較データでROMのバイト列、診断と補助ツールの形式を検証しています。以前のC#版によるエミュレータ検証は、そのソース指紋に対応する過去の記録として残しています。これだけでRust版の全API、実機動作、FDSのBIOS経由のゲーム起動を保証するものではありません。元のPNG変換スクリプトは入手できないため仕様から再実装し、元スクリプトとのバイト一致は確認できません。
-
-[Rust製コンパイラと補助ツール](../tools/README.ja.md)
-
-<!-- rust-native-20261004:end -->
+[音源 — VBlank](AUDIO_VBLANK.md)

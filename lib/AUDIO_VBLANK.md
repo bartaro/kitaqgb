@@ -55,5 +55,5 @@ GBSEQの書き出しは、指定したSDKのヘッダーを調べて旧版との
 
 ## Verification scope
 
-See [the source synchronization checks](../SOURCE_UPDATE_20261114.md).
+See .
 Automated emulator checks do not establish physical-console or listening validation.

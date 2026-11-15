@@ -48,18 +48,16 @@ To remove the CLI, delete its extracted directory; it does not install a service
 コピー等で実行権限が失われた場合だけ`chmod +x gbhua`を実行します。
 アンインストールは展開先フォルダの削除だけです。
 
-## Verification / 検証
+## Download integrity and first launch / ダウンロードの確認と初回起動
 
 Next to each archive in [bin](https://github.com/bartaro/kitaqgb/tree/main/tools/gbhua/bin)
-is a JSON receipt with `archive_sha256`, `binary_sha256`, `source_commit`, tested OS,
-CPU architecture and executed CLI commands. Compare the downloaded file with it:
+is a JSON file containing `archive_sha256` and `binary_sha256`. Compare the downloaded archive with its checksum:
 
 ```sh
 shasum -a 256 gbhua-macos-arm64.tar.gz
 ```
 
-配布ファイルと同じフォルダのJSONにSHA-256、ソースのコミット、検証OS、CPU、
-実行したコマンドを記録しています。上記でダウンロードしたファイルのハッシュを照合できます。
+配布ファイルと同じフォルダのJSONにSHA-256を記載しています。上記でダウンロードしたファイルのハッシュを照合できます。
 
 No Apple Developer ID signature or notarization is included. Gatekeeper can warn
 or block the first launch. Verify the origin and checksum before deciding whether
@@ -73,11 +71,7 @@ Apple Developer IDによる署名・公証は行っていません。初回起�
 
 ## Rebuild
 
-The repository workflow builds both targets on native Mac runners, runs
-`cargo test --release --locked`, and tests the executable extracted from the final
-archive with PNG import, inspect, validate, preview, C/2bpp/GBTB/GBMB exports in
-DMG and CGB modes. The packaging helper needs Python 3 and the Rust toolchain;
-end users do not.
+Rebuilding requires the Rust toolchain. Packaging the archive also requires Python 3.
 
 ```sh
 MACOSX_DEPLOYMENT_TARGET=11.0 cargo build --release --locked

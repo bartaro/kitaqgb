@@ -2,7 +2,7 @@
 
 **[GUI版の説明書とダウンロード](docs/manual.ja.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 GBHUAはPNG画像からGame Boy用のタイル・パレット・マップを作るツールです。作者はDAISUKE OBA、独自コードのライセンスはMITです。
 
@@ -47,4 +47,3 @@ PNGを取り込み、短いJSONレポートで確認し、検証、プレビュ�
 ## GUI / Python
 
 ローカルGUIとPython bindingsも同じ変換コアを使います。独立CLIパッケージにGUIは含まれません。ローカルのフル構成ではgbhua_guiを起動し、Pythonではimport gbhuaを使います。GUIはグループ別メニュー、保存先ダイアログ、DMG/CGB比較、7種類の描画サイズ、16バイトの入力、Undo/Redo、マップ拡大・スクロールに対応します。
-

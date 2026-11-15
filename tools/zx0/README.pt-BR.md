@@ -1,6 +1,6 @@
 # Ferramentas auxiliares nativas
 
-[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [de](../README.de.md)
+[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [pt](../README.pt.md) · [de](../README.de.md)
 
 Todas as ferramentas são implementadas em Rust e executam sem .NET, Python ou Pillow. Compile todos os executáveis com `cargo build --locked --release`. No Windows, acrescente `.exe` aos comandos.
 

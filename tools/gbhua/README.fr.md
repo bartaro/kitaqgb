@@ -2,7 +2,7 @@
 
 **[Manuel GUI et téléchargements](docs/manual.fr.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 GBHUA convertit les PNG en tuiles, palettes et cartes Game Boy. Auteur : DAISUKE OBA. Code original : MIT.
 
@@ -47,4 +47,3 @@ L'écrasement nécessite --force. Les chemins d'entrée et de sortie doivent dif
 ## GUI / Python
 
 L'interface locale et les liaisons Python partagent le moteur. L'interface n'est pas incluse dans le paquet CLI autonome. Dans l'espace local complet, lancez gbhua_gui ; utilisez import gbhua en Python. L'interface propose menus groupés, dialogues de sauvegarde, comparaison DMG/CGB, sept tailles, saisie de 16 octets, annulation/rétablissement, zoom et défilement.
-

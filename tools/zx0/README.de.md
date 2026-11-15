@@ -1,6 +1,6 @@
 # Native Hilfsprogramme
 
-[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [de](../README.de.md)
+[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [pt](../README.pt.md) · [de](../README.de.md)
 
 Alle Hilfsprogramme sind in Rust implementiert und benötigen zur Ausführung weder .NET noch Python/Pillow. Bauen Sie alle Programme mit `cargo build --locked --release`. Unter Windows erhalten die Befehle die Endung `.exe`.
 

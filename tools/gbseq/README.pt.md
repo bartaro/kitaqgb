@@ -1,41 +1,8 @@
 # GBSEQ — manual do usuário
 
-**2026-11-14 — source update / ソース更新:** Ctrl+K ou o ícone de piano abre o teclado com áudio contínuo. Novo/Abrir oferece Salvar/Descartar/Cancelar na própria janela para alterações pendentes. Nas ROMs de reprodução, B alterna o loop em SOLO/MASTER e TIME mostra posição/duração.
-
-A reprodução gera blocos curtos de áudio conforme necessário. Alterar monitor, mute ou solo mantém a posição; notas e andamento editados entram na próxima reprodução.
-
-[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). [Native packages updated 2026-11-15](bin/README.md) include this source update. 配布バイナリも更新済みです。
-
-[Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
-
-As ROMs exportadas contêm os 48 bytes do logotipo da Nintendo para compatibilidade com a verificação de inicialização. A licença MIT do GBSEQ não concede direitos independentes sobre o logotipo ou as marcas. O GBSEQ não é afiliado à Nintendo nem aprovado por ela. [Aviso em inglês/japonês](docs/NINTENDO_NOTICE.md).
-
-Em Exportar, escolha UGE editável (com ondas próprias) ou MOD (instrumentos GBT fixos). Salve um arquivo por console em `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
-
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Português (Brasil)** | [Deutsch](README.de.md)
 
 GBSEQ, de DAISUKE OBA, oferece GUI com plita e CLI independente, compartilhando modelo, validação, áudio KOKURA e exportadores. LOCAL 4CH, CABLE 8CH e DMG07 16CH representam 1, 2 e 4 Game Boy. Cada jogador tem CH1/CH2 de pulso, CH3 de onda e CH4 de ruído. São 1–256 compassos de 16 passos (4096 por canal), BPM 30–300 e opção de repetição. Escolha o idioma em Exibir → Idioma. A preferência é salva separadamente da música. `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
-
-## Execução, gravação e WAV
-
-Selecione a faixa e pressione Ctrl+K para abrir o teclado. A/S/D/F/G/H/J são as teclas brancas; W/E/T/Y/U, as pretas. Z/X muda a oitava. Clique em IN e OUT para escolher os dispositivos MIDI. A entrada por passos avança 1, 2 ou 4 semicolcheias. REC grava uma tomada a partir do início. Proteger rejeita sobreposições; Sobrescrever substitui apenas o trecho ocupado. Importe MIDI pelo menu Arquivo e use Exportar para gravá-lo; mantenha o .gbseq para preservar os timbres do GB.
-
-Cada canal oferece 128 timbres de fábrica na lista suspensa. Salve e carregue timbres próprios em arquivos .gbpreset separados. A exibição de acordes da mixagem e de cada faixa pode ser ligada separadamente. A transposição da música não altera o canal de ruído.
-
-O WAV respeita a monitoração, o mudo e o solo no início da exportação. Todas mistura os aparelhos ativos; P1–P4 isola um deles. Se houver solo, só as faixas em solo e não silenciadas serão ouvidas. Selecionar uma faixa para edição não a isola. Silenciar todas mantém a duração do WAV.
-
-`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
-
-[Exportar o driver VBlank e a música em C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
-Os registros seguem a ordem de audio.h. O driver VBlank só aceita ondas triangulares e dente de serra no CH3. Use --strict para rejeitar aproximações e compile cada aparelho separadamente.
-
-Pressione **E** ou clique duas vezes no cabeçalho de uma faixa para abrir seu editor de notas; E retorna à visão geral. Arraste a borda direita da nota até a próxima nota ou o final da música. No gráfico de onda do CH3, desenhe as 32 amostras; Ctrl+Z desfaz um traço.
-
-## ROMs de reprodução e monitoração
-
-**Export → Playback ROMs (no SRAM)** gera um arquivo de 512 KiB por parte (P1.gb a P4.gb), com o título e seus quatro canais. Nenhum arquivo de save é necessário. START reproduz a parte isolada. Para sincronizar, pressione SELECT em cada console parado, A (MASTER) em um e B (PEER) nos demais; START no mestre controla a reprodução. No adaptador de quatro jogadores, o mestre usa a porta 1, independentemente da parte. No GBSEQ, ouça a mixagem completa ou um console sem mudar de pista; o WAV segue a seleção de monitoração.
-
-`gbseq-cli export-player-roms song.gbseq output_folder`
 
 ## Instalação
 
@@ -52,6 +19,39 @@ Ctrl/Shift-clique alterna seleção; Ctrl+A seleciona a faixa atual. Esquerda/di
 ## Timbres e ondas
 
 Por nota, ajuste nível, panorama esquerda/direita/centro, ciclo de trabalho e envelope de pulso, sweep CH1, nível/preset CH3 e ruído CH4. AUDITION pré-escuta a nota. CH3 não possui envelope de hardware. NEW USER WAVE desenha 32 amostras de 4 bits (0–15). São 64 ondas de usuário e sete internas, atribuídas a 16 presets ativos com nível 100/50/25%. WAVE PRESET automatiza o timbre por nota. A troca de onda desliga brevemente CH3; não é crossfade contínuo.
+
+## Execução, gravação e WAV
+
+Selecione a faixa e pressione Ctrl+K para abrir o teclado. A/S/D/F/G/H/J são as teclas brancas; W/E/T/Y/U, as pretas. Z/X muda a oitava. Clique em IN e OUT para escolher os dispositivos MIDI. A entrada por passos avança 1, 2 ou 4 semicolcheias. REC grava uma tomada a partir do início. Proteger rejeita sobreposições; Sobrescrever substitui apenas o trecho ocupado. Importe MIDI pelo menu Arquivo e use Exportar para gravá-lo; mantenha o .gbseq para preservar os timbres do GB.
+
+Cada canal oferece 128 timbres de fábrica na lista suspensa. Salve e carregue timbres próprios em arquivos .gbpreset separados. A exibição de acordes da mixagem e de cada faixa pode ser ligada separadamente. A transposição da música não altera o canal de ruído.
+
+O WAV respeita a monitoração, o mudo e o solo no início da exportação. Todas mistura os aparelhos ativos; P1–P4 isola um deles. Se houver solo, só as faixas em solo e não silenciadas serão ouvidas. Selecionar uma faixa para edição não a isola. Silenciar todas mantém a duração do WAV.
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
+
+[Exportar o driver VBlank e a música em C](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+Os registros seguem a ordem de audio.h. O driver VBlank só aceita ondas triangulares e dente de serra no CH3. Use --strict para rejeitar aproximações e compile cada aparelho separadamente.
+
+Pressione **E** ou clique duas vezes no cabeçalho de uma faixa para abrir seu editor de notas; E retorna à visão geral. Arraste a borda direita da nota até a próxima nota ou o final da música. No gráfico de onda do CH3, desenhe as 32 amostras; Ctrl+Z desfaz um traço.
+
+[Arquivos e dispositivos MIDI, teclado, gravação e 512 timbres](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
+
+## ROMs de reprodução e monitoração
+
+**Export → Playback ROMs (no SRAM)** gera um arquivo de 512 KiB por parte (P1.gb a P4.gb), com o título e seus quatro canais. Nenhum arquivo de save é necessário. START reproduz a parte isolada. Para sincronizar, pressione SELECT em cada console parado, A (MASTER) em um e B (PEER) nos demais; START no mestre controla a reprodução. No adaptador de quatro jogadores, o mestre usa a porta 1, independentemente da parte. No GBSEQ, ouça a mixagem completa ou um console sem mudar de pista; o WAV segue a seleção de monitoração.
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
+Nas ROMs de reprodução, B ativa ou desativa o loop no modo SOLO/MASTER. TIME mostra a posição atual e a duração total.
+
+## Exportação
+
+LINK16 gera imagens de bateria MBC5 V4 de 128 KiB: link16_local.sav; link16_cable.p1.sav/.p2.sav; ou link16_dmg07.p1.sav–.p4.sav. Use ROM/versão LINK16 compatível e a regra de nomes do emulador. Faça backup dos SAV existentes. P1 também inclui espelhos das partes remotas. Um SAV não inicia sozinho. Há quatro presets de envelope compartilhados por jogador; valores extras podem ser aproximados. Confira ouvindo após importar. V4 não guarda sweep CH1. frames_per_step_override permite efeitos por quadro em prévia/WAV/KITAQGB, mas é rejeitado pelo LINK16 baseado em BPM.
+
+KITAQGB exporta C/fluxo de um jogador; repita para cada um. Use audio.h/audio.c compatíveis com CH1=0, CH2=1, CH3=2 e CH4=3. Não junta dezesseis canais numa Game Boy. A prévia quantiza passos a quadros de vídeo; alguns BPM diferem de ROM com relógio fracionário. Emulação não equivale a teste em hardware físico.
+
+Em Exportar, escolha UGE editável (com ondas próprias) ou MOD (instrumentos GBT fixos). Salve um arquivo por console em `assets/music`. [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 ## CLI
 
@@ -75,13 +75,6 @@ gbseq-cli --help
 gbseq-cli transform --help
 ```
 
-
-## Exportação
-
-LINK16 gera imagens de bateria MBC5 V4 de 128 KiB: link16_local.sav; link16_cable.p1.sav/.p2.sav; ou link16_dmg07.p1.sav–.p4.sav. Use ROM/versão LINK16 compatível e a regra de nomes do emulador. Faça backup dos SAV existentes. P1 também inclui espelhos das partes remotas. Um SAV não inicia sozinho. Há quatro presets de envelope compartilhados por jogador; valores extras podem ser aproximados. Confira ouvindo após importar. V4 não guarda sweep CH1. frames_per_step_override permite efeitos por quadro em prévia/WAV/KITAQGB, mas é rejeitado pelo LINK16 baseado em BPM.
-
-KITAQGB exporta C/fluxo de um jogador; repita para cada um. Use audio.h/audio.c compatíveis com CH1=0, CH2=1, CH3=2 e CH4=3. Não junta dezesseis canais numa Game Boy. A prévia quantiza passos a quadros de vídeo; alguns BPM diferem de ROM com relógio fracionário. Emulação não equivale a teste em hardware físico.
-
 ## Dados e Python
 
 .gbseq é JSON, não MIDI; mudar a extensão não converte. Valide dados gerados por IA e verifique duração, canais ativos, IDs únicos, alturas e sobreposições. As [especificações detalhadas](docs/README.md) estão em japonês. Para Python 3.10+ opcional, adicione python/ ao PYTHONPATH e defina GBSEQ_NATIVE_LIBRARY com o caminho absoluto de gbseq.dll/libgbseq.dylib/libgbseq.so. Os índices Python começam em zero; chame validate após editar data diretamente. player=None mistura todos.
@@ -96,7 +89,6 @@ song.save("python-song.gbseq")
 song.render_wav("python-song.wav")
 ```
 
-
 ## Compilação, problemas e direitos
 
 Use Rust 1.93.1 e ferramentas C/C++ do sistema. Linux requer libasound2-dev, libudev-dev, libxkbcommon-dev, libxkbcommon-x11-dev, libwayland-dev, libx11-dev, libxi-dev, libxcursor-dev e bibliotecas de desenvolvimento Mesa. CI verifica modelo, edição, áudio/SAV e início da GUI por OS; verification registra o commit. Não testa saída física de áudio, entrada física nem hardware Game Boy.
@@ -110,3 +102,5 @@ cargo build --locked --release --no-default-features --bin gbseq-cli --lib
 
 
 Se não iniciar, confira driver GPU e erro no terminal. Texto ausente: restaure assets/fonts; silêncio: dispositivo e mute/solo; exportação: validate e nota indicada. GBSEQ usa MIT, Copyright (c) 2026 DAISUKE OBA. Preserve [LICENSE](LICENSE), [avisos de terceiros](THIRD_PARTY_NOTICES.md), [auditoria](LICENSE_AUDIT.json) e licenças das fontes ao redistribuir. Materiais externos e músicas importadas mantêm os próprios direitos.
+
+As ROMs exportadas contêm os 48 bytes do logotipo da Nintendo para compatibilidade com a verificação de inicialização. A licença MIT do GBSEQ não concede direitos independentes sobre o logotipo ou as marcas. O GBSEQ não é afiliado à Nintendo nem aprovado por ela. [Aviso em inglês/japonês](docs/NINTENDO_NOTICE.md).

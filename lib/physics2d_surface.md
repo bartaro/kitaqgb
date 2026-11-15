@@ -47,7 +47,7 @@ continuous collision detection or warm starting.
 
 ## Native Tests
 
-From `C:\kitaqgb_project`:
+From the parent folder containing the KITAQ repositories:
 
 ```powershell
 python pinball/probe_physics2d_surface.py

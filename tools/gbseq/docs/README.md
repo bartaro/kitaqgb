@@ -7,7 +7,6 @@ LINK16 SRAM (`.sav`)、およびKITAQGB音楽ストリームの現行実装仕�
 
 ## 文書一覧
 
-- [2026-11-14 ソース更新・検証](../../../SOURCE_UPDATE_20261114.md)
 - [VBlank C書き出し・ドライバ互換性](KITAQGB_VBLANK.md)
 - [演奏鍵盤・MIDI・録音](MIDI_PERFORMANCE.md)
 
@@ -67,4 +66,3 @@ cd tools/gbseq
 9言語の現行操作説明は[配布トップ](../README.md)を参照してください。
 この詳細仕様は日本語の補足資料です。上記開発時パスに対し、公開コピーの
 正本は `src/` と `vendor/gbdaw-export-kitaqgb/src/` にあります。
-

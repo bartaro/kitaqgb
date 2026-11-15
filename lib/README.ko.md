@@ -1,47 +1,13 @@
 # KITAQGB 라이브러리
 
-[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+[English](README.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Deutsch](README.de.md)
 
+lib/의 C 헤더와 소스를 게임과 함께 컴파일합니다. PC용 컴파일러와 보조 도구는 Rust로 작성되었으며 게임 소스와 라이브러리 API는 C를 사용합니다.
 
-
-<!-- local-library-20261003:start -->
-## 2026-10-03 로컬 라이브러리 변경 사항과 검증
-
-C:/kitaqgb_project/lib 소스를 공개 버전 2de7f4b와 비교했습니다. 수정 시각만으로 최신 버전을 판단할 수 없습니다. 로컬에는 추가 기능이 있고 공개 버전에는 별도의 추가 기능과 수정이 있습니다. 아래 설명은 저장한 로컬 소스를 대상으로 하며 기존 공개 API의 검증 기록과 구분합니다.
-
-physics2d.c는 접촉 API를 유지하고 KQ2D_CACHE_SURFACE에서 접촉 및 속도 제한의 캐시 구현을 제공합니다. 활성화할 때 ROM 뱅크 13을 확보하세요. KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT, KQ2D_EXTERNAL_SURFACE를 정의하면 해당 구현을 직접 제공해야 합니다. 아래 8,872건은 이 정의가 없는 기본 경로의 결과입니다.
-
-KQ3D_BODY_SPHERE=0x04는 구와 상자의 접촉을 선택합니다. 반지름은 half_x입니다. kq3d_overlap_sphere_aabb(sphere, box)는 접하는 경계를 포함하며 NULL 또는 0 이하의 반지름이면 0을 반환합니다. 구끼리의 전용 해법은 없습니다. 좌표 차이, 곱과 제곱 합을 16비트 범위 안에 두세요.
-
-KQ3D_BODY_KINEMATIC=0x02인 활성 body는 역질량이 0이어도 kq3d_step에서 X/Y 속도와 위치를 갱신합니다. Z 위치와 속도는 그대로입니다. 역질량 0인 body는 접촉으로 밀리지 않습니다. kq3d_integrate_body는 정적 body를 계속 건너뜁니다. break_speed와 KQ3D_BODY_BROKEN은 자동 파괴를 일으키지 않습니다.
-
-로컬 bank_switch는 kq_bank_current와 주소 0x2000에 씁니다. 공개 __bankswitch 경로와 달리 컴파일러의 뱅크 추적 상태를 갱신하지 않습니다. 고정 뱅크에서 전환하고 컴파일러의 복귀 상태도 유지해야 한다면 __bankswitch를 사용하세요.
-
-로컬 cgb_bg_color/cgb_obj_color와 단색 RGB 래퍼는 팔레트 인덱스의 자동 증가를 켜지 않습니다. CGB 실행에서 0x1234의 하위 바이트가 0x12로 덮이는 것을 확인했습니다. 공개 수정이나 colors 배열 API를 사용하세요. DMG에서는 쓰지 않습니다.
-
-로컬 metasprite_draw는 정상 완료할 때만 사용 수를 first_id+count로 늘립니다. 40개 제한에서 조기 반환하면 갱신하지 않습니다. first_id=39, count=2에서 반환값 1, 슬롯 39 활성, 사용 수 0이었습니다. 공개 버전은 각 슬롯 처리 시 사용 수를 갱신합니다.
-
-로컬에는 vram_get_queue_used와 vram_get_queue_free가 있지만 공개 vram_get_queue_capacity는 없습니다. 용량은 VRAM_QUEUE_MAX이며 기본값은 32입니다. 명령 하나를 등록하면 사용 1, 여유 31이었습니다.
-
-wire3d_dmg.h의 DrawRect2D 선언은 96줄 프로필에만 있습니다. DrawBoxEdges2D는 두 프로필에, DrawIndexedEdges는 120줄 프로필에만 있습니다. 프로필에 맞는 소스를 하나 선택하세요. 이번에는 이 함수들의 화면 결과를 다시 검증하지 않았습니다. 저장한 lib 소스에는 DrawRect2D와 DrawBoxEdges2D 구현이 없습니다. 선언만 있으므로 호출하려면 별도 구현이 필요합니다.
-
-로컬 audio_vblank에는 공개 AudioVBlank_QueueReset/QueueRefill/QueuePlay와 audio_vblank_queue.inc가 없습니다. ZX0도 공개 버전에만 있습니다. 이 기능들은 공개 추가 기능이며 검증된 로컬 기능에 포함하지 않습니다.
-
-### 이번에 실행한 검증
-
-2D 기본 경로: KOKURA C API의 자동 하드웨어 선택으로 8,872건 모두 통과했습니다. 속도 제한, 접촉, 부호 있는 Q8 곱셈과 충돌 시각을 확인했습니다. DMG/CGB를 명시적으로 나눈 시험은 아닙니다.
-
-물리 경계 19건을 DMG와 CGB에서 실행하여 총 38회 모두 통과했습니다. 별도 3D 추가 기능과 스프라이트/VRAM/팔레트 재현 시험도 두 모드에서 기대값과 일치했습니다. 팔레트와 스프라이트는 결함 재현 성공이지 정상 동작의 확인이 아닙니다.
-
-C# 컴파일러가 생성한 ROM의 에뮬레이터 검증입니다. Rust 동등성, 실제 기기, 음성, 화면이나 모든 API의 정확성을 증명하지 않습니다. 기존 이미지와 검증은 각 기록의 소스 지문에 연결된 과거 결과입니다.
-
-[소스 지문, 입력, 기대값, 실측값과 재실행 절차](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#local-library-20261003-heading)
-<!-- local-library-20261003:end -->
-
+[설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)
 
 **[라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html)**
 
-`wire3d_dmg`는 Game Boy용 흑백 와이어프레임 렌더러입니다. 128 × 96에는 `wire3d_dmg_96.c`, 128 × 120에는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*`를 사용하세요. `wire3d`와 `dmg3d`는 각각 96줄과 120줄 프로필의 다른 진입점입니다. 프로그램마다 진입점 하나만 컴파일하세요. `wire3d_cgb`는 컬러 전용 렌더러입니다.
 
 [렌더러 가이드](wire3d_dmg_guide.md) / [일본어 가이드](wire3d_dmg_guide_ja.md)
 
@@ -57,55 +23,55 @@ C# 컴파일러가 생성한 ROM의 에뮬레이터 검증입니다. Rust 동등
 
 | 파일 | 기능 | 기본 사용법 |
 | --- | --- | --- |
+| `system.h` / `system.c` | 초기화, 프레임 수, VBlank 대기, 협조적인 VBlank 콜백, DI/EI 래퍼. | 프레임 단위의 게임 루프에 사용합니다. |
+| `input.h` / `input.c` | 버튼의 누른 상태, 누른 순간, 뗀 순간, 반복 입력을 프레임별로 관리합니다. | 메뉴, 액션, 퍼즐, 전략 게임의 조작에 사용합니다. |
+| `vram.h` / `vram.c` | BG 타일 쓰기, 사각형 채우기, 맵 블록, memcpy, memset을 예약하는 VRAM 명령 큐. | 게임 처리 중 갱신을 예약하고, 안전한 시간에 `vram_flush()` 또는 `vram_flush_now()`로 전송합니다. |
+| `cgb_tile.h` | CGB 타일·속성 관련 컴파일러 내장 연산의 공개 선언. | `__settile...` 같은 함수를 쓰는 게임 소스에서 포함합니다. |
+| `cgb_palette.h` / `cgb_palette.c` | CGB BG/OBJ 팔레트를 다루는 상위 API. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
+| `sprite.h` / `sprite.c` | OAM 작업용 복사본, 스프라이트 할당, 메타스프라이트, 애니메이션, OAM DMA, 주사선별 개수 초과 확인. | OBJ를 이용한 렌더링에 사용합니다. |
+| `sprite_order.h` / `sprite_order.c` | 선택 우선순위 4단계와 OAM 순서 순환을 제공합니다. 부호 있는 화면 좌표를 클리핑하고 최대 255개 후보에서 40개 이하의 스프라이트를 출력하며, 남은 슬롯은 숨깁니다. | 헤더를 포함하고 소스를 컴파일합니다. 메인 처리에서 섀도 OAM을 구성하고 VBlank 중 전송하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-sprite_order). |
+| `scroll.h` / `scroll.c` | 내장 연산을 이용한 스크롤과 화면 분할 테이블. | `Scroll_*` 함수를 사용할 때 포함합니다. |
+| `raster.h` / `raster.c` | 띠 단위의 래스터 스크롤과 주사선별 X 방향 변형 패턴. | `Raster_*` 함수를 사용할 때는 `raster.h`를 포함하고 `raster.c`와 `scroll.c`를 컴파일합니다. |
+| `camera.h` / `camera.c` | `scroll.*` 기반의 8.8 고정소수점 카메라, 간단한 전역 함수, 월드·화면 좌표 변환. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
+| `audio.h` / `audio.c` | 음악, 효과음, 패닝, 파형, 페이드를 다루는 Game Boy 오디오 드라이버입니다. 음표 인덱스 67(`G6`)까지 68개 인덱스를 제공합니다. | `audio.h`를 포함하고 `audio.c`를 컴파일합니다. |
+| `audio_vblank.h` / `audio_vblank.c` | 같은 68개 음표 번호를 쓰는 VBlank IRQ BGM 드라이버. 뱅크에 배치한 곡을 위한 WRAM 큐 16레코드와 선택적 프레임 훅. | 직접 포인터 곡은 고정 뱅크 0에 두거나, 다른 뱅크의 코드에서 큐를 보충합니다. `scripts/patch_gb_vblank_irq.ps1`로 벡터 `0x0040`을 설정하세요. |
+| `fixed.h` / `fixed.c` | Q8.8 고정소수점, `Vec2`, `KQRect`, clamp/min/max/lerp, 기본 사각형 판정. | 이동, 물리, 카메라, AI 평가값 등에 사용합니다. |
+| `rng.c` | `rng8`, `rng16`, `rand_range`, `weighted_choice`, `rng_seed`, `rng_next8`, `rng_next16`, `rng_range`, `rng_chance`. | `rpg.h`의 난수 함수를 사용할 때 컴파일합니다. |
+| `scene.h` / `scene.c` | 타이틀·게임·일시정지 같은 장면 표와 전환·갱신·그리기 호출 분배. | 게임 상태의 흐름을 구성할 때 사용합니다. |
+| `entity.h` / `entity.c` | 최대 `ENTITY_MAX`개의 작은 게임 개체를 고정 배열로 관리하는 풀. | 콜백에는 개체 ID가 전달됩니다. `entity_get(id)`로 실제 데이터를 얻습니다. |
+| `chain.h` / `chain.c` | 뱀, 로프, 기차, 관절형 스프라이트를 위한 좌표 이력 원형 버퍼와 ChainBody 몸통 추종을 제공합니다. | `chain.h`를 포함하고 `chain.c`를 컴파일합니다. 이력 재생과 현재 마디 자세 기반 추종 중 필요한 방식을 선택하세요. |
+| `danmaku.h` / `danmaku.c` | 고정소수점 탄환 96개 풀, 32방향 부채꼴 탄막, 명중·스침 이벤트, OAM 개수 제한에 묶이지 않는 CGB BG 타일 합성. | 헤더를 포함하고 소스를 컴파일합니다. `danmaku_guide.md`와 HTML 설명서의 완전한 예제를 참고하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-danmaku) |
+| `text.c` | 타일 문자열 창, 페이지 대기, 선택지, XY 지정 출력, 숫자 출력, 지우기·창 조작의 별칭. | `rpg.h`의 텍스트 기능에 사용합니다. |
+| `menu.c` | 세로 메뉴, 최소한의 인벤토리 메뉴, 메인 루프를 멈추지 않는 메뉴 상태 API. | `rpg.h`의 메뉴 기능에 사용합니다. |
+| `flags.c` | 플래그 2048개를 관리하는 비트 집합과 퀘스트 상태 저장. | `rpg.h`의 플래그·퀘스트 기능에 사용합니다. |
+| `script.c` | RPG·ADV 진행을 위한 작은 바이트코드 실행기. | `rpg.h`의 스크립트 기능에 사용합니다. |
+| `map.c` | 묶음 맵 로드, 충돌·트리거·카메라, 선택적인 16×16 메타타일 지원. | `rpg.h`의 맵 기능에 사용합니다. |
+| `slg.h` / `slg_board.c` | 보드게임·전술 시스템용 보드, 수 목록, 되돌리기 스택. | `slg.h`와 `slg_board.c`를 포함합니다. 게임 고유의 평가 함수는 별도로 작성합니다. |
+| `save.c` | 헤더, 버전, 길이, 체크섬을 갖춘 MBC5 방식 SRAM 저장·로드·확인·지우기. | `rpg.h`의 저장 기능에 사용합니다. |
+| `bank.h` / `bank.c` | 컴파일러 내장 연산 위에서 먼 뱅크의 데이터·포인터·함수 호출과 간단한 MBC 뱅크 전환을 지원합니다. | 뱅크를 넘는 데이터 접근에 사용합니다. |
+| `asset.h` / `asset.c` | 자료 ID별 설명자 표와 원시 데이터·타일 로드. | 헤더와 소스를 포함합니다. 향후 `assets.h/c/json` 생성 도구의 출력 형식으로도 사용할 수 있습니다. |
+| `link.h` / `link.c` | 통신 케이블용 바이트 전송과 협조적인 논리 4인 통신 `Link4_*`. | 통신 기능이 필요한 프로젝트에 포함합니다. |
+| `link_packet.c` | `link.c` 위에 추가하는 패킷 계층과 `Link4_*`의 상대별 수신함. | 패킷 송수신이 필요할 때만 `link.c`와 함께 컴파일합니다. |
+| `link_dmg07.h` / `link_dmg07.c` | 실물 Nintendo DMG-07 Four Player Adapter용 외부 클록 폴링 드라이버. | `link_hwregs_gb.c`와 함께 컴파일합니다. 논리 API `Link4_*`와는 별개입니다. |
 | `physics2d.h` / `physics2d.c` | 축에 평행한 사각형(AABB)의 2D 물리, 중력 적분, 반복 계산을 통한 접촉 해결. | `physics2d.h`를 포함하고 `physics2d.c`를 함께 컴파일합니다. |
 | `physics2d_circle.h` / `physics2d_circle.c` | 공을 사용하는 게임에 맞춘 원형 물체의 2D 물리. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
 | `physics3d.h` / `physics3d.c` | 가속도, 질량에 따른 반발, 파괴 플래그를 갖춘 3D AABB 물리와 `kq3d_dot_q8_8()`. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
 | `wire3d.h` / `wire3d.c` | 고정소수점 3D 와이어프레임 렌더러. WRAM 작업 버퍼, 모델의 숨은 선 처리, 장면 가림 마스크를 지원합니다. | `wire3d.h`를 포함하고 `wire3d.c`를 컴파일합니다. |
 | `dmg3d.h` / `dmg3d.c` | D000의 128×120 버퍼를 쓰는 DMG 렌더러. 정해진 순서의 인라인 어셈블리 선 그리기와 STAT을 확인하는 D000→8900 전송. | 1bpp 작업 버퍼가 필요한 경우 헤더와 소스를 포함합니다. |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB 전용 8MHz 컬러 렌더러. 2bpp WRAM 버퍼, 숨은 선·장면 가림 처리, 클리핑 어셈블리, HBlank DMA를 통한 화면 갱신. | CGB 전용 ROM으로 빌드하고 헤더와 소스를 포함합니다. |
-| `system.h` / `system.c` | 초기화, 프레임 수, VBlank 대기, 협조적인 VBlank 콜백, DI/EI 래퍼. | 프레임 단위의 게임 루프에 사용합니다. |
-| `input.h` / `input.c` | 버튼의 누른 상태, 누른 순간, 뗀 순간, 반복 입력을 프레임별로 관리합니다. | 메뉴, 액션, 퍼즐, 전략 게임의 조작에 사용합니다. |
-| `vram.h` / `vram.c` | BG 타일 쓰기, 사각형 채우기, 맵 블록, memcpy, memset을 예약하는 VRAM 명령 큐. | 게임 처리 중 갱신을 예약하고, 안전한 시간에 `vram_flush()` 또는 `vram_flush_now()`로 전송합니다. |
-| `sprite.h` / `sprite.c` | OAM 작업용 복사본, 스프라이트 할당, 메타스프라이트, 애니메이션, OAM DMA, 주사선별 개수 초과 확인. | OBJ를 이용한 렌더링에 사용합니다. |
-| `sprite_order.h` / `sprite_order.c` | 선택 우선순위 4단계와 OAM 순서 순환을 제공합니다. 부호 있는 화면 좌표를 클리핑하고 최대 255개 후보에서 40개 이하의 스프라이트를 출력하며, 남은 슬롯은 숨깁니다. | 헤더를 포함하고 소스를 컴파일합니다. 메인 처리에서 섀도 OAM을 구성하고 VBlank 중 전송하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-sprite_order). |
-| `fixed.h` / `fixed.c` | Q8.8 고정소수점, `Vec2`, `KQRect`, clamp/min/max/lerp, 기본 사각형 판정. | 이동, 물리, 카메라, AI 평가값 등에 사용합니다. |
-| `scene.h` / `scene.c` | 타이틀·게임·일시정지 같은 장면 표와 전환·갱신·그리기 호출 분배. | 게임 상태의 흐름을 구성할 때 사용합니다. |
-| `entity.h` / `entity.c` | 최대 `ENTITY_MAX`개의 작은 게임 개체를 고정 배열로 관리하는 풀. | 콜백에는 개체 ID가 전달됩니다. `entity_get(id)`로 실제 데이터를 얻습니다. |
-| `danmaku.h` / `danmaku.c` | 고정소수점 탄환 96개 풀, 32방향 부채꼴 탄막, 명중·스침 이벤트, OAM 개수 제한에 묶이지 않는 CGB BG 타일 합성. | 헤더를 포함하고 소스를 컴파일합니다. `danmaku_guide.md`와 HTML 설명서의 완전한 예제를 참고하세요. [라이브러리 설명서](https://bartaro.github.io/kitaq-docs/ko/gb-library.html#module-danmaku) |
-| `bank.h` / `bank.c` | 컴파일러 내장 연산 위에서 먼 뱅크의 데이터·포인터·함수 호출과 간단한 MBC 뱅크 전환을 지원합니다. | 뱅크를 넘는 데이터 접근에 사용합니다. |
-| `asset.h` / `asset.c` | 자료 ID별 설명자 표와 원시 데이터·타일 로드. | 헤더와 소스를 포함합니다. 향후 `assets.h/c/json` 생성 도구의 출력 형식으로도 사용할 수 있습니다. |
 | `debug.h` / `debug.c` | KOKURA 등에서 확인하는 ROM 내부의 작은 트레이스·단언·표식 버퍼. | 무거운 프로파일링은 ROM 밖에서 처리합니다. |
-| `chain.h` / `chain.c` | 뱀, 로프, 기차, 관절형 스프라이트를 위한 좌표 이력 원형 버퍼와 ChainBody 몸통 추종을 제공합니다. | `chain.h`를 포함하고 `chain.c`를 컴파일합니다. 이력 재생과 현재 마디 자세 기반 추종 중 필요한 방식을 선택하세요. |
-| `cgb_tile.h` | CGB 타일·속성 관련 컴파일러 내장 연산의 공개 선언. | `__settile...` 같은 함수를 쓰는 게임 소스에서 포함합니다. |
-| `cgb_palette.h` / `cgb_palette.c` | CGB BG/OBJ 팔레트를 다루는 상위 API. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
-| `scroll.h` / `scroll.c` | 내장 연산을 이용한 스크롤과 화면 분할 테이블. | `Scroll_*` 함수를 사용할 때 포함합니다. |
-| `raster.h` / `raster.c` | 띠 단위의 래스터 스크롤과 주사선별 X 방향 변형 패턴. | `Raster_*` 함수를 사용할 때는 `raster.h`를 포함하고 `raster.c`와 `scroll.c`를 컴파일합니다. |
-| `camera.h` / `camera.c` | `scroll.*` 기반의 8.8 고정소수점 카메라, 간단한 전역 함수, 월드·화면 좌표 변환. | 헤더를 포함하고 소스를 함께 컴파일합니다. |
-| `audio.h` / `audio.c` | 음악, 효과음, 패닝, 파형, 페이드를 다루는 Game Boy 오디오 드라이버입니다. 음표 인덱스 67(`G6`)까지 68개 인덱스를 제공합니다. | `audio.h`를 포함하고 `audio.c`를 컴파일합니다. |
-| `audio_vblank.h` / `audio_vblank.c` | 같은 68개 음표 번호를 쓰는 VBlank IRQ BGM 드라이버. 뱅크에 배치한 곡을 위한 WRAM 큐 16레코드와 선택적 프레임 훅. | 직접 포인터 곡은 고정 뱅크 0에 두거나, 다른 뱅크의 코드에서 큐를 보충합니다. `scripts/patch_gb_vblank_irq.ps1`로 벡터 `0x0040`을 설정하세요. |
-| `link.h` / `link.c` | 통신 케이블용 바이트 전송과 협조적인 논리 4인 통신 `Link4_*`. | 통신 기능이 필요한 프로젝트에 포함합니다. |
-| `link_packet.c` | `link.c` 위에 추가하는 패킷 계층과 `Link4_*`의 상대별 수신함. | 패킷 송수신이 필요할 때만 `link.c`와 함께 컴파일합니다. |
-| `link_dmg07.h` / `link_dmg07.c` | 실물 Nintendo DMG-07 Four Player Adapter용 외부 클록 폴링 드라이버. | `link_hwregs_gb.c`와 함께 컴파일합니다. 논리 API `Link4_*`와는 별개입니다. |
 | `rpg.h` | RPG·ADV·SLG의 공통 선언과 저수준 내장 연산 선언. | 이 기능군을 사용하는 게임 소스에서 포함합니다. |
-| `rng.c` | `rng8`, `rng16`, `rand_range`, `weighted_choice`, `rng_seed`, `rng_next8`, `rng_next16`, `rng_range`, `rng_chance`. | `rpg.h`의 난수 함수를 사용할 때 컴파일합니다. |
-| `flags.c` | 플래그 2048개를 관리하는 비트 집합과 퀘스트 상태 저장. | `rpg.h`의 플래그·퀘스트 기능에 사용합니다. |
 | `rle.c` | RAM이나 먼 ROM의 `[개수][값]` 형식 RLE를 해제합니다. | `rpg.h`의 `rle_decode*` 함수에 사용합니다. |
-| `text.c` | 타일 문자열 창, 페이지 대기, 선택지, XY 지정 출력, 숫자 출력, 지우기·창 조작의 별칭. | `rpg.h`의 텍스트 기능에 사용합니다. |
-| `menu.c` | 세로 메뉴, 최소한의 인벤토리 메뉴, 메인 루프를 멈추지 않는 메뉴 상태 API. | `rpg.h`의 메뉴 기능에 사용합니다. |
-| `script.c` | RPG·ADV 진행을 위한 작은 바이트코드 실행기. | `rpg.h`의 스크립트 기능에 사용합니다. |
-| `map.c` | 묶음 맵 로드, 충돌·트리거·카메라, 선택적인 16×16 메타타일 지원. | `rpg.h`의 맵 기능에 사용합니다. |
-| `save.c` | 헤더, 버전, 길이, 체크섬을 갖춘 MBC5 방식 SRAM 저장·로드·확인·지우기. | `rpg.h`의 저장 기능에 사용합니다. |
 | `slg_unit.c` | 전략 게임의 이동·공격 범위. | `rpg.h`의 전술 개체 기능에 사용합니다. |
 | `slg_path.c` | 너비 우선 탐색과 이동 비용에 따른 도달 영역 계산. | `rpg.h`의 경로 기능에 사용합니다. |
-| `slg.h` / `slg_board.c` | 보드게임·전술 시스템용 보드, 수 목록, 되돌리기 스택. | `slg.h`와 `slg_board.c`를 포함합니다. 게임 고유의 평가 함수는 별도로 작성합니다. |
 
 ### 보조 파일
 
 | 파일 | 기능 | 참고 사항 |
 | --- | --- | --- |
+| `cgb_tile.c` | 의도적으로 비워 둔 CGB 타일 기능의 컴파일 단위. | 공개 선언은 `cgb_tile.h`에 있습니다. 컴파일해도 문제는 없지만 동작에 필요한 소스는 아닙니다. |
 | `audio_hwregs_gb.c` | APU와 파형 RAM 레지스터의 최소 선언. | 다른 파일에서 같은 레지스터를 선언하지 않는 경우에만 사용합니다. |
 | `link_hwregs_gb.c` | 통신용 `SB`, `SC`, `IF`, `IE`의 최소 선언. | 다른 파일에서 통신 레지스터를 이미 선언했다면 중복해서 포함하지 않습니다. |
-| `cgb_tile.c` | 의도적으로 비워 둔 CGB 타일 기능의 컴파일 단위. | 공개 선언은 `cgb_tile.h`에 있습니다. 컴파일해도 문제는 없지만 동작에 필요한 소스는 아닙니다. |
 | `math.c` | ROM의 사인 테이블 `MATH_SIN`. | 아직 안정적인 공개 API로 문서화하지 않았습니다. 당분간 프로젝트 보조 데이터로 취급하세요. |
 
 ### 참고 문서
@@ -274,32 +240,9 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 현재 구성에서는 별도의 `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game`, `simple_physics` 라이브러리를 추가하지 마세요. 각각 `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg`, `physics2d`를 사용합니다.
 - `scene.c`와 `entity.c`는 함수 포인터 호출에 포인터 크기의 인수를 넘기지 않습니다. 현재 KITAQGB의 함수 포인터 호출 경로는 인수가 없거나 1바이트 ID를 전달할 때 가장 안정적입니다.
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
 
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
-| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
-<!-- manual-language-links:end -->
+## 3D 렌더링
 
-<!-- rust-native-20261004:start -->
-## 네이티브 컴파일러로 라이브러리 사용
+`wire3d_dmg`는 Game Boy용 흑백 와이어프레임 렌더러입니다. 128 × 96에는 `wire3d_dmg_96.c`, 128 × 120에는 `wire3d_dmg.c`를 선택하고 `Wire3DDMG_*`를 사용하세요. `wire3d`와 `dmg3d`는 각각 96줄과 120줄 프로필의 다른 진입점입니다. 프로그램마다 진입점 하나만 컴파일하세요. `wire3d_cgb`는 컬러 전용 렌더러입니다.
 
-lib/는 콘솔 ROM에 컴파일되는 C 헤더와 소스입니다. PC용 컴파일러와 보조 도구는 Rust로 구현되었으며 게임 소스, 대상 콘솔 라이브러리 및 API는 C로 사용합니다. 제공된 SOURCE_MANIFEST.json과 LIBRARY_MERGE.json은 선택한 라이브러리 소스를 기록합니다.
-
-Windows, Linux, macOS ARM 및 macOS Intel에서 네이티브 빌드와 실행 검증이 성공했습니다. KITAQGB는 환경별 테스트 48개와 보조 도구 검사 395개, KITAQFC는 55개와 401개를 통과했습니다. Rust 1.85도 검증했습니다. PUBLIC_DISTRIBUTION.json은 배치한 바이너리의 해시와 검증 출처를 기록합니다. 공개 GitHub Actions는 이 소스를 독립적으로 빌드하고 검증합니다.
-
-저장된 참조 출력으로 ROM 바이트, 진단 및 보조 도구 형식을 검사합니다. 이전 C# 에뮬레이터 검증은 원래 소스 지문에 해당하는 과거 기록입니다. 모든 Rust API, 실제 하드웨어 또는 FDS BIOS를 통한 완전한 게임 시작을 입증하지는 않습니다. 원본 PNG 변환 스크립트는 없어 사양으로 재구현했으며 원본과의 바이트 일치는 확인할 수 없습니다.
-
-[Rust 네이티브 컴파일러와 보조 도구](../tools/README.ko.md)
-
-<!-- rust-native-20261004:end -->
+[오디오 — VBlank](AUDIO_VBLANK.md)

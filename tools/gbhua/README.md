@@ -15,7 +15,7 @@ included here; no other local project or private repository is required.
 
 ## Headless CLI
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+**English** | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 Start with the CLI manual for your language. GUI, CLI and Python share the same
 conversion core. Default Cargo builds remain headless, without a display or GPU.

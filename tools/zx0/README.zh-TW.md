@@ -1,6 +1,6 @@
 # 原生輔助工具
 
-[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [de](../README.de.md)
+[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [pt](../README.pt.md) · [de](../README.de.md)
 
 所有輔助程式均以 Rust 實作，執行時不需要 .NET、Python 或 Pillow。使用 `cargo build --locked --release` 建置全部程式。Windows 指令名稱須加 `.exe`。
 

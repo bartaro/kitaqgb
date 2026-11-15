@@ -2,7 +2,7 @@
 
 **[GUI-Handbuch und Downloads](docs/manual.de.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | **Deutsch**
 
 GBHUA wandelt PNG-Dateien in Game-Boy-Kacheln, Paletten und Karten um. Autor: DAISUKE OBA. Eigener Programmcode: MIT.
 
@@ -47,4 +47,3 @@ Vollständige Projekte als .gbh speichern. Bei alten JSON-Projekten genügt die 
 ## GUI / Python
 
 Lokale GUI und Python-Bindings verwenden denselben Kern. Das eigenständige CLI-Paket enthält keine GUI. Im vollständigen lokalen Arbeitsbereich gbhua_gui starten; in Python import gbhua verwenden. Die GUI bietet gruppierte Menüs, Speicherdialoge, DMG/CGB-Vergleich, sieben Größen, 16-Byte-Eingabe, Rückgängig/Wiederholen sowie Kartenzoom und Bildlauf.
-

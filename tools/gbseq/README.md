@@ -1,6 +1,6 @@
 # GBSEQ
 
-**2026-11-14 source update:** continuous keyboard audio, Ctrl+K/piano shortcut, unsaved-song dialog, quantize fixes, refreshed player ROMs, and the latest KOKURA APU. See the [source update and checks](../../SOURCE_UPDATE_20261114.md), [English manual](README.en.md) and [日本語](README.ja.md). [Native packages updated 2026-11-15](bin/README.md) include this source update.
+**2026-11-14 source update:** continuous keyboard audio, Ctrl+K/piano shortcut, unsaved-song dialog, quantize fixes, refreshed player ROMs, and the latest KOKURA APU. See the , [English manual](README.en.md) and [日本語](README.ja.md). [Native packages updated 2026-11-15](bin/README.md) include this source update.
 
 [MIDI files/devices, keyboard, recording and 512 instruments](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
 
@@ -8,7 +8,7 @@ ROM exports retain the 48-byte Nintendo logo data for boot-time compatibility. G
 
 GB Studio: [UGE / MOD export](docs/GB_STUDIO_EXPORT.md).
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+**English** | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 Game Boy sequencer by DAISUKE OBA: plita GUI, headless CLI, 4/8/16-channel editing and monitoring, WAV, KITAQGB, LINK16 saves and standalone GB/GBC player ROMs.
 

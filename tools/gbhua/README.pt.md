@@ -2,7 +2,7 @@
 
 **[Manual da GUI e downloads](docs/manual.pt.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | **Português (Brasil)** | [Deutsch](README.de.md)
 
 O GBHUA converte PNG em tiles, paletas e mapas para Game Boy. Autor: DAISUKE OBA. Código original: MIT.
 
@@ -47,4 +47,3 @@ Para substituir arquivos use --force. Entrada e saída devem ter caminhos difere
 ## GUI / Python
 
 A GUI local e os bindings Python usam o mesmo núcleo. A GUI não está no pacote CLI independente. No ambiente local completo execute gbhua_gui; em Python use import gbhua. A GUI inclui menus agrupados, diálogos de salvamento, comparação DMG/CGB, sete tamanhos, entrada de 16 bytes, desfazer/refazer, zoom e rolagem do mapa.
-

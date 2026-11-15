@@ -1,16 +1,12 @@
 # Native downloads
 
-Updated 2026-11-15 from source `1caf80e`: Windows x86_64, Linux x86_64, macOS Apple Silicon and Intel. All four native builds passed their tests, CLI/audio/export checks and automated GUI startup. `BUILD_VERIFICATION.json` records the exact source commit and executable hashes.
-
-2026-11-15更新。4環境とも最新ソースのネイティブビルドと自動検証を通過しています。連続鍵盤音声、Ctrl+K、未保存曲の確認画面、最新APUとVBlankドライバを含みます。
 
 Keyboard audition uses the current lane's selected note (including edited
 duty, envelope, pan and custom CH3 wave), then its input preset or cursor
-instrument. PC keys, mouse keys and MIDI share that path. The source tests
-compare the keyboard's PCM with score playback for all four APU channels.
+instrument. PC keys, mouse keys and MIDI share that path.
 
 These builds include the nine-language GUI, MIDI file and device I/O, live/step recording, 512 channel instruments, chord overlays, and WAV export that matches the active mixer and console monitor. See the [performance guide](../docs/MIDI_PERFORMANCE.md) or a localized user manual. GB Studio UGE and MOD export are available in both the GUI and CLI.
-See the [format guide](../docs/GB_STUDIO_EXPORT.md) and the [GB Studio importer checks](GB_STUDIO_INTEROP.json).
+See the [format guide](../docs/GB_STUDIO_EXPORT.md).
 
 The separate [KITAQGB VBlank C exporter](../docs/KITAQGB_VBLANK.md) writes a
 buildable package for each console. The bundled library is the published
@@ -28,7 +24,7 @@ requirements and unsigned macOS application approval.
 | macOS Apple Silicon | [tar.gz](gbseq-macos-arm64.tar.gz) |
 | macOS Intel | [tar.gz](gbseq-macos-x86_64.tar.gz) |
 
-[SHA-256 checksums](SHA256SUMS) · [Build and verification record](BUILD_VERIFICATION.json) · [Archive contents and CPU verification](PACKAGE_VERIFICATION.json)
+[SHA-256 checksums](SHA256SUMS)
 
 Run `gbseq.exe` or `./gbseq` for the GUI; use `gbseq-cli --help` for the CLI.
 The native library is optional. Binaries are built from the source commit in

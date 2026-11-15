@@ -1,47 +1,13 @@
 # KITAQGB 程式庫
 
-[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Deutsch](README.de.md)
 
+將 lib/ 中的 C 標頭檔與原始碼和遊戲一起編譯。桌面編譯器與輔助工具使用 Rust；遊戲原始碼與程式庫 API 使用 C。
 
-
-<!-- local-library-20261003:start -->
-## 2026-10-03 本機程式庫差異與驗證
-
-已將 C:/kitaqgb_project/lib 的原始碼與公開版 2de7f4b 比較。僅憑時間戳記無法確定哪個版本較新。本機版有新增功能，公開版也有其他新增功能與修正。以下說明針對保存的本機原始碼，與原有公開 API 的驗證紀錄分開。
-
-physics2d.c 保留接觸 API，並透過 KQ2D_CACHE_SURFACE 提供快取接觸與速度限制實作。啟用時須預留 ROM bank 13。定義 KQ2D_EXTERNAL_SCALE_Q8、KQ2D_EXTERNAL_REST_COMPONENT 或 KQ2D_EXTERNAL_SURFACE 時，呼叫端須提供對應實作。下列 8,872 項測試使用未定義這些選項的預設路徑。
-
-KQ3D_BODY_SPHERE=0x04 選擇球與盒的接觸處理。球半徑為 half_x。kq3d_overlap_sphere_aabb(sphere, box) 包含相切邊界；指標為 NULL 或半徑不大於 0 時回傳 0。沒有專用的球與球求解器。座標差、乘積與平方和須保持在各自的 16 位元範圍內。
-
-帶有 KQ3D_BODY_KINEMATIC=0x02 的活動 body，即使逆質量為 0，也會在 kq3d_step 中更新 X/Y 速度和位置。Z 位置和速度不變。逆質量為 0 的 body 不會被接觸推移。kq3d_integrate_body 仍跳過靜態 body。break_speed 和 KQ3D_BODY_BROKEN 不會自動觸發破壞。
-
-本機 bank_switch 寫入 kq_bank_current 與位址 0x2000。它與公開版的 __bankswitch 路徑不同，不更新編譯器的 bank 追蹤狀態。應從固定 bank 切換；需要維護編譯器還原狀態時使用 __bankswitch。
-
-本機 cgb_bg_color/cgb_obj_color 及單色 RGB 包裝函式未啟用調色盤索引自動遞增。CGB 執行確認 0x1234 的低位元組被 0x12 覆寫。請使用公開版修正或 colors 陣列 API。DMG 不執行寫入。
-
-本機 metasprite_draw 僅在全部完成時將使用數增加到 first_id+count。到達 40 個上限而提前回傳時不會更新。first_id=39、count=2 時回傳 1，槽位 39 啟用，使用數為 0。公開版在處理每個槽位時更新使用數。
-
-本機版提供 vram_get_queue_used 和 vram_get_queue_free，但沒有公開版的 vram_get_queue_capacity。容量可使用 VRAM_QUEUE_MAX，預設 32。登記一個命令後，已用 1，空餘 31。
-
-wire3d_dmg.h 僅在 96 行設定宣告 DrawRect2D。DrawBoxEdges2D 在兩種設定均有宣告，DrawIndexedEdges 僅在 120 行設定宣告。請選擇一個與設定對應的原始檔。本次未重新驗證這些函式的繪製結果。 保存的 lib 原始碼中未找到 DrawRect2D 或 DrawBoxEdges2D 的實作。這些僅為宣告，呼叫需要另外提供實作。
-
-本機 audio_vblank 不含公開版的 AudioVBlank_QueueReset/QueueRefill/QueuePlay 和 audio_vblank_queue.inc。ZX0 也僅存在於公開版。這些屬於公開版新增功能，不計入已驗證的本機功能。
-
-### 本次執行的驗證
-
-2D 預設路徑：透過 KOKURA C API 自動選擇硬體，8,872 項全部通過。檢查了速度限制、接觸、有號 Q8 乘法與接觸時刻。這不是分別指定 DMG/CGB 的測試。
-
-19 項物理邊界測試在 DMG 與 CGB 各執行一次，共 38 次全部通過。獨立的 3D 擴充與精靈/VRAM/調色盤重現測試也在兩種模式符合預期。調色盤和精靈結果是成功重現缺陷，不是確認正確運作。
-
-這些結果是 C# 編譯器產生 ROM 的模擬器驗證，不證明 Rust 等價性、實機、音訊、繪製或所有 API 的正確性。原有圖片與測試仍是綁定到各紀錄原始碼指紋的歷史結果。
-
-[原始碼指紋、輸入、預期值、實測值與重現步驟](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#local-library-20261003-heading)
-<!-- local-library-20261003:end -->
-
+[手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)
 
 **[程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html)**
 
-`wire3d_dmg` 是 Game Boy 單色線框繪圖器。128 × 96 選用 `wire3d_dmg_96.c`，128 × 120 選用 `wire3d_dmg.c`，並透過 `Wire3DDMG_*` 操作。`wire3d` 與 `dmg3d` 分別提供 96 列與 120 列設定的另一組入口。每個程式只編譯一個入口；`wire3d_cgb` 是彩色專用繪圖器。
 
 [繪圖器指南](wire3d_dmg_guide.md)／[日文指南](wire3d_dmg_guide_ja.md)
 
@@ -57,55 +23,55 @@ wire3d_dmg.h 僅在 96 行設定宣告 DrawRect2D。DrawBoxEdges2D 在兩種設�
 
 | 檔案 | 用途 | 一般使用方式 |
 | --- | --- | --- |
+| `system.h` / `system.c` | 初始化、影格計數、VBlank 等待、協作式 VBlank 回呼及 DI／EI 包裝函式。 | 用於逐影格推進的遊戲迴圈。 |
+| `input.h` / `input.c` | 每影格按鍵狀態：按住、剛按下、剛放開與重複輸入。 | 用於選單、動作、益智與策略遊戲的操作。 |
+| `vram.h` / `vram.c` | VRAM 指令佇列，可排程 BG 圖塊寫入、矩形填滿、地圖區塊複製、memcpy 與 memset。 | 遊戲執行時排入佇列，在安全時段呼叫 `vram_flush()` 或 `vram_flush_now()`。 |
+| `cgb_tile.h` | CGB 圖塊與屬性內建操作的公開宣告。 | 遊戲使用 `__settile...` 等功能時引入。 |
+| `cgb_palette.h` / `cgb_palette.c` | CGB BG／OBJ 調色盤高階介面。 | 引入標頭檔並編譯原始碼。 |
+| `sprite.h` / `sprite.c` | OAM 影子緩衝區、精靈配置、組合精靈、動畫推進、OAM DMA 更新與掃描線溢位檢查。 | 用於以 OBJ 為基礎的顯示。 |
+| `sprite_order.h` / `sprite_order.c` | 提供四級選取優先權與循環 OAM 排序，依帶正負號的畫面座標裁切。最多接受 255 個候選，輸出不超過 40 個精靈，並隱藏未使用的槽位。 | 引入標頭並編譯原始碼；在主程式建立 OAM 影子緩衝區，於 VBlank 傳送。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-sprite_order). |
+| `scroll.h` / `scroll.c` | 以編譯器內建操作實作的捲動與分割畫面表。 | 使用 `Scroll_*` 時加入。 |
+| `raster.h` / `raster.c` | 分帶光柵捲動與逐掃描線 X 方向變形設定。 | 使用 `Raster_*` 函式時，引入 `raster.h`，並同時編譯 `raster.c` 與 `scroll.c`。 |
+| `camera.h` / `camera.c` | 以 `scroll.*` 為基礎的 8.8 定點數鏡頭、簡單全域介面，以及世界與螢幕座標轉換。 | 引入標頭檔並編譯原始碼。 |
+| `audio.h` / `audio.c` | Game Boy 音訊驅動程式，提供音樂、音效、聲像、波形與淡入淡出；共有 68 個音符索引，最高為 67（`G6`）。 | 引入 `audio.h` 並編譯 `audio.c`。 |
+| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM 驅動，同樣支援 68 個音符編號，提供可容納 16 筆紀錄的 WRAM 佇列以播放跨記憶體區塊歌曲，並可掛接逐影格處理。 | 直接指標曲目放在固定 bank 0，或由其他 bank 的程式補充佇列；以 `scripts/patch_gb_vblank_irq.ps1` 設定向量 `0x0040`。 |
+| `fixed.h` / `fixed.c` | Q8.8 定點數、`Vec2`、`KQRect`、clamp／min／max／lerp 與基本矩形檢測。 | 用於移動、物理、鏡頭、AI 評分等運算。 |
+| `rng.c` | `rng8`、`rng16`、`rand_range`、`weighted_choice`、`rng_seed`、`rng_next8`、`rng_next16`、`rng_range`、`rng_chance`。 | 使用 `rpg.h` 的亂數函式時編譯。 |
+| `scene.h` / `scene.c` | 輕量場景表與切換、更新、繪製分派，可組織標題、遊戲、暫停等狀態。 | 用於安排遊戲狀態流程。 |
+| `entity.h` / `entity.c` | 固定陣列物件池，最多容納 `ENTITY_MAX` 個小型遊戲實體。 | 回呼接收實體 ID，再透過 `entity_get(id)` 取得資料。 |
+| `chain.h` / `chain.c` | 提供蛇、繩索、列車與關節精靈用的座標歷史環形緩衝區，以及 ChainBody 身體跟隨功能。 | 引入 `chain.h` 並編譯 `chain.c`，依需求選擇歷史座標跟隨或以各節目前姿態運作的追隨方式。 |
+| `danmaku.h` / `danmaku.c` | 96 發定點數彈幕池、32 方向扇形彈、命中與擦彈事件，以及不受 OAM 數量限制的 CGB BG 圖塊合成。 | 引入標頭並編譯原始碼；請參閱 `danmaku_guide.md` 與 HTML 手冊中的完整範例。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-danmaku) |
+| `text.c` | 圖塊字串視窗、換頁等待、選項、直接 XY 文字、數值顯示，以及清除／視窗別名。 | 使用 `rpg.h` 的文字功能時編譯。 |
+| `menu.c` | 直向選單、基本物品選單與非阻塞選單狀態 API。 | 使用 `rpg.h` 的選單功能時編譯。 |
+| `flags.c` | 2048 個旗標位元的位元集合與任務狀態儲存。 | 使用 `rpg.h` 的旗標、任務功能時編譯。 |
+| `script.c` | RPG／ADV 流程的小型位元組碼執行器。 | 使用 `rpg.h` 的腳本功能時編譯。 |
+| `map.c` | 載入封裝地圖，包含碰撞、觸發器、鏡頭與選用的 16×16 組合圖塊。 | 使用 `rpg.h` 的地圖功能時編譯。 |
+| `slg.h` / `slg_board.c` | 棋盤、走法清單與復原堆疊等通用棋類或戰術系統功能。 | 引入 `slg.h` 並編譯 `slg_board.c`；遊戲專屬的評估邏輯另行實作。 |
+| `save.c` | MBC5 方式的 SRAM 儲存、載入、檢查與清除，資料包含標頭、版本、長度及檢查碼。 | 使用 `rpg.h` 的存檔功能時編譯。 |
+| `bank.h` / `bank.c` | 以內建操作實作的遠端資料、遠指標、遠端呼叫與簡單 MBC 記憶體區塊切換。 | 用作跨記憶體區塊存取的包裝層。 |
+| `asset.h` / `asset.c` | 素材 ID 描述表，以及原始資料與圖塊載入。 | 引入標頭檔並編譯原始碼；日後產生的 `assets.h/c/json` 也可採用此結構。 |
+| `link.h` / `link.c` | 通訊線的序列位元組傳輸，以及協作式邏輯 4 人通訊 `Link4_*`。 | 加入需要通訊的專案。 |
+| `link_packet.c` | `link.c` 上的選用封包層，包含 `Link4_*` 各對端獨立的收件匣。 | 需要封包收發時，才與 `link.c` 一起編譯。 |
+| `link_dmg07.h` / `link_dmg07.c` | 實體 Nintendo DMG-07 Four Player Adapter 的外部時脈輪詢驅動。 | 與 `link_hwregs_gb.c` 一起編譯；此驅動與邏輯 `Link4_*` API 各自獨立。 |
 | `physics2d.h` / `physics2d.c` | 軸對齊包圍盒（AABB）的 2D 物理、重力積分與反覆接觸求解。 | 引入 `physics2d.h`，並編譯 `physics2d.c`。 |
 | `physics2d_circle.h` / `physics2d_circle.c` | 適合球類遊戲的圓形物體 2D 物理。 | 引入標頭檔並編譯原始碼。 |
 | `physics3d.h` / `physics3d.c` | 具備加速度、質量加權反彈與破壞旗標的 3D AABB 物理，以及 `kq3d_dot_q8_8()`。 | 引入標頭檔並編譯原始碼。 |
 | `wire3d.h` / `wire3d.c` | 使用定點數與 WRAM 暫存緩衝區的 3D 線框繪圖，支援模型隱藏線及場景遮蔽遮罩。 | 引入 `wire3d.h`，並編譯 `wire3d.c`。 |
 | `dmg3d.h` / `dmg3d.c` | DMG 暫存式線框繪圖：D000 的 128×120 繪圖區、固定順序的內嵌組合語言畫線，以及依 STAT 狀態進行的 D000→8900 傳輸。 | 需要 1bpp 暫存繪圖流程時，引入標頭檔並編譯原始碼。 |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB 專用 8MHz 彩色線框繪圖，提供 2bpp WRAM 緩衝區、隱藏線與場景遮蔽、組合語言裁切繪圖，以及 HBlank DMA 無畫面撕裂顯示。 | 建置 CGB 專用 ROM，並加入標頭檔與原始碼。 |
-| `system.h` / `system.c` | 初始化、影格計數、VBlank 等待、協作式 VBlank 回呼及 DI／EI 包裝函式。 | 用於逐影格推進的遊戲迴圈。 |
-| `input.h` / `input.c` | 每影格按鍵狀態：按住、剛按下、剛放開與重複輸入。 | 用於選單、動作、益智與策略遊戲的操作。 |
-| `vram.h` / `vram.c` | VRAM 指令佇列，可排程 BG 圖塊寫入、矩形填滿、地圖區塊複製、memcpy 與 memset。 | 遊戲執行時排入佇列，在安全時段呼叫 `vram_flush()` 或 `vram_flush_now()`。 |
-| `sprite.h` / `sprite.c` | OAM 影子緩衝區、精靈配置、組合精靈、動畫推進、OAM DMA 更新與掃描線溢位檢查。 | 用於以 OBJ 為基礎的顯示。 |
-| `sprite_order.h` / `sprite_order.c` | 提供四級選取優先權與循環 OAM 排序，依帶正負號的畫面座標裁切。最多接受 255 個候選，輸出不超過 40 個精靈，並隱藏未使用的槽位。 | 引入標頭並編譯原始碼；在主程式建立 OAM 影子緩衝區，於 VBlank 傳送。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-sprite_order). |
-| `fixed.h` / `fixed.c` | Q8.8 定點數、`Vec2`、`KQRect`、clamp／min／max／lerp 與基本矩形檢測。 | 用於移動、物理、鏡頭、AI 評分等運算。 |
-| `scene.h` / `scene.c` | 輕量場景表與切換、更新、繪製分派，可組織標題、遊戲、暫停等狀態。 | 用於安排遊戲狀態流程。 |
-| `entity.h` / `entity.c` | 固定陣列物件池，最多容納 `ENTITY_MAX` 個小型遊戲實體。 | 回呼接收實體 ID，再透過 `entity_get(id)` 取得資料。 |
-| `danmaku.h` / `danmaku.c` | 96 發定點數彈幕池、32 方向扇形彈、命中與擦彈事件，以及不受 OAM 數量限制的 CGB BG 圖塊合成。 | 引入標頭並編譯原始碼；請參閱 `danmaku_guide.md` 與 HTML 手冊中的完整範例。 [程式庫手冊](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html#module-danmaku) |
-| `bank.h` / `bank.c` | 以內建操作實作的遠端資料、遠指標、遠端呼叫與簡單 MBC 記憶體區塊切換。 | 用作跨記憶體區塊存取的包裝層。 |
-| `asset.h` / `asset.c` | 素材 ID 描述表，以及原始資料與圖塊載入。 | 引入標頭檔並編譯原始碼；日後產生的 `assets.h/c/json` 也可採用此結構。 |
 | `debug.h` / `debug.c` | ROM 端輕量追蹤、斷言與標記緩衝區，可由 KOKURA 或其他模擬器讀取。 | 將較耗資源的效能分析留在 ROM 外執行。 |
-| `chain.h` / `chain.c` | 提供蛇、繩索、列車與關節精靈用的座標歷史環形緩衝區，以及 ChainBody 身體跟隨功能。 | 引入 `chain.h` 並編譯 `chain.c`，依需求選擇歷史座標跟隨或以各節目前姿態運作的追隨方式。 |
-| `cgb_tile.h` | CGB 圖塊與屬性內建操作的公開宣告。 | 遊戲使用 `__settile...` 等功能時引入。 |
-| `cgb_palette.h` / `cgb_palette.c` | CGB BG／OBJ 調色盤高階介面。 | 引入標頭檔並編譯原始碼。 |
-| `scroll.h` / `scroll.c` | 以編譯器內建操作實作的捲動與分割畫面表。 | 使用 `Scroll_*` 時加入。 |
-| `raster.h` / `raster.c` | 分帶光柵捲動與逐掃描線 X 方向變形設定。 | 使用 `Raster_*` 函式時，引入 `raster.h`，並同時編譯 `raster.c` 與 `scroll.c`。 |
-| `camera.h` / `camera.c` | 以 `scroll.*` 為基礎的 8.8 定點數鏡頭、簡單全域介面，以及世界與螢幕座標轉換。 | 引入標頭檔並編譯原始碼。 |
-| `audio.h` / `audio.c` | Game Boy 音訊驅動程式，提供音樂、音效、聲像、波形與淡入淡出；共有 68 個音符索引，最高為 67（`G6`）。 | 引入 `audio.h` 並編譯 `audio.c`。 |
-| `audio_vblank.h` / `audio_vblank.c` | VBlank IRQ BGM 驅動，同樣支援 68 個音符編號，提供可容納 16 筆紀錄的 WRAM 佇列以播放跨記憶體區塊歌曲，並可掛接逐影格處理。 | 直接指標曲目放在固定 bank 0，或由其他 bank 的程式補充佇列；以 `scripts/patch_gb_vblank_irq.ps1` 設定向量 `0x0040`。 |
-| `link.h` / `link.c` | 通訊線的序列位元組傳輸，以及協作式邏輯 4 人通訊 `Link4_*`。 | 加入需要通訊的專案。 |
-| `link_packet.c` | `link.c` 上的選用封包層，包含 `Link4_*` 各對端獨立的收件匣。 | 需要封包收發時，才與 `link.c` 一起編譯。 |
-| `link_dmg07.h` / `link_dmg07.c` | 實體 Nintendo DMG-07 Four Player Adapter 的外部時脈輪詢驅動。 | 與 `link_hwregs_gb.c` 一起編譯；此驅動與邏輯 `Link4_*` API 各自獨立。 |
 | `rpg.h` | RPG／ADV／SLG 共用宣告與底層內建操作宣告。 | 使用此功能群組時，在遊戲原始碼中引入。 |
-| `rng.c` | `rng8`、`rng16`、`rand_range`、`weighted_choice`、`rng_seed`、`rng_next8`、`rng_next16`、`rng_range`、`rng_chance`。 | 使用 `rpg.h` 的亂數函式時編譯。 |
-| `flags.c` | 2048 個旗標位元的位元集合與任務狀態儲存。 | 使用 `rpg.h` 的旗標、任務功能時編譯。 |
 | `rle.c` | 解碼 RAM 與遠端 ROM 中簡單的 `[數量][值]` RLE 資料。 | 使用 `rpg.h` 的 `rle_decode*` 時編譯。 |
-| `text.c` | 圖塊字串視窗、換頁等待、選項、直接 XY 文字、數值顯示，以及清除／視窗別名。 | 使用 `rpg.h` 的文字功能時編譯。 |
-| `menu.c` | 直向選單、基本物品選單與非阻塞選單狀態 API。 | 使用 `rpg.h` 的選單功能時編譯。 |
-| `script.c` | RPG／ADV 流程的小型位元組碼執行器。 | 使用 `rpg.h` 的腳本功能時編譯。 |
-| `map.c` | 載入封裝地圖，包含碰撞、觸發器、鏡頭與選用的 16×16 組合圖塊。 | 使用 `rpg.h` 的地圖功能時編譯。 |
-| `save.c` | MBC5 方式的 SRAM 儲存、載入、檢查與清除，資料包含標頭、版本、長度及檢查碼。 | 使用 `rpg.h` 的存檔功能時編譯。 |
 | `slg_unit.c` | 策略遊戲的移動與攻擊範圍。 | 使用 `rpg.h` 的戰術單位功能時編譯。 |
 | `slg_path.c` | 廣度優先尋路與移動成本洪水填滿。 | 使用 `rpg.h` 的戰術尋路功能時編譯。 |
-| `slg.h` / `slg_board.c` | 棋盤、走法清單與復原堆疊等通用棋類或戰術系統功能。 | 引入 `slg.h` 並編譯 `slg_board.c`；遊戲專屬的評估邏輯另行實作。 |
 
 ### 輔助單元
 
 | 檔案 | 用途 | 說明 |
 | --- | --- | --- |
+| `cgb_tile.c` | 刻意保留為空的 CGB 圖塊編譯單元。 | 公開介面在 `cgb_tile.h`；可編譯此檔案，但執行邏輯不需要它。 |
 | `audio_hwregs_gb.c` | 最小 APU 與波形 RAM 暫存器宣告。 | 專案尚未透過其他檔案宣告這些暫存器時才加入。 |
 | `link_hwregs_gb.c` | 通訊專案所需的最小 `SB`、`SC`、`IF`、`IE` 宣告。 | 若其他檔案已宣告序列通訊暫存器，請勿重複加入。 |
-| `cgb_tile.c` | 刻意保留為空的 CGB 圖塊編譯單元。 | 公開介面在 `cgb_tile.h`；可編譯此檔案，但執行邏輯不需要它。 |
 | `math.c` | ROM 正弦表 `MATH_SIN`。 | 尚未列為有穩定文件的公開 API，目前作為專案輔助資料單元使用。 |
 
 ### 參考文件
@@ -274,32 +240,9 @@ kitaqgb lib/link_hwregs_gb.c lib/link_dmg07.c main.c -I lib -o dmg07.gb --profil
 - 目前結構不必另外加入 `random`、`collision`、`ui`、`tilemap`、`dialog`、`board_game`、`simple_physics` 程式庫；對應功能請使用 `rng`、`physics2d`、`text`／`menu`、`map`、`script`、`slg`、`physics2d`。
 - `scene.c` 與 `entity.c` 避免在函式指標呼叫中使用指標大小的參數。目前 KITAQGB 的函式指標呼叫路徑，以無參數或單一位元組 ID 最為可靠。
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
 
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
-| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
-<!-- manual-language-links:end -->
+## 3D 繪製
 
-<!-- rust-native-20261004:start -->
-## 使用原生編譯器呼叫程式庫
+`wire3d_dmg` 是 Game Boy 單色線框繪圖器。128 × 96 選用 `wire3d_dmg_96.c`，128 × 120 選用 `wire3d_dmg.c`，並透過 `Wire3DDMG_*` 操作。`wire3d` 與 `dmg3d` 分別提供 96 列與 120 列設定的另一組入口。每個程式只編譯一個入口；`wire3d_cgb` 是彩色專用繪圖器。
 
-lib/ 包含編入遊戲機 ROM 的 C 標頭與原始碼。PC 編譯器與輔助工具使用 Rust；遊戲原始碼、目標平台程式庫與 API 仍使用 C。提供的 SOURCE_MANIFEST.json 與 LIBRARY_MERGE.json 記錄程式庫原始碼的選擇。
-
-Windows、Linux、macOS ARM 和 macOS Intel 的原生建置及執行驗證均成功。KITAQGB 在每個環境通過 48 項測試與 395 項輔助工具檢查；KITAQFC 通過 55 項測試與 401 項檢查，也驗證了 Rust 1.85。PUBLIC_DISTRIBUTION.json 記錄已配置程式的雜湊與驗證來源。公開 GitHub Actions 會獨立建置及驗證這些原始碼。
-
-保存的參考輸出用於檢查 ROM 位元組、診斷與輔助工具格式。先前的 C# 模擬器驗證保留為對應原始碼指紋的歷史紀錄，並不自動證明所有 Rust API、實體硬體或完整的 FDS BIOS 遊戲啟動。原始 PNG 轉換腳本無法取得，因此依規格重新實作，不能宣稱與原腳本位元組一致。
-
-[Rust 原生編譯器與輔助工具](../tools/README.zh-TW.md)
-
-<!-- rust-native-20261004:end -->
+[音訊 — VBlank](AUDIO_VBLANK.md)

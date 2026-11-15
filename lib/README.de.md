@@ -1,47 +1,13 @@
 # KITAQGB-Bibliotheken
 
-[VBlank driver update / VBlank音源の更新 (2026-11-14)](AUDIO_VBLANK.md): standard CH3/CH4 instrument IDs, legacy compatibility, and fixed-WRAM/HDMA integration.
+[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | **Deutsch**
 
+Kompilieren Sie die C-Header und Quelltexte aus lib/ zusammen mit Ihrem Spiel. Der Desktop-Compiler und die Hilfsprogramme verwenden Rust; Spielquelltexte und Bibliotheks-APIs verwenden C.
 
-
-<!-- local-library-20261003:start -->
-## Lokale Bibliothek: Änderungen und Prüfung vom 2026-10-03
-
-Die Quellen aus C:/kitaqgb_project/lib wurden mit der öffentlichen Revision 2de7f4b verglichen. Zeitstempel allein bestimmen nicht die neuere Version. Die lokale Fassung enthält Ergänzungen; die öffentliche enthält andere Ergänzungen und Korrekturen. Dieser Abschnitt beschreibt die gesicherten lokalen Quellen getrennt von bisherigen Nachweisen der öffentlichen API.
-
-physics2d.c behält die Kontakt-API bei und ergänzt zwischengespeicherte Kontakt- und Geschwindigkeitsbegrenzung unter KQ2D_CACHE_SURFACE. Reservieren Sie dabei ROM-Bank 13. Bei KQ2D_EXTERNAL_SCALE_Q8, KQ2D_EXTERNAL_REST_COMPONENT oder KQ2D_EXTERNAL_SURFACE muss der Aufrufer die jeweilige Implementierung liefern. Die folgenden 8.872 Fälle prüfen den Standardpfad ohne diese Definitionen.
-
-KQ3D_BODY_SPHERE=0x04 wählt Kugel–Quader-Kontakte. Der Kugelradius ist half_x. kq3d_overlap_sphere_aabb(sphere, box) schließt Berührung ein und liefert bei NULL-Zeigern oder nichtpositivem Radius 0. Einen speziellen Kugel–Kugel-Löser gibt es nicht. Differenzen, Produkte und Quadratsummen müssen in ihren 16-Bit-Bereichen bleiben.
-
-Ein aktiver body mit KQ3D_BODY_KINEMATIC=0x02 aktualisiert in kq3d_step X/Y-Geschwindigkeit und Position auch bei inverser Masse 0. Z-Position und Z-Geschwindigkeit bleiben unverändert. Kontakte verschieben einen body mit inverser Masse 0 nicht. kq3d_integrate_body überspringt weiterhin statische bodies. break_speed und KQ3D_BODY_BROKEN lösen keine automatische Zerstörung aus.
-
-Lokales bank_switch schreibt kq_bank_current und Adresse 0x2000. Anders als der öffentliche __bankswitch-Pfad aktualisiert es die Bankverfolgung des Compilers nicht. Wechseln Sie aus der festen Bank; verwenden Sie __bankswitch, wenn auch der Wiederherstellungszustand gepflegt werden muss.
-
-Lokales cgb_bg_color/cgb_obj_color und die RGB-Hüllen für einzelne Farben aktivieren die automatische Indexerhöhung nicht. Die CGB-Ausführung bestätigt: Das untere Byte von 0x1234 wird durch 0x12 überschrieben. Verwenden Sie die öffentliche Korrektur oder eine colors-Array-API. Auf DMG erfolgt kein Schreibzugriff.
-
-Lokales metasprite_draw erhöht den Belegungszähler erst nach vollständigem Abschluss auf first_id+count. Bei vorzeitiger Rückkehr an der Grenze von 40 Sprites bleibt er unverändert. Bei first_id=39 und count=2 war der Rückgabewert 1, Platz 39 aktiv und der Zähler 0. Die öffentliche Version aktualisiert ihn für jeden bearbeiteten Platz.
-
-Die lokale Version bietet vram_get_queue_used und vram_get_queue_free, jedoch nicht das öffentliche vram_get_queue_capacity. Die Kapazität ist VRAM_QUEUE_MAX, standardmäßig 32. Nach einem Auftrag waren used=1 und free=31.
-
-wire3d_dmg.h deklariert DrawRect2D nur für das Profil mit 96 Zeilen. DrawBoxEdges2D ist in beiden Profilen deklariert, DrawIndexedEdges nur bei 120 Zeilen. Wählen Sie eine zum Profil passende Quelle. Die Darstellung dieser Funktionen wurde diesmal nicht erneut geprüft. In den gesicherten lib-Quellen wurde keine Implementierung von DrawRect2D oder DrawBoxEdges2D gefunden. Es sind nur Deklarationen; für Aufrufe ist eine eigene Implementierung nötig.
-
-Lokales audio_vblank enthält weder die öffentlichen AudioVBlank_QueueReset/QueueRefill/QueuePlay-APIs noch audio_vblank_queue.inc. Auch ZX0 gibt es nur öffentlich. Diese Ergänzungen zählen nicht zu den nachgewiesenen lokalen Funktionen.
-
-### Ausgeführte Prüfungen
-
-2D-Standardpfad: 8.872 erfolgreiche Fälle über die KOKURA-C-API mit automatischer Hardwarewahl. Geprüft wurden Geschwindigkeitsbegrenzung, Kontakte, vorzeichenbehaftete Q8-Multiplikation und Kontaktzeit. Dies war keine getrennte Prüfung mit expliziter DMG/CGB-Wahl.
-
-Physikgrenzen: 19 Fälle jeweils auf DMG und CGB, alle 38 Läufe erfolgreich. Getrennte 3D-Erweiterungs- und Sprite/VRAM/Paletten-Reproduktionen entsprachen in beiden Modi den Erwartungen. Palette und Sprites reproduzieren Fehler; sie bestätigen keine korrekte Funktion.
-
-Dies sind Emulatorprüfungen von ROMs des C#-Compilers. Sie belegen weder Rust-Gleichwertigkeit, reale Hardware, Audio, Darstellung noch die Korrektheit aller APIs. Vorhandene Bilder und Prüfungen bleiben historische Ergebnisse, gebunden an die Quellfingerabdrücke ihrer Aufzeichnungen.
-
-[Quellfingerabdrücke, Eingaben, erwartete und gemessene Werte sowie Wiederholungsschritte](https://bartaro.github.io/kitaq-docs/de/gb-library.html#local-library-20261003-heading)
-<!-- local-library-20261003:end -->
-
+[Handbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)
 
 **[Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html)**
 
-`wire3d_dmg` ist ein monochromer Drahtgitterrenderer für den Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie einen Einstiegspunkt pro Programm. `wire3d_cgb` ist der eigenständige Farbrenderer.
 
 [Renderer-Anleitung auf Englisch](wire3d_dmg_guide.md) / [日本語](wire3d_dmg_guide_ja.md)
 
@@ -57,55 +23,55 @@ Dieser Ordner enthält drei Arten von Dateien:
 
 | Dateien | Aufgabe | Übliche Verwendung |
 | --- | --- | --- |
+| `system.h` / `system.c` | Kleine GB-Laufzeitbasis: Initialisierung, Bildzähler, VBlank-Warten, kooperativer VBlank-Callback und DI/EI. | Für eine am Bildwechsel ausgerichtete Spielschleife einbinden. |
+| `input.h` / `input.c` | Eingabezustand pro Bild: gehalten, gedrückt, losgelassen und Wiederholung. | Für Menüs, Action-, Puzzle- und Strategiespiele einbinden. |
+| `vram.h` / `vram.c` | VRAM-Warteschlange für BG-Kacheln, Rechtecke, Kartenblöcke, Kopieren und Füllen. | Änderungen vormerken und `vram_flush()` beziehungsweise `vram_flush_now()` in einem sicheren Zeitfenster aufrufen. |
+| `cgb_tile.h` | Deklarationen der Compiler-Intrinsics für CGB-Kacheln und Attribute. | Bei Verwendung der `__settile...`- und CGB-Kachelfunktionen einbinden. |
+| `cgb_palette.h` / `cgb_palette.c` | Höhere Abstraktion für BG-/OBJ-Paletten auf CGB. | Header einbinden und Quelle mitkompilieren. |
+| `sprite.h` / `sprite.c` | OAM-Schattenpuffer, Sprite-Reservierung, Metasprites, Animation, OAM-DMA und Prüfung der Scanline-Grenzen. | Für OBJ-basierte Darstellung einbinden. |
+| `sprite_order.h` / `sprite_order.c` | Vier Auswahlprioritätsstufen und zyklische OAM-Reihenfolge mit Begrenzung vorzeichenbehafteter Bildschirmkoordinaten. Aus bis zu 255 Kandidaten werden höchstens 40 Sprites ausgegeben; ungenutzte Plätze werden verborgen. | Header einbinden und Quelldatei kompilieren; Schatten-OAM im Hauptprogramm aufbauen und während VBlank übertragen. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-sprite_order). |
+| `scroll.h` / `scroll.c` | Scroll- und Split-Tabellenfunktionen auf Basis der Intrinsics. | Für `Scroll_*`-Aufrufe einbinden. |
+| `raster.h` / `raster.c` | Aufbau von Scrollbändern und strukturierten X-Verzerrungsprofilen je Scanline. | Für `Raster_*` zusammen mit `scroll.c` kompilieren. |
+| `camera.h` / `camera.c` | Q8.8-Kamera auf Basis von `scroll.*`, globale Kamerahelfer und Welt-/Bildschirmumrechnung. | Header einbinden und Quelle mitkompilieren. |
+| `audio.h` / `audio.c` | Game-Boy-Audiotreiber für Musik, Effekte, Panorama, Wellenformen und Überblendungen; 68 Notenindizes bis 67 (`G6`). | `audio.h` einbinden und `audio.c` kompilieren. |
+| `audio_vblank.h` / `audio_vblank.c` | VBlank-IRQ-Musiktreiber mit demselben Indexbereich, WRAM-Warteschlange für 16 Ereignisse und optionalem Callback pro Bild. | Direkt adressierte Musik in der festen Bank 0 ablegen oder die Warteschlange aus Code anderer Banken nachfüllen; Vektor `0x0040` mit `scripts/patch_gb_vblank_irq.ps1` verbinden. |
+| `fixed.h` / `fixed.c` | Q8.8-Hilfen, `Vec2`, `KQRect`, Begrenzung, Minimum/Maximum, Interpolation und einfache Rechtecktests. | Für Bewegung, Physik, Kamera und KI-Bewertung einbinden. |
+| `rng.c` | `rng8`, `rng16`, `rand_range`, `weighted_choice`, `rng_seed`, `rng_next8`, `rng_next16`, `rng_range` und `rng_chance`. | Für Zufallsfunktionen aus `rpg.h` kompilieren. |
+| `scene.h` / `scene.c` | Kleine Szenentabelle mit Wechsel-, Aktualisierungs- und Zeichenfunktionen, etwa für Titel, Spiel und Pause. | Zur Strukturierung des Spielzustands einbinden. |
+| `entity.h` / `entity.c` | Fester Objektpool für bis zu `ENTITY_MAX` kleine Spielobjekte. | Callbacks erhalten eine Objekt-ID und können `entity_get(id)` verwenden. |
+| `chain.h` / `chain.c` | Koordinatenverlauf im Ringpuffer und ChainBody-Körpernachführung für Schlangen, Seile, Züge oder verbundene Sprites. | `chain.h` einbinden und `chain.c` kompilieren. Je nach Bedarf Verlaufsspeicherung oder Nachführung anhand der aktuellen Segmentpose wählen. |
+| `danmaku.h` / `danmaku.c` | Festkommapool mit 96 Geschossen, Fächern in 32 Richtungen, Treffer-/Streifereignissen und CGB-BG-Komposition unabhängig vom OAM-Limit. | Header einbinden und Quelldatei kompilieren; siehe `danmaku_guide.md` und die vollständigen Beispiele im HTML-Handbuch. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-danmaku) |
+| `text.c` | Kacheltextfenster, Seitenwechsel, Auswahl, XY-Text, Zahlenausgabe sowie Lösch- und Fensterhelfer. | Für Textfunktionen aus `rpg.h` kompilieren. |
+| `menu.c` | Vertikale Menüs, kleines Inventarmenü und nicht blockierende Menüzustände. | Für Menüfunktionen aus `rpg.h` kompilieren. |
+| `flags.c` | Bitmenge mit 2048 Flags und Speicherung von Aufgabenzuständen. | Für Flag- und Quest-Funktionen aus `rpg.h` kompilieren. |
+| `script.c` | Kleiner Bytecode-Interpreter für RPG-/Adventure-Abläufe. | Für Skriptfunktionen aus `rpg.h` kompilieren. |
+| `map.c` | Gepackte Karten mit Kollisionen, Auslösern, Kamera und optionalen 16 × 16-Metakacheln. | Für Kartenfunktionen aus `rpg.h` kompilieren. |
+| `slg.h` / `slg_board.c` | Allgemeine Brett-, Zuglisten- und Rücknahmestapel-Funktionen für Brettspiele oder Taktiksysteme. | Header und Quelle einbinden; spielspezifische Bewertungen getrennt halten. |
+| `save.c` | SRAM-Speichern, Laden, Prüfen und Löschen nach dem MBC5-Schema, mit Header, Version, Länge und Prüfsumme. | Für Speicherfunktionen aus `rpg.h` kompilieren. |
+| `bank.h` / `bank.c` | Daten, Zeiger und Aufrufe über Bankgrenzen sowie einfache MBC-Umschaltung auf Basis der Intrinsics. | Für bankübergreifende Datenzugriffe einbinden. |
+| `asset.h` / `asset.c` | Kleine Ressourcentabelle mit IDs und Hilfen zum Laden roher Daten oder Kacheln. | Header und Quelle einbinden; spätere Erzeuger für `assets.h/c/json` können dieses Format verwenden. |
+| `link.h` / `link.c` | Serielle Byteübertragung und kooperative logische `Link4_*`-Funktionen. | Für Spiele mit Verbindungskabel einbinden. |
+| `link_packet.c` | Optionale Paketschicht auf `link.c` mit getrennten `Link4_*`-Postfächern je Teilnehmer. | Zusammen mit `link.c` kompilieren, wenn Paketfunktionen benötigt werden. |
+| `link_dmg07.h` / `link_dmg07.c` | Polling-Treiber mit externem Takt für den physischen Nintendo-DMG-07-Vierspieleradapter. | Mit `link_hwregs_gb.c` kompilieren; getrennt von der logischen `Link4_*`-API. |
 | `physics2d.h` / `physics2d.c` | 2D-AABB-Körper, Schwerkraftintegration und iterativer Kontaktlöser. | Header einbinden und Implementierung mitkompilieren. |
 | `physics2d_circle.h` / `physics2d_circle.c` | Physik kreisförmiger Körper für Ballspiele. | Header einbinden und Implementierung mitkompilieren. |
 | `physics3d.h` / `physics3d.c` | 3D-AABB-Physik mit Beschleunigung, massengewichteten Abprallreaktionen, Bruchmarkierungen und `kq3d_dot_q8_8()`. | Header einbinden und Implementierung mitkompilieren. |
 | `wire3d.h` / `wire3d.c` | Drahtgitterrenderer mit Festkommaarithmetik, WRAM-Puffer und Verdeckung von Modellkanten und Szenen. | Header und Quelle verwenden, wenn das 96-Zeilen-Profil benötigt wird. |
 | `dmg3d.h` / `dmg3d.c` | DMG-Drahtgitterrenderer mit 128 × 120-Puffer ab D000, Inline-Assembler und STAT-gesteuerter Übertragung nach 8900. | Für den 120-Zeilen-Pfad mit 1bpp-Puffer einbinden. |
 | `wire3d_cgb.h` / `wire3d_cgb.c` | CGB-exklusiver Farbrenderer bei doppelter Taktrate, mit 2bpp-WRAM-Puffer, Verdeckung, API zur Linienbegrenzung und HBlank-DMA-Präsentation. | Header und Quelle mit einem CGB-exklusiven ROM-Build verwenden. |
-| `system.h` / `system.c` | Kleine GB-Laufzeitbasis: Initialisierung, Bildzähler, VBlank-Warten, kooperativer VBlank-Callback und DI/EI. | Für eine am Bildwechsel ausgerichtete Spielschleife einbinden. |
-| `input.h` / `input.c` | Eingabezustand pro Bild: gehalten, gedrückt, losgelassen und Wiederholung. | Für Menüs, Action-, Puzzle- und Strategiespiele einbinden. |
-| `vram.h` / `vram.c` | VRAM-Warteschlange für BG-Kacheln, Rechtecke, Kartenblöcke, Kopieren und Füllen. | Änderungen vormerken und `vram_flush()` beziehungsweise `vram_flush_now()` in einem sicheren Zeitfenster aufrufen. |
-| `sprite.h` / `sprite.c` | OAM-Schattenpuffer, Sprite-Reservierung, Metasprites, Animation, OAM-DMA und Prüfung der Scanline-Grenzen. | Für OBJ-basierte Darstellung einbinden. |
-| `sprite_order.h` / `sprite_order.c` | Vier Auswahlprioritätsstufen und zyklische OAM-Reihenfolge mit Begrenzung vorzeichenbehafteter Bildschirmkoordinaten. Aus bis zu 255 Kandidaten werden höchstens 40 Sprites ausgegeben; ungenutzte Plätze werden verborgen. | Header einbinden und Quelldatei kompilieren; Schatten-OAM im Hauptprogramm aufbauen und während VBlank übertragen. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-sprite_order). |
-| `fixed.h` / `fixed.c` | Q8.8-Hilfen, `Vec2`, `KQRect`, Begrenzung, Minimum/Maximum, Interpolation und einfache Rechtecktests. | Für Bewegung, Physik, Kamera und KI-Bewertung einbinden. |
-| `scene.h` / `scene.c` | Kleine Szenentabelle mit Wechsel-, Aktualisierungs- und Zeichenfunktionen, etwa für Titel, Spiel und Pause. | Zur Strukturierung des Spielzustands einbinden. |
-| `entity.h` / `entity.c` | Fester Objektpool für bis zu `ENTITY_MAX` kleine Spielobjekte. | Callbacks erhalten eine Objekt-ID und können `entity_get(id)` verwenden. |
-| `danmaku.h` / `danmaku.c` | Festkommapool mit 96 Geschossen, Fächern in 32 Richtungen, Treffer-/Streifereignissen und CGB-BG-Komposition unabhängig vom OAM-Limit. | Header einbinden und Quelldatei kompilieren; siehe `danmaku_guide.md` und die vollständigen Beispiele im HTML-Handbuch. [Bibliothekshandbuch](https://bartaro.github.io/kitaq-docs/de/gb-library.html#module-danmaku) |
-| `bank.h` / `bank.c` | Daten, Zeiger und Aufrufe über Bankgrenzen sowie einfache MBC-Umschaltung auf Basis der Intrinsics. | Für bankübergreifende Datenzugriffe einbinden. |
-| `asset.h` / `asset.c` | Kleine Ressourcentabelle mit IDs und Hilfen zum Laden roher Daten oder Kacheln. | Header und Quelle einbinden; spätere Erzeuger für `assets.h/c/json` können dieses Format verwenden. |
 | `debug.h` / `debug.c` | Kleiner ROM-seitiger RAM-Puffer für Ablaufmarkierungen und Assertions. | Mit KOKURA oder im Emulator auswerten; aufwendiges Profiling außerhalb der ROM durchführen. |
-| `chain.h` / `chain.c` | Koordinatenverlauf im Ringpuffer und ChainBody-Körpernachführung für Schlangen, Seile, Züge oder verbundene Sprites. | `chain.h` einbinden und `chain.c` kompilieren. Je nach Bedarf Verlaufsspeicherung oder Nachführung anhand der aktuellen Segmentpose wählen. |
-| `cgb_tile.h` | Deklarationen der Compiler-Intrinsics für CGB-Kacheln und Attribute. | Bei Verwendung der `__settile...`- und CGB-Kachelfunktionen einbinden. |
-| `cgb_palette.h` / `cgb_palette.c` | Höhere Abstraktion für BG-/OBJ-Paletten auf CGB. | Header einbinden und Quelle mitkompilieren. |
-| `scroll.h` / `scroll.c` | Scroll- und Split-Tabellenfunktionen auf Basis der Intrinsics. | Für `Scroll_*`-Aufrufe einbinden. |
-| `raster.h` / `raster.c` | Aufbau von Scrollbändern und strukturierten X-Verzerrungsprofilen je Scanline. | Für `Raster_*` zusammen mit `scroll.c` kompilieren. |
-| `camera.h` / `camera.c` | Q8.8-Kamera auf Basis von `scroll.*`, globale Kamerahelfer und Welt-/Bildschirmumrechnung. | Header einbinden und Quelle mitkompilieren. |
-| `audio.h` / `audio.c` | Game-Boy-Audiotreiber für Musik, Effekte, Panorama, Wellenformen und Überblendungen; 68 Notenindizes bis 67 (`G6`). | `audio.h` einbinden und `audio.c` kompilieren. |
-| `audio_vblank.h` / `audio_vblank.c` | VBlank-IRQ-Musiktreiber mit demselben Indexbereich, WRAM-Warteschlange für 16 Ereignisse und optionalem Callback pro Bild. | Direkt adressierte Musik in der festen Bank 0 ablegen oder die Warteschlange aus Code anderer Banken nachfüllen; Vektor `0x0040` mit `scripts/patch_gb_vblank_irq.ps1` verbinden. |
-| `link.h` / `link.c` | Serielle Byteübertragung und kooperative logische `Link4_*`-Funktionen. | Für Spiele mit Verbindungskabel einbinden. |
-| `link_packet.c` | Optionale Paketschicht auf `link.c` mit getrennten `Link4_*`-Postfächern je Teilnehmer. | Zusammen mit `link.c` kompilieren, wenn Paketfunktionen benötigt werden. |
-| `link_dmg07.h` / `link_dmg07.c` | Polling-Treiber mit externem Takt für den physischen Nintendo-DMG-07-Vierspieleradapter. | Mit `link_hwregs_gb.c` kompilieren; getrennt von der logischen `Link4_*`-API. |
 | `rpg.h` | Gemeinsame Deklarationen für RPG-, Adventure- und Strategiespielfunktionen sowie maschinennahe Intrinsics. | Bei Verwendung dieser Funktionsfamilie einbinden. |
-| `rng.c` | `rng8`, `rng16`, `rand_range`, `weighted_choice`, `rng_seed`, `rng_next8`, `rng_next16`, `rng_range` und `rng_chance`. | Für Zufallsfunktionen aus `rpg.h` kompilieren. |
-| `flags.c` | Bitmenge mit 2048 Flags und Speicherung von Aufgabenzuständen. | Für Flag- und Quest-Funktionen aus `rpg.h` kompilieren. |
 | `rle.c` | Einfache RLE-Dekodierung von `[count][value]` aus RAM oder bankiertem ROM. | Für `rle_decode*` aus `rpg.h` kompilieren. |
-| `text.c` | Kacheltextfenster, Seitenwechsel, Auswahl, XY-Text, Zahlenausgabe sowie Lösch- und Fensterhelfer. | Für Textfunktionen aus `rpg.h` kompilieren. |
-| `menu.c` | Vertikale Menüs, kleines Inventarmenü und nicht blockierende Menüzustände. | Für Menüfunktionen aus `rpg.h` kompilieren. |
-| `script.c` | Kleiner Bytecode-Interpreter für RPG-/Adventure-Abläufe. | Für Skriptfunktionen aus `rpg.h` kompilieren. |
-| `map.c` | Gepackte Karten mit Kollisionen, Auslösern, Kamera und optionalen 16 × 16-Metakacheln. | Für Kartenfunktionen aus `rpg.h` kompilieren. |
-| `save.c` | SRAM-Speichern, Laden, Prüfen und Löschen nach dem MBC5-Schema, mit Header, Version, Länge und Prüfsumme. | Für Speicherfunktionen aus `rpg.h` kompilieren. |
 | `slg_unit.c` | Bewegungs- und Angriffsreichweiten taktischer Einheiten. | Für Einheitenfunktionen aus `rpg.h` kompilieren. |
 | `slg_path.c` | Breitensuche für Wege und kostenbasierte Erreichbarkeitsberechnung. | Für taktische Wegsuche aus `rpg.h` kompilieren. |
-| `slg.h` / `slg_board.c` | Allgemeine Brett-, Zuglisten- und Rücknahmestapel-Funktionen für Brettspiele oder Taktiksysteme. | Header und Quelle einbinden; spielspezifische Bewertungen getrennt halten. |
 
 ### Hilfseinheiten
 
 | Dateien | Aufgabe | Hinweise |
 | --- | --- | --- |
+| `cgb_tile.c` | Bewusst leere Übersetzungseinheit der CGB-Kachelfunktionen. | Die öffentliche Schnittstelle steht in `cgb_tile.h`; die C-Datei muss nicht mitkompiliert werden. |
 | `audio_hwregs_gb.c` | Minimale Deklarationen der APU- und Wave-RAM-Register. | Nur verwenden, wenn keine andere Einheit diese Register bereits deklariert. |
 | `link_hwregs_gb.c` | Minimale Deklarationen von `SB`, `SC`, `IF` und `IE`. | Nur verwenden, wenn die seriellen Register nicht bereits an anderer Stelle deklariert sind. |
-| `cgb_tile.c` | Bewusst leere Übersetzungseinheit der CGB-Kachelfunktionen. | Die öffentliche Schnittstelle steht in `cgb_tile.h`; die C-Datei muss nicht mitkompiliert werden. |
 | `math.c` | Sinustabelle im ROM (`MATH_SIN`). | Noch keine als stabil dokumentierte öffentliche API; vorerst als projektspezifische Dateneinheit behandeln. |
 
 ### Referenzdokumente
@@ -272,32 +238,9 @@ Die letzten acht Notenindizes verwenden die Frequenzen der vorigen Oktave erneut
 - Ergänzen Sie für den derzeitigen Aufbau keine getrennten Bibliotheken `random`, `collision`, `ui`, `tilemap`, `dialog`, `board_game` oder `simple_physics`. Verwenden Sie dafür `rng`, `physics2d`, `text`/`menu`, `map`, `script`, `slg` beziehungsweise `physics2d`.
 - `scene.c` und `entity.c` vermeiden Funktionszeigerargumente in Zeigerbreite: Der aktuelle KITAQGB-Aufrufpfad ist für Aufrufe ohne Argumente oder mit einer Byte-ID am zuverlässigsten.
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
 
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [gb-library](https://bartaro.github.io/kitaq-docs/en/gb-library.html) |
-| 日本語 | [gb-library](https://bartaro.github.io/kitaq-docs/gb-library.html) |
-| 한국어 | [gb-library](https://bartaro.github.io/kitaq-docs/ko/gb-library.html) |
-| 简体中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-CN/gb-library.html) |
-| 繁體中文 | [gb-library](https://bartaro.github.io/kitaq-docs/zh-TW/gb-library.html) |
-| Français | [gb-library](https://bartaro.github.io/kitaq-docs/fr/gb-library.html) |
-| Español | [gb-library](https://bartaro.github.io/kitaq-docs/es/gb-library.html) |
-| Deutsch | [gb-library](https://bartaro.github.io/kitaq-docs/de/gb-library.html) |
-<!-- manual-language-links:end -->
+## 3D-Darstellung
 
-<!-- rust-native-20261004:start -->
-## Bibliotheken mit dem nativen Compiler verwenden
+`wire3d_dmg` ist ein monochromer Drahtgitterrenderer für den Game Boy. Wählen Sie `wire3d_dmg_96.c` für 128 × 96 oder `wire3d_dmg.c` für 128 × 120 und verwenden Sie `Wire3DDMG_*`. `wire3d` und `dmg3d` bieten alternative Einstiegspunkte für die Profile mit 96 beziehungsweise 120 Zeilen. Kompilieren Sie einen Einstiegspunkt pro Programm. `wire3d_cgb` ist der eigenständige Farbrenderer.
 
-lib/ enthält C-Header und C-Quellen, die in das Konsolen-ROM übersetzt werden. PC-Compiler und Hilfswerkzeuge sind in Rust geschrieben; Spielquellen, Zielbibliotheken und ihre APIs bleiben C. Die mitgelieferten SOURCE_MANIFEST.json und LIBRARY_MERGE.json dokumentieren die Auswahl der Bibliotheksquellen.
-
-Native Builds und Ausführungsprüfungen waren unter Windows, Linux, macOS ARM und macOS Intel erfolgreich. KITAQGB bestand pro Umgebung 48 Tests und 395 Werkzeugprüfungen, KITAQFC 55 und 401. Rust 1.85 wurde ebenfalls getestet. PUBLIC_DISTRIBUTION.json enthält die Hashwerte der installierten Programme und die Herkunft der Prüfergebnisse. Die öffentlichen GitHub-Actions-Workflows bauen und testen diese Quellen unabhängig.
-
-Gespeicherte Referenzausgaben prüfen ROM-Bytes, Diagnosen und Werkzeugformate. Frühere C#-Emulatorprüfungen bleiben historische Nachweise mit ihren ursprünglichen Quellfingerabdrücken. Sie belegen nicht automatisch sämtliche Rust-APIs, echte Hardware oder einen vollständigen Spielstart über das FDS-BIOS. Das nicht verfügbare ursprüngliche PNG-Skript wurde nach seiner Spezifikation neu implementiert; Bytegleichheit mit ihm kann nicht bestätigt werden.
-
-[Nativer Rust-Compiler und Hilfswerkzeuge](../tools/README.de.md)
-
-<!-- rust-native-20261004:end -->
+[Audio — VBlank](AUDIO_VBLANK.md)

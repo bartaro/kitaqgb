@@ -2,7 +2,7 @@
 
 **[GUI 설명서 및 다운로드](docs/manual.ko.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | **한국어** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 GBHUA는 PNG를 Game Boy 타일, 팔레트, 맵으로 변환합니다. 제작자: DAISUKE OBA. 자체 코드는 MIT 라이선스입니다.
 
@@ -47,4 +47,3 @@ PNG 가져오기, JSON 보고서 확인, 검증, 미리 보기, 내보내기 순
 ## GUI / Python
 
 로컬 GUI와 Python 바인딩은 같은 변환 코어를 사용합니다. 독립 CLI 패키지에는 GUI가 없습니다. 전체 로컬 작업 공간에서는 gbhua_gui를 실행하고 Python에서는 import gbhua를 사용합니다. GUI에는 그룹 메뉴, 저장 대화상자, DMG/CGB 비교, 7가지 크기, 16바이트 입력, 실행 취소/다시 실행, 맵 확대와 스크롤이 있습니다.
-

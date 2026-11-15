@@ -1,6 +1,6 @@
 # 네이티브 보조 도구
 
-[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [de](../README.de.md)
+[en](../README.en.md) · [ja](../README.ja.md) · [ko](../README.ko.md) · [zh-CN](../README.zh-CN.md) · [zh-TW](../README.zh-TW.md) · [fr](../README.fr.md) · [es](../README.es.md) · [pt](../README.pt.md) · [de](../README.de.md)
 
 모든 보조 실행 파일은 Rust로 구현되었습니다. 실행 시 .NET, Python, Pillow가 필요하지 않습니다. `cargo build --locked --release`로 모든 실행 파일을 빌드합니다. Windows에서는 명령 이름에 `.exe`를 붙입니다.
 

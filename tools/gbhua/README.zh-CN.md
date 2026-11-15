@@ -2,7 +2,7 @@
 
 **[GUI说明书与下载](docs/manual.zh-CN.md)** | [GUI](GUI.md)
 
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 GBHUA将PNG转换为Game Boy图块、调色板和地图。作者：DAISUKE OBA。原创代码采用MIT许可证。
 
@@ -47,4 +47,3 @@ Apple Silicon和Intel Mac的CLI版本：[下载与启动说明](MACOS.md)。
 ## GUI / Python
 
 本地GUI和Python绑定共享转换核心。独立CLI包不含GUI。在完整本地工作区运行gbhua_gui，Python使用import gbhua。GUI提供分组菜单、保存对话框、DMG/CGB对比、7种绘图尺寸、16字节输入、撤销/重做，以及地图缩放和滚动。
-

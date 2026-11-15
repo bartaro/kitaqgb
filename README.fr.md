@@ -1,88 +1,8 @@
 # KITAQGB
 
-<!-- readme-language-links:start -->
-[English](README.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Deutsch](README.de.md)
-<!-- readme-language-links:end -->
-
-<!-- manual-language-links:start -->
-| Language / 言語 | HTML |
-| --- | --- |
-| English | [kitaqgb](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) |
-| 日本語 | [kitaqgb](https://bartaro.github.io/kitaq-docs/kitaqgb.html) |
-| 한국어 | [kitaqgb](https://bartaro.github.io/kitaq-docs/ko/kitaqgb.html) |
-| 简体中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-CN/kitaqgb.html) |
-| 繁體中文 | [kitaqgb](https://bartaro.github.io/kitaq-docs/zh-TW/kitaqgb.html) |
-| Français | [kitaqgb](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) |
-| Español | [kitaqgb](https://bartaro.github.io/kitaq-docs/es/kitaqgb.html) |
-| Deutsch | [kitaqgb](https://bartaro.github.io/kitaq-docs/de/kitaqgb.html) |
-<!-- manual-language-links:end -->
-
-<!-- rust-native-20261004:start -->
-## Compilateur natif Rust et outils auxiliaires
-
-Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
-
-```sh
-cargo test --locked --tests
-cargo build --locked --release
-```
-
-Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
-
-| OS | kitaqgb |
-| --- | --- |
-| Windows x64 | `./kitaqgb.exe` |
-| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
-| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
-| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
-| macOS Intel | `bin/macos-x86_64/kitaqgb` |
-| macOS Universal | `bin/macos-universal/kitaqgb` |
-
-```powershell
-.\scripts\build.ps1
-.\kitaqgb.exe --help
-```
-
-```sh
-sh scripts/build.sh
-```
-
-
-Les constructions natives et vérifications d'exécution ont réussi sous Windows, Linux, macOS ARM et macOS Intel. KITAQGB a passé 48 tests et 395 vérifications d'outils par environnement ; KITAQFC en a passé 55 et 401. Rust 1.85 a également été testé. PUBLIC_DISTRIBUTION.json consigne les empreintes des binaires installés et la provenance des validations. Les workflows GitHub Actions publics reconstruisent et testent ces sources indépendamment.
-
-Les sorties de référence conservées vérifient les octets ROM, les diagnostics et les formats des outils. Les anciennes preuves d'émulation C# restent des résultats historiques liés à leurs empreintes sources. Elles ne prouvent pas automatiquement toutes les API Rust, le matériel réel ou le démarrage complet d'un jeu par le BIOS FDS. Le script PNG d'origine, indisponible, a été réimplémenté d'après sa spécification ; l'identité des octets avec ce script ne peut être affirmée.
-
-[Compilateur natif Rust et outils auxiliaires](tools/README.fr.md)
-
-<!-- rust-native-20261004:end -->
-
-
+[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | **Français** | [Español](README.es.md) | [Português (Brasil)](README.pt-BR.md) | [Deutsch](README.de.md)
 
 [Manuel du compilateur](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) · [Manuel de la bibliothèque](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)
-
-## Origine du nom
-
-KITAQGB est issu d'un fork de NORCAL, le compilateur C pour NES associé à Zachtronics. Il conserve la mention de droit d'auteur de Keith Holman, auteur de NORCAL.
-
-NORCAL tire son nom du nord de la Californie (Northern California). S’inspirant de cette référence géographique, l’auteur a choisi le nom KITAQGB d’après Kitakyushu, la ville où il est né et a grandi. KITAQ + GB associe Game Boy à **北九 (キタキュー, Kitakyū)**, le surnom de Kitakyushu, dans la préfecture de Fukuoka, au Japon. KITAQ se prononce comme le japonais « キタキュー » ; la notation indicative en anglais est **kee-tah-KYOO**, soit **/ˌkiːtɑːˈkjuː/** en alphabet phonétique international. Le Q final se prononce comme le nom anglais de la lettre Q. En anglais, KITAQGB se lit **kee-tah-KYOO jee bee**, en prononçant G et B séparément.
-
-Le nom KITAQGB a deux sens. **Kernel-Informed Toolchain for AI-Quality Game Boy Development** exprime l’objectif d’une chaîne de développement qui comprend la machine cible et accompagne aussi bien les personnes qui programment que l’IA générative.
-
-L’autre sens est **Kids' Imagination Transformed into Actual Quests in Game Boy Forests** : un outil qui transforme l’imagination des enfants en véritables aventures dans les forêts du Game Boy. Il traduit le souhait de faire de petites idées, de croquis et de prototypes créés avec l’aide de l’IA des aventures auxquelles on peut réellement jouer.
-
-## État du projet : version publique préliminaire
-
-KITAQGB et KOKURA sont actuellement proposés comme outils de développement en version publique préliminaire.
-
-Ils peuvent servir à l'expérimentation, aux projets d'exemple, au développement de jeux assisté par IA, à la recherche sur les compilateurs, au débogage par émulation et à la validation des méthodes de travail. Leur développement reste actif : les API, options de commande, formats de sortie, diagnostics et comportements peuvent changer d'une version à l'autre.
-
-Ces versions peuvent contenir des bogues, des fonctions incomplètes ou des changements incompatibles. Vérifiez soigneusement le code généré, le comportement de l'émulateur, les diagnostics temporels et les rapports avant de les utiliser en production ou pour une diffusion publique.
-
-**Kernel-Informed Toolchain for AI-Quality Game Boy Development**
-
-KITAQGB est une chaîne de développement C open source pour créer des logiciels homebrew destinés à la Game Boy et à la Game Boy Color. Elle vise un développement assisté par IA où les diagnostics sont faciles à exploiter : écrire de petits programmes C, les compiler en images ROM `.gb` / `.gbc`, puis utiliser les observations de l'émulateur pour améliorer rapidement le jeu.
-
-KITAQGB n'est ni affilié à Nintendo, ni soutenu, parrainé ou approuvé par Nintendo. Game Boy et Game Boy Color sont des marques de Nintendo.
 
 ## Ce qu'est KITAQGB
 
@@ -116,26 +36,9 @@ Les fichiers de sortie habituels sont :
 
 Testez les ROM produites dans un émulateur et, lorsque c'est possible, sur le matériel réel ou avec une cartouche programmable. Le comportement matériel peut être délicat, notamment pour les délais, interruptions, accès VRAM/OAM, sons, communications par câble et commutations de banques.
 
-## Organisation du dépôt
+## Installation
 
-```text
-Cargo.toml / Cargo.lock
-src/                     # Rust compiler and native helper sources
-kitaqgb.exe             # Windows x64 compiler
-kitaqgb-*.exe           # Windows native helper tools
-bin/                     # Linux and macOS executables
-lib/                     # C libraries for console ROMs
-tests/                   # Frozen reference fixtures and Rust tests
-scripts/build.ps1
-scripts/build.sh
-```
-
-Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
-
-```sh
-cargo test --locked --tests
-cargo build --locked --release
-```
+Téléchargez et décompressez le ZIP du dépôt. Les exécutables du compilateur et des outils fournis fonctionnent sans Rust, .NET, Python ni Pillow.
 
 Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
 
@@ -147,73 +50,6 @@ Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et m
 | macOS ARM64 | `bin/macos-arm64/kitaqgb` |
 | macOS Intel | `bin/macos-x86_64/kitaqgb` |
 | macOS Universal | `bin/macos-universal/kitaqgb` |
-
-```powershell
-.\scripts\build.ps1
-.\kitaqgb.exe --help
-```
-
-```sh
-sh scripts/build.sh
-```
-
-## Prérequis
-
-Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
-
-```sh
-cargo test --locked --tests
-cargo build --locked --release
-```
-
-Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
-
-| OS | kitaqgb |
-| --- | --- |
-| Windows x64 | `./kitaqgb.exe` |
-| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
-| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
-| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
-| macOS Intel | `bin/macos-x86_64/kitaqgb` |
-| macOS Universal | `bin/macos-universal/kitaqgb` |
-
-```powershell
-.\scripts\build.ps1
-.\kitaqgb.exe --help
-```
-
-```sh
-sh scripts/build.sh
-```
-
-## Compiler KITAQGB
-
-Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
-
-```sh
-cargo test --locked --tests
-cargo build --locked --release
-```
-
-Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
-
-| OS | kitaqgb |
-| --- | --- |
-| Windows x64 | `./kitaqgb.exe` |
-| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
-| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
-| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
-| macOS Intel | `bin/macos-x86_64/kitaqgb` |
-| macOS Universal | `bin/macos-universal/kitaqgb` |
-
-```powershell
-.\scripts\build.ps1
-.\kitaqgb.exe --help
-```
-
-```sh
-sh scripts/build.sh
-```
 
 ## Démarrage rapide
 
@@ -237,11 +73,26 @@ Pour une compilation orientée diffusion :
 
 Lancez la ROM obtenue dans l'émulateur Game Boy / Game Boy Color de votre choix, ou dans KOKURA CLI si vous utilisez cette démarche de débogage par émulation.
 
-## Utiliser les bibliothèques fournies
+## Compiler les sources
 
-<!-- current-features:start -->
-Pour compresser les tuiles et les cartes, consultez la [référence ZX0 et son exemple visuel](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#module-zx0), ainsi que l’[outil de compression sur ordinateur](tools/zx0/README.fr.md).
-<!-- current-features:end -->
+Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
+
+```sh
+cargo build --locked --release
+```
+
+```powershell
+.\scripts\build.ps1
+.\kitaqgb.exe --help
+```
+
+```sh
+sh scripts/build.sh
+```
+
+[Compilateur natif Rust et outils auxiliaires](tools/README.fr.md)
+
+## Utiliser les bibliothèques fournies
 
 Le dossier `lib/` contient du code C réutilisable. Compilez les sources de bibliothèque avec le source du jeu et ajoutez `-I lib` pour trouver leurs en-têtes.
 
@@ -270,6 +121,20 @@ Exemple avec les fonctions RPG / ADV / SLG :
 ```
 
 Consultez [lib/README.md](lib/README.fr.md) pour le classement des bibliothèques et les remarques d’utilisation.
+
+### Ressources et compression
+
+<!-- current-features:start -->
+Pour compresser les tuiles et les cartes, consultez la [référence ZX0 et son exemple visuel](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#module-zx0), ainsi que l’[outil de compression sur ordinateur](tools/zx0/README.fr.md).
+<!-- current-features:end -->
+
+### Rendu 3D
+
+Mesure Wire3D, profils de 88 lignes et horloges indépendantes
+
+WIRE3D_DMG_HEIGHT accepte 88, 96 ou 120 ; WIRE3DCGB_HEIGHT accepte 88 ou 96. Les valeurs par défaut restent DMG 120 et CGB 96. Le profil de 88 lignes mesure 128×88, avec Y central=44. Utilisez le même réglage dans la bibliothèque et le programme ; compilez wire3d_dmg_88.c / wire3d_cgb_88.c à la place de l’entrée normale. DMG 88 garde la structure des modèles à 96 lignes et la limite de 16 arêtes. Le mode CGB 160×144 reste inchangé.
+
+[Résultats de vérification et exemples](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#wire3d-feedback-20261009)
 
 ## Options courantes
 
@@ -316,6 +181,20 @@ Une démarche habituelle consiste à :
 
 Cette démarche est particulièrement utile avec l'assistance d'une IA : une erreur de compilation, un rapport d'émulateur ou une trace d'exécution peut devenir une tâche de correction ciblée.
 
+## Organisation du dépôt
+
+```text
+Cargo.toml / Cargo.lock
+src/                     # Rust compiler and native helper sources
+kitaqgb.exe             # Windows x64 compiler
+kitaqgb-*.exe           # Windows native helper tools
+bin/                     # Linux and macOS executables
+lib/                     # C libraries for console ROMs
+tests/                   # Frozen reference fixtures and Rust tests
+scripts/build.ps1
+scripts/build.sh
+```
+
 ## Principes de développement
 
 KITAQGB n'a pas vocation à devenir un compilateur C moderne généraliste. Il s'agit d'une chaîne de développement homebrew conçue pour une petite plateforme de jeu 8 bits à banques, sensible aux contraintes temporelles.
@@ -331,128 +210,52 @@ Le projet privilégie :
 
 L'objectif est de rendre le développement pour les machines de type Game Boy plus abordable sans masquer entièrement leur fonctionnement.
 
-<!-- development-prompt:fr:start -->
 ## Prompt pour développer un jeu
 
-Renseignez les besoins, puis transmettez le prompt complet à votre assistant IA. Il couvre l’implémentation, les tests dans l’émulateur, l’analyse avec SARAKURA et la vérification des corrections.
+[Manuel](https://bartaro.github.io/kitaq-docs/fr/loop-engineering.html#gb)
 
-[Lire l’exemple pratique dans le manuel HTML](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html#loop-prompts)
+## Origine du nom
 
-<details>
-<summary>Afficher le prompt complet</summary>
+KITAQGB est issu d'un fork de NORCAL, le compilateur C pour NES associé à Zachtronics. Il conserve la mention de droit d'auteur de Keith Holman, auteur de NORCAL.
 
-### Développer un jeu avec KITAQGB, KOKURA et SARAKURA
+NORCAL tire son nom du nord de la Californie (Northern California). S’inspirant de cette référence géographique, l’auteur a choisi le nom KITAQGB d’après Kitakyushu, la ville où il est né et a grandi. KITAQ + GB associe Game Boy à **北九 (キタキュー, Kitakyū)**, le surnom de Kitakyushu, dans la préfecture de Fukuoka, au Japon. KITAQ se prononce comme le japonais « キタキュー » ; la notation indicative en anglais est **kee-tah-KYOO**, soit **/ˌkiːtɑːˈkjuː/** en alphabet phonétique international. Le Q final se prononce comme le nom anglais de la lettre Q. En anglais, KITAQGB se lit **kee-tah-KYOO jee bee**, en prononçant G et B séparément.
 
-Renseignez les besoins, puis transmettez ce document entier à l’assistant IA. Les commandes supposent que les dépôts `kitaqgb`, `kitaqfc`, `kokura`, `kurosaki`, `sarakura` et `kitaq-docs`, ainsi que le projet `game-gb` ou `game-fc`, se trouvent dans le même dossier parent. Exécutez-les depuis ce dossier et adaptez les chemins à votre environnement.
+Le nom KITAQGB a deux sens. **Kernel-Informed Toolchain for AI-Quality Game Boy Development** exprime l’objectif d’une chaîne de développement qui comprend la machine cible et accompagne aussi bien les personnes qui programment que l’IA générative.
 
-#### Besoins
+L’autre sens est **Kids' Imagination Transformed into Actual Quests in Game Boy Forests** : un outil qui transforme l’imagination des enfants en véritables aventures dans les forêts du Game Boy. Il traduit le souhait de faire de petites idées, de croquis et de prototypes créés avec l’aide de l’IA des aventures auxquelles on peut réellement jouer.
 
-- Titre du jeu : &lt;à renseigner&gt;
-- Genre et mécanique principale : &lt;à renseigner&gt;
-- Commandes et conditions de réussite ou d’échec : &lt;à renseigner&gt;
-- Écrans, niveaux, ennemis et objets indispensables : &lt;à renseigner&gt;
-- Style graphique, musique et effets sonores : &lt;à renseigner, avec les chemins des ressources fournies&gt;
-- Sauvegarde, communication, périphériques et autres besoins : &lt;à renseigner, ou aucun&gt;
-- Dossier du projet : &lt;à renseigner&gt;
-- Conditions de redistribution : &lt;par exemple, code et ressources originaux pouvant être publiés sous licence MIT&gt;
+## Contribuer
 
-- Machine cible : &lt;Game Boy d’origine / compatibilité GB et CGB / CGB uniquement&gt;
-- Objectif de performances : &lt;par exemple, 60 mises à jour de la logique par seconde en jeu normal ; préciser ce qui est acceptable dans les scènes exigeantes&gt;
+Avant de proposer une modification :
 
-#### Travail demandé
+- n'ajoutez pas de ROM sous droit d'auteur, de BIOS, de ressources extraites de jeux commerciaux ou de matériel de SDK officiel ;
+- évitez d'inclure les sorties générées telles que `bin/`, `obj/`, `target/`, `dist/`, `*.exe`, `*.dll` et `*.pdb` dans les commits de sources, sauf raison précise liée à une diffusion ;
+- privilégiez des cas de test petits et reproductibles pour les bogues du compilateur ou de la génération de code ;
+- pour une nouvelle bibliothèque, documentez la commande de compilation et les déclarations de registres matériels nécessaires ;
+- rédigez des diagnostics assez clairs pour guider aussi bien une personne qu'un agent de programmation IA.
 
-Implémentez le jeu avec KITAQGB et ses bibliothèques. Utilisez KOKURA pour l’exécution et le débogage, et SARAKURA pour organiser les diagnostics et comparer les résultats avant et après correction.
+## État du projet : version publique préliminaire
 
-Répétez ce cycle jusqu’à satisfaire les critères d’acceptation : préciser la spécification → implémenter une petite modification → compiler → appliquer des entrées et observer → rechercher la cause → corriger → refaire les tests dans les mêmes conditions. Un plan, du code fourni ou une compilation réussie ne suffisent pas à terminer le travail.
+KITAQGB et KOKURA sont actuellement proposés comme outils de développement en version publique préliminaire.
 
-##### Vérifier l’environnement et les critères d’acceptation
+Ils peuvent servir à l'expérimentation, aux projets d'exemple, au développement de jeux assisté par IA, à la recherche sur les compilateurs, au débogage par émulation et à la validation des méthodes de travail. Leur développement reste actif : les API, options de commande, formats de sortie, diagnostics et comportements peuvent changer d'une version à l'autre.
 
-1. Lisez les consignes du dossier de travail, les README, les manuels HTML ainsi que les en-têtes et implémentations des bibliothèques utilisées. Relevez les chemins des exécutables et leurs versions ou empreintes SHA-256. Vérifiez les commandes dans la sortie réelle de `--help` et les API dans le code source.
-2. Définissez des critères mesurables pour les entrées, l’image, le son, la progression et la fréquence de mise à jour. Par exemple : appuyer puis relâcher START lance la partie ; une collision retire une vie ; la pause coupe les sons prévus et la reprise rétablit la lecture.
-3. Ne posez de questions que sur les ambiguïtés importantes. Prenez de façon autonome les décisions courantes et réversibles. Ne réduisez pas les exigences ni les critères d’acceptation.
-4. Commencez par faire passer un petit exemple fourni dans le compilateur, l’émulateur et SARAKURA. Cela vérifie leur articulation, pas l’achèvement du jeu demandé.
+Ces versions peuvent contenir des bogues, des fonctions incomplètes ou des changements incompatibles. Vérifiez soigneusement le code généré, le comportement de l'émulateur, les diagnostics temporels et les rapports avant de les utiliser en production ou pour une diffusion publique.
 
-##### Réaliser une première version jouable
+**Kernel-Informed Toolchain for AI-Quality Game Boy Development**
 
-- Utilisez le dialecte C de KITAQGB et `void main()`. Ne supposez pas que les API du C sur ordinateur ou de GBDK sont disponibles. Incluez les implémentations `.c` nécessaires, pas seulement leurs déclarations ; vérifiez initialisation, unités, signe, plages de valeurs, durée de vie des tampons et banques ROM.
-- Prévoyez les mises à jour VRAM/OAM, VBlank, interruptions, pile, banques ROM/WRAM et limites de tuiles et de sprites. La capacité totale et libre de la file de transferts est distincte de la capacité et de l’espace libre de la VRAM physique.
-- Un jeu DMG ne doit pas dépendre de fonctions réservées au CGB. Si les deux modes sont pris en charge, testez chacun d’eux.
-- Utilisez la police originale fournie dans `ascii.c` pour les lettres, chiffres et symboles, et vérifiez la correspondance entre caractères et tuiles.
+KITAQGB est une chaîne de développement C open source pour créer des logiciels homebrew destinés à la Game Boy et à la Game Boy Color. Elle vise un développement assisté par IA où les diagnostics sont faciles à exploiter : écrire de petits programmes C, les compiler en images ROM `.gb` / `.gbc`, puis utiliser les observations de l'émulateur pour améliorer rapidement le jeu.
 
-- Reliez d’abord démarrage, titre, personnage contrôlable, réussite ou échec, et nouvelle partie. Enrichissez ensuite le contenu.
-- Conservez les sources modifiables des graphismes, musiques et effets ainsi que les étapes de génération. Vérifiez que la compilation utilise réellement les données exportées.
-- Rédigez les commentaires du code en anglais et les comptes rendus d’avancement en français. Gardez les rapports standard de SARAKURA en anglais.
+KITAQGB n'est ni affilié à Nintendo, ni soutenu, parrainé ou approuvé par Nintendo. Game Boy et Game Boy Color sont des marques de Nintendo.
 
-##### Relier chaque compilation à son exécution
+## Manuels et licences
 
-Séparez les sorties par itération, par exemple dans `out/iter-001`. Consignez commandes, codes de sortie et empreintes du code, des ressources, outils, ROM et métadonnées. N’exécutez jamais une ancienne ROM après une compilation échouée. Les cartes mémoire, correspondances avec les sources et informations de débogage doivent provenir de la même compilation que la ROM.
+- [Manuel du compilateur](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) · [Manuel de la bibliothèque](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)
+- [Manuel en anglais](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) / [Manuel en japonais](https://bartaro.github.io/kitaq-docs/kitaqgb.html)
+- [Sources du manuel pour lecture hors connexion](https://github.com/bartaro/kitaq-docs)
+- [Licence](LICENSE) / [Traduction japonaise à titre de référence](LICENSE.ja)
 
-Voici une vérification de base pour DMG. Préparez `main.c` et les implémentations de bibliothèque nécessaires ; adaptez les options et la séquence d’entrées au jeu.
-
-```powershell
-$iteration = '.\game-gb\out\iter-001'
-New-Item -ItemType Directory -Force $iteration | Out-Null
-
-# Include all additional implementation units required by the game.
-& '.\kitaqgb\kitaqgb.exe' '.\game-gb\src\main.c' `
-  -I '.\kitaqgb\lib' -o "$iteration\game.gb" `
-  --profile=dev --rst-disable --stack-bank=fixed --no-disasm `
-  "--emit-ai-metadata=$iteration\build.json"
-if ($LASTEXITCODE -ne 0) { throw 'Build failed; inspect the build log.' }
-
-# This sequence presses START once, with released intervals on both sides.
-& '.\kokura\kokura-cli.exe' "$iteration\game.gb" `
-  --hardware dmg --run-frames 300 `
-  --input-seq 'NONE:60;START:1;NONE:239' `
-  --png "$iteration\frame.png" --record-wav "$iteration\audio.wav" `
-  --dump-report "$iteration\run.json" `
-  --emit-diagnostics "$iteration\events.jsonl"
-if ($LASTEXITCODE -ne 0) { throw 'Emulator run failed; inspect the run log.' }
-
-& '.\sarakura\sarakura.exe' gb analyze `
-  --metadata "$iteration\build.json" --events "$iteration\events.jsonl" `
-  --frames 300 --out "$iteration\analysis" --fail-on error
-if ($LASTEXITCODE -ne 0) { throw 'Inspect the analysis report and fix the cause.' }
-```
-
-
-`--hardware dmg` sélectionne la Game Boy d’origine. Pour tester CGB ou les deux modes, faites correspondre l’en-tête ROM et le matériel choisi dans l’émulateur. La séquence appuie une fois sur START entre deux périodes où les boutons sont relâchés. Une exécution de 300 images ne teste pas l’ensemble du jeu.
-
-##### Vérifier l’image, le son, l’état et les performances
-
-- Conservez les scénarios d’entrée en distinguant pression, maintien et relâchement. Parcourez toutes les voies prévues : démarrage, début de partie, déplacement, actions, collisions, défilement, changement de niveau, fin de partie, redémarrage, pause et, si nécessaire, sauvegarde ou communication.
-- Gardez les PNG des images pertinentes, les entrées, rapports d’exécution, diagnostics JSONL, WAV et observations nécessaires d’état ou de mémoire. Vérifiez le nombre d’images atteint et la raison de l’arrêt. Ouvrez réellement les images : une seule capture ne prouve ni mouvement ni réponse aux commandes. Comparez compteurs, positions et transitions aux valeurs attendues ; examinez bords d’écran, limites de tuiles et d’attributs, et scènes chargées en sprites.
-- Vérifiez musique, effets, lecture simultanée, coupures, pause et reprise. Produire un WAV ne prouve pas la justesse du son. Si l’écoute est impossible, distinguez les contrôles numériques ou de forme d’onde réalisés des qualités sonores non vérifiées.
-- Mesurez les scènes exigeantes, le travail du CPU cible, les mises à jour et les transferts ; sur FC, incluez NMI. Le débit de l’émulateur sur l’ordinateur hôte n’est ni la fréquence de mise à jour du jeu ni une preuve de vitesse sur matériel réel. Poursuivre avec `--allow-unimplemented` ne prouve pas la prise en charge de la fonction manquante.
-
-##### Analyser, corriger et refaire les tests
-
-- Fournissez à SARAKURA les métadonnées de la ROM testée et le JSONL diagnostic de cette exécution. Une trace CPU ou un rapport d’exécution ordinaire ne les remplace pas. `--frames` précise les conditions d’analyse ; SARAKURA n’exécute pas la ROM et ne modifie pas automatiquement les sources.
-- Lisez `report.html`, `ai_diagnostics.json`, `repair_prompt.md` et `retest_plan.json`. Confrontez les diagnostics aux étapes de reproduction, images, sons et sources. Distinguez les emplacements ou causes supposés des faits vérifiés, et les boucles d’attente normales des blocages. Examinez chaque avertissement et notez les événements non pris en charge ou les limites d’analyse. Ne masquez pas les avertissements avec des filtres et ne raccourcissez pas les tests pour obtenir un succès.
-- Réduisez les défauts à des cas minimaux, corrigez leur cause et recompilez. Si le compilateur ou l’émulateur est en cause, isolez son défaut du code du jeu et ajoutez une vérification de non-régression à la correction de l’outil.
-- Refaites les tests avec les mêmes entrées, graine aléatoire, machine et standard vidéo, mapper, images observées et réglages diagnostics. Utilisez les métadonnées propres à chaque ROM ; ne réutilisez pas aveuglément les états sauvegardés après modification du code ou de la disposition RAM.
-
-```powershell
-& '.\sarakura\sarakura.exe' baseline-delta `
-  --baseline '.\game-gb\out\iter-001\analysis' `
-  --current '.\game-gb\out\iter-002\analysis' `
-  --out '.\game-gb\out\delta.json' --markdown '.\game-gb\out\delta.md' `
-  --fail-on-new error --fail-on-regression error --enforce
-```
-
-
-Associez les différences de diagnostic aux critères d’acceptation des commandes, graphismes et sons. Si le même échec se répète, réexaminez les preuves et l’hypothèse au lieu d’enchaîner des modifications arbitraires.
-
-##### Conditions de fin et livrables
-
-Rejouez tous les scénarios obligatoires avec la ROM finale compilée depuis les sources et réglages livrés. L’invincibilité, des entrées automatiques de test ou un autre mapper ne suffisent pas à valider une partie normale dans la version finale. Fournissez un tableau reliant besoins et tests, expliquez les avertissements restants et indiquez les éléments non vérifiés ou non pris en charge. Précisez explicitement l’absence de tests sur matériel physique, le cas échéant.
-
-Livrez les sources, l’identification des outils et bibliothèques, les ressources modifiables, les scripts reproductibles de compilation et de test, la ROM, les preuves finales et un README expliquant installation, commandes et limites connues. Incluez les replays et le programme de test si nécessaire. Publiez ou transmettez des fichiers à l’extérieur uniquement dans le périmètre expressément autorisé. Supprimez les compilations intermédiaires et traces temporaires inutiles après vérification, mais conservez sources, ressources, livrables et preuves de non-régression nécessaires.
-
-Si l’environnement ou les permissions empêchent un contrôle obligatoire, indiquez les étapes exactes de reproduction et l’action nécessaire. Ne déclarez pas le travail terminé.
-
-</details>
-<!-- development-prompt:fr:end -->
+La licence du projet ne remplace pas les conditions de tiers relatives aux polices, dépendances, logos ou marques. Conservez les mentions jointes lors de la redistribution.
 
 ## Marques et affiliation
 
@@ -482,60 +285,4 @@ Les mentions de droit d'auteur et de licence MIT de NORCAL doivent être conserv
 
 Consultez [LICENSE](LICENSE) et [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) pour les détails.
 
-## Contribuer
-
-Avant de proposer une modification :
-
-- n'ajoutez pas de ROM sous droit d'auteur, de BIOS, de ressources extraites de jeux commerciaux ou de matériel de SDK officiel ;
-- évitez d'inclure les sorties générées telles que `bin/`, `obj/`, `target/`, `dist/`, `*.exe`, `*.dll` et `*.pdb` dans les commits de sources, sauf raison précise liée à une diffusion ;
-- privilégiez des cas de test petits et reproductibles pour les bogues du compilateur ou de la génération de code ;
-- pour une nouvelle bibliothèque, documentez la commande de compilation et les déclarations de registres matériels nécessaires ;
-- rédigez des diagnostics assez clairs pour guider aussi bien une personne qu'un agent de programmation IA.
-
-## Compiler et commencer à utiliser l'outil
-
-Rust 1.85 ou ultérieur permet de construire le compilateur et tous les outils auxiliaires pour Windows, Linux, macOS ARM et macOS Intel. Les exécutables natifs ne nécessitent pas .NET ; les outils de ressources fonctionnent aussi sans Python ni Pillow.
-
-```sh
-cargo test --locked --tests
-cargo build --locked --release
-```
-
-Les exécutables Windows se trouvent à la racine du dépôt. Ceux de Linux et macOS sont dans les dossiers bin/ indiqués ci-dessous. Conservez lib/ et les mentions de licence avec les outils. Sous Linux/macOS, attribuez les droits d'exécution avec chmod +x, puis ajoutez le dossier au PATH ou utilisez le chemin complet.
-
-| OS | kitaqgb |
-| --- | --- |
-| Windows x64 | `./kitaqgb.exe` |
-| Linux x64 (static musl) | `bin/linux-x86_64/kitaqgb` |
-| Linux x64 (GNU) | `bin/linux-gnu-x86_64/kitaqgb` |
-| macOS ARM64 | `bin/macos-arm64/kitaqgb` |
-| macOS Intel | `bin/macos-x86_64/kitaqgb` |
-| macOS Universal | `bin/macos-universal/kitaqgb` |
-
-```powershell
-.\scripts\build.ps1
-.\kitaqgb.exe --help
-```
-
-```sh
-sh scripts/build.sh
-```
-
-## Manuels et licences
-
-- [Manuel du compilateur](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html) · [Manuel de la bibliothèque](https://bartaro.github.io/kitaq-docs/fr/gb-library.html)
-- [Manuel en anglais](https://bartaro.github.io/kitaq-docs/en/kitaqgb.html) / [Manuel en japonais](https://bartaro.github.io/kitaq-docs/kitaqgb.html)
-- [Sources du manuel pour lecture hors connexion](https://github.com/bartaro/kitaq-docs)
-- [Licence](LICENSE) / [Traduction japonaise à titre de référence](LICENSE.ja)
-
-La licence du projet ne remplace pas les conditions de tiers relatives aux polices, dépendances, logos ou marques. Conservez les mentions jointes lors de la redistribution.
-
-<!-- wire3d-feedback:start -->
-
-Mesure Wire3D, profils de 88 lignes et horloges indépendantes
-
-WIRE3D_DMG_HEIGHT accepte 88, 96 ou 120 ; WIRE3DCGB_HEIGHT accepte 88 ou 96. Les valeurs par défaut restent DMG 120 et CGB 96. Le profil de 88 lignes mesure 128×88, avec Y central=44. Utilisez le même réglage dans la bibliothèque et le programme ; compilez wire3d_dmg_88.c / wire3d_cgb_88.c à la place de l’entrée normale. DMG 88 garde la structure des modèles à 96 lignes et la limite de 16 arêtes. Le mode CGB 160×144 reste inchangé.
-
-[Résultats de vérification et exemples](https://bartaro.github.io/kitaq-docs/fr/gb-library.html#wire3d-feedback-20261009)
-
-<!-- wire3d-feedback:end -->
+[Manuel](https://bartaro.github.io/kitaq-docs/fr/kitaqgb.html)

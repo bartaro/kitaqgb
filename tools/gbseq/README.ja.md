@@ -1,41 +1,8 @@
 # GBSEQ — 操作説明書
 
-**2026-11-14 — source update / ソース更新:** Ctrl+Kまたはピアノアイコンで演奏鍵盤を開きます。鍵盤の音声出力は連続動作します。未保存の曲を新規作成・開く操作で置き換える前に、画面内で保存／破棄／取消を選べます。再生専用ROMはSOLO／MASTERでBを押すとループを切り替え、TIMEに位置／全長を表示します。
-
-再生は短い音声ブロックを順次生成します。試聴台・ミュート・ソロを変更しても再生位置を保ち、音符やテンポの編集は次の再生開始時に反映します。
-
-[Audio implementation and source checks](../../SOURCE_UPDATE_20261114.md). [Native packages updated 2026-11-15](bin/README.md) include this source update. 配布バイナリも更新済みです。
-
-[MIDI入出力・PC鍵盤・録音・ステップ入力・512種類のプリセット音色](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
-
-出力ROMには起動時の互換性のため任天堂ロゴの48バイトが含まれます。GBSEQのMITライセンスは任天堂のロゴ・商標の独立した利用許諾を与えず、任天堂との提携・承認を意味しません。[注意書き（日英）](docs/NINTENDO_NOTICE.md)を参照してください。
-
-「出力」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
-
-[English](README.en.md) | [日本語](README.ja.md) | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Español](README.es.md) | [Português](README.pt.md) | [Français](README.fr.md) | [Deutsch](README.de.md)
+[English](README.en.md) | **日本語** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [Français](README.fr.md) | [Español](README.es.md) | [Português (Brasil)](README.pt.md) | [Deutsch](README.de.md)
 
 DAISUKE OBA制作のGBSEQは、plita製GUIと独立したCLIを備えるゲームボーイ用シーケンサーです。編集モデル、検証、KOKURA音源、書き出し処理を共用します。LOCAL 4CH・CABLE 8CH・DMG07 16CHで1台・2台・4台分を制作できます。各台はCH1矩形波、CH2矩形波、CH3波形、CH4ノイズ。1曲1～256小節、1小節16ステップ（各CH最大4096）、BPM30～300、ループ有無を設定できます。 「表示 → 言語」で表示言語を選べます。設定は曲とは別に保存されます。 `--language en|ja|ko|zh-CN|zh-TW|es|pt-BR|fr|de`
-
-## 演奏入力とWAV出力
-
-Ctrl+Kで選択トラックの演奏鍵盤を開きます。白鍵はA/S/D/F/G/H/J、黒鍵はW/E/T/Y/U、Z/Xでオクターブ変更。IN・OUTでMIDI機器を選びます。ステップ入力は16分音符1・2・4・8個ずつ、録音は曲頭から1回です。「保護」は重なる入力を拒み、「上書き」は重なる区間だけ置き換えます。MIDIファイルは「ファイル」で読み込み、「出力」で書き出します。GB専用の音色設定は .gbseq で保存してください。
-
-各CHに128種類の音色があります。ドロップダウンで選び、自作音色は .gbpreset として曲とは別に保存・読込できます。コード表示は全体と各トラックで個別に切り替えられます。曲全体の移調はノイズCHを除きます。
-
-WAVには出力を選んだ時点の試聴・ミュート・ソロ設定が反映されます。「全台」は全プレイヤー、「P1～P4」は指定した台だけ。ミュートは常に無音で、ソロがあればソロかつミュートされていないトラックだけが鳴ります。編集トラックを選択しただけでは他の音は消えません。全ミュートでは、長さを保った無音のWAVになります。
-
-`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
-
-[VBlankドライバ・曲データのC出力](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
-曲データはaudio.hと同じCH順です。VBlank版のCH3は三角波とのこぎり波のみで、近似を認めないときは --strict を指定してください。各台のソースは別々にビルドします。
-
-**E** キーまたはトラック見出しのダブルクリックで、そのトラックのキーエディタが開きます。Eでもう一度全体表示に戻ります。音符の右端をドラッグすると、次の音符の直前または曲末まで伸ばせます。CH3のユーザー波形はグラフ上で32サンプルを線描でき、Ctrl+Zでひと筆を取り消せます。
-
-## 台別の再生専用ROMと試聴
-
-「出力 → 再生専用ROM（SRAM不要・台別）」で、曲名と各台の4CHを内蔵した512KBのP1.gb〜P4.gbを生成します。SAVは不要です。単独ではSTARTで試聴。通信は全台の停止中にSELECT、1台でA（MASTER）、残りでB（PEER）を選び、MASTERのSTARTで再生・停止します。4人用アダプターは担当パートにかかわらずMASTERをポート1へ。GBSEQでは編集中の台とは独立に全台ミックスまたはP1〜P4の個別試聴を選べます。WAVにも選択した音を出力します。
-
-`gbseq-cli export-player-roms song.gbseq output_folder`
 
 ## 導入と起動
 
@@ -52,6 +19,39 @@ Ctrl/Shiftクリックで複数選択、Ctrl+Aで現在レーン全選択。左�
 ## 音色と波形
 
 各音符の音量、左右／中央パン、矩形波のデューティ比とエンベロープ、CH1スイープ、CH3出力レベル／プリセット、CH4ノイズを設定できます。AUDITIONは選択音の試聴です。CH3にはハードウェアエンベロープがありません。NEW USER WAVEで32サンプルの4bit波形を開き、ドラッグで0～15を描きます。ユーザー波形は64個、組込波形は7種類。16個の有効プリセットに割り当て、100/50/25%のレベルを選びます。音符ごとのWAVE PRESETで途中の音色を変更します。実機での波形書換えはCH3を一時停止するため、連続クロスフェードではありません。
+
+## 演奏入力とWAV出力
+
+Ctrl+Kで選択トラックの演奏鍵盤を開きます。白鍵はA/S/D/F/G/H/J、黒鍵はW/E/T/Y/U、Z/Xでオクターブ変更。IN・OUTでMIDI機器を選びます。ステップ入力は16分音符1・2・4・8個ずつ、録音は曲頭から1回です。「保護」は重なる入力を拒み、「上書き」は重なる区間だけ置き換えます。MIDIファイルは「ファイル」で読み込み、「出力」で書き出します。GB専用の音色設定は .gbseq で保存してください。
+
+各CHに128種類の音色があります。ドロップダウンで選び、自作音色は .gbpreset として曲とは別に保存・読込できます。コード表示は全体と各トラックで個別に切り替えられます。曲全体の移調はノイズCHを除きます。
+
+WAVには出力を選んだ時点の試聴・ミュート・ソロ設定が反映されます。「全台」は全プレイヤー、「P1～P4」は指定した台だけ。ミュートは常に無音で、ソロがあればソロかつミュートされていないトラックだけが鳴ります。編集トラックを選択しただけでは他の音は消えません。全ミュートでは、長さを保った無音のWAVになります。
+
+`gbseq-cli render-wav song.gbseq mix.wav` · `gbseq-cli render-wav song.gbseq p2.wav --player 2`
+
+[VBlankドライバ・曲データのC出力](docs/KITAQGB_VBLANK.md): `gbseq-cli export-vblank song.gbseq output` · `--strict` · `--driver-dir`.
+曲データはaudio.hと同じCH順です。VBlank版のCH3は三角波とのこぎり波のみで、近似を認めないときは --strict を指定してください。各台のソースは別々にビルドします。
+
+**E** キーまたはトラック見出しのダブルクリックで、そのトラックのキーエディタが開きます。Eでもう一度全体表示に戻ります。音符の右端をドラッグすると、次の音符の直前または曲末まで伸ばせます。CH3のユーザー波形はグラフ上で32サンプルを線描でき、Ctrl+Zでひと筆を取り消せます。
+
+[MIDI入出力・PC鍵盤・録音・ステップ入力・512種類のプリセット音色](docs/MIDI_PERFORMANCE.md) · `Ctrl+K` · `import-midi` / `export-midi`
+
+## 台別の再生専用ROMと試聴
+
+「出力 → 再生専用ROM（SRAM不要・台別）」で、曲名と各台の4CHを内蔵した512KBのP1.gb〜P4.gbを生成します。SAVは不要です。単独ではSTARTで試聴。通信は全台の停止中にSELECT、1台でA（MASTER）、残りでB（PEER）を選び、MASTERのSTARTで再生・停止します。4人用アダプターは担当パートにかかわらずMASTERをポート1へ。GBSEQでは編集中の台とは独立に全台ミックスまたはP1〜P4の個別試聴を選べます。WAVにも選択した音を出力します。
+
+`gbseq-cli export-player-roms song.gbseq output_folder`
+
+再生専用ROMではSOLO／MASTERモードでBを押すとループを切り替えます。TIMEは現在位置と全長を表示します。
+
+## LINK16・KITAQGBへの出力
+
+LINK16 SAVはV4形式の128KiB MBC5バッテリーイメージです。LOCALは`link16_local.sav`、2台は`link16_cable.p1.sav`と`.p2.sav`、4台は`link16_dmg07.p1.sav`～`.p4.sav`。対応するLINK16 ROMとエミュレーターの保存名規則を使用し、既存SAVを必ずバックアップしてください。P1には他台のミラー領域もあります。SAV単体では起動できません。LINK16のエンベロープは1台で共用4種類までで、それを超える値は近似される場合があります。出力後に読み込みと音を確認してください。CH1スイープはV4には保存されません。`frames_per_step_override`によるフレーム単位SFXは試聴・WAV・KITAQGB出力に対応し、BPM方式のLINK16出力では拒否されます。
+
+KITAQGB出力は1台分のC／ストリームデータです。台ごとに出力してください。物理CH1=0、CH2=1、CH3=2、CH4=3の現行互換audio.h/audio.cを使います。16CHを1台に詰め込む機能ではありません。GBSEQ試聴はステップ長を映像フレーム単位に丸めるため、BPMによっては分数クロックのROMと実テンポが異なります。エミュレーターでの音声生成は実機検証とは別です。
+
+「出力」から `.uge`（編集可能、ユーザー波形対応）または `.mod`（GBT固定音色）を選び、GB Studioプロジェクトの `assets/music` に保存します。2台・4台の曲は `_P1` ～ `_P4` の4chファイルに分かれます。 [CLI: `export-uge` / `export-mod`](docs/GB_STUDIO_EXPORT.md).
 
 ## CLI
 
@@ -75,13 +75,6 @@ gbseq-cli --help
 gbseq-cli transform --help
 ```
 
-
-## LINK16・KITAQGBへの出力
-
-LINK16 SAVはV4形式の128KiB MBC5バッテリーイメージです。LOCALは`link16_local.sav`、2台は`link16_cable.p1.sav`と`.p2.sav`、4台は`link16_dmg07.p1.sav`～`.p4.sav`。対応するLINK16 ROMとエミュレーターの保存名規則を使用し、既存SAVを必ずバックアップしてください。P1には他台のミラー領域もあります。SAV単体では起動できません。LINK16のエンベロープは1台で共用4種類までで、それを超える値は近似される場合があります。出力後に読み込みと音を確認してください。CH1スイープはV4には保存されません。`frames_per_step_override`によるフレーム単位SFXは試聴・WAV・KITAQGB出力に対応し、BPM方式のLINK16出力では拒否されます。
-
-KITAQGB出力は1台分のC／ストリームデータです。台ごとに出力してください。物理CH1=0、CH2=1、CH3=2、CH4=3の現行互換audio.h/audio.cを使います。16CHを1台に詰め込む機能ではありません。GBSEQ試聴はステップ長を映像フレーム単位に丸めるため、BPMによっては分数クロックのROMと実テンポが異なります。エミュレーターでの音声生成は実機検証とは別です。
-
 ## データとPython
 
 `.gbseq`はJSON形式で、MIDIではありません。拡張子を変えるだけでは変換できません。生成AIのデータはvalidateし、曲長、使用CH、ID重複、音域、音符重複を確認してください。詳細仕様は[docs/](docs/README.md)。任意のPython 3.10以降連携ではpython/をPYTHONPATHに追加し、GBSEQ_NATIVE_LIBRARYに同梱のgbseq.dll／libgbseq.dylib／libgbseq.soの絶対パスを指定します。Pythonのtrack/playerは0始まり、直接編集後はvalidateします。player=Noneで全台出力します。
@@ -96,7 +89,6 @@ song.save("python-song.gbseq")
 song.render_wav("python-song.wav")
 ```
 
-
 ## ビルド・困ったとき・権利表記
 
 Rust 1.93.1と各OSのC/C++開発環境を使用します。Linuxではlibasound2-dev、libudev-dev、libxkbcommon-dev, libxkbcommon-x11-dev、libwayland-dev、libx11-dev、libxi-dev、libxcursor-dev、Mesa開発ライブラリ等が必要です。CIは各OSでビルド・編集テスト・音声／SAV出力・GUI起動を確認し、verificationにソースコミットを記録します。音声デバイスの出音、物理入力、実機はこの自動検査には含みません。
@@ -110,3 +102,5 @@ cargo build --locked --release --no-default-features --bin gbseq-cli --lib
 
 
 起動失敗時はGPUドライバーと端末のエラー表示を確認。文字欠けはassets/fonts、無音は出力デバイスとmute/solo、出力失敗はvalidateの該当音符を確認します。本体はMIT、Copyright (c) 2026 DAISUKE OBA。[LICENSE](LICENSE)・[第三者表記](THIRD_PARTY_NOTICES.md)・[監査一覧](LICENSE_AUDIT.json)を参照し、再配布時はライセンスとフォント表記を保持してください。第三者素材と読み込む音楽の権利はそれぞれに帰属します。
+
+出力ROMには起動時の互換性のため任天堂ロゴの48バイトが含まれます。GBSEQのMITライセンスは任天堂のロゴ・商標の独立した利用許諾を与えず、任天堂との提携・承認を意味しません。[注意書き（日英）](docs/NINTENDO_NOTICE.md)を参照してください。
